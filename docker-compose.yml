@@ -1,0 +1,71 @@
+version: "3.8"
+
+services:
+  flask:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: flask_app
+    command: flask run --host=0.0.0.0
+    volumes:
+      - ./backend:/app
+    ports:
+      - "5001:5000"
+    depends_on:
+      - mysql_db
+
+  react:
+    container_name: react_app
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend/app:/app
+      - node_modules:/app/node_modules
+    command: npm run dev
+
+  mysql_db:
+    image: mysql:8.0
+    build: #カレントディレクトリをコンテキトとして使用し ./db/DockerfileからMySQLデータベースサーバーのイメージをビルドする
+      context: .
+      dockerfile: ./db/Dockerfile
+
+    volumes: #名前付きボリューム db-test をデータベースのデータを保存するディレクトリ /var/lib/mysql にマウントします。
+      - type: volume
+        source: react_flask_db
+        target: /var/lib/mysql
+        volume:
+          nocopy: true
+    environment:
+      MYSQL_DATABASE: react_flask_app # 作成するデータベース名
+      MYSQL_ROOT_PASSWORD: password # rootのパスワード
+      MYSQL_USER: admin # ユーザー名
+      MYSQL_PASSWORD: password # ユーザーのパスワード
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    ports:
+      - "3306:3306"
+    networks: # net4 ネットワークに所属
+      - net4
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin # phpmyadmin/phpmyadmin イメージを使用して、phpMyAdminのコンテナを作成
+    platform: linux/amd64
+    environment: # phpMyAdminが使用する環境変数
+      - PMA_ARBITRARY=1
+      - PMA_HOST=mysql_db # データベース名　mysql_dbはmysql_dbサービス名を使用して相互に通信できる　下のlinksを設定することで可能となる
+      - PMA_USER=admin # phpMyAdminのユーザー名
+      - PMA_PASSWORD=password # phpMyAdminのパスワード
+    links: #mysql_db サービスへのリンクを設定。ネットワーク内で名前を使って他のコンテナに簡単にアクセスするため
+      - mysql_db
+    ports:
+      - "8080:80" # localhost:8080でアクセスできる
+    networks: # net4 ネットワークに所属
+      - net4
+
+volumes:
+  node_modules:
+  react_flask_db:
+networks: #net4 というカスタムネット
+  net4:
