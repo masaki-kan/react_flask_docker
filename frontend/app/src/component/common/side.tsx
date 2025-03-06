@@ -71,6 +71,7 @@ const Side: FC = () => {
   // 遷移関数
   const routePushHandler = (routePath: string): void => {
     navigate(routePath);
+    onClose();
   };
 
   return (

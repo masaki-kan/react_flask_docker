@@ -11,16 +11,33 @@ import {
   Text,
 } from "@chakra-ui/react";
 import { followListType, renderTabPanelType } from "../../types/listTye";
+import { useNavigate } from "react-router-dom";
+import { route } from "../../route/routeConst";
 
 const RenderTabPanel: FC<renderTabPanelType> = ({ data }) => {
+  const navigate = useNavigate();
+  const userPageTransition = () => {
+    navigate(route.shopPage);
+  };
+
   return (
     <>
       <TabPanel>
-        <VStack align={"start"} gap={4}>
+        <VStack align={"start"}>
           {data.map((list, index) => {
             return (
               <>
-                <HStack key={index}>
+                <HStack
+                  key={index}
+                  onClick={userPageTransition}
+                  _hover={{
+                    bgColor: "#f4f2f0",
+                    transition: "background-color 0.3s ease",
+                  }}
+                  w={"full"}
+                  px={2}
+                  py={2}
+                >
                   <Avatar src={list.icon} />
                   <VStack align={"start"} ml={4}>
                     <Text>{list.name}</Text>
@@ -73,10 +90,10 @@ const ListingsIndex: FC = () => {
 
   return (
     <>
-      <Tabs mt={10}>
+      <Tabs mt={10} colorScheme="teal">
         <TabList>
-          <Tab>フォロー</Tab>
-          <Tab>フォロワー</Tab>
+          <Tab width={"50%"}>フォロー</Tab>
+          <Tab width={"50%"}>フォロワー</Tab>
         </TabList>
 
         <TabPanels>

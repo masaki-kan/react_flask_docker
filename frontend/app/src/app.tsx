@@ -6,6 +6,7 @@ import PublicLayout from "./component/layout/publicLayout";
 import SecureLayout from "./component/layout/secureLayout";
 import { route } from "./route/routeConst";
 import ListingsHome from "./component/listing/home";
+import ShopPageHome from "./component/shop/home";
 
 function App() {
   return (
@@ -21,6 +22,7 @@ function App() {
             <Route element={<SecureLayout />}>
               <Route path={route.home} element={<ProfileHome />} />
               <Route path={route.listings} element={<ListingsHome />} />
+              <Route path={route.shopPage} element={<ShopPageHome />} />
               {/* 他の公開ページもここに追加できます */}
             </Route>
             <Route path="*" element={<h1>Not Found Page</h1>} />
