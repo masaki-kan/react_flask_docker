@@ -10,7 +10,7 @@ const SecureLayout: FC = () => {
       <MainHeader />
       <Side />
       <main>
-        <Box mt={{ base: "7em", md: 24 }}>
+        <Box mt={{ base: "7em", md: 24 }} pb={10}>
           <Outlet />
         </Box>
       </main>

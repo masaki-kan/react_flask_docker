@@ -9,9 +9,10 @@ const Home: FC = () => {
       <Container maxW="container.xl">
         <Heading
           pl={{ md: 4, base: 0 }}
+          mb={10}
           textAlign={{ base: "center", md: "justify" }}
         >
-          People
+          Users
         </Heading>
         <ListingsIndex />
       </Container>

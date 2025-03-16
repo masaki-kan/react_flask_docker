@@ -8,3 +8,8 @@ export interface followListType {
 export interface renderTabPanelType {
   data: followListType[];
 }
+
+export interface tagType {
+  id: number;
+  name: string;
+}

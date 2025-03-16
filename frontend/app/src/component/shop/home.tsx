@@ -1,8 +1,22 @@
-import { FC } from "react";
-import { Container, Heading, Text } from "@chakra-ui/react";
-import ItemsListIndex from "./itemsListIndex";
+import { FC, useEffect } from "react";
+import { Container, Heading, VStack } from "@chakra-ui/react";
+import RenderItemTag from "../common/rebderItemTag";
+import RebderItem from "../common/renderItem";
+import useItems from "../../hooks/useItems";
 
 const Home: FC = () => {
+  const {
+    getItemsTagListHandler,
+    getItemListHandler,
+    memorizeItemList,
+    memorizeTagList,
+  } = useItems();
+
+  useEffect(() => {
+    getItemsTagListHandler();
+    getItemListHandler();
+  }, []);
+
   return (
     <>
       <>
@@ -12,12 +26,11 @@ const Home: FC = () => {
             textAlign={{ base: "center", md: "justify" }}
           >
             Women's Vintage Clothing
-            <Text fontSize={"sm"} color="#887563" fontWeight="medium" mt={4}>
-              22,000 items
-            </Text>
           </Heading>
-
-          <ItemsListIndex />
+          <VStack align={"start"} mt={10}>
+            <RenderItemTag tagList={memorizeTagList} />
+            <RebderItem itemList={memorizeItemList} />
+          </VStack>
         </Container>
       </>
     </>

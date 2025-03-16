@@ -1,107 +1,52 @@
-import { FC, useState, useEffect } from "react";
-import {
-  Tabs,
-  TabList,
-  Tab,
-  TabPanels,
-  TabPanel,
-  HStack,
-  Avatar,
-  VStack,
-  Text,
-} from "@chakra-ui/react";
-import { followListType, renderTabPanelType } from "../../types/listTye";
-import { useNavigate } from "react-router-dom";
-import { route } from "../../route/routeConst";
-
-const RenderTabPanel: FC<renderTabPanelType> = ({ data }) => {
-  const navigate = useNavigate();
-  const userPageTransition = () => {
-    navigate(route.shopPage);
-  };
-
-  return (
-    <>
-      <TabPanel>
-        <VStack align={"start"}>
-          {data.map((list, index) => {
-            return (
-              <>
-                <HStack
-                  key={index}
-                  onClick={userPageTransition}
-                  _hover={{
-                    bgColor: "#f4f2f0",
-                    transition: "background-color 0.3s ease",
-                  }}
-                  w={"full"}
-                  px={2}
-                  py={2}
-                >
-                  <Avatar src={list.icon} />
-                  <VStack align={"start"} ml={4}>
-                    <Text>{list.name}</Text>
-                    <Text size={"sm"} color={"#887563"}>
-                      商品数:{list.itemNumber}
-                    </Text>
-                  </VStack>
-                </HStack>
-              </>
-            );
-          })}
-        </VStack>
-      </TabPanel>
-    </>
-  );
-};
+import { FC, useState } from "react";
+import { Tabs, TabList, Tab, TabPanels, TabPanel } from "@chakra-ui/react";
+import RenderTabPanel from "./renderPanel";
+import useListing from "../../hooks/useUsers";
+import SearchForm from "../common/searchForm";
+import { useLocation } from "react-router-dom";
 
 const ListingsIndex: FC = () => {
-  const [followLists, setFollowList] = useState<followListType[]>([]);
-  const [followersList, setFollowersList] = useState<followListType[]>([]);
+  const pathname = useLocation().pathname;
+  const {
+    memorizeFollowLists,
+    memorizeFollowersLists,
+    memorizeUserList,
+    memorizeTagList,
+    memorizeSelectedTag,
+  } = useListing();
 
-  useEffect(() => {
-    const folletListData = [
-      {
-        id: 1,
-        name: "名前 1",
-        itemNumber: 10,
-        icon: "https://cdn.usegalileo.ai/sdxl10/014920d7-e0b4-4ffa-823a-811dd0d3cdbc.png",
-      },
-      {
-        id: 2,
-        name: "名前 2",
-        itemNumber: 20,
-        icon: "https://cdn.usegalileo.ai/sdxl10/014920d7-e0b4-4ffa-823a-811dd0d3cdbc.png",
-      },
-    ];
-
-    const folleertListData = [
-      {
-        id: 3,
-        name: "名前 3",
-        itemNumber: 30,
-        icon: "https://cdn.usegalileo.ai/sdxl10/014920d7-e0b4-4ffa-823a-811dd0d3cdbc.png",
-      },
-    ];
-
-    setFollowList(folletListData);
-    setFollowersList(folleertListData);
-  }, []);
+  const [userSearchHidden, setUserSearchHidden] = useState<boolean>(true);
 
   return (
     <>
+      <SearchForm
+        hidden={!userSearchHidden}
+        tagList={memorizeTagList}
+        selectedTag={memorizeSelectedTag}
+        route={pathname}
+      />
       <Tabs mt={10} colorScheme="teal">
         <TabList>
-          <Tab width={"50%"}>フォロー</Tab>
-          <Tab width={"50%"}>フォロワー</Tab>
+          <Tab width={"50%"} onClick={() => setUserSearchHidden(true)}>
+            ユーザー
+          </Tab>
+          <Tab width={"50%"} onClick={() => setUserSearchHidden(false)}>
+            フォロー
+          </Tab>
+          <Tab width={"50%"} onClick={() => setUserSearchHidden(false)}>
+            フォロワー
+          </Tab>
         </TabList>
 
         <TabPanels>
           <TabPanel>
-            <RenderTabPanel data={followLists} />
+            <RenderTabPanel data={memorizeUserList} />
           </TabPanel>
           <TabPanel>
-            <RenderTabPanel data={followersList} />
+            <RenderTabPanel data={memorizeFollowLists} />
+          </TabPanel>
+          <TabPanel>
+            <RenderTabPanel data={memorizeFollowersLists} />
           </TabPanel>
         </TabPanels>
       </Tabs>
