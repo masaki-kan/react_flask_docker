@@ -108,11 +108,19 @@ const ProfileForm: FC<ProfileIndexProps> = ({
           />
           <FormControl>
             <FormLabel>名前</FormLabel>
-            <Input placeholder="名前を入力" value={profileData.name} />
+            <Input
+              placeholder="名前を入力"
+              value={profileData.name}
+              onChange={() => {}}
+            />
           </FormControl>
           <FormControl>
             <FormLabel>地域</FormLabel>
-            <Input placeholder="大阪" value={profileData.location} />
+            <Input
+              placeholder="大阪"
+              value={profileData.location}
+              onChange={() => {}}
+            />
           </FormControl>
           <FormControl>
             <FormLabel>年代</FormLabel>
@@ -121,6 +129,7 @@ const ProfileForm: FC<ProfileIndexProps> = ({
               required
               w={"full"}
               value={profileData.old}
+              onChange={() => {}}
             >
               <option value="20">20代</option>
               <option value="30">30代</option>
@@ -170,11 +179,19 @@ const ProfileForm: FC<ProfileIndexProps> = ({
         <VStack align={"start"} width={"100%"}>
           <FormControl>
             <FormLabel>お気に入りの店</FormLabel>
-            <Input placeholder="" value={profileData.favoriteShop.name} />
+            <Input
+              placeholder=""
+              value={profileData.favoriteShop.name}
+              onChange={() => {}}
+            />
           </FormControl>
           <FormControl>
             <FormLabel>お気に入りの店情報 URL</FormLabel>
-            <Input placeholder="" value={profileData.favoriteShop.url} />
+            <Input
+              placeholder=""
+              value={profileData.favoriteShop.url}
+              onChange={() => {}}
+            />
           </FormControl>
         </VStack>
       </Stack>
@@ -188,7 +205,7 @@ const ProfileForm: FC<ProfileIndexProps> = ({
         <VStack align={"start"} width={"100%"}>
           <FormControl>
             <FormLabel>古着歴</FormLabel>
-            <NumberInput value={profileData.age}>
+            <NumberInput value={profileData.age} onChange={() => {}}>
               <NumberInputField />
               <NumberInputStepper>
                 <NumberIncrementStepper />
@@ -208,7 +225,11 @@ const ProfileForm: FC<ProfileIndexProps> = ({
         <VStack align={"start"} width={"100%"}>
           <FormControl>
             <FormLabel>お気に入りの店情報</FormLabel>
-            <Textarea placeholder="" value={profileData.reasen} />
+            <Textarea
+              placeholder=""
+              value={profileData.reasen}
+              onChange={() => {}}
+            />
           </FormControl>
         </VStack>
       </Stack>
