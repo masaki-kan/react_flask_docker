@@ -84,7 +84,7 @@ const useItems = (): userItemsReturn => {
   const getItemListHandler = () => {
     const itemListData = [
       {
-        itemName: "Vintage 70s Navy Blue Wool Coat",
+        itemName: "Vintage 70s Navy Blue Wool Coa ",
         price: 8500,
         currency: "¥",
         image:

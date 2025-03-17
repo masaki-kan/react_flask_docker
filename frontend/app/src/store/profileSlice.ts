@@ -7,12 +7,16 @@ type initialStateType = {
 const initialState: initialStateType = {
   profile: {
     image: "",
+    name: "",
+    location: "",
     old: 0,
+    age: 0,
     tag: [],
     favoriteShop: {
       name: "",
       url: "",
     },
+    reasen: "",
   },
 };
 

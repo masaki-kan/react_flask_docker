@@ -8,7 +8,7 @@ import {
   Tag,
   TagLabel,
   TagCloseButton,
-  Flex,
+  Wrap,
 } from "@chakra-ui/react";
 import useUsers from "../../hooks/useUsers";
 import useItems from "../../hooks/useItems";
@@ -127,15 +127,15 @@ const SearchForm: FC<SearchFormProps> = React.memo(
         >
           {selectedTag.map((tag, index) => {
             return (
-              <Tag key={index} mx={2}>
-                <TagLabel> {tag.name}</TagLabel>
+              <Tag key={index} mx={2} mb={2}>
+                <TagLabel>{tag.name}</TagLabel>
                 <TagCloseButton onClick={() => removeTagHandler(index)} />
               </Tag>
             );
           })}
         </Box>
 
-        <Flex gap="2">
+        <Wrap gap="2">
           {tagList.map((tag, index) => (
             <Tag
               size="lg"
@@ -148,7 +148,7 @@ const SearchForm: FC<SearchFormProps> = React.memo(
               <TagLabel>{tag.name}</TagLabel>
             </Tag>
           ))}
-        </Flex>
+        </Wrap>
       </VStack>
     );
   }

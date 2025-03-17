@@ -1,4 +1,4 @@
-import { ChangeEvent, KeyboardEvent, useState, useRef } from "react";
+import { ChangeEvent, KeyboardEvent, useState, useRef, FC } from "react";
 import {
   Stack,
   Avatar,
@@ -12,7 +12,6 @@ import {
   Button,
   TagLabel,
   TagCloseButton,
-  Image,
   NumberInput,
   NumberInputField,
   NumberInputStepper,
@@ -24,12 +23,20 @@ import { HiOutlineMailOpen } from "react-icons/hi";
 import { MdOutlineCategory } from "react-icons/md";
 import { FaHistory, FaUpload } from "react-icons/fa";
 import { GiThink } from "react-icons/gi";
+import { profileType } from "../../types/profile";
 
-const ProfileForm = () => {
+type ProfileIndexProps = {
+  profileData: profileType;
+  formSwitchEvent: () => void;
+};
+
+const ProfileForm: FC<ProfileIndexProps> = ({
+  profileData,
+  formSwitchEvent,
+}) => {
   const imageInputRef = useRef<HTMLInputElement>(null);
-  const [tags, setTags] = useState(["Tag 1", "Tag 2"]); // 初期タグ
-  const [image, setImage] = useState<string>("");
-  const [imageURL, setImageURL] = useState<string>("");
+  const [tags, setTags] = useState(profileData.tag); // 初期タグ
+  const [imageURL, setImageURL] = useState<string>(profileData.image);
   const [inputValue, setInputValue] = useState<string>("");
 
   // 新しいタグを追加するハンドラ
@@ -55,19 +62,18 @@ const ProfileForm = () => {
 
   // 画像ファイルが選択されたときのハンドラー
   const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
-    console.log("ok");
     if (e.target.files === null) return;
 
     const file = e.target.files[0];
     if (file) {
       const reader = new FileReader();
       reader.onload = (loadEvent) => {
-        if (loadEvent.target === null) return;
-
-        setImageURL(loadEvent.target.result);
+        const result = loadEvent.target?.result;
+        if (typeof result === "string") {
+          setImageURL(result);
+        }
       };
       reader.readAsDataURL(file);
-      setImage(file);
     }
   };
 
@@ -79,12 +85,7 @@ const ProfileForm = () => {
         spacing={4}
         width={"full"}
       >
-        <Avatar
-          size={"xl"}
-          mr={4}
-          name={"my name"}
-          src="https://cdn.usegalileo.ai/sdxl10/014920d7-e0b4-4ffa-823a-811dd0d3cdbc.png"
-        />
+        <Avatar size={"xl"} mr={4} name={"my name"} src={imageURL} />
         <VStack align={"start"} width={"100%"}>
           <FormLabel>プロフィール画像</FormLabel>
           <FormLabel cursor="pointer">
@@ -105,26 +106,22 @@ const ProfileForm = () => {
             onChange={handleImageChange}
             hidden
           />
-          {/* {imageURL && (
-            <Image
-              src={imageURL}
-              alt="プロフィール画像"
-              boxSize="150px"
-              objectFit="cover"
-              marginTop="4"
-            />
-          )} */}
           <FormControl>
             <FormLabel>名前</FormLabel>
-            <Input placeholder="名前を入力" />
+            <Input placeholder="名前を入力" value={profileData.name} />
           </FormControl>
           <FormControl>
             <FormLabel>地域</FormLabel>
-            <Input placeholder="大阪" />
+            <Input placeholder="大阪" value={profileData.location} />
           </FormControl>
           <FormControl>
             <FormLabel>年代</FormLabel>
-            <Select placeholder="年代を選択" required w={"full"}>
+            <Select
+              placeholder="年代を選択"
+              required
+              w={"full"}
+              value={profileData.old}
+            >
               <option value="20">20代</option>
               <option value="30">30代</option>
               <option value="40">40代以上</option>
@@ -172,8 +169,12 @@ const ProfileForm = () => {
         <Avatar icon={<HiOutlineMailOpen />} size={"xl"} mr={4} />
         <VStack align={"start"} width={"100%"}>
           <FormControl>
-            <FormLabel>お気に入りの店情報</FormLabel>
-            <Input placeholder="" />
+            <FormLabel>お気に入りの店</FormLabel>
+            <Input placeholder="" value={profileData.favoriteShop.name} />
+          </FormControl>
+          <FormControl>
+            <FormLabel>お気に入りの店情報 URL</FormLabel>
+            <Input placeholder="" value={profileData.favoriteShop.url} />
           </FormControl>
         </VStack>
       </Stack>
@@ -187,7 +188,7 @@ const ProfileForm = () => {
         <VStack align={"start"} width={"100%"}>
           <FormControl>
             <FormLabel>古着歴</FormLabel>
-            <NumberInput>
+            <NumberInput value={profileData.age}>
               <NumberInputField />
               <NumberInputStepper>
                 <NumberIncrementStepper />
@@ -207,12 +208,12 @@ const ProfileForm = () => {
         <VStack align={"start"} width={"100%"}>
           <FormControl>
             <FormLabel>お気に入りの店情報</FormLabel>
-            <Textarea placeholder="" />
+            <Textarea placeholder="" value={profileData.reasen} />
           </FormControl>
         </VStack>
       </Stack>
 
-      <Button mt={4} colorScheme="blue" type="submit">
+      <Button mt={4} colorScheme="blue" type="submit" onClick={formSwitchEvent}>
         更新
       </Button>
     </>

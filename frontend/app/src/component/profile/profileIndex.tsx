@@ -7,16 +7,21 @@ import {
   Stack,
   Tag,
   Wrap,
+  Link,
 } from "@chakra-ui/react";
-// import { AiOutlineUser } from "react-icons/ai";
 import { RiLogoutBoxRLine } from "react-icons/ri";
 import { GiThink } from "react-icons/gi";
 import { FaHistory } from "react-icons/fa";
 import { HiOutlineMailOpen } from "react-icons/hi";
 import useLog from "../../hooks/useLog";
 import { MdOutlineCategory } from "react-icons/md";
+import { profileType } from "../../types/profile";
 
-const ProfileIndex: FC = () => {
+type ProfileIndexProps = {
+  profileData: profileType;
+};
+
+const ProfileIndex: FC<ProfileIndexProps> = ({ profileData }) => {
   const { logOutHandler } = useLog();
 
   return (
@@ -27,22 +32,14 @@ const ProfileIndex: FC = () => {
         spacing={4}
         width={"full"}
       >
-        <Avatar
-          size={"xl"}
-          mr={4}
-          name={"my name"}
-          src="https://cdn.usegalileo.ai/sdxl10/014920d7-e0b4-4ffa-823a-811dd0d3cdbc.png"
-        />
+        <Avatar size={"xl"} mr={4} name={"my name"} src={profileData.image} />
         <VStack align={"start"}>
-          <Text size={"sm"}>Personal Information</Text>
+          <Text size={"sm"}>{profileData.name}</Text>
           <Text size={"sm"} color={"#887563"}>
-            Location: 大阪
+            Location: {profileData.location}
           </Text>
           <Text size={"sm"} color={"#887563"}>
-            Age: 30
-          </Text>
-          <Text size={"sm"} color={"#887563"}>
-            年代: 30代
+            年代: {profileData.old}代
           </Text>
         </VStack>
       </Stack>
@@ -55,10 +52,10 @@ const ProfileIndex: FC = () => {
         <Avatar icon={<MdOutlineCategory />} size={"xl"} mr={4} />
         <VStack align={"start"}>
           <Text size={"sm"}>好きなジャンル</Text>
-
           <Wrap gap={2}>
-            <Tag>Tag 1</Tag>
-            <Tag>Tag 2</Tag>
+            {profileData.tag.map((tag, index) => {
+              return <Tag key={index}>{tag}</Tag>;
+            })}
           </Wrap>
         </VStack>
       </Stack>
@@ -69,11 +66,26 @@ const ProfileIndex: FC = () => {
         width={"full"}
       >
         <Avatar icon={<HiOutlineMailOpen />} size={"xl"} mr={4} />
-        <VStack align={"start"}>
-          <Text size={"sm"}>お気に入りお店</Text>
-          <Text size={"sm"} color={"#887563"}>
-            ×××××××××××_××××××
-          </Text>
+        <VStack align={"start"} spacing={2}>
+          <VStack align={"start"} spacing={2}>
+            <Text size={"sm"}>お気に入りお店</Text>
+            <Text size={"sm"} color={"#887563"}>
+              {profileData.favoriteShop.name}
+            </Text>
+          </VStack>
+          <VStack align={"start"} spacing={2}>
+            <Text size={"sm"}>お気に入りお店 URL</Text>
+            <Text size={"sm"} color={"#887563"}>
+              <Link
+                href={profileData.favoriteShop.url}
+                isExternal
+                display={"flex"}
+                alignItems={"center"}
+              >
+                {profileData.favoriteShop.url}
+              </Link>
+            </Text>
+          </VStack>
         </VStack>
       </Stack>
 
@@ -87,7 +99,7 @@ const ProfileIndex: FC = () => {
           <Text size={"sm"}>古着歴</Text>
 
           <Text size={"sm"} color={"#887563"}>
-            ２年
+            {profileData.age}年
           </Text>
         </VStack>
       </Stack>
@@ -102,7 +114,7 @@ const ProfileIndex: FC = () => {
           <Text size={"sm"}>古着にハマったきっかけ</Text>
 
           <Text size={"sm"} color={"#887563"}>
-            〇〇〇〇〇〇〇〇〇〇〇〇〇〇〇〇〇〇
+            {profileData.reasen}
           </Text>
         </VStack>
       </Stack>
