@@ -7,6 +7,7 @@ import SecureLayout from "./component/layout/secureLayout";
 import { route } from "./route/routeConst";
 import ListingsHome from "./component/listing/home";
 import ShopPageHome from "./component/shop/home";
+import BusinessHome from "./component/business/home";
 import ItemsHome from "./component/items/home";
 import { Provider } from "react-redux";
 import store from "./store";
@@ -27,6 +28,7 @@ function App() {
               <Route path={route.users} element={<ListingsHome />} />
               <Route path={route.Items} element={<ItemsHome />} />
               <Route path={route.shopPage} element={<ShopPageHome />} />
+              <Route path={route.business} element={<BusinessHome />} />
               {/* 他の公開ページもここに追加できます */}
             </Route>
             <Route path="*" element={<h1>Not Found Page</h1>} />

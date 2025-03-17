@@ -16,9 +16,9 @@ export const menuLists = [
     route: route.Items,
   },
   {
-    text: "Saved",
+    text: "Business",
     icon: CiHeart,
-    route: route.saved,
+    route: route.business,
   },
 ];
 
