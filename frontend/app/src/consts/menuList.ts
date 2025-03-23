@@ -13,10 +13,10 @@ export const menuLists = [
   {
     text: "Items",
     icon: TbCreditCardPay,
-    route: route.Items,
+    route: route.items,
   },
   {
-    text: "Business",
+    text: "Saved",
     icon: CiHeart,
     route: route.business,
   },

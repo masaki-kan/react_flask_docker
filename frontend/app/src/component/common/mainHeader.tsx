@@ -6,10 +6,11 @@ const MainHeader: FC = () => {
   return (
     <Box
       display={{ base: "block", md: "flex" }}
-      position={"fixed"}
+      position="fixed"
+      w="100%"
+      zIndex="sticky"
       top={0}
       background={"white"}
-      zIndex={1}
       width={"full"}
       alignItems="center"
       gap="8"

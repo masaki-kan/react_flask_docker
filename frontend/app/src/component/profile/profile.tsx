@@ -5,6 +5,8 @@ import { Icon, Stack, Tooltip, VStack } from "@chakra-ui/react";
 import { CiEdit } from "react-icons/ci";
 import useMyProfile from "../../hooks/useMyProfile";
 
+import LogOut from "../common/logOut";
+
 const Profile: FC = () => {
   const { memorizeProfile, getMyProfile } = useMyProfile();
   const [editSwitch, setEditSwitch] = useState<boolean>(false);
@@ -18,24 +20,24 @@ const Profile: FC = () => {
   }, [getMyProfile]);
 
   return (
-    <VStack
-      align={"start"}
-      ml={{ base: 0, md: 8 }}
-      gap={9}
-      w={{ base: "100%", md: "50%" }}
-    >
+    <VStack align={"start"} gap={9} w={"100%"}>
       <Stack align={"end"} width={"full"}>
-        <Tooltip label={"編集"}>
+        <Tooltip label={"プロフィール編集"}>
           <Icon as={CiEdit} w={8} h={8} onClick={editFormSwitchHandler} />
         </Tooltip>
       </Stack>
+
       {editSwitch ? (
         <ProfileForm
-          profileData={memorizeProfile}
+          profileData={memorizeProfile.profile}
           formSwitchEvent={editFormSwitchHandler}
         />
       ) : (
-        <ProfileIndex profileData={memorizeProfile} />
+        <>
+          <ProfileIndex profileData={memorizeProfile.profile} />
+
+          <LogOut />
+        </>
       )}
     </VStack>
   );

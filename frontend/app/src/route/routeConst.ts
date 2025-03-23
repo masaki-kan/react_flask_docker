@@ -2,10 +2,11 @@ export const route = {
   home: "/",
   login: "/login",
   users: "/users",
-  Items: "/Items",
+  items: "/items",
   business: "/business",
   messages: "/messages",
-  purchases: "/purchases",
+  myItem: "/my_item",
+  myItemEdit: "/my_item/edit",
   shopPage: "/shop_page",
   profile: "/",
 };

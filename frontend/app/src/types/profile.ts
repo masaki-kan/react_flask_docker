@@ -4,7 +4,7 @@ export interface profileType {
   location: string;
   old: number;
   age: number;
-  tag: string[];
+  tag: { tagKey: string; tagName: string }[];
   favoriteShop: {
     name: string;
     url: string;

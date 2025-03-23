@@ -38,7 +38,11 @@ const Home: FC = () => {
           route={pathname}
           selectedTag={memorizeSelectedTag}
         />
-        <RebderItem itemList={memorizeItemList} />
+        <RebderItem
+          itemList={memorizeItemList}
+          avatar={false}
+          navigate={() => {}}
+        />
       </VStack>
     </Container>
   );

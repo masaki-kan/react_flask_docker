@@ -85,6 +85,7 @@ const useItems = (): userItemsReturn => {
     const itemListData = [
       {
         itemName: "Vintage 70s Navy Blue Wool Coa ",
+        description: "",
         price: 8500,
         currency: "¥",
         image:
@@ -94,12 +95,14 @@ const useItems = (): userItemsReturn => {
         itemName: "Vintage 90s Black &amp; White Striped Tee",
         price: 5000,
         currency: "¥",
+        description: "",
         image:
           "https://cdn.usegalileo.ai/sdxl10/4f6e9eb1-9d0e-4435-9600-d63646766c03.png",
       },
       {
         itemName: "Vintage 80s Red &amp; White Polka Dot Skirt",
         price: 6000,
+        description: "",
         currency: "¥",
         image:
           "https://cdn.usegalileo.ai/sdxl10/5b42b424-7e9e-4709-9c27-36575d515b37.png",
@@ -107,6 +110,7 @@ const useItems = (): userItemsReturn => {
       {
         itemName: "Vintage 90s Grunge Plaid Flannel Shirt",
         price: 9000,
+        description: "",
         currency: "¥",
         image:
           "https://cdn.usegalileo.ai/sdxl10/783d7af6-179e-4116-a3b6-0fdd9ad99bcc.png",
@@ -114,17 +118,18 @@ const useItems = (): userItemsReturn => {
       {
         itemName: "Vintage 60s Boho Embroidered Blouse",
         price: 10000,
+        description: "",
         currency: "¥",
         image:
           "https://cdn.usegalileo.ai/sdxl10/764d360f-7916-4467-8d3f-efd16e94bcd2.png",
       },
-      {
-        itemName: "Vintage 70s Hippie Bell Bottom Jeans",
-        price: 11000,
-        currency: "¥",
-        image:
-          "https://cdn.usegalileo.ai/sdxl10/60035669-fbc5-418e-91b7-48ed506344ba.png",
-      },
+      // {
+      //   itemName: "Vintage 70s Hippie Bell Bottom Jeans",
+      //   price: 11000,
+      //   currency: "¥",
+      //   image:
+      //     "https://cdn.usegalileo.ai/sdxl10/60035669-fbc5-418e-91b7-48ed506344ba.png",
+      // },
     ];
 
     dispatch(setItemsList(itemListData));

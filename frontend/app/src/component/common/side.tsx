@@ -31,7 +31,8 @@ const Side: FC = () => {
   return (
     <>
       <Box
-        position={"fixed"}
+        position="fixed"
+        top={{ md: "6em" }}
         onClick={onOpen}
         marginLeft={{ base: 4, md: 10 }}
         marginTop={{ base: 2, md: 2 }}

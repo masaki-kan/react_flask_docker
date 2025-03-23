@@ -1,8 +1,10 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { profileType } from "../types/profile";
+import { itemListType } from "../types/item";
 
 type initialStateType = {
   profile: profileType;
+  items: itemListType[];
 };
 const initialState: initialStateType = {
   profile: {
@@ -18,14 +20,19 @@ const initialState: initialStateType = {
     },
     reasen: "",
   },
+  items: [],
 };
 
 export const profileSlice = createSlice({
   name: "listing",
   initialState,
   reducers: {
-    setProfile: (state, action: PayloadAction<profileType>) => {
-      state.profile = action.payload;
+    setProfile: (
+      state,
+      action: PayloadAction<{ profile: profileType; items: itemListType[] }>
+    ) => {
+      state.profile = action.payload.profile;
+      state.items = action.payload.items;
     },
   },
 });

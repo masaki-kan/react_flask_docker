@@ -29,7 +29,7 @@ const Home: FC = () => {
           </Heading>
           <VStack align={"start"} mt={10}>
             <RenderItemTag tagList={memorizeTagList} />
-            <RebderItem itemList={memorizeItemList} />
+            <RebderItem itemList={memorizeItemList} navigate={() => {}} />
           </VStack>
         </Container>
       </>
