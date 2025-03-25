@@ -34,9 +34,16 @@ export const profileSlice = createSlice({
       state.profile = action.payload.profile;
       state.items = action.payload.items;
     },
+    setUserProfile: (
+      state,
+      action: PayloadAction<{ profile: profileType; items: itemListType[] }>
+    ) => {
+      state.profile = action.payload.profile;
+      state.items = action.payload.items;
+    },
   },
 });
 
-export const { setProfile } = profileSlice.actions;
+export const { setProfile, setUserProfile } = profileSlice.actions;
 
 export default profileSlice.reducer;

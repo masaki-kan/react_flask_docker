@@ -1,7 +1,7 @@
-import { Container, Heading, VStack } from "@chakra-ui/react";
+import { Heading, VStack } from "@chakra-ui/react";
 import { FC, useEffect } from "react";
-import SearchForm from "../common/searchForm";
-import RebderItem from "../common/renderItem";
+import SearchForm from "../common/form/searchForm";
+import RebderItem from "../common/render/renderItem";
 import useItems from "../../hooks/useItems";
 import { useLocation } from "react-router-dom";
 
@@ -22,7 +22,7 @@ const Home: FC = () => {
   }, []);
 
   return (
-    <Container maxW="container.xl">
+    <>
       <Heading
         pl={{ md: 4, base: 0 }}
         mb={10}
@@ -44,7 +44,7 @@ const Home: FC = () => {
           navigate={() => {}}
         />
       </VStack>
-    </Container>
+    </>
   );
 };
 

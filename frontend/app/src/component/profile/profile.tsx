@@ -3,9 +3,9 @@ import ProfileIndex from "./profileIndex";
 import ProfileForm from "./profileForm";
 import { Icon, Stack, Tooltip, VStack } from "@chakra-ui/react";
 import { CiEdit } from "react-icons/ci";
-import useMyProfile from "../../hooks/useMyProfile";
+import useMyProfile from "../../hooks/useProfile";
 
-import LogOut from "../common/logOut";
+import LogOut from "../common/layout/logOut";
 
 const Profile: FC = () => {
   const { memorizeProfile, getMyProfile } = useMyProfile();
@@ -35,7 +35,6 @@ const Profile: FC = () => {
       ) : (
         <>
           <ProfileIndex profileData={memorizeProfile.profile} />
-
           <LogOut />
         </>
       )}

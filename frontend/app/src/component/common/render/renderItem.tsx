@@ -1,11 +1,11 @@
 import React, { FC } from "react";
 import { motion } from "framer-motion";
 import { Grid, Image, Text, Card, Avatar, HStack } from "@chakra-ui/react";
-import { itemListType } from "../../types/item";
+import { itemListType } from "../../../types/item";
 
 type RebderItemProps = {
   itemList: itemListType[];
-  navigate: () => void;
+  navigate: (index: number) => void;
   avatar?: boolean;
 };
 
@@ -49,7 +49,7 @@ const RebderItem: FC<RebderItemProps> = React.memo(
 
             <Image
               cursor={"pointer"}
-              src={product.image}
+              src={product.image[0]}
               alt={""}
               w="full"
               h="auto"
@@ -57,10 +57,10 @@ const RebderItem: FC<RebderItemProps> = React.memo(
               bgRepeat="no-repeat"
               bgSize="cover"
               borderRadius="md"
-              onClick={navigate}
+              onClick={() => navigate(index)}
             />
             <Text color="#181411" fontSize="base" fontWeight="medium">
-              {product.itemName}
+              {product.title}
             </Text>
 
             <Text color="#887563" fontSize="md" fontWeight="normal">

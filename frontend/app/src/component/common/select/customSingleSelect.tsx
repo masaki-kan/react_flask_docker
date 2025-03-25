@@ -1,13 +1,13 @@
 import { FC, KeyboardEvent } from "react";
 import Select, { SingleValue } from "react-select";
 import makeAnimated from "react-select/animated";
-import { genres } from "../../consts/profileGenreConsts";
+import { genres } from "../../../consts/profileGenreConsts";
 
 const animatedComponents = makeAnimated();
 
 type CustomSelectProps = {
-  tags: { tagKey: string; tagName: string };
-  onChange: (newTags: { tagKey: string; tagName: string }) => void; // 型を更新
+  tags: { key: string; name: string };
+  onChange: (newTags: { key: string; name: string }) => void; // 型を更新
   onKeyDown?: (event: KeyboardEvent<HTMLInputElement>) => void;
 };
 const CustomSingleSelect: FC<CustomSelectProps> = ({
@@ -19,13 +19,13 @@ const CustomSingleSelect: FC<CustomSelectProps> = ({
     value: genre.brandKey.toString(),
     label: genre.brandName,
   }));
-  const value = { value: tags.tagKey, label: tags.tagName };
+  const value = { value: tags.key, label: tags.name };
 
   const handleInputChange = (
     newValue: SingleValue<{ value: string; label: string }>
   ) => {
     if (newValue) {
-      const newTag = { tagKey: newValue.value, tagName: newValue.label };
+      const newTag = { key: newValue.value, name: newValue.label };
       onChange(newTag);
     }
   };

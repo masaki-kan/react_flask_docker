@@ -1,8 +1,8 @@
 import { FC } from "react";
-import MainHeader from "../common/mainHeader";
-import Side from "../common/side";
+import MainHeader from "../common/layout/mainHeader";
+import Side from "../common/layout/side";
 import { Outlet } from "react-router-dom";
-import { Box, Flex } from "@chakra-ui/react";
+import { Box, Container, Flex } from "@chakra-ui/react";
 
 const SecureLayout: FC = () => {
   return (
@@ -16,7 +16,9 @@ const SecureLayout: FC = () => {
           pb={10}
           flex="1"
         >
-          <Outlet />
+          <Container maxW="container.xl">
+            <Outlet />
+          </Container>
         </Box>
       </Flex>
     </>

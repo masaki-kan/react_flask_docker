@@ -2,7 +2,7 @@ import { FC, useState } from "react";
 import { Tabs, TabList, Tab, TabPanels, TabPanel } from "@chakra-ui/react";
 import RenderTabPanel from "./renderPanel";
 import useListing from "../../hooks/useUsers";
-import SearchForm from "../common/searchForm";
+import SearchForm from "../common/form/searchForm";
 import { useLocation } from "react-router-dom";
 
 const ListingsIndex: FC = () => {

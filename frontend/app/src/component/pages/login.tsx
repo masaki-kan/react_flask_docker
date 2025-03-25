@@ -1,5 +1,5 @@
 import { type FC, useCallback, useState } from "react";
-import Header from "../common/header";
+import Header from "../common/layout/header";
 import InputForm from "../login/inputForm";
 import SingUpForm from "../login/singUpForm";
 

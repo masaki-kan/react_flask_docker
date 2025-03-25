@@ -1,21 +1,18 @@
 import { type FC } from "react";
-import { Container } from "@chakra-ui/react";
 import { Heading } from "@chakra-ui/react";
-import MyItemIndex from "./myItemIndex";
+import ItemForm from "../common/form/itemForm";
 
 const Home: FC = () => {
   return (
     <>
-      <Container maxW="container.xl">
-        <Heading
-          pl={{ md: 4, base: 0 }}
-          mb={10}
-          textAlign={{ base: "center", md: "justify" }}
-        >
-          Register New Item
-        </Heading>
-        <MyItemIndex />
-      </Container>
+      <Heading
+        pl={{ md: 4, base: 0 }}
+        mb={10}
+        textAlign={{ base: "center", md: "justify" }}
+      >
+        Register New Item
+      </Heading>
+      <ItemForm />
     </>
   );
 };

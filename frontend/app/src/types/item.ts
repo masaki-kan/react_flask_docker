@@ -1,9 +1,18 @@
 export interface itemListType {
-  itemName: string;
+  title: string;
   price: number;
   currency: string;
   description: string;
-  type: { typeKey: number; typeName: string };
-  brand: { brandKey: number; brandName: string };
-  image: string;
+  type: { key: string; name: string };
+  brand: { key: string; name: string };
+  image: string[];
+}
+
+export interface itemDetailType {
+  title: string;
+  price: number;
+  description: string;
+  type: { key: string; name: string };
+  brand: { key: string; name: string };
+  image: string[];
 }

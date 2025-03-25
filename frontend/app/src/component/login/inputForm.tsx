@@ -10,7 +10,7 @@ import {
 import { FC } from "react";
 import { route } from "../../route/routeConst";
 import { useNavigate } from "react-router-dom";
-import RenderButton from "../common/renderButton";
+import RenderButton from "../common/render/renderButton";
 
 const InputForm: FC = () => {
   const navigate = useNavigate();

@@ -10,10 +10,10 @@ import {
   TagCloseButton,
   Wrap,
 } from "@chakra-ui/react";
-import useUsers from "../../hooks/useUsers";
-import useItems from "../../hooks/useItems";
-import { tagType } from "../../types/listTye";
-import { route as routeName } from "../../route/routeConst";
+import useUsers from "../../../hooks/useUsers";
+import useItems from "../../../hooks/useItems";
+import { tagType } from "../../../types/listTye";
+import { route as routeName } from "../../../route/routeConst";
 
 type SearchFormProps = {
   hidden?: boolean;
@@ -49,7 +49,7 @@ const SearchForm: FC<SearchFormProps> = React.memo(
             userSelectedTagUpdateHandler(newArray);
             break;
 
-          case routeName.Items:
+          case routeName.items:
             itemTagUpdateHandler(index, "remove");
             itemSelectedTagUpdateHandler(newArray);
             break;
@@ -79,7 +79,7 @@ const SearchForm: FC<SearchFormProps> = React.memo(
             userSelectedTagUpdateHandler(fillteredTags);
             break;
 
-          case routeName.Items:
+          case routeName.items:
             itemTagUpdateHandler(index, "add");
             itemSelectedTagUpdateHandler(fillteredTags);
             break;

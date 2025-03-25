@@ -24,7 +24,7 @@ import {
 } from "@chakra-ui/react";
 import { FaUpload } from "react-icons/fa";
 import { profileType } from "../../types/profile";
-import CustomBrandsSelect from "../common/customMultipleSelect";
+import CustomBrandsSelect from "../common/select/customMultipleSelect";
 
 type ProfileIndexProps = {
   profileData: profileType;

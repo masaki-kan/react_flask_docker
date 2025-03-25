@@ -1,54 +1,84 @@
-import { ChangeEvent, FC, useCallback, useState } from "react";
 import {
-  VStack,
-  Input,
-  Textarea,
+  Box,
   Button,
-  Image,
   FormControl,
   FormLabel,
+  Input,
   NumberDecrementStepper,
   NumberIncrementStepper,
   NumberInput,
   NumberInputField,
   NumberInputStepper,
-  useToast,
-  Wrap,
-  Tooltip,
-  Box,
   Select,
+  Textarea,
+  Tooltip,
+  useToast,
+  VStack,
+  Wrap,
+  Image,
 } from "@chakra-ui/react";
-import { IoIosAdd } from "react-icons/io";
-import { CiTrash } from "react-icons/ci";
-import { route } from "../../route/routeConst";
+import { FC, useEffect, useState, useCallback, ChangeEvent } from "react";
 import { useNavigate } from "react-router-dom";
-import { genres } from "../../consts/profileGenreConsts";
-import { itemParts } from "../../consts/itemConsts";
-import CustomSingleSelect from "../common/customSingleSelect";
+import { CiTrash } from "react-icons/ci";
+import { IoIosAdd } from "react-icons/io";
+import { itemParts } from "../../../consts/itemConsts";
+import CustomSingleSelect from "../select/customSingleSelect";
+import { itemDetailType } from "../../../types/item";
+import { route } from "../../../route/routeConst";
 
-const MyItemIndex: FC = () => {
+type ItemFormProps = {
+  profileItem?: itemDetailType;
+};
+
+const ItemForm: FC<ItemFormProps> = ({ profileItem }) => {
   const navigate = useNavigate();
   const toast = useToast();
-  const [images, setImages] = useState<string[]>([
-    "https://cdn.usegalileo.ai/sdxl10/b7dd176c-c822-4e72-998e-9b1575310749.png",
-    "https://cdn.usegalileo.ai/sdxl10/4f6e9eb1-9d0e-4435-9600-d63646766c03.png",
-  ]);
+  const [images, setImages] = useState<string[]>([]);
   const [formValus, setFormValud] = useState<{
     title: string;
     description: string;
     imgs: string[];
     price: number;
-    type: { typeKey: string; typeName: string };
-    brand: { tagKey: string; tagName: string };
+    type: { key: string; name: string };
+    brand: { key: string; name: string };
   }>({
-    title: "Vintage 70s Navy Blue Wool Coa",
-    description:
-      "Vintage 70s Navy Blue Wool Coa  Vintage 70s Navy Blue Wool Coa ",
+    title: "",
+    description: "",
     imgs: [],
-    price: 8500,
-    type: { typeKey: "0", typeName: "シャツ" },
-    brand: { tagKey: genres[5].brandKey, tagName: genres[5].brandName },
+    type: { key: "", name: "" },
+    brand: { key: "", name: "" },
+    price: 0,
   });
+
+  useEffect(() => {
+    if (profileItem !== undefined) {
+      setFormValud((prev) => ({
+        ...prev,
+        title: profileItem.title,
+        description: profileItem.description,
+        imgs: profileItem.image,
+        price: profileItem.price,
+        type: profileItem.type,
+        brand: profileItem.brand,
+      }));
+
+      setImages(profileItem.image);
+    }
+  }, [profileItem]);
+
+  const handleRemoveImageHandler = useCallback(
+    (index: number) => {
+      setImages(images.filter((_, idx) => idx !== index));
+
+      toast({
+        title: "Photo removed",
+        status: "info",
+        duration: 2000,
+        isClosable: true,
+      });
+    },
+    [images, toast]
+  );
 
   const handleImageChangeHandler = useCallback(
     (e: ChangeEvent<HTMLInputElement>) => {
@@ -71,22 +101,9 @@ const MyItemIndex: FC = () => {
     },
     [images, toast]
   );
-  const handleRemoveImageHandler = useCallback(
-    (index: number) => {
-      setImages(images.filter((_, idx) => idx !== index));
-
-      toast({
-        title: "Photo removed",
-        status: "info",
-        duration: 2000,
-        isClosable: true,
-      });
-    },
-    [images, toast]
-  );
 
   const handleTagChange = useCallback(
-    (newTags: { tagKey: string; tagName: string }) => {
+    (newTags: { key: string; name: string }) => {
       setFormValud((prev) => ({
         ...prev,
         brand: newTags,
@@ -99,7 +116,13 @@ const MyItemIndex: FC = () => {
     // ここで内容保存処理
     // プロフィール戻る
     navigate(route.profile);
-  }, [navigate]);
+    toast({
+      title: "store success",
+      status: "success",
+      duration: 2000,
+      isClosable: true,
+    });
+  }, [navigate, toast]);
 
   return (
     <>
@@ -193,7 +216,7 @@ const MyItemIndex: FC = () => {
             placeholder="タイプを選択してください"
             required
             w={{ base: "100%", md: "50%" }}
-            value={formValus.type.typeKey}
+            value={formValus.type.key}
             onChange={() => {}}
           >
             {itemParts.map((part, index) => {
@@ -202,7 +225,7 @@ const MyItemIndex: FC = () => {
                   {part.typeName}
                 </option>
               );
-            })}
+            })}{" "}
           </Select>
         </FormControl>
 
@@ -218,7 +241,11 @@ const MyItemIndex: FC = () => {
 
         <FormControl>
           <FormLabel>Price (¥)</FormLabel>
-          <NumberInput value={formValus.price} onChange={() => {}} w={"50%"}>
+          <NumberInput
+            value={formValus.price}
+            onChange={() => {}}
+            w={{ base: "100%", md: "50%" }}
+          >
             <NumberInputField />
             <NumberInputStepper>
               <NumberIncrementStepper />
@@ -240,4 +267,4 @@ const MyItemIndex: FC = () => {
   );
 };
 
-export default MyItemIndex;
+export default ItemForm;

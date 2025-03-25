@@ -2,8 +2,8 @@ import { FC, useCallback, useEffect } from "react";
 import { Text, VStack, HStack, Button } from "@chakra-ui/react";
 
 import { MdOutlineShoppingBag } from "react-icons/md";
-import useMyProfile from "../../hooks/useMyProfile";
-import RebderItem from "../common/renderItem";
+import useMyProfile from "../../hooks/useProfile";
+import RebderItem from "../common/render/renderItem";
 import { useNavigate } from "react-router-dom";
 import { route } from "../../route/routeConst";
 
@@ -13,15 +13,18 @@ const MyItems: FC = () => {
 
   useEffect(() => {
     getMyProfile();
-  }, []);
+  }, [getMyProfile]);
 
   const toItemPushHandler = useCallback(() => {
     navigate(route.myItem);
   }, [navigate]);
 
-  const itemDetailHanlder = useCallback(() => {
-    navigate(route.myItemEdit);
-  }, [navigate]);
+  const itemDetailHanlder = useCallback(
+    (index: number) => {
+      navigate(`${route.myItemEdit}?userItem=${index}`);
+    },
+    [navigate]
+  );
 
   return (
     <VStack align={"start"} w={"full"}>

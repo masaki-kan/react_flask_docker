@@ -1,6 +1,6 @@
 import { type FC } from "react";
 import { Box, Heading, HStack } from "@chakra-ui/react";
-import RenderRouteLinks from "./routelinks";
+import RenderRouteLinks from "../navi/routelinks";
 
 const MainHeader: FC = () => {
   return (

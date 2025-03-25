@@ -11,6 +11,7 @@ import BusinessHome from "./component/business/home";
 import ItemsHome from "./component/items/home";
 import MyItemHome from "./component/myItem/home";
 import MyItemEditIndex from "./component/myItemEdit/home";
+import ItemDetailHome from "./component/itemDetail/home";
 import { Provider } from "react-redux";
 import store from "./store";
 
@@ -33,6 +34,7 @@ function App() {
               <Route path={route.business} element={<BusinessHome />} />
               <Route path={route.myItem} element={<MyItemHome />} />
               <Route path={route.myItemEdit} element={<MyItemEditIndex />} />
+              <Route path={route.itemDetail} element={<ItemDetailHome />} />
               {/* 他の公開ページもここに追加できます */}
             </Route>
             <Route path="*" element={<h1>Not Found Page</h1>} />

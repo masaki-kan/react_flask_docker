@@ -1,8 +1,8 @@
 import { FC } from "react";
 import { Avatar, HStack, Link } from "@chakra-ui/react";
-import { route } from "../../route/routeConst";
+import { route } from "../../../route/routeConst";
 import { useNavigate } from "react-router-dom";
-import { menuLists } from "../../consts/menuList";
+import { menuLists } from "../../../consts/menuList";
 
 const RenderRouteLinks: FC = () => {
   const navigate = useNavigate();

@@ -3,6 +3,7 @@ export const route = {
   login: "/login",
   users: "/users",
   items: "/items",
+  itemDetail: "/user/item",
   business: "/business",
   messages: "/messages",
   myItem: "/my_item",
