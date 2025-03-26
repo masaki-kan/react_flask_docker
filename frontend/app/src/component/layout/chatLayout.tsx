@@ -1,56 +1,54 @@
-import { ChangeEvent, FC, useCallback, useState } from "react";
+import { ChangeEvent, FC, KeyboardEvent, useState } from "react";
 import MainHeader from "../common/layout/mainHeader";
 import Side from "../common/layout/side";
-// import "react-chat-elements/dist/main.css";
-// import {
-//   MessageList,
-//   Input,
-//   //   type MessageType,
-// } from "react-chat-elements";
-
-import { Card, Container, Flex, HStack } from "@chakra-ui/react";
+import {
+  Input,
+  Button,
+  VStack,
+  HStack,
+  Text,
+  Container,
+  Flex,
+  Avatar,
+} from "@chakra-ui/react";
 
 const ChatLayout: FC = () => {
-  const [messageText, setMessageText] = useState<string>("");
-  const messages = [
+  const [messages, setMessages] = useState<
     {
-      avatar: "https://avatars.githubusercontent.com/u/80540635?v=4",
-      position: "left", // 'left' or 'right' for positioning
-      type: "text" as const, // 'text' type for text messages
-      title: "Kursat",
-      text: "Give me a message list example!",
-      date: new Date(), // current date as example
-      dateString: new Date().toUTCString(), // String representation of the date
-      id: "1", // unique id for the message
-      titleColor: "blue", // color for the title
-    },
-    {
-      avatar:
-        "https://cdn.usegalileo.ai/sdxl10/014920d7-e0b4-4ffa-823a-811dd0d3cdbc.png",
-      position: "right",
-      type: "text" as const,
-      title: "Emre",
-      text: "That's all.",
-      date: new Date(),
-      dateString: new Date().toUTCString(),
-      id: "2",
-      titleColor: "green",
-    },
-  ];
+      avatar: string;
+      text: string;
+      position: string;
+      date: Date;
+      id: number;
+      userId: number;
+    }[]
+  >([]);
+  const [messageText, setMessageText] = useState("");
 
-  const handleKeyPress = (event: React.KeyboardEvent<HTMLInputElement>) => {
-    if (event.key === "Enter") {
-      // エンターキーが押された場合
-      event.preventDefault(); // フォームの自動送信を防止
-      alert("Sending..."); // 実際にはここでメッセージ送信処理を呼び出す
-      console.log(messageText);
-      return;
+  const handleSendMessage = () => {
+    if (messageText.trim()) {
+      const newMessage = {
+        avatar: "https://avatars.githubusercontent.com/u/80540635?v=4",
+        position: "right", // 'left' or 'right' for positioning
+        text: "Give me a message list example!",
+        date: new Date(), // current date as example
+        id: messages.length,
+        userId: 0,
+      };
+      setMessages([...messages, newMessage]);
+      setMessageText("");
     }
   };
 
-  const handleMessage = useCallback((e: ChangeEvent<HTMLInputElement>) => {
-    setMessageText(e.target.value);
-  }, []);
+  const handleMessageChange = (event: ChangeEvent<HTMLInputElement>) => {
+    setMessageText(event.target.value);
+  };
+
+  const handleKeyPress = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === "Enter") {
+      handleSendMessage();
+    }
+  };
 
   return (
     <>
@@ -63,36 +61,47 @@ const ChatLayout: FC = () => {
           flex="1"
           overflowY="auto"
           mt={{ base: "8em", md: "6em" }}
+          mb={4}
         >
-          {/* <Outlet /> */}
-          <Card w={"full"} height={`100vh`} overflow="hidden">
-            {/* <MessageList
-              className="message-list"
-              lockable={true}
-              toBottomHeight={"100%"}
-              dataSource={messages}
-              style={{ overflowY: "auto", height: "100%" }}
-            /> */}
-          </Card>
+          <VStack spacing="4" align="stretch" margin="auto">
+            <VStack
+              spacing="4"
+              overflowY="scroll"
+              height="100vh"
+              padding="3"
+              borderWidth="1px"
+            >
+              {messages.map((msg, index) => (
+                <HStack
+                  key={index}
+                  alignSelf={
+                    msg.position === "right" ? "flex-end" : "flex-start"
+                  }
+                >
+                  {msg.position === "left" && <Avatar src={msg.avatar} />}
+                  <Text
+                    fontSize="md"
+                    padding="2"
+                    borderRadius="lg"
+                    bg="blue.100"
+                  >
+                    {msg.text}
+                  </Text>
+                  {msg.position === "right" && <Avatar src={msg.avatar} />}
+                </HStack>
+              ))}
+            </VStack>
+          </VStack>
         </Container>
-        <Container maxW="container.xl" my={2}>
-          <HStack
-            w={"full"}
-            flex="1"
-            borderWidth={"1px"}
-            mt={4}
-            borderRadius={"4px"}
-            justifyContent={"space-between"}
-            alignItems={"center"}
-            p={2}
-          >
-            {/* <Input
-              placeholder="Type here..."
-              maxHeight={200}
+        <Container maxW="container.xl" my={4}>
+          <HStack>
+            <Input
+              placeholder="Type your message..."
               value={messageText}
-              onChange={handleMessage}
-              onKeyPress={handleKeyPress} // イベントハンドラを設定
-            /> */}
+              onChange={handleMessageChange}
+              onKeyPress={handleKeyPress}
+            />
+            <Button onClick={handleSendMessage}>Send</Button>
           </HStack>
         </Container>
       </Flex>

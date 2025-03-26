@@ -2,7 +2,7 @@ import { FC } from "react";
 import MainHeader from "../common/layout/mainHeader";
 import Side from "../common/layout/side";
 import { Outlet } from "react-router-dom";
-import { Container, Flex } from "@chakra-ui/react";
+import { Box, Container, Flex } from "@chakra-ui/react";
 
 const SecureLayout: FC = () => {
   return (
@@ -11,13 +11,10 @@ const SecureLayout: FC = () => {
         <MainHeader />
         <Side />
 
-        <Container
-          maxW="container.xl"
-          flex="1"
-          overflowY="auto"
-          mt={{ base: "8em", md: "6em" }}
-        >
-          <Outlet />
+        <Container maxW="container.xl">
+          <Box overflowY="auto" mt={{ base: "8em", md: "6em" }}>
+            <Outlet />
+          </Box>
         </Container>
       </Flex>
     </>
