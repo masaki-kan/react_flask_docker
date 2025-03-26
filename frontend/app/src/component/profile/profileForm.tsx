@@ -157,7 +157,7 @@ const ProfileForm: FC<ProfileIndexProps> = ({
             </FormControl>
           </VStack>
           <VStack align={"start"} width={"100%"}>
-            <FormLabel>好きなブランド</FormLabel>
+            <FormLabel>好きなジャンル</FormLabel>
             <CustomBrandsSelect
               tags={tags}
               onKeyDown={handleKeyDown}

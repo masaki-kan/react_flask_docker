@@ -1,4 +1,4 @@
-import { FC, useMemo } from "react";
+import { FC, useCallback, useMemo } from "react";
 import {
   Heading,
   Text,
@@ -11,12 +11,16 @@ import {
   VStack,
   Button,
 } from "@chakra-ui/react";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import useProfile from "../../hooks/useProfile";
 import KeyboardControlGallerySlider from "../common/slider/keyboardControlGallerySlider";
+import useAlert from "../../hooks/useAlert";
+import { route } from "../../route/routeConst";
 
 const Home: FC = () => {
   const { getUserProfile } = useProfile();
+  const { defaultAlert } = useAlert();
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const userItemNumver = searchParams.get("number"); // 'userItem' パラメータの値を取得
 
@@ -28,22 +32,23 @@ const Home: FC = () => {
     return memorizeUserDate.items[Number(userItemNumver)];
   }, [memorizeUserDate.items, userItemNumver]);
 
+  const toSaveHandler = useCallback(() => {
+    // フラグ更新 更新アラート表示
+    // save一覧に遷移
+
+    defaultAlert(false);
+    navigate(route.saved);
+  }, [defaultAlert, navigate]);
+
   if (userItemNumver === null) return;
 
   return (
     <>
-      <Heading
-        pl={{ md: 4, base: 0 }}
-        mb={10}
-        textAlign={{ base: "center", md: "justify" }}
-      >
-        {""}
-      </Heading>
-
       <Stack
         direction={{ base: "column", md: "row" }}
         justifyContent={"space-around"}
         w={"full"}
+        mb={10}
       >
         <Box h={"500px"} w={{ base: "100%", md: "50%" }} p={4} my={2}>
           <KeyboardControlGallerySlider images={memorizeItem.image} />
@@ -76,7 +81,7 @@ const Home: FC = () => {
               </Box>
               <Box>
                 <Heading size="xs" textTransform="uppercase">
-                  ブランド
+                  ジャンル
                 </Heading>
                 <Text pt="2" fontSize="sm">
                   {memorizeItem.brand.name}
@@ -94,7 +99,9 @@ const Home: FC = () => {
             </Stack>
           </CardBody>
           <VStack align={"center"} my={4}>
-            <Button size="lg">取引する</Button>
+            <Button size="lg" onClick={toSaveHandler}>
+              取引する
+            </Button>
           </VStack>
         </Card>
       </Stack>

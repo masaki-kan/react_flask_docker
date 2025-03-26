@@ -18,7 +18,7 @@ export const menuLists = [
   {
     text: "Saved",
     icon: CiHeart,
-    route: route.business,
+    route: route.saved,
   },
 ];
 

@@ -1,5 +1,6 @@
 import { type FC } from "react";
 import { Heading } from "@chakra-ui/react";
+import SavedIndex from "./savedIndex";
 
 const Home: FC = () => {
   return (
@@ -11,6 +12,8 @@ const Home: FC = () => {
       >
         Saved
       </Heading>
+
+      <SavedIndex />
     </>
   );
 };

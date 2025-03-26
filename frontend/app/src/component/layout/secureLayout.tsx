@@ -2,24 +2,23 @@ import { FC } from "react";
 import MainHeader from "../common/layout/mainHeader";
 import Side from "../common/layout/side";
 import { Outlet } from "react-router-dom";
-import { Box, Container, Flex } from "@chakra-ui/react";
+import { Container, Flex } from "@chakra-ui/react";
 
 const SecureLayout: FC = () => {
   return (
     <>
-      <Flex direction={"column"}>
+      <Flex direction="column" h="100vh">
         <MainHeader />
         <Side />
-        <Box
-          style={{ flex: 1 }}
-          mt={{ base: "8em", md: "6em" }}
-          pb={10}
+
+        <Container
+          maxW="container.xl"
           flex="1"
+          overflowY="auto"
+          mt={{ base: "8em", md: "6em" }}
         >
-          <Container maxW="container.xl">
-            <Outlet />
-          </Container>
-        </Box>
+          <Outlet />
+        </Container>
       </Flex>
     </>
   );

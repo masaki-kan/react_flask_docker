@@ -31,7 +31,7 @@ const ProfileIndex: FC<ProfileIndexProps> = ({ profileData }) => {
             </Text>
           </VStack>
           <VStack align={"start"} width={"100%"}>
-            <Text size={"sm"}>好きなブランド</Text>
+            <Text size={"sm"}>好きなジャンル</Text>
             <Wrap gap={2}>
               {profileData.tag.map((tag, index) => {
                 return <Tag key={index}>{tag.tagName}</Tag>;

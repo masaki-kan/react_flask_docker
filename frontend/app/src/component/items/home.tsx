@@ -1,11 +1,18 @@
 import { Heading, VStack } from "@chakra-ui/react";
-import { FC, useEffect } from "react";
+import { FC, useCallback, useEffect } from "react";
 import SearchForm from "../common/form/searchForm";
 import RebderItem from "../common/render/renderItem";
 import useItems from "../../hooks/useItems";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
+import { route } from "../../route/routeConst";
+import useProfile from "../../hooks/useProfile";
+import useAlert from "../../hooks/useAlert";
 
 const Home: FC = () => {
+  const { defaultAlert } = useAlert();
+  const navigate = useNavigate();
+
+  const { getUserProfile } = useProfile();
   const pathname = useLocation().pathname;
 
   const {
@@ -20,6 +27,18 @@ const Home: FC = () => {
     getItemsTagListHandler();
     getItemListHandler();
   }, []);
+
+  const itemDetailHanlder = useCallback(
+    (index: number) => {
+      if (getUserProfile().items[index] === undefined) {
+        defaultAlert(true);
+
+        return;
+      }
+      navigate(`${route.itemDetail}?number=${index}`);
+    },
+    [defaultAlert, getUserProfile, navigate]
+  );
 
   return (
     <>
@@ -41,7 +60,7 @@ const Home: FC = () => {
         <RebderItem
           itemList={memorizeItemList}
           avatar={false}
-          navigate={() => {}}
+          navigate={itemDetailHanlder}
         />
       </VStack>
     </>

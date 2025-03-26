@@ -4,10 +4,11 @@ import Login from "./component/pages/login";
 import { ChakraProvider } from "@chakra-ui/react";
 import PublicLayout from "./component/layout/publicLayout";
 import SecureLayout from "./component/layout/secureLayout";
+import ChatLayout from "./component/layout/chatLayout";
 import { route } from "./route/routeConst";
 import ListingsHome from "./component/listing/home";
 import ShopPageHome from "./component/shop/home";
-import BusinessHome from "./component/business/home";
+import BusinessHome from "./component/save/home";
 import ItemsHome from "./component/items/home";
 import MyItemHome from "./component/myItem/home";
 import MyItemEditIndex from "./component/myItemEdit/home";
@@ -31,12 +32,15 @@ function App() {
               <Route path={route.users} element={<ListingsHome />} />
               <Route path={route.items} element={<ItemsHome />} />
               <Route path={route.shopPage} element={<ShopPageHome />} />
-              <Route path={route.business} element={<BusinessHome />} />
+              <Route path={route.saved} element={<BusinessHome />} />
               <Route path={route.myItem} element={<MyItemHome />} />
               <Route path={route.myItemEdit} element={<MyItemEditIndex />} />
               <Route path={route.itemDetail} element={<ItemDetailHome />} />
-              {/* 他の公開ページもここに追加できます */}
+              {/* チャット公開ページ*/}
             </Route>
+
+            <Route path={route.transactionChat} element={<ChatLayout />} />
+
             <Route path="*" element={<h1>Not Found Page</h1>} />
           </Routes>
         </BrowserRouter>

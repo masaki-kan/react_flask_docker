@@ -12,7 +12,6 @@ import {
   Select,
   Textarea,
   Tooltip,
-  useToast,
   VStack,
   Wrap,
   Image,
@@ -25,14 +24,15 @@ import { itemParts } from "../../../consts/itemConsts";
 import CustomSingleSelect from "../select/customSingleSelect";
 import { itemDetailType } from "../../../types/item";
 import { route } from "../../../route/routeConst";
+import useAlert from "../../../hooks/useAlert";
 
 type ItemFormProps = {
   profileItem?: itemDetailType;
 };
 
 const ItemForm: FC<ItemFormProps> = ({ profileItem }) => {
+  const { defaultAlert } = useAlert();
   const navigate = useNavigate();
-  const toast = useToast();
   const [images, setImages] = useState<string[]>([]);
   const [formValus, setFormValud] = useState<{
     title: string;
@@ -70,14 +70,9 @@ const ItemForm: FC<ItemFormProps> = ({ profileItem }) => {
     (index: number) => {
       setImages(images.filter((_, idx) => idx !== index));
 
-      toast({
-        title: "Photo removed",
-        status: "info",
-        duration: 2000,
-        isClosable: true,
-      });
+      defaultAlert(true);
     },
-    [images, toast]
+    [defaultAlert, images]
   );
 
   const handleImageChangeHandler = useCallback(
@@ -90,16 +85,10 @@ const ItemForm: FC<ItemFormProps> = ({ profileItem }) => {
 
         const totalImages = images.concat(newImages).slice(0, 5);
         setImages(totalImages);
-
-        toast({
-          title: "Photo added",
-          status: "success",
-          duration: 2000,
-          isClosable: true,
-        });
+        defaultAlert(false);
       }
     },
-    [images, toast]
+    [defaultAlert, images]
   );
 
   const handleTagChange = useCallback(
@@ -116,13 +105,8 @@ const ItemForm: FC<ItemFormProps> = ({ profileItem }) => {
     // ここで内容保存処理
     // プロフィール戻る
     navigate(route.profile);
-    toast({
-      title: "store success",
-      status: "success",
-      duration: 2000,
-      isClosable: true,
-    });
-  }, [navigate, toast]);
+    defaultAlert(false);
+  }, [defaultAlert, navigate]);
 
   return (
     <>
@@ -230,7 +214,7 @@ const ItemForm: FC<ItemFormProps> = ({ profileItem }) => {
         </FormControl>
 
         <FormControl>
-          <FormLabel>ブランド</FormLabel>
+          <FormLabel>ジャンル</FormLabel>
           <Box w={{ base: "100%", md: "50%" }}>
             <CustomSingleSelect
               tags={formValus.brand}
