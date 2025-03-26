@@ -1,12 +1,12 @@
 import { ChangeEvent, FC, useCallback, useState } from "react";
 import MainHeader from "../common/layout/mainHeader";
 import Side from "../common/layout/side";
-import "react-chat-elements/dist/main.css";
-import {
-  MessageList,
-  Input,
-  //   type MessageType,
-} from "react-chat-elements";
+// import "react-chat-elements/dist/main.css";
+// import {
+//   MessageList,
+//   Input,
+//   //   type MessageType,
+// } from "react-chat-elements";
 
 import { Card, Container, Flex, HStack } from "@chakra-ui/react";
 
@@ -66,13 +66,13 @@ const ChatLayout: FC = () => {
         >
           {/* <Outlet /> */}
           <Card w={"full"} height={`100vh`} overflow="hidden">
-            <MessageList
+            {/* <MessageList
               className="message-list"
               lockable={true}
               toBottomHeight={"100%"}
               dataSource={messages}
               style={{ overflowY: "auto", height: "100%" }}
-            />
+            /> */}
           </Card>
         </Container>
         <Container maxW="container.xl" my={2}>
@@ -86,13 +86,13 @@ const ChatLayout: FC = () => {
             alignItems={"center"}
             p={2}
           >
-            <Input
+            {/* <Input
               placeholder="Type here..."
               maxHeight={200}
               value={messageText}
               onChange={handleMessage}
               onKeyPress={handleKeyPress} // イベントハンドラを設定
-            />
+            /> */}
           </HStack>
         </Container>
       </Flex>
