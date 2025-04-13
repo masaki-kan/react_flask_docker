@@ -81,7 +81,7 @@ const useItems = (): userItemsReturn => {
     dispatch(setItemsTagList(tags));
   }, [dispatch]);
 
-  const getItemListHandler = () => {
+  const getItemListHandler = useCallback(() => {
     const itemListData = [
       {
         title: "Vintage 70s Navy Blue Wool Coa ",
@@ -141,7 +141,7 @@ const useItems = (): userItemsReturn => {
     ];
 
     dispatch(setItemsList(itemListData));
-  };
+  }, [dispatch]);
 
   const tagsUpdateHandler = useCallback(
     (index: number, type: string) => {

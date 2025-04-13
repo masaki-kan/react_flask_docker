@@ -5,9 +5,11 @@ import { itemListType } from "../types/item";
 type initialStateType = {
   profile: profileType;
   items: itemListType[];
+  isLoggedIn: boolean;
 };
 const initialState: initialStateType = {
   profile: {
+    id: "",
     image: "",
     name: "",
     location: "",
@@ -21,10 +23,11 @@ const initialState: initialStateType = {
     reasen: "",
   },
   items: [],
+  isLoggedIn: false,
 };
 
 export const profileSlice = createSlice({
-  name: "listing",
+  name: "profile",
   initialState,
   reducers: {
     setProfile: (
@@ -41,9 +44,32 @@ export const profileSlice = createSlice({
       state.profile = action.payload.profile;
       state.items = action.payload.items;
     },
+    deleteProfile: (state) => {
+      state.profile = initialState.profile; // 初期プロフィールにリセット
+      state.items = initialState.items; // 初期アイテムリストにリセット
+    },
+    setIsLoggedIn: (state, action: PayloadAction<boolean>) => {
+      state.isLoggedIn = action.payload;
+    },
+    setLoginAfterProfile: (
+      state,
+      action: PayloadAction<{ profile: { id: string; name: string } }>
+    ) => {
+      state.profile = {
+        ...state.profile,
+        id: action.payload.profile.id,
+        name: action.payload.profile.name,
+      };
+    },
   },
 });
 
-export const { setProfile, setUserProfile } = profileSlice.actions;
+export const {
+  setProfile,
+  setUserProfile,
+  deleteProfile,
+  setIsLoggedIn,
+  setLoginAfterProfile,
+} = profileSlice.actions;
 
 export default profileSlice.reducer;

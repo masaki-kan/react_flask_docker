@@ -13,6 +13,8 @@ services:
       - "5001:5000"
     depends_on:
       - mysql_db
+    networks: # app_network ネットワークに所属
+      - app_network
 
   react:
     container_name: react_app
@@ -46,8 +48,8 @@ services:
     command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
     ports:
       - "3306:3306"
-    networks: # net4 ネットワークに所属
-      - net4
+    networks: # app_network ネットワークに所属
+      - app_network
 
   phpmyadmin:
     image: phpmyadmin/phpmyadmin # phpmyadmin/phpmyadmin イメージを使用して、phpMyAdminのコンテナを作成
@@ -61,11 +63,12 @@ services:
       - mysql_db
     ports:
       - "8080:80" # localhost:8080でアクセスできる
-    networks: # net4 ネットワークに所属
-      - net4
+    networks: # app_network ネットワークに所属
+      - app_network
 
 volumes:
   node_modules:
   react_flask_db:
-networks: #net4 というカスタムネット
-  net4:
+networks: #app_network というカスタムネット
+  app_network:
+    driver: bridge

@@ -2,17 +2,17 @@ import { useCallback, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { profileType } from "../types/profile";
 import { type RootState } from "../store";
-import { setProfile } from "../store/profileSlice";
 import { itemListType } from "../types/item";
 import { genres } from "../consts/profileGenreConsts";
+import { getMyProfileApi } from "../../api/profileApis";
+import { setProfile } from "../store/profileSlice";
 
 type useMyProfileReturn = {
   memorizeProfile: {
     profile: profileType;
     items: itemListType[];
   };
-  getMyProfile: () => void;
-  updateProfileHandler: () => void;
+  getMyProfile: () => Promise<void>;
   getUserProfile: () => { profile: profileType; items: itemListType[] };
 };
 
@@ -23,68 +23,43 @@ const useMyProfile = (): useMyProfileReturn => {
     return profile;
   }, [profile]);
 
-  const getMyProfile = useCallback(() => {
-    const profileDate = {
-      image:
-        "https://cdn.usegalileo.ai/sdxl10/014920d7-e0b4-4ffa-823a-811dd0d3cdbc.png",
-      name: "Personal Information(User Name)",
-      location: "大阪",
-      old: 30,
-      tag: [
-        { tagKey: genres[0].brandKey, tagName: genres[1].brandName },
-        { tagKey: genres[5].brandKey, tagName: genres[5].brandName },
-        { tagKey: genres[6].brandKey, tagName: genres[6].brandName },
-      ],
-      age: 2,
-      favoriteShop: {
-        name: "KINJI BIGSTEP 心斎橋店 ",
-        url: "https://www.instagram.com/kinji_bigstep/",
-      },
-      reasen: "初期テスト文章",
-    };
+  const getMyProfile = useCallback(async () => {
+    const response = await getMyProfileApi(profile.profile.id);
 
-    const items = [
-      {
-        title: "Vintage 70s Navy Blue Wool Coa ",
-        description: "",
-        price: 8500,
-        currency: "¥",
-        type: { key: "0", name: "ジャケット" },
-        brand: { key: "0", name: "90's" },
-        image: [
-          "https://cdn.usegalileo.ai/sdxl10/b7dd176c-c822-4e72-998e-9b1575310749.png",
-        ],
-      },
-      {
-        title: "Vintage 90s Black &amp; White Striped Tee",
-        price: 5000,
-        currency: "¥",
-        description: "",
-        type: { key: "0", name: "ジャケット" },
-        brand: { key: "0", name: "90's" },
-        image: [
-          "https://cdn.usegalileo.ai/sdxl10/014920d7-e0b4-4ffa-823a-811dd0d3cdbc.png",
-        ],
-      },
-    ];
+    if (response !== undefined) {
+      const profileDate = {
+        id: profile.profile.id,
+        image: response.profile.image,
+        name: response.profile.name,
+        location: response.profile.location,
+        old: response.profile.old,
+        tag: response.profile.tag,
+        age: response.profile.age,
+        favoriteShop: response.profile.favoriteShop,
+        reasen: response.profile.reasen,
+      };
 
-    dispatch(setProfile({ profile: profileDate, items }));
-  }, [dispatch]);
+      const items = response.items;
+
+      dispatch(setProfile({ profile: profileDate, items }));
+    }
+  }, [dispatch, profile]);
 
   const getUserProfile = useCallback((): {
     profile: profileType;
     items: itemListType[];
   } => {
     const profileDate = {
+      id: "1",
       image:
         "https://cdn.usegalileo.ai/sdxl10/014920d7-e0b4-4ffa-823a-811dd0d3cdbc.png",
       name: "Personal Information(User Name)",
       location: "大阪",
       old: 30,
       tag: [
-        { tagKey: genres[0].brandKey, tagName: genres[1].brandName },
-        { tagKey: genres[5].brandKey, tagName: genres[5].brandName },
-        { tagKey: genres[6].brandKey, tagName: genres[6].brandName },
+        { key: genres[0].brandKey, name: genres[1].brandName },
+        { key: genres[5].brandKey, name: genres[5].brandName },
+        { key: genres[6].brandKey, name: genres[6].brandName },
       ],
       age: 2,
       favoriteShop: {
@@ -127,12 +102,9 @@ const useMyProfile = (): useMyProfileReturn => {
     };
   }, []);
 
-  const updateProfileHandler = useCallback(() => {}, []);
-
   return {
     memorizeProfile,
     getMyProfile,
-    updateProfileHandler,
     getUserProfile,
   };
 };

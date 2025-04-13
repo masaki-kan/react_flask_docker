@@ -14,7 +14,7 @@ const initialState: initialStateType = {
 };
 
 export const itemsSlice = createSlice({
-  name: "listing",
+  name: "items",
   initialState,
   reducers: {
     setItemsList: (state, action: PayloadAction<itemListType[]>) => {

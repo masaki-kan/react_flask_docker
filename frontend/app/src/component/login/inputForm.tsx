@@ -1,3 +1,4 @@
+import { ChangeEvent, FC, useCallback, useEffect, useState } from "react";
 import {
   VStack,
   Heading,
@@ -6,18 +7,95 @@ import {
   FormLabel,
   Input,
   Link,
+  Text,
 } from "@chakra-ui/react";
-import { FC } from "react";
 import { route } from "../../route/routeConst";
 import { useNavigate } from "react-router-dom";
 import RenderButton from "../common/render/renderButton";
+import { loginApi } from "../../../api/loginApis";
+import { useAuth } from "../../provider/authContext";
+
+interface ErrorState {
+  emailError: string;
+  passwordError: string;
+}
+
+interface loginFormType {
+  email: string;
+  password: string;
+}
 
 const InputForm: FC = () => {
+  const { isLoggedIn, login } = useAuth();
   const navigate = useNavigate();
+  const [error, setError] = useState<ErrorState>({
+    emailError: "",
+    passwordError: "",
+  });
+  const [form, setForm] = useState<loginFormType>({
+    email: "",
+    password: "",
+  });
 
-  const loginClick = () => {
-    navigate(route.home);
+  useEffect(() => {
+    if (isLoggedIn) {
+      navigate(route.home);
+    }
+  }, [isLoggedIn, navigate]);
+
+  const loginClick = useCallback(async () => {
+    const response = await loginApi(form);
+
+    if (response && response.token) {
+      login(response.username, response.token, response.userId);
+    }
+  }, [form, login]);
+
+  const validatePassword = (password: string): boolean => {
+    // 小文字英数字のみの正規表現
+    return /^[a-z0-9]+$/i.test(password);
   };
+
+  const validateEmail = (email: string): boolean => {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  };
+
+  const formErrorCheckHanler = useCallback((value: string, type: string) => {
+    if (type === "password") {
+      if (validatePassword(value)) {
+        setError((prev) => ({ ...prev, passwordError: "" }));
+      } else {
+        setError((prev) => ({
+          ...prev,
+          passwordError: "Password must contain only lowercase and digits.",
+        }));
+      }
+    } else if (type === "email") {
+      if (validateEmail(value)) {
+        setError((prev) => ({ ...prev, emailError: "" }));
+      } else {
+        setError((prev) => ({
+          ...prev,
+          emailError: "Please enter a valid email address.",
+        }));
+      }
+    }
+  }, []);
+
+  const updateFormHandler = useCallback(
+    (e: ChangeEvent<HTMLInputElement>) => {
+      const { value, type } = e.target;
+
+      formErrorCheckHanler(value, type);
+
+      setForm((prev) => ({
+        ...prev,
+        ...(type === "email" && { email: value }),
+        ...(type === "password" && { password: value }),
+      }));
+    },
+    [formErrorCheckHanler]
+  );
 
   return (
     <>
@@ -38,23 +116,36 @@ const InputForm: FC = () => {
           <FormControl id="email">
             <FormLabel>Email</FormLabel>
             <Input
+              isInvalid={error.emailError ? true : false}
               placeholder="example@gmail.com"
               bg="#f4f2f0"
               borderColor="transparent"
               h="14"
               p="4"
               type="email"
+              variant="filled"
+              defaultValue={form.email}
+              onChange={updateFormHandler}
             />
+            {error.emailError && (
+              <Text fontSize="sm" style={{ color: "red" }}>
+                {error.emailError}
+              </Text>
+            )}
           </FormControl>
           <FormControl id="password">
             <FormLabel>Password</FormLabel>
             <Input
+              isInvalid={error.emailError ? true : false}
               placeholder="Enter your password"
               bg="#f4f2f0"
               borderColor="transparent"
               h="14"
               p="4"
               type="password"
+              variant="filled"
+              defaultValue={form.email}
+              onChange={updateFormHandler}
             />
           </FormControl>
         </VStack>

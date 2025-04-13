@@ -26,7 +26,7 @@ const Home: FC = () => {
   useEffect(() => {
     getItemsTagListHandler();
     getItemListHandler();
-  }, []);
+  }, [getItemListHandler, getItemsTagListHandler]);
 
   const itemDetailHanlder = useCallback(
     (index: number) => {

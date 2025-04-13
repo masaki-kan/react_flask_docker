@@ -10,7 +10,7 @@ const initialState: initialStateType = {
 };
 
 export const savedSlice = createSlice({
-  name: "listing",
+  name: "saved",
   initialState,
   reducers: {
     setSaveList: (state, action: PayloadAction<savedListType[]>) => {

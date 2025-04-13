@@ -17,7 +17,7 @@ const Profile: FC = () => {
 
   useEffect(() => {
     getMyProfile();
-  }, [getMyProfile]);
+  }, []);
 
   return (
     <VStack align={"start"} gap={9} w={"100%"}>
@@ -34,7 +34,7 @@ const Profile: FC = () => {
         />
       ) : (
         <>
-          <ProfileIndex profileData={memorizeProfile.profile} />
+          <ProfileIndex />
           <LogOut />
         </>
       )}

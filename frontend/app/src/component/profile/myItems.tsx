@@ -1,4 +1,4 @@
-import { FC, useCallback, useEffect } from "react";
+import { FC, useCallback } from "react";
 import { Text, VStack, HStack, Button } from "@chakra-ui/react";
 
 import { MdOutlineShoppingBag } from "react-icons/md";
@@ -9,11 +9,7 @@ import { route } from "../../route/routeConst";
 
 const MyItems: FC = () => {
   const navigate = useNavigate();
-  const { getMyProfile, memorizeProfile } = useMyProfile();
-
-  useEffect(() => {
-    getMyProfile();
-  }, [getMyProfile]);
+  const { memorizeProfile } = useMyProfile();
 
   const toItemPushHandler = useCallback(() => {
     navigate(route.myItem);

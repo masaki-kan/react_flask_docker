@@ -17,7 +17,7 @@ const initialState: initialStateType = {
 };
 
 export const listingSlice = createSlice({
-  name: "listing",
+  name: "users",
   initialState,
   reducers: {
     setUserList: (state, action: PayloadAction<followListType[]>) => {
