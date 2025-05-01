@@ -8,7 +8,7 @@ const Home: FC = () => {
       <Heading
         pl={{ md: 4, base: 0 }}
         mb={10}
-        textAlign={{ base: "center", md: "justify" }}
+        textAlign={{ base: "justify", md: "justify" }}
       >
         Register New Item
       </Heading>

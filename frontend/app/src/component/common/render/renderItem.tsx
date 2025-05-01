@@ -2,6 +2,7 @@ import React, { FC } from "react";
 import { motion } from "framer-motion";
 import { Grid, Image, Text, Card, Avatar, HStack } from "@chakra-ui/react";
 import { itemListType } from "../../../types/item";
+import { viewDate } from "../date/format";
 
 type RebderItemProps = {
   itemList: itemListType[];
@@ -36,35 +37,36 @@ const RebderItem: FC<RebderItemProps> = React.memo(
           >
             <HStack justifyContent={"space-between"} alignItems={"center"}>
               <Text color="#887563" fontSize={"xs"}>
-                2024/05/21 22:54:20
+                {viewDate(product.uploaded_at)}
               </Text>
               <Avatar
                 hidden={avatar}
                 size={"sm"}
                 name={"my name"}
                 cursor={"pointer"}
-                src="https://cdn.usegalileo.ai/sdxl10/014920d7-e0b4-4ffa-823a-811dd0d3cdbc.png"
+                src={product.profile_image}
               />
             </HStack>
 
             <Image
               cursor={"pointer"}
-              src={product.image[0]}
+              src={product.images ? product.images[0] : ""}
               alt={""}
               w="full"
-              h="auto"
+              h="200px"
+              objectFit={"contain"}
               bgPosition="center"
               bgRepeat="no-repeat"
               bgSize="cover"
               borderRadius="md"
-              onClick={() => navigate(index)}
+              onClick={() => navigate(Number(product.itemId))}
             />
-            <Text color="#181411" fontSize="base" fontWeight="medium">
+            <Text color="#181411" fontSize="sm" fontWeight="medium">
               {product.title}
             </Text>
-
             <Text color="#887563" fontSize="md" fontWeight="normal">
-              ¥{product.price}
+              {product.curr}
+              {product.price}
             </Text>
           </MotionCard>
         ))}

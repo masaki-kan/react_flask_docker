@@ -1,36 +1,44 @@
-import { useMemo, type FC } from "react";
+import { useEffect, useMemo, type FC } from "react";
 import { Heading } from "@chakra-ui/react";
-import { useSelector } from "react-redux";
 import ItemForm from "../common/form/itemForm";
-import { RootState } from "../../store";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import useMyProfile from "../../hooks/useProfile";
+import { route } from "../../route/routeConst";
 
 const Home: FC = () => {
   const [searchParams] = useSearchParams();
-  const userItemNumver = searchParams.get("userItem"); // 'userItem' パラメータの値を取得
-
-  const profileItemrReduser = useSelector(
-    (state: RootState) => state.profile.items
-  );
-
+  const navigate = useNavigate();
+  const { memorizeProfile } = useMyProfile();
+  const userItemNumver = searchParams.get("userItem");
   const memorizeProfileItem = useMemo(() => {
-    return profileItemrReduser[Number(userItemNumver)];
-  }, [profileItemrReduser, userItemNumver]);
+    if (userItemNumver) {
+      return memorizeProfile.items.filter(
+        (item) => item.itemId === Number(userItemNumver)
+      );
+    }
+  }, [memorizeProfile.items, userItemNumver]);
 
-  if (userItemNumver === null) return;
+  useEffect(() => {
+    if (memorizeProfileItem) {
+      if (memorizeProfileItem.length === 0) {
+        navigate(route.home);
+      }
+    }
+  }, [memorizeProfileItem, navigate, userItemNumver]);
 
-  return (
-    <>
-      <Heading
-        pl={{ md: 4, base: 0 }}
-        mb={10}
-        textAlign={{ base: "center", md: "justify" }}
-      >
-        Item Eidt
-      </Heading>
-      <ItemForm profileItem={memorizeProfileItem} />
-    </>
-  );
+  if (memorizeProfileItem !== undefined)
+    return (
+      <>
+        <Heading
+          pl={{ md: 4, base: 0 }}
+          mb={10}
+          textAlign={{ base: "center", md: "justify" }}
+        >
+          Item Eidt
+        </Heading>
+        <ItemForm profileItem={memorizeProfileItem[0]} />
+      </>
+    );
 };
 
 export default Home;

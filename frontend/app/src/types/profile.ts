@@ -11,9 +11,21 @@ export interface profileType {
     url: string;
   };
   reasen: string;
+  is_following?: boolean;
 }
 
 export interface apiRetuenProfileType {
   profile: profileType;
   items: [];
+}
+
+export interface profileItemType {
+  userId: string;
+  title: string;
+  description: string;
+  images: string[];
+  type: string;
+  brand: { key: string; name: string };
+  curr: string;
+  price: number;
 }

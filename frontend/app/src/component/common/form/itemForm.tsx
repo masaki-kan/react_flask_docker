@@ -1,3 +1,4 @@
+import { FC, useEffect, useState, useCallback, ChangeEvent } from "react";
 import {
   Box,
   Button,
@@ -15,98 +16,202 @@ import {
   VStack,
   Wrap,
   Image,
+  HStack,
+  Text,
 } from "@chakra-ui/react";
-import { FC, useEffect, useState, useCallback, ChangeEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { CiTrash } from "react-icons/ci";
 import { IoIosAdd } from "react-icons/io";
 import { itemParts } from "../../../consts/itemConsts";
-import CustomSingleSelect from "../select/customSingleSelect";
+import CustomBrandSelect from "../select/customBrandSelect";
 import { itemDetailType } from "../../../types/item";
 import { route } from "../../../route/routeConst";
+import { postStoreProfileItemApi } from "../../../api/profileApis";
+import { RootState } from "../../../store";
+import { useDispatch, useSelector } from "react-redux";
 import useAlert from "../../../hooks/useAlert";
+import { updateLoad } from "../../../store/loadingSlice";
 
 type ItemFormProps = {
   profileItem?: itemDetailType;
 };
 
 const ItemForm: FC<ItemFormProps> = ({ profileItem }) => {
-  const { defaultAlert } = useAlert();
+  const dispath = useDispatch();
+  const { sweetSuccessOverAlert } = useAlert();
+  const loading = useSelector((state: RootState) => state.load);
+  const profile = useSelector((state: RootState) => state.profile);
   const navigate = useNavigate();
-  const [images, setImages] = useState<string[]>([]);
-  const [formValus, setFormValud] = useState<{
+  const [formValues, setFormValues] = useState<{
     title: string;
     description: string;
-    imgs: string[];
+    images: string[];
     price: number;
-    type: { key: string; name: string };
+    type: string;
     brand: { key: string; name: string };
   }>({
     title: "",
     description: "",
-    imgs: [],
-    type: { key: "", name: "" },
+    images: [],
+    type: "",
     brand: { key: "", name: "" },
     price: 0,
   });
 
+  const [formError, setFormError] = useState<{
+    title: boolean;
+    description: boolean;
+    images: boolean;
+    type: boolean;
+    brand: boolean;
+    price: boolean;
+  }>({
+    title: false,
+    description: false,
+    images: false,
+    type: false,
+    brand: false,
+    price: false,
+  });
+
   useEffect(() => {
     if (profileItem !== undefined) {
-      setFormValud((prev) => ({
+      setFormValues((prev) => ({
         ...prev,
         title: profileItem.title,
         description: profileItem.description,
-        imgs: profileItem.image,
+        images: profileItem.images,
         price: profileItem.price,
         type: profileItem.type,
         brand: profileItem.brand,
       }));
-
-      setImages(profileItem.image);
     }
-  }, [profileItem]);
+  }, [navigate, profileItem]);
 
-  const handleRemoveImageHandler = useCallback(
-    (index: number) => {
-      setImages(images.filter((_, idx) => idx !== index));
+  const handleRemoveImageHandler = useCallback((index: number) => {
+    setFormValues((prev) => ({
+      ...prev,
+      images: prev.images.filter((_, idx) => idx !== index),
+    }));
+  }, []);
 
-      defaultAlert(true);
-    },
-    [defaultAlert, images]
-  );
-
-  const handleImageChangeHandler = useCallback(
+  // 商品画像
+  const imageChangeHandler = useCallback(
     (e: ChangeEvent<HTMLInputElement>) => {
-      const imgTarget = e.target.files;
-      if (imgTarget !== null) {
-        const newImages = Array.from(imgTarget).map((file) =>
-          URL.createObjectURL(file)
-        );
+      const files = e.target.files;
+      if (!files) return;
 
-        const totalImages = images.concat(newImages).slice(0, 5);
-        setImages(totalImages);
-        defaultAlert(false);
-      }
+      const fileArray = Array.from(files).slice(
+        0,
+        5 - formValues.images.length
+      ); // 最大5枚制限
+
+      Promise.all(
+        fileArray.map((file) => {
+          return new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => {
+              if (typeof reader.result === "string") {
+                resolve(reader.result);
+              } else {
+                reject("読み込み失敗");
+              }
+            };
+            reader.onerror = () => reject("読み込みエラー");
+            reader.readAsDataURL(file);
+          });
+        })
+      ).then((base64Images) => {
+        const formattedImages = base64Images.map((img) => img);
+        const totalImages = formValues.images
+          .concat(formattedImages)
+          .slice(0, 5);
+        setFormValues((prev) => ({
+          ...prev,
+          images: totalImages,
+        }));
+      });
     },
-    [defaultAlert, images]
+    [formValues.images]
   );
 
-  const handleTagChange = useCallback(
-    (newTags: { key: string; name: string }) => {
-      setFormValud((prev) => ({
+  const formChangeHandler = useCallback(
+    (
+      e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+    ) => {
+      const name = e.target.name;
+      const value = e.target.value;
+
+      setFormValues((prev) => ({
         ...prev,
-        brand: newTags,
+        [name]: value,
       }));
     },
     []
   );
 
-  const storeItemsHandler = useCallback(() => {
-    // ここで内容保存処理
-    // プロフィール戻る
+  const tagChange = useCallback((newTags: { key: string; name: string }) => {
+    setFormValues((prev) => ({
+      ...prev,
+      brand: newTags,
+    }));
+  }, []);
+
+  const storeItemsHandler = useCallback(async () => {
+    const newErrors = {
+      title: formValues.title.trim() === "",
+      images: formValues.images.length === 0 ? true : false,
+      description: formValues.description.trim() === "",
+      type: formValues.type === "",
+      brand: formValues.brand.name.trim() === "",
+      price: formValues.price <= 0,
+    };
+
+    setFormError(newErrors);
+
+    const hasError = Object.values(newErrors).some((val) => val); // 一つでも true（＝エラー）なら実行しない
+
+    if (!hasError) {
+      dispath(updateLoad(true));
+      // ここで内容保存処理
+      const formData = {
+        userId: profile.profile.id,
+        title: formValues.title,
+        description: formValues.description,
+        images: formValues.images,
+        type: formValues.type,
+        brand: formValues.brand,
+        curr: "¥",
+        price: formValues.price,
+      };
+
+      const dateUpChange = profileItem !== undefined ? "update" : "insert";
+
+      const response = await postStoreProfileItemApi(formData, dateUpChange);
+
+      if (response?.status !== false) {
+        dispath(updateLoad(false));
+        sweetSuccessOverAlert().then((result) => {
+          if (result.isConfirmed) {
+            // OK 押下時の処理
+            // プロフィール戻る
+            navigate(route.profile);
+          }
+        });
+      }
+    }
+  }, [
+    dispath,
+    formValues,
+    navigate,
+    profile.profile.id,
+    profileItem,
+    sweetSuccessOverAlert,
+  ]);
+
+  const toProfile = useCallback(() => {
     navigate(route.profile);
-    defaultAlert(false);
-  }, [defaultAlert, navigate]);
+  }, [navigate]);
 
   return (
     <>
@@ -117,25 +222,43 @@ const ItemForm: FC<ItemFormProps> = ({ profileItem }) => {
         mb={4}
       >
         <FormControl>
-          <FormLabel>Title</FormLabel>
-          <Input placeholder="" value={formValus.title} onChange={() => {}} />
+          <FormLabel>商品名</FormLabel>
+          <Input
+            isInvalid={formError.title}
+            placeholder=""
+            name="title"
+            value={formValues.title}
+            onChange={formChangeHandler}
+          />
+          {formError.title && (
+            <Text fontSize="sm" style={{ color: "red" }}>
+              商品名は必須です。
+            </Text>
+          )}
         </FormControl>
 
         <FormControl>
-          <FormLabel>Description</FormLabel>
+          <FormLabel>商品説明</FormLabel>
           <Textarea
+            isInvalid={formError.description}
             placeholder=""
-            value={formValus.description}
-            onChange={() => {}}
+            name="description"
+            value={formValues.description}
+            onChange={formChangeHandler}
           />
+          {formError.description && (
+            <Text fontSize="sm" style={{ color: "red" }}>
+              商品説明は必須です。
+            </Text>
+          )}
         </FormControl>
       </VStack>
       <VStack spacing={5} w={"full"} align={"start"}>
         <FormControl>
-          <FormLabel>Photos</FormLabel>
+          <FormLabel>商品画像</FormLabel>
           <Wrap w="full" spacing="20px" justify="start">
-            {images.map((src, index) => (
-              <Box key={index} w={{ base: "100%", md: "250px" }}>
+            {formValues.images.map((src, index) => (
+              <Box key={index} w={{ base: "45%", md: "250px" }}>
                 <VStack align="end" position="relative">
                   <Tooltip label="削除" hasArrow>
                     <CiTrash
@@ -161,9 +284,9 @@ const ItemForm: FC<ItemFormProps> = ({ profileItem }) => {
                     <Image
                       src={src}
                       alt={`Image ${index}`}
-                      h="250px" // 高さを固定
+                      h="200px" // 高さを固定
                       w="full" // 幅はコンテナに合わせて調整
-                      objectFit={{ base: "contain", md: "cover" }} // 画像をカバーとして設定
+                      objectFit={"contain"} // 画像をカバーとして設定
                       borderRadius="md"
                     />
                   </Box>
@@ -171,8 +294,12 @@ const ItemForm: FC<ItemFormProps> = ({ profileItem }) => {
               </Box>
             ))}
           </Wrap>
-
-          {images.length < 5 && (
+          {formError.images && (
+            <Text fontSize="sm" style={{ color: "red" }}>
+              商品画像は必須です。
+            </Text>
+          )}
+          {formValues.images.length < 5 && (
             <Button
               leftIcon={<IoIosAdd />}
               colorScheme="gray"
@@ -187,7 +314,7 @@ const ItemForm: FC<ItemFormProps> = ({ profileItem }) => {
                 type="file"
                 multiple
                 accept="image/*"
-                onChange={handleImageChangeHandler}
+                onChange={imageChangeHandler}
                 hidden
               />
             </Button>
@@ -197,38 +324,53 @@ const ItemForm: FC<ItemFormProps> = ({ profileItem }) => {
         <FormControl>
           <FormLabel>タイプ</FormLabel>
           <Select
+            isInvalid={formError.type}
             placeholder="タイプを選択してください"
             required
+            name="type"
             w={{ base: "100%", md: "50%" }}
-            value={formValus.type.key}
-            onChange={() => {}}
+            value={formValues.type}
+            onChange={formChangeHandler}
           >
             {itemParts.map((part, index) => {
               return (
-                <option value={part.typeKey} key={index}>
-                  {part.typeName}
+                <option value={part.key} key={index}>
+                  {part.name}
                 </option>
               );
             })}{" "}
           </Select>
+          {formError.type && (
+            <Text fontSize="sm" style={{ color: "red" }}>
+              商品タイプは必須です。
+            </Text>
+          )}
         </FormControl>
 
         <FormControl>
-          <FormLabel>ジャンル</FormLabel>
+          <FormLabel>ブランド</FormLabel>
           <Box w={{ base: "100%", md: "50%" }}>
-            <CustomSingleSelect
-              tags={formValus.brand}
-              onChange={handleTagChange}
-            />
+            <CustomBrandSelect tags={formValues.brand} onChange={tagChange} />
           </Box>
+          {formError.brand && (
+            <Text fontSize="sm" style={{ color: "red" }}>
+              ブランドは必須です。
+            </Text>
+          )}
         </FormControl>
 
         <FormControl>
           <FormLabel>Price (¥)</FormLabel>
           <NumberInput
-            value={formValus.price}
-            onChange={() => {}}
+            isInvalid={formError.price}
+            value={formValues.price}
             w={{ base: "100%", md: "50%" }}
+            onChange={(e) => {
+              setFormValues((prev) => ({
+                ...prev,
+                price: Number(e),
+              }));
+            }}
           >
             <NumberInputField />
             <NumberInputStepper>
@@ -236,16 +378,26 @@ const ItemForm: FC<ItemFormProps> = ({ profileItem }) => {
               <NumberDecrementStepper />
             </NumberInputStepper>
           </NumberInput>
+          {formError.brand && (
+            <Text fontSize="sm" style={{ color: "red" }}>
+              商品値段は必須です。
+            </Text>
+          )}
         </FormControl>
 
-        <Button
-          colorScheme="orange"
-          size="lg"
-          justifyContent="center"
-          onClick={storeItemsHandler}
-        >
-          登録
-        </Button>
+        <HStack align={"start"} width={"100%"} spacing={5}>
+          <Button onClick={toProfile}>戻る</Button>
+          <Button
+            isLoading={loading.load}
+            colorScheme="blue"
+            loadingText="登録..."
+            variant="outline"
+            spinnerPlacement="start"
+            onClick={storeItemsHandler}
+          >
+            {"登録"}
+          </Button>
+        </HStack>
       </VStack>
     </>
   );

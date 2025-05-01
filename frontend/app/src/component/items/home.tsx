@@ -1,43 +1,41 @@
+import { FC, useCallback } from "react";
 import { Heading, VStack } from "@chakra-ui/react";
-import { FC, useCallback, useEffect } from "react";
 import SearchForm from "../common/form/searchForm";
 import RebderItem from "../common/render/renderItem";
 import useItems from "../../hooks/useItems";
 import { useLocation, useNavigate } from "react-router-dom";
 import { route } from "../../route/routeConst";
 import useProfile from "../../hooks/useProfile";
-import useAlert from "../../hooks/useAlert";
+import useLoading from "../../hooks/useLaoding";
+import { useEffectOnce } from "react-use";
+import FullScreenSpinner from "../common/spliner/FullScreenSpinner";
 
 const Home: FC = () => {
-  const { defaultAlert } = useAlert();
   const navigate = useNavigate();
-
   const { getUserProfile } = useProfile();
   const pathname = useLocation().pathname;
-
+  const { memorizeLoading } = useLoading();
   const {
-    getItemsTagListHandler,
     getItemListHandler,
     memorizeItemList,
     memorizeTagList,
     memorizeSelectedTag,
   } = useItems();
 
-  useEffect(() => {
-    getItemsTagListHandler();
+  useEffectOnce(() => {
     getItemListHandler();
-  }, [getItemListHandler, getItemsTagListHandler]);
+  });
 
   const itemDetailHanlder = useCallback(
     (index: number) => {
       if (getUserProfile().items[index] === undefined) {
-        defaultAlert(true);
+        navigate(`${route.itemDetail}?number=${index}`);
 
         return;
       }
       navigate(`${route.itemDetail}?number=${index}`);
     },
-    [defaultAlert, getUserProfile, navigate]
+    [getUserProfile, navigate]
   );
 
   return (
@@ -45,11 +43,11 @@ const Home: FC = () => {
       <Heading
         pl={{ md: 4, base: 0 }}
         mb={10}
-        textAlign={{ base: "center", md: "justify" }}
+        textAlign={{ base: "justify", md: "justify" }}
       >
         Items
       </Heading>
-
+      {memorizeLoading && <FullScreenSpinner />}
       <VStack align={"start"} mt={10}>
         <SearchForm
           tagList={memorizeTagList}

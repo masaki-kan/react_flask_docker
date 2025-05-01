@@ -1,8 +1,14 @@
 export interface followListType {
-  id: number;
+  age: number;
+  image_url: string;
+  location: string;
   name: string;
-  itemNumber: number;
-  icon: string;
+  uploaded_at: null;
+  user_id: number;
+  item_count: number;
+  is_followed: number;
+  is_following: number;
+  tags: tagType[];
 }
 
 export interface renderTabPanelType {
@@ -10,6 +16,6 @@ export interface renderTabPanelType {
 }
 
 export interface tagType {
-  id: number;
+  key: number;
   name: string;
 }

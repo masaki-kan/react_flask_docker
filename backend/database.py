@@ -1,5 +1,3 @@
-
-
 def create_users_table(cursor):
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS users (
@@ -8,8 +6,8 @@ def create_users_table(cursor):
             email VARCHAR(255) NOT NULL,
             password VARCHAR(255) NOT NULL,
             location VARCHAR(255),
-            old INT,
-            age INT,
+            old INT DEFAULT 0,
+            age INT DEFAULT 1,
             token VARCHAR(255),
             shop_name VARCHAR(255),
             shop_url VARCHAR(255),
@@ -19,12 +17,27 @@ def create_users_table(cursor):
         );
     ''')
     
+
+    
+def create_follows_table(cursor):
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS follows (
+        follow_id INT AUTO_INCREMENT PRIMARY KEY,
+        follower_id INT NOT NULL,  -- フォローする側（自分）
+        followed_id INT NOT NULL,  -- フォローされる側（相手）
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (follower_id) REFERENCES users(user_id) ON DELETE CASCADE,
+        FOREIGN KEY (followed_id) REFERENCES users(user_id) ON DELETE CASCADE,
+        UNIQUE (follower_id, followed_id)  -- 重複フォローを防止
+    );
+''')
+    
 def create_profile_images_table(cursor):
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS profile_images (
             profile_image_id INT AUTO_INCREMENT PRIMARY KEY,
             user_id INT,
-            image_url VARCHAR(255),
+            image_url LONGTEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (user_id) REFERENCES users(user_id)
@@ -77,7 +90,8 @@ def create_item_images_table(cursor):
         CREATE TABLE IF NOT EXISTS item_images (
             item_image_id INT AUTO_INCREMENT PRIMARY KEY,
             item_id INT,
-            image_url VARCHAR(255),
+            user_id INT,
+            image_url LONGTEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (item_id) REFERENCES items(item_id)
@@ -87,6 +101,7 @@ def create_item_images_table(cursor):
 
 def create_table(cursor):
     create_users_table(cursor)
+    create_follows_table(cursor)
     create_profile_images_table(cursor)
     create_tags_table(cursor)
     create_plans_table(cursor)

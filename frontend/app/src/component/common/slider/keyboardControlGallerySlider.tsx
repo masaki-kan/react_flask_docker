@@ -34,7 +34,12 @@ const KeyboardControlGallerySlider: FC<KeyboardControlGallerySliderProps> = ({
         {images.map((img, index) => {
           return (
             <SwiperSlide>
-              <Image key={index} src={img} />
+              <Image
+                key={index}
+                src={img}
+                objectFit={"contain"}
+                height={"350px"}
+              />
             </SwiperSlide>
           );
         })}

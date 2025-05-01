@@ -1,75 +1,87 @@
-import { FC, useCallback } from "react";
-import { VStack, Text, Avatar, Stack, Tag, Wrap, Link } from "@chakra-ui/react";
+import { FC, useCallback, useMemo } from "react";
+import {
+  VStack,
+  Text,
+  Avatar,
+  Stack,
+  Tag,
+  Wrap,
+  Link,
+  Button,
+} from "@chakra-ui/react";
 import MyItems from "./myItems";
 import useMyProfile from "../../hooks/useProfile";
+import LogOut from "../common/layout/logOut";
 
-const ProfileIndex: FC = () => {
+type profileIndexType = {
+  editFormSwitch: () => void;
+};
+
+const ProfileIndex: FC<profileIndexType> = ({ editFormSwitch }) => {
   const { memorizeProfile } = useMyProfile();
+
+  const profile = useMemo(() => {
+    return memorizeProfile;
+  }, [memorizeProfile]);
+
+  const noValueText = () => {
+    return (
+      <Text size={"xs"} color={"#887563"}>
+        未設定
+      </Text>
+    );
+  };
   const tagsViewRender = useCallback(() => {
-    if (memorizeProfile.profile.tag.length > 0) {
-      return memorizeProfile.profile.tag.map((tag, index) => {
+    if (profile.profile.tag.length > 0) {
+      return profile.profile.tag.map((tag, index) => {
         return <Tag key={index}>{tag.name}</Tag>;
       });
     }
 
-    return (
-      <Text size={"xs"} color={"#887563"}>
-        編集画面で設定してください。
-      </Text>
-    );
-  }, [memorizeProfile.profile.tag]);
+    return noValueText();
+  }, [profile]);
 
   const favoriteShopViewRender = useCallback(() => {
-    if (memorizeProfile.profile.favoriteShop.name) {
+    if (profile.profile.favoriteShop.name) {
       return (
         <>
-          <Text size={"sm"} color={"#887563"}>
-            {memorizeProfile.profile.favoriteShop.name}
+          <Text size={"sm"} color={"#887563"} ml={4}>
+            {profile.profile.favoriteShop.name}
           </Text>
           <Text size={"sm"} w={"50%"}>
             URL
           </Text>
-          <Text size={"sm"} color={"#887563"}>
+          <Text size={"sm"} color={"#887563"} ml={4}>
             <Link
-              href={memorizeProfile.profile.favoriteShop.url}
+              href={profile.profile.favoriteShop.url}
               isExternal
               display={"flex"}
               alignItems={"center"}
+              wordBreak={"break-all"}
             >
-              {memorizeProfile.profile.favoriteShop.url}
+              {profile.profile.favoriteShop.url}
             </Link>
           </Text>
         </>
       );
     }
 
-    return (
-      <Text size={"xs"} color={"#887563"}>
-        編集画面で設定してください。
-      </Text>
-    );
-  }, [
-    memorizeProfile.profile.favoriteShop.name,
-    memorizeProfile.profile.favoriteShop.url,
-  ]);
+    return noValueText();
+  }, [profile.profile.favoriteShop.name, profile.profile.favoriteShop.url]);
 
   const reasenViewRender = useCallback(() => {
-    if (memorizeProfile.profile.reasen) {
+    if (profile.profile.reasen) {
       return (
         <>
-          <Text size={"sm"} color={"#887563"}>
-            {memorizeProfile.profile.reasen}
+          <Text size={"sm"} color={"#887563"} wordBreak={"break-all"} ml={4}>
+            {profile.profile.reasen}
           </Text>
         </>
       );
     }
 
-    return (
-      <Text size={"xs"} color={"#887563"}>
-        編集画面で設定してください。
-      </Text>
-    );
-  }, [memorizeProfile.profile.reasen]);
+    return noValueText();
+  }, [profile.profile.reasen]);
 
   return (
     <>
@@ -78,37 +90,56 @@ const ProfileIndex: FC = () => {
         direction={{ base: "column", md: "row" }}
         spacing={4}
         width={"100%"}
+        my={4}
       >
-        <Avatar
-          size={"xl"}
-          mr={4}
-          name={"my name"}
-          src={memorizeProfile.profile.image}
-        />
+        <VStack align={"center"}>
+          <Avatar
+            size={"xl"}
+            mr={4}
+            name={"my name"}
+            src={
+              profile.profile.image.length > 0
+                ? profile.profile.image
+                : "https://bit.ly/broken-link"
+            }
+          />
+          <Button variant="solid" onClick={editFormSwitch}>
+            プロフィール編集
+          </Button>
+        </VStack>
+
         <VStack gap={10}>
           <VStack align={"start"} width={"100%"}>
-            <Text size={"sm"}>{memorizeProfile.profile.name}</Text>
-            <Text size={"sm"} color={"#887563"}>
-              Location:{" "}
-              {memorizeProfile.profile.location ??
-                "編集画面で設定してください。"}
-            </Text>
-            <Text size={"sm"} color={"#887563"}>
-              年代:{" "}
-              {memorizeProfile.profile.old
-                ? `${memorizeProfile.profile.old} 代`
-                : "編集画面で設定してください。"}
-            </Text>
-            <Text size={"sm"} color={"#887563"}>
-              古着歴:{" "}
-              {memorizeProfile.profile.age
-                ? `${memorizeProfile.profile.age} 年`
-                : "編集画面で設定してください。"}
-            </Text>
+            <Text size={"sm"}>名前</Text>
+            <Wrap gap={2} color={"#887563"} ml={4}>
+              {profile.profile.name}
+            </Wrap>
+          </VStack>
+          <VStack align={"start"} width={"100%"}>
+            <Text size={"sm"}>Location</Text>
+            <Wrap gap={2} color={"#887563"} ml={4}>
+              {profile.profile.location ?? "未設定"}
+            </Wrap>
+          </VStack>
+          <VStack align={"start"} width={"100%"}>
+            <Text size={"sm"}>年代</Text>
+            <Wrap gap={2} color={"#887563"} ml={4}>
+              {" "}
+              {profile.profile.old ? `${profile.profile.old} 代` : "未設定"}
+            </Wrap>
+          </VStack>
+          <VStack align={"start"} width={"100%"}>
+            <Text size={"sm"}>古着歴</Text>
+            <Wrap gap={2} color={"#887563"} ml={4}>
+              {" "}
+              {profile.profile.age ? `${profile.profile.age} 年目` : "未設定"}
+            </Wrap>
           </VStack>
           <VStack align={"start"} width={"100%"}>
             <Text size={"sm"}>好きなジャンル</Text>
-            <Wrap gap={2}>{tagsViewRender()}</Wrap>
+            <Wrap gap={2} ml={4}>
+              {tagsViewRender()}
+            </Wrap>
           </VStack>
           <VStack align={"start"} spacing={2} width={"100%"}>
             <Text size={"sm"} w={"50%"}>
@@ -122,6 +153,9 @@ const ProfileIndex: FC = () => {
           </VStack>
 
           <MyItems />
+          <VStack align={"start"} width={"100%"}>
+            <LogOut />
+          </VStack>
         </VStack>
       </Stack>
     </>

@@ -4,29 +4,43 @@ import {
   setItemsTagList,
   setItemsList,
   setSelectedTag,
+  setOriginalItemsList,
 } from "../store/itemsSlice";
 import { RootState } from "../store";
 import { itemListType } from "../types/item";
 import { tagType } from "../types/listTye";
+import { getUserItemsApi } from "../api/itemApi";
+import useLoading from "./useLaoding";
 
 type userItemsReturn = {
+  memorizeOriginalItemsList: itemListType[];
   memorizeItemList: itemListType[];
   memorizeTagList: tagType[];
   memorizeSelectedTag: tagType[];
-  getItemsTagListHandler: () => void;
   getItemListHandler: () => void;
   tagsUpdateHandler: (index: number, type: string) => void;
   selectedTagUpdateHandler: (
     list: Array<{
-      id: number;
+      key: number;
       name: string;
     }>
   ) => void;
+  memorizeSliceSearchHandler: (value: string) => void;
 };
 
 const useItems = (): userItemsReturn => {
   const dispatch = useDispatch();
+  const { changeLoading } = useLoading();
+  const profile = useSelector((state: RootState) => state.profile);
 
+  const originalItemsList = useSelector(
+    (state: RootState) => state.items.originalItemsList
+  );
+  const memorizeOriginalItemsList = useMemo(() => {
+    return originalItemsList;
+  }, [originalItemsList]);
+
+  // 自分以外の商品一覧
   const itemsList = useSelector((state: RootState) => state.items.itemsList);
   const memorizeItemList = useMemo(() => {
     return itemsList;
@@ -46,102 +60,56 @@ const useItems = (): userItemsReturn => {
     return selectedTag;
   }, [selectedTag]);
 
-  const getItemsTagListHandler = useCallback(() => {
-    const tags = [
-      {
-        id: 1,
-        name: "All Women's Clothing",
-      },
-      {
-        id: 2,
-        name: "Dresses",
-      },
-      {
-        id: 3,
-        name: "Jackets &amp; Coats",
-      },
-      {
-        id: 4,
-        name: "Swim",
-      },
-      {
-        id: 5,
-        name: "Pants",
-      },
-      {
-        id: 5,
-        name: "Skirts",
-      },
-      {
-        id: 5,
-        name: "Shorts",
-      },
-    ];
+  const getItemListHandler = useCallback(async () => {
+    changeLoading(true);
+    const response = await getUserItemsApi(profile.profile.id);
+    if (response !== undefined) {
+      console.log("getItemListHandler", response);
+      const rawItems = Array.isArray(response.items)
+        ? response.items
+        : [response.items];
 
-    dispatch(setItemsTagList(tags));
-  }, [dispatch]);
+      const itemList: itemListType[] = rawItems.map(
+        (item: {
+          item_id: string;
+          title: string;
+          price: number;
+          curr: string;
+          description: string;
+          type: string;
+          brand: { key: string; name: string }[];
+          images: string[];
+          uploaded_at: Date;
+          profile_image: string;
+        }) => {
+          return {
+            itemId: item.item_id,
+            title: item.title,
+            price: item.price,
+            curr: item.curr,
+            description: item.description,
+            type: item.type,
+            brand: item.brand[0],
+            images: item.images,
+            uploaded_at: item.uploaded_at,
+            profile_image: item.profile_image,
+          };
+        }
+      );
 
-  const getItemListHandler = useCallback(() => {
-    const itemListData = [
-      {
-        title: "Vintage 70s Navy Blue Wool Coa ",
-        description: "",
-        price: 8500,
-        currency: "¥",
-        type: { key: "0", name: "パンツ" },
-        brand: { key: "0", name: "90's" },
-        image: [
-          "https://cdn.usegalileo.ai/sdxl10/b7dd176c-c822-4e72-998e-9b1575310749.png",
-        ],
-      },
-      {
-        title: "Vintage 90s Black &amp; White Striped Tee",
-        description: "",
-        price: 5000,
-        currency: "¥",
-        type: { key: "0", name: "パンツ" },
-        brand: { key: "0", name: "90's" },
-        image: [
-          "https://cdn.usegalileo.ai/sdxl10/4f6e9eb1-9d0e-4435-9600-d63646766c03.png",
-        ],
-      },
-      {
-        title: "Vintage 80s Red &amp; White Polka Dot Skirt",
-        price: 6000,
-        description: "",
-        currency: "¥",
-        type: { key: "0", name: "パンツ" },
-        brand: { key: "0", name: "90's" },
-        image: [
-          "https://cdn.usegalileo.ai/sdxl10/5b42b424-7e9e-4709-9c27-36575d515b37.png",
-        ],
-      },
-      {
-        title: "Vintage 90s Grunge Plaid Flannel Shirt",
-        price: 9000,
-        description: "",
-        currency: "¥",
-        type: { key: "0", name: "パンツ" },
-        brand: { key: "0", name: "90's" },
-        image: [
-          "https://cdn.usegalileo.ai/sdxl10/783d7af6-179e-4116-a3b6-0fdd9ad99bcc.png",
-        ],
-      },
-      {
-        title: "Vintage 60s Boho Embroidered Blouse",
-        price: 10000,
-        description: "",
-        currency: "¥",
-        type: { key: "0", name: "パンツ" },
-        brand: { key: "0", name: "90's" },
-        image: [
-          "https://cdn.usegalileo.ai/sdxl10/764d360f-7916-4467-8d3f-efd16e94bcd2.png",
-        ],
-      },
-    ];
+      const itemBrandList: tagType[] = response.brands.map((brand) => {
+        return {
+          key: Number(brand.key),
+          name: brand.name,
+        };
+      });
 
-    dispatch(setItemsList(itemListData));
-  }, [dispatch]);
+      dispatch(setOriginalItemsList(itemList));
+      dispatch(setItemsList(itemList));
+      dispatch(setItemsTagList(itemBrandList));
+    }
+    changeLoading(false);
+  }, [changeLoading, dispatch, profile.profile.id]);
 
   const tagsUpdateHandler = useCallback(
     (index: number, type: string) => {
@@ -153,25 +121,80 @@ const useItems = (): userItemsReturn => {
         const tag = selectedTag[index];
         const newArray = [...itemtTagList];
         newArray.push(tag);
-        newArray.sort((a, b) => a.id - b.id);
+        newArray.sort((a, b) => a.key - b.key);
         dispatch(setItemsTagList(newArray));
       }
     },
     [dispatch, itemtTagList, selectedTag]
   );
 
-  const selectedTagUpdateHandler = useCallback(
-    (list: Array<{ id: number; name: string }>) => {
-      dispatch(setSelectedTag(list));
+  // 絞り込み共通ロジック
+  const filterUsers = useCallback(
+    (
+      value: string | undefined,
+      tags:
+        | {
+            key: number;
+            name: string;
+          }[]
+        | undefined
+    ) => {
+      let filtered = [...originalItemsList];
+
+      // タグフィルター
+      if (tags !== undefined && tags.length > 0) {
+        const selectedKeys = tags.map((tag) => String(tag.key));
+        filtered = filtered.filter((item) => {
+          if (Array.isArray(item.brand)) {
+            return item.brand.some((brand) =>
+              selectedKeys.includes(String(brand.key))
+            );
+          } else {
+            return selectedKeys.includes(String(item.brand?.key));
+          }
+        });
+      }
+
+      // キーワードフィルター
+      if (value !== undefined && value.trim() !== "") {
+        filtered = filtered.filter((item) =>
+          item.title.toLowerCase().includes(value.toLowerCase())
+        );
+      }
+
+      // タグもキーワードもない場合
+      if (tags?.length === 0 && (value?.trim() === "" || value === undefined)) {
+        filtered = originalItemsList;
+      }
+
+      dispatch(setItemsList(filtered));
     },
-    [dispatch]
+    [dispatch, originalItemsList]
+  );
+
+  // タグ選択時
+  const selectedTagUpdateHandler = useCallback(
+    (list: Array<{ key: number; name: string }>) => {
+      dispatch(setSelectedTag(list));
+      filterUsers(undefined, list); // 絞り込み再実行
+    },
+    [dispatch, filterUsers]
+  );
+
+  // キーワード検索時
+  const memorizeSliceSearchHandler = useCallback(
+    (value: string) => {
+      filterUsers(value, undefined); // 絞り込み再実行
+    },
+    [filterUsers]
   );
 
   return {
-    getItemsTagListHandler,
     selectedTagUpdateHandler,
     getItemListHandler,
     tagsUpdateHandler,
+    memorizeSliceSearchHandler,
+    memorizeOriginalItemsList,
     memorizeItemList,
     memorizeTagList,
     memorizeSelectedTag,

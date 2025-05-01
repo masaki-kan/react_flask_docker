@@ -32,10 +32,16 @@ const MyItems: FC = () => {
           登録ページ
         </Button>
       </HStack>
-      <RebderItem
-        itemList={memorizeProfile.items}
-        navigate={itemDetailHanlder}
-      />
+      {memorizeProfile.items.length === 0 ? (
+        <Text size={"xs"} color={"#887563"}>
+          商品がありません。
+        </Text>
+      ) : (
+        <RebderItem
+          itemList={memorizeProfile.items}
+          navigate={itemDetailHanlder}
+        />
+      )}
     </VStack>
   );
 };

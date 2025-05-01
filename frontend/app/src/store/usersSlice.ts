@@ -1,49 +1,71 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { followListType, tagType } from "../types/listTye";
+import { profileType } from "../types/profile";
+import { itemListType } from "../types/item";
 
 type initialStateType = {
+  originalData: followListType[];
   userList: followListType[];
-  followLists: followListType[];
-  followersList: followListType[];
   selectedTag: tagType[];
   tagList: tagType[];
+  profile: profileType;
+  items: itemListType[];
 };
 const initialState: initialStateType = {
+  originalData: [],
   userList: [],
-  followLists: [],
-  followersList: [],
   selectedTag: [],
   tagList: [],
+  profile: {
+    id: "",
+    image: "",
+    name: "",
+    location: "",
+    old: 0,
+    age: 0,
+    tag: [],
+    favoriteShop: {
+      name: "",
+      url: "",
+    },
+    reasen: "",
+    is_following: false,
+  },
+  items: [],
 };
 
 export const listingSlice = createSlice({
   name: "users",
   initialState,
   reducers: {
+    setOriginalData: (state, action: PayloadAction<followListType[]>) => {
+      state.originalData = action.payload;
+    },
     setUserList: (state, action: PayloadAction<followListType[]>) => {
       state.userList = action.payload;
     },
     setTagList: (state, action: PayloadAction<tagType[]>) => {
       state.tagList = action.payload;
     },
-    setFollowList: (state, action: PayloadAction<followListType[]>) => {
-      state.followLists = action.payload;
-    },
-    setFollowersList: (state, action: PayloadAction<followListType[]>) => {
-      state.followersList = action.payload;
-    },
     setSelectedTag: (state, action: PayloadAction<tagType[]>) => {
       state.selectedTag = action.payload;
+    },
+    setProfile: (
+      state,
+      action: PayloadAction<{ profile: profileType; items: itemListType[] }>
+    ) => {
+      state.profile = action.payload.profile;
+      state.items = action.payload.items;
     },
   },
 });
 
 export const {
+  setOriginalData,
   setUserList,
   setTagList,
-  setFollowList,
-  setFollowersList,
   setSelectedTag,
+  setProfile,
 } = listingSlice.actions;
 
 export default listingSlice.reducer;

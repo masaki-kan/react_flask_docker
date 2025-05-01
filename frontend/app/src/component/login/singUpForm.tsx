@@ -11,7 +11,7 @@ import {
 import { route } from "../../route/routeConst";
 import { useNavigate } from "react-router-dom";
 import RenderButton from "../common/render/renderButton";
-import { singupApi } from "../../../api/loginApis";
+import { singupApi } from "../../api/loginApis";
 import { sinupFormType } from "../../types/loginType";
 
 interface ErrorState {

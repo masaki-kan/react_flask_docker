@@ -1,18 +1,22 @@
 export interface itemListType {
+  itemId: string;
   title: string;
   price: number;
-  currency: string;
+  curr: string;
   description: string;
-  type: { key: string; name: string };
+  type: string;
   brand: { key: string; name: string };
-  image: string[];
+  images: string[];
+  uploaded_at: Date;
+  profile_image: string;
 }
 
 export interface itemDetailType {
+  itemId: number;
   title: string;
   price: number;
   description: string;
-  type: { key: string; name: string };
+  type: string;
   brand: { key: string; name: string };
-  image: string[];
+  images: string[];
 }

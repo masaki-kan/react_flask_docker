@@ -1,4 +1,4 @@
-import React, { FC, useCallback, useEffect } from "react";
+import React, { ChangeEvent, FC, useCallback, useState } from "react";
 import {
   VStack,
   FormControl,
@@ -14,6 +14,7 @@ import useUsers from "../../../hooks/useUsers";
 import useItems from "../../../hooks/useItems";
 import { tagType } from "../../../types/listTye";
 import { route as routeName } from "../../../route/routeConst";
+import { useLocation } from "react-router-dom";
 
 type SearchFormProps = {
   hidden?: boolean;
@@ -24,18 +25,18 @@ type SearchFormProps = {
 
 const SearchForm: FC<SearchFormProps> = React.memo(
   ({ hidden, tagList, selectedTag, route }) => {
+    const pathname = useLocation().pathname;
+    const [search, setSearch] = useState<string>("");
     const {
-      getTagListHandler,
-      getFollowList,
-      getFollowersList,
-      getUserListHandler,
       tagsUpdateHandler: userTagsUpdateHandler,
       selectedTagUpdateHandler: userSelectedTagUpdateHandler,
+      memorizeSliceSearchHandler: userSliceSearchHandler,
     } = useUsers();
 
     const {
       tagsUpdateHandler: itemTagUpdateHandler,
       selectedTagUpdateHandler: itemSelectedTagUpdateHandler,
+      memorizeSliceSearchHandler: itemSliceSearchHandler,
     } = useItems();
 
     const selectedTagAddHandler = useCallback(
@@ -89,32 +90,38 @@ const SearchForm: FC<SearchFormProps> = React.memo(
         }
       },
       [
-        itemSelectedTagUpdateHandler,
-        itemTagUpdateHandler,
         route,
         selectedTag,
+        itemSelectedTagUpdateHandler,
+        itemTagUpdateHandler,
         userSelectedTagUpdateHandler,
         userTagsUpdateHandler,
       ]
     );
 
-    useEffect(() => {
-      getTagListHandler();
-      getFollowList();
-      getFollowersList();
-      getUserListHandler();
-    }, [
-      getFollowList,
-      getFollowersList,
-      getTagListHandler,
-      getUserListHandler,
-    ]);
+    const searchHandler = useCallback(
+      (e: ChangeEvent<HTMLInputElement>) => {
+        const value = e.target.value;
+        if (pathname === "/items") {
+          itemSliceSearchHandler(value);
+        } else {
+          userSliceSearchHandler(value);
+        }
+        setSearch(value);
+      },
+      [itemSliceSearchHandler, userSliceSearchHandler, pathname]
+    );
 
     return (
       <VStack hidden={hidden} align={"start"} w={"full"} gap={3}>
         <FormControl>
-          <FormLabel>Search</FormLabel>
-          <Input placeholder="First name" size="md" />
+          <FormLabel>検索</FormLabel>
+          <Input
+            placeholder="ユーザー名検索"
+            size="md"
+            defaultValue={search}
+            onChange={(e) => searchHandler(e)}
+          />
         </FormControl>
 
         <Box
@@ -140,8 +147,6 @@ const SearchForm: FC<SearchFormProps> = React.memo(
             <Tag
               size="lg"
               key={index}
-              variant="outline"
-              colorScheme="teal"
               cursor="pointer"
               onClick={() => selectedTagAddHandler(index)}
             >

@@ -1,10 +1,16 @@
-import { FC } from "react";
+import { FC, useMemo } from "react";
 import { Avatar, HStack, Link } from "@chakra-ui/react";
 import { route } from "../../../route/routeConst";
 import { useNavigate } from "react-router-dom";
 import { menuLists } from "../../../consts/menuList";
+import useMyProfile from "../../../hooks/useProfile";
 
 const RenderRouteLinks: FC = () => {
+  const { memorizeProfile } = useMyProfile();
+
+  const profile = useMemo(() => {
+    return memorizeProfile;
+  }, [memorizeProfile]);
   const navigate = useNavigate();
 
   const toProfile = () => {
@@ -36,10 +42,15 @@ const RenderRouteLinks: FC = () => {
         })}
 
         <Avatar
-          src="https://cdn.usegalileo.ai/sdxl10/014920d7-e0b4-4ffa-823a-811dd0d3cdbc.png"
-          name="my user"
           size={"md"}
+          mr={4}
+          name={"my name"}
           onClick={toProfile}
+          src={
+            profile.profile.image.length > 0
+              ? profile.profile.image
+              : "https://bit.ly/broken-link"
+          }
         />
       </HStack>
     </>

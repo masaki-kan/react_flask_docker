@@ -3,58 +3,63 @@ import { useDispatch, useSelector } from "react-redux";
 import {
   setUserList,
   setTagList,
-  setFollowList,
-  setFollowersList,
   setSelectedTag,
+  setOriginalData,
 } from "../store/usersSlice";
 import { RootState } from "../store";
+import { getUsersApi } from "../api/userApis";
 import { followListType, tagType } from "../types/listTye";
+import useLoading from "./useLaoding";
 
 type useListingReturn = {
   memorizeUserList: followListType[];
-  getTagListHandler: () => void;
+  memorizeOriginalUserData: followListType[];
   memorizeTagList: tagType[];
-  getFollowList: () => void;
   memorizeFollowLists: followListType[];
-  getFollowersList: () => void;
   memorizeFollowersLists: followListType[];
+  memorizeSelectedTag: tagType[];
   getUserListHandler: () => void;
   tagsUpdateHandler: (index: number, type: string) => void;
-  memorizeSelectedTag: tagType[];
-  selectedTagUpdateHandler: (
-    list: Array<{
-      id: number;
-      name: string;
-    }>
-  ) => void;
+  selectedTagUpdateHandler: (list: tagType[]) => void;
+  memorizeSliceSearchHandler: (value: string) => void;
 };
 
-const useListing = (): useListingReturn => {
+const useUsers = (): useListingReturn => {
   const dispatch = useDispatch();
+  const { changeLoading } = useLoading();
+  const profile = useSelector((state: RootState) => state.profile);
+
+  // 自分以外のユーザー
+  const originalUserData = useSelector(
+    (state: RootState) => state.users.originalData
+  );
+  const memorizeOriginalUserData = useMemo(() => {
+    return originalUserData;
+  }, [originalUserData]);
+
+  // 自分以外のユーザー
   const userList = useSelector((state: RootState) => state.users.userList);
   const memorizeUserList = useMemo(() => {
     return userList;
   }, [userList]);
 
+  // タグリスト
   const tagList = useSelector((state: RootState) => state.users.tagList);
   const memorizeTagList = useMemo(() => {
     return tagList;
   }, [tagList]);
 
-  const followLists = useSelector(
-    (state: RootState) => state.users.followLists
-  );
+  // フォローリスト
   const memorizeFollowLists = useMemo(() => {
-    return followLists;
-  }, [followLists]);
+    return originalUserData.filter((data) => data.is_following === 1);
+  }, [originalUserData]);
 
-  const followersLists = useSelector(
-    (state: RootState) => state.users.followersList
-  );
+  // フォワーリスト
   const memorizeFollowersLists = useMemo(() => {
-    return followersLists;
-  }, [followersLists]);
+    return originalUserData.filter((data) => data.is_followed === 1);
+  }, [originalUserData]);
 
+  // 選択タグ
   const selectedTag = useSelector(
     (state: RootState) => state.users.selectedTag
   );
@@ -62,102 +67,51 @@ const useListing = (): useListingReturn => {
     return selectedTag;
   }, [selectedTag]);
 
-  const getTagListHandler = useCallback(() => {
-    const tags = [
-      {
-        id: 1,
-        name: "Tag1",
-      },
-      {
-        id: 2,
-        name: "Tag2",
-      },
-      {
-        id: 3,
-        name: "Tag3",
-      },
-      {
-        id: 4,
-        name: "Tag4",
-      },
-      {
-        id: 5,
-        name: "Tag5",
-      },
-    ];
+  //自分以外ユーザー一覧取得
+  const getUserListHandler = useCallback(async () => {
+    changeLoading(true);
+    const response = await getUsersApi(profile.profile.id);
 
-    dispatch(setTagList(tags));
-  }, [dispatch]);
+    if (response !== undefined) {
+      console.log("useUsers getUserListHandler> ", response);
+      const userListData: followListType[] = response.users.map(
+        (user: followListType) => {
+          return {
+            user_id: user.user_id,
+            name: user.name,
+            location: user.location,
+            age: user.age,
+            image_url: user.image_url,
+            uploaded_at: user.uploaded_at,
+            item_count: user.item_count,
+            is_followed: user.is_followed,
+            is_following: user.is_following,
+            tags: user.tags.map((tag: tagType) => {
+              return {
+                key: tag.key,
+                name: tag.name,
+              };
+            }),
+          };
+        }
+      );
 
-  const getFollowList = useCallback(() => {
-    const folletListData = [
-      {
-        id: 1,
-        name: "名前 1",
-        itemNumber: 10,
-        icon: "https://cdn.usegalileo.ai/sdxl10/014920d7-e0b4-4ffa-823a-811dd0d3cdbc.png",
-      },
-      {
-        id: 2,
-        name: "名前 2",
-        itemNumber: 20,
-        icon: "https://cdn.usegalileo.ai/sdxl10/014920d7-e0b4-4ffa-823a-811dd0d3cdbc.png",
-      },
-    ];
+      const userTagList: tagType[] = response.tags.map((tag: tagType) => {
+        return {
+          key: tag.key,
+          name: tag.name,
+        };
+      });
 
-    dispatch(setFollowList(folletListData));
-  }, [dispatch]);
+      dispatch(setTagList(userTagList));
+      dispatch(setUserList(userListData));
+      dispatch(setOriginalData(userListData));
+    }
 
-  const getFollowersList = useCallback(() => {
-    const folleertListData = [
-      {
-        id: 3,
-        name: "名前 3",
-        itemNumber: 30,
-        icon: "https://cdn.usegalileo.ai/sdxl10/014920d7-e0b4-4ffa-823a-811dd0d3cdbc.png",
-      },
-    ];
+    changeLoading(false);
+  }, [changeLoading, dispatch, profile.profile.id]);
 
-    dispatch(setFollowersList(folleertListData));
-  }, [dispatch]);
-
-  const getUserListHandler = useCallback(() => {
-    const userListData = [
-      {
-        id: 1,
-        name: "名前 1",
-        itemNumber: 10,
-        icon: "https://cdn.usegalileo.ai/sdxl10/014920d7-e0b4-4ffa-823a-811dd0d3cdbc.png",
-      },
-      {
-        id: 2,
-        name: "名前 2",
-        itemNumber: 20,
-        icon: "https://cdn.usegalileo.ai/sdxl10/014920d7-e0b4-4ffa-823a-811dd0d3cdbc.png",
-      },
-      {
-        id: 3,
-        name: "名前 3",
-        itemNumber: 10,
-        icon: "https://cdn.usegalileo.ai/sdxl10/014920d7-e0b4-4ffa-823a-811dd0d3cdbc.png",
-      },
-      {
-        id: 4,
-        name: "名前 4",
-        itemNumber: 20,
-        icon: "https://cdn.usegalileo.ai/sdxl10/014920d7-e0b4-4ffa-823a-811dd0d3cdbc.png",
-      },
-    ];
-    dispatch(setUserList(userListData));
-  }, [dispatch]);
-
-  const selectedTagUpdateHandler = useCallback(
-    (list: Array<{ id: number; name: string }>) => {
-      dispatch(setSelectedTag(list));
-    },
-    [dispatch]
-  );
-
+  //タグ選択後関数
   const tagsUpdateHandler = useCallback(
     (index: number, type: string) => {
       if (type !== "add") {
@@ -168,26 +122,80 @@ const useListing = (): useListingReturn => {
         const tag = selectedTag[index];
         const newArray = [...tagList];
         newArray.push(tag);
-        newArray.sort((a, b) => a.id - b.id);
+        newArray.sort((a, b) => a.key - b.key);
         dispatch(setTagList(newArray));
       }
     },
     [dispatch, selectedTag, tagList]
   );
 
+  // 絞り込み共通ロジック
+  const filterUsers = useCallback(
+    (
+      value: string | undefined,
+      tags:
+        | {
+            key: number;
+            name: string;
+          }[]
+        | undefined
+    ) => {
+      let filtered = [...originalUserData];
+
+      // タグフィルター
+      if (tags !== undefined && tags.length > 0) {
+        const selectedKeys = tags.map((tag) => String(tag.key));
+        filtered = filtered.filter((user) =>
+          user.tags.some((tag) => selectedKeys.includes(String(tag.key)))
+        );
+      }
+
+      // キーワードフィルター
+      if (value !== undefined && value.trim() !== "") {
+        filtered = filtered.filter((user) =>
+          user.name.toLowerCase().includes(value.toLowerCase())
+        );
+      }
+
+      // タグもキーワードもない場合
+      if (tags?.length === 0 && (value?.trim() === "" || value === undefined)) {
+        filtered = originalUserData;
+      }
+
+      dispatch(setUserList(filtered));
+    },
+    [dispatch, originalUserData]
+  );
+
+  // タグ選択時
+  const selectedTagUpdateHandler = useCallback(
+    (list: Array<{ key: number; name: string }>) => {
+      dispatch(setSelectedTag(list));
+      filterUsers(undefined, list); // 絞り込み再実行
+    },
+    [dispatch, filterUsers]
+  );
+
+  // キーワード検索時
+  const memorizeSliceSearchHandler = useCallback(
+    (value: string) => {
+      filterUsers(value, undefined); // 絞り込み再実行
+    },
+    [filterUsers]
+  );
+
   return {
+    memorizeOriginalUserData,
     memorizeUserList,
-    getTagListHandler,
     memorizeTagList,
-    getFollowList,
     memorizeFollowLists,
-    getFollowersList,
     memorizeFollowersLists,
     getUserListHandler,
     tagsUpdateHandler,
     memorizeSelectedTag,
     selectedTagUpdateHandler,
+    memorizeSliceSearchHandler,
   };
 };
 
-export default useListing;
+export default useUsers;

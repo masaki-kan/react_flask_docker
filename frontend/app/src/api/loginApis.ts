@@ -1,5 +1,5 @@
 import axios from "axios";
-import { sinupFormType } from "../src/types/loginType";
+import { sinupFormType } from "../types/loginType";
 
 export const loginApi = async (formdata: {
   email: string;

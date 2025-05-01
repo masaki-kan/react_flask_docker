@@ -1,11 +1,11 @@
-import { FC, useState } from "react";
+import React, { FC, useState } from "react";
 import { Tabs, TabList, Tab, TabPanels, TabPanel } from "@chakra-ui/react";
 import RenderTabPanel from "./renderPanel";
 import useListing from "../../hooks/useUsers";
 import SearchForm from "../common/form/searchForm";
 import { useLocation } from "react-router-dom";
 
-const ListingsIndex: FC = () => {
+const ListingsIndex: FC = React.memo(() => {
   const pathname = useLocation().pathname;
   const {
     memorizeFollowLists,
@@ -52,6 +52,6 @@ const ListingsIndex: FC = () => {
       </Tabs>
     </>
   );
-};
+});
 
 export default ListingsIndex;

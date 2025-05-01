@@ -1,42 +1,59 @@
 import { FC, useCallback, useEffect, useState } from "react";
 import ProfileIndex from "./profileIndex";
 import ProfileForm from "./profileForm";
-import { Icon, Stack, Tooltip, VStack } from "@chakra-ui/react";
-import { CiEdit } from "react-icons/ci";
-import useMyProfile from "../../hooks/useProfile";
+import { VStack } from "@chakra-ui/react";
 
-import LogOut from "../common/layout/logOut";
+import useMyProfile from "../../hooks/useProfile";
+import { postStoreProfileApi } from "../../api/profileApis";
+import { profileType } from "../../types/profile";
+import { useDispatch } from "react-redux";
+import { updateLoad } from "../../store/loadingSlice";
+import useAlert from "../../hooks/useAlert";
 
 const Profile: FC = () => {
-  const { memorizeProfile, getMyProfile } = useMyProfile();
+  const { getMyProfile } = useMyProfile();
+  const { sweetSuccessOverAlert } = useAlert();
   const [editSwitch, setEditSwitch] = useState<boolean>(false);
+
+  const dispath = useDispatch();
 
   const editFormSwitchHandler = useCallback(() => {
     setEditSwitch((prev) => !prev);
   }, []);
 
+  const formStoreEventHandler = useCallback(
+    async (formdata: profileType) => {
+      dispath(updateLoad(true));
+      const response = await postStoreProfileApi(formdata);
+      if (response?.status !== false) {
+        dispath(updateLoad(false));
+        sweetSuccessOverAlert().then((result) => {
+          if (result.isConfirmed) {
+            // OK 押下時の処理
+            getMyProfile();
+            setEditSwitch(false);
+          }
+        });
+      }
+    },
+    [dispath, getMyProfile, sweetSuccessOverAlert]
+  );
+
   useEffect(() => {
-    getMyProfile();
+    if (editSwitch !== true) {
+      getMyProfile();
+    }
   }, []);
 
   return (
     <VStack align={"start"} gap={9} w={"100%"}>
-      <Stack align={"end"} width={"full"}>
-        <Tooltip label={"プロフィール編集"}>
-          <Icon as={CiEdit} w={8} h={8} onClick={editFormSwitchHandler} />
-        </Tooltip>
-      </Stack>
-
       {editSwitch ? (
         <ProfileForm
-          profileData={memorizeProfile.profile}
-          formSwitchEvent={editFormSwitchHandler}
+          formStoreEvent={formStoreEventHandler}
+          onClickFormSwitch={editFormSwitchHandler}
         />
       ) : (
-        <>
-          <ProfileIndex />
-          <LogOut />
-        </>
+        <ProfileIndex editFormSwitch={editFormSwitchHandler} />
       )}
     </VStack>
   );

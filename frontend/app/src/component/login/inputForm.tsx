@@ -12,7 +12,7 @@ import {
 import { route } from "../../route/routeConst";
 import { useNavigate } from "react-router-dom";
 import RenderButton from "../common/render/renderButton";
-import { loginApi } from "../../../api/loginApis";
+import { loginApi } from "../../api/loginApis";
 import { useAuth } from "../../provider/authContext";
 
 interface ErrorState {

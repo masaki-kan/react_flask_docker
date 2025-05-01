@@ -1,15 +1,33 @@
-import { FC, useMemo } from "react";
+import { FC } from "react";
 import { Heading, VStack } from "@chakra-ui/react";
-
+import { route } from "../../route/routeConst";
 import ShopIndex from "./shopIndex";
 import useProfile from "../../hooks/useProfile";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { RootState } from "../../store";
+import { useSelector } from "react-redux";
+import { useEffectOnce } from "react-use";
+import FullScreenSpinner from "../common/spliner/FullScreenSpinner";
+import useLaoding from "../../hooks/useLaoding";
 
 const Home: FC = () => {
-  const { getUserProfile } = useProfile();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const { memorizeLoading } = useLaoding();
+  const myProfile = useSelector((state: RootState) => state.profile);
+  const userNumver = searchParams.get("userItem");
+  const { getProfile } = useProfile();
 
-  const memorizeUserDate = useMemo(() => {
-    return getUserProfile();
-  }, [getUserProfile]);
+  if (userNumver === undefined || userNumver === null) {
+    navigate(route.users);
+  }
+
+  useEffectOnce(() => {
+    if (userNumver !== null) {
+      // userNumver プロフ対象ユーザー myProfile.profile.id フォローしているかどうか
+      getProfile(userNumver, myProfile.profile.id);
+    }
+  });
 
   return (
     <>
@@ -19,13 +37,9 @@ const Home: FC = () => {
       >
         User Profile
       </Heading>
+      {memorizeLoading && <FullScreenSpinner />}
       <VStack align={"start"} mt={10}>
-        <ShopIndex
-          profileData={{
-            profile: memorizeUserDate.profile,
-            item: memorizeUserDate.items,
-          }}
-        />
+        <ShopIndex />
       </VStack>
     </>
   );

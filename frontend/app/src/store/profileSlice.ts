@@ -5,7 +5,6 @@ import { itemListType } from "../types/item";
 type initialStateType = {
   profile: profileType;
   items: itemListType[];
-  isLoggedIn: boolean;
 };
 const initialState: initialStateType = {
   profile: {
@@ -23,7 +22,6 @@ const initialState: initialStateType = {
     reasen: "",
   },
   items: [],
-  isLoggedIn: false,
 };
 
 export const profileSlice = createSlice({
@@ -48,9 +46,6 @@ export const profileSlice = createSlice({
       state.profile = initialState.profile; // 初期プロフィールにリセット
       state.items = initialState.items; // 初期アイテムリストにリセット
     },
-    setIsLoggedIn: (state, action: PayloadAction<boolean>) => {
-      state.isLoggedIn = action.payload;
-    },
     setLoginAfterProfile: (
       state,
       action: PayloadAction<{ profile: { id: string; name: string } }>
@@ -68,7 +63,6 @@ export const {
   setProfile,
   setUserProfile,
   deleteProfile,
-  setIsLoggedIn,
   setLoginAfterProfile,
 } = profileSlice.actions;
 

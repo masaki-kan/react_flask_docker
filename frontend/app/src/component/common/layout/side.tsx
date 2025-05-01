@@ -30,7 +30,7 @@ const Side: FC = () => {
 
   return (
     <>
-      <Box
+      {/* <Box
         position="fixed"
         top={{ md: "6em" }}
         onClick={onOpen}
@@ -42,7 +42,7 @@ const Side: FC = () => {
           boxSize={6}
           display={{ base: "none", md: "block" }}
         />
-      </Box>
+      </Box> */}
 
       <Drawer isOpen={isOpen} placement="left" onClose={onClose}>
         <DrawerOverlay />

@@ -3,11 +3,13 @@ import { itemListType } from "../types/item";
 import { tagType } from "../types/listTye";
 
 type initialStateType = {
+  originalItemsList: itemListType[];
   itemsList: itemListType[];
   itemsTagList: tagType[];
   selectedTag: tagType[];
 };
 const initialState: initialStateType = {
+  originalItemsList: [],
   itemsList: [],
   itemsTagList: [],
   selectedTag: [],
@@ -17,6 +19,9 @@ export const itemsSlice = createSlice({
   name: "items",
   initialState,
   reducers: {
+    setOriginalItemsList: (state, action: PayloadAction<itemListType[]>) => {
+      state.originalItemsList = action.payload;
+    },
     setItemsList: (state, action: PayloadAction<itemListType[]>) => {
       state.itemsList = action.payload;
     },
@@ -29,7 +34,11 @@ export const itemsSlice = createSlice({
   },
 });
 
-export const { setItemsList, setItemsTagList, setSelectedTag } =
-  itemsSlice.actions;
+export const {
+  setOriginalItemsList,
+  setItemsList,
+  setItemsTagList,
+  setSelectedTag,
+} = itemsSlice.actions;
 
 export default itemsSlice.reducer;
