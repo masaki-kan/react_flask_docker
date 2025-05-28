@@ -24,11 +24,19 @@ const MyItems: FC = () => {
 
   return (
     <VStack align={"start"} w={"full"}>
-      <HStack justifyContent={"space-between"} w={"full"} alignItems={"center"}>
+      <HStack
+        justifyContent={{ base: "space-between", md: "start" }}
+        w={"full"}
+        alignItems={"center"}
+      >
         <Text size={"sm"} mr={10}>
           登録商品
         </Text>
-        <Button leftIcon={<MdOutlineShoppingBag />} onClick={toItemPushHandler}>
+        <Button
+          size={"sm"}
+          leftIcon={<MdOutlineShoppingBag />}
+          onClick={toItemPushHandler}
+        >
           登録ページ
         </Button>
       </HStack>

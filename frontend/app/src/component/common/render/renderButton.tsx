@@ -4,9 +4,14 @@ import { Button } from "@chakra-ui/react";
 type RenderButtonType = {
   clickEvent: () => void;
   title: string;
+  disable?: boolean;
 };
 
-const RenderButton: FC<RenderButtonType> = ({ clickEvent, title }) => {
+const RenderButton: FC<RenderButtonType> = ({
+  clickEvent,
+  title,
+  disable = false,
+}) => {
   return (
     <Button
       minW="84px"
@@ -17,6 +22,7 @@ const RenderButton: FC<RenderButtonType> = ({ clickEvent, title }) => {
       fontWeight="bold"
       mt="3"
       w="full"
+      isDisabled={disable}
       onClick={clickEvent}
     >
       {title}

@@ -9,6 +9,8 @@ export interface itemListType {
   images: string[];
   uploaded_at: Date;
   profile_image: string;
+  user_id: number;
+  likes?: number[];
 }
 
 export interface itemDetailType {

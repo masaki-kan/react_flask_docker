@@ -7,11 +7,11 @@ import { Box, Container, Flex } from "@chakra-ui/react";
 const SecureLayout: FC = () => {
   return (
     <>
-      <Flex direction="column" h="100vh">
+      <Flex direction="column">
         <MainHeader />
         <Side />
 
-        <Container maxW="container.xl">
+        <Container maxW="container.xl" minHeight="100vh">
           <Box overflowY="auto" mt={{ base: "8em", md: "6em" }}>
             <Outlet />
           </Box>

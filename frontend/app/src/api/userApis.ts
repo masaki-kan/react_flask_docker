@@ -1,5 +1,5 @@
 import axios from "axios";
-import { followListType, tagType } from "../types/listTye";
+import { followListType, tagType } from "../types/listType";
 
 export const getUsersApi = async (
   myId: string

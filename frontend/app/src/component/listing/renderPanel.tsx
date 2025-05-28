@@ -1,6 +1,6 @@
-import { FC, useCallback } from "react";
+import { FC, useCallback, useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { renderTabPanelType } from "../../types/listTye";
+import { renderTabPanelType } from "../../types/listType";
 import { route } from "../../route/routeConst";
 import {
   TabPanel,
@@ -10,15 +10,48 @@ import {
   Text,
   Tag,
   Wrap,
+  Box,
 } from "@chakra-ui/react";
+import { FaExclamation } from "react-icons/fa";
 
 const RenderPanel: FC<renderTabPanelType> = ({ data }) => {
+  const [readUserTimestamps, setReadUserTimestamps] = useState<
+    Record<string, string>
+  >(() => {
+    const stored = localStorage.getItem("readUserTimestamps");
+    try {
+      return stored ? JSON.parse(stored) : {};
+    } catch {
+      localStorage.removeItem("readUserTimestamps");
+      return {};
+    }
+  });
   const navigate = useNavigate();
+  const isFirstLoad = useRef(true);
+
+  useEffect(() => {
+    if (isFirstLoad.current) {
+      isFirstLoad.current = false;
+      return;
+    }
+    localStorage.setItem(
+      "readUserTimestamps",
+      JSON.stringify(readUserTimestamps)
+    );
+  }, [readUserTimestamps]);
+
   const userPageTransition = useCallback(
-    (user_id: number) => {
+    (user_id: number, uploadedAt: string) => {
+      const newTimestamps = {
+        ...readUserTimestamps,
+        [user_id]: uploadedAt,
+      };
+      setReadUserTimestamps(newTimestamps);
+      // ここで保存しても良い
+      localStorage.setItem("readUserTimestamps", JSON.stringify(newTimestamps));
       navigate(`${route.shopPage}?userItem=${user_id}`);
     },
-    [navigate]
+    [navigate, readUserTimestamps]
   );
 
   return (
@@ -26,23 +59,45 @@ const RenderPanel: FC<renderTabPanelType> = ({ data }) => {
       <TabPanel p={0}>
         <VStack align={"start"}>
           {data.map((list, index) => {
+            const userKey: string = list.user_id.toString();
+            const lastRead = readUserTimestamps[userKey];
+            console.log(list.uploaded_at, lastRead);
+            const isNew =
+              !lastRead || new Date(list.uploaded_at) > new Date(lastRead);
             return (
               <HStack
                 key={index}
-                onClick={() => userPageTransition(list.user_id)}
+                onClick={() =>
+                  userPageTransition(list.user_id, list.uploaded_at)
+                }
                 _hover={{
                   bgColor: "#f4f2f0",
                   transition: "background-color 0.3s ease",
                 }}
                 w={"full"}
               >
-                <Avatar
-                  src={
-                    list.image_url.length > 0
-                      ? list.image_url
-                      : "https://bit.ly/broken-link"
-                  }
-                />
+                <Box position={"relative"}>
+                  <Avatar
+                    src={
+                      list.image_url.length > 0
+                        ? list.image_url
+                        : "https://bit.ly/broken-link"
+                    }
+                  />
+                  {isNew && (
+                    <Box
+                      position={"absolute"}
+                      top={-3}
+                      right={-3}
+                      borderRadius={"50%"}
+                      bgColor={"#b03a3a"}
+                      p={1}
+                    >
+                      <FaExclamation size={10} color="white" />
+                    </Box>
+                  )}
+                </Box>
+
                 <VStack align={"start"} ml={4}>
                   <Text>{list.name}</Text>
                   <HStack align={"start"}>

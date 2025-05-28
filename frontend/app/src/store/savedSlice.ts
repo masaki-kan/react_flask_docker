@@ -1,5 +1,4 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-
 import { savedListType } from "../types/savedType";
 
 type initialStateType = {

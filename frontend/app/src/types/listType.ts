@@ -3,7 +3,7 @@ export interface followListType {
   image_url: string;
   location: string;
   name: string;
-  uploaded_at: null;
+  uploaded_at: string;
   user_id: number;
   item_count: number;
   is_followed: number;

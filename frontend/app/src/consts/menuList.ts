@@ -16,6 +16,11 @@ export const menuLists = [
     route: route.items,
   },
   {
+    text: "favorite",
+    icon: TbCreditCardPay,
+    route: route.favorite,
+  },
+  {
     text: "Saved",
     icon: CiHeart,
     route: route.saved,

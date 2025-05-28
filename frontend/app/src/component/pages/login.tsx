@@ -1,7 +1,7 @@
 import { type FC, useCallback, useState } from "react";
 import Header from "../common/layout/header";
 import InputForm from "../login/inputForm";
-import SingUpForm from "../login/singUpForm";
+import SingUpForm from "../login/sinUp/singUpForm";
 
 const Login: FC = () => {
   const [formSwitchStatus, setFormSwitchStatus] = useState<boolean>(false);
@@ -21,7 +21,11 @@ const Login: FC = () => {
         loginSwitch={loginClick}
         formSwitchStatus={formSwitchStatus}
       />
-      {!formSwitchStatus ? <InputForm /> : <SingUpForm />}
+      {!formSwitchStatus ? (
+        <InputForm />
+      ) : (
+        <SingUpForm loginClick={loginClick} />
+      )}
     </>
   );
 };

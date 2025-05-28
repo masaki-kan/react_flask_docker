@@ -42,7 +42,7 @@ const MainHeader: FC = () => {
           fontWeight="bold"
           letterSpacing="-0.015em"
         >
-          Vintage Threads
+          僕らのヴィンテージ
         </Heading>
       </HStack>
       <RenderRouteLinks />

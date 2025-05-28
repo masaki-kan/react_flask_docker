@@ -122,7 +122,7 @@ const ShopIndex: FC = () => {
     );
     if (response !== undefined) {
       followAlert(response.action);
-      setFollowCheck(response.action === "unfollowed" ? false : true);
+      setFollowCheck(response.result ?? false);
     }
   }, [followAlert, memorizeuserProfile.profile.id, myProfile.profile.id]);
 

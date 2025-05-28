@@ -2,14 +2,29 @@ import { useToast } from "@chakra-ui/react";
 import Swal, { SweetAlertResult } from "sweetalert2";
 
 type useAlertReturn = {
+  errorAlert: (text: string) => void;
   defaultAlert: (status: boolean) => void;
+  successAlert: (text: string) => void;
   followAlert: (text: string) => void;
+  tradeAlert: (text: string) => Promise<SweetAlertResult<unknown>>;
   sweetSuccessOverAlert: () => Promise<SweetAlertResult<unknown>>;
+  sweetSuccessTextOverAlert: (
+    text: string
+  ) => Promise<SweetAlertResult<unknown>>;
   sweetErrorOverAlert: () => Promise<SweetAlertResult<unknown>>;
+  favoriteAlert: (text: string) => void;
 };
 
 const useAlert = (): useAlertReturn => {
   const toast = useToast();
+
+  const errorAlert = (text: string) => {
+    return Swal.fire({
+      title: text,
+      icon: "error",
+      draggable: true,
+    });
+  };
 
   const defaultAlert = (status: boolean) => {
     toast({
@@ -26,6 +41,40 @@ const useAlert = (): useAlertReturn => {
       status: "success",
       duration: 2000,
       isClosable: true,
+    });
+  };
+
+  const successAlert = (text: string) => {
+    toast({
+      title: text,
+      status: "success",
+      duration: 2000,
+      isClosable: true,
+    });
+  };
+
+  const sweetSuccessTextOverAlert = (text: string) => {
+    return Swal.fire({
+      title: text,
+      icon: "success",
+      draggable: true,
+    });
+  };
+
+  const favoriteAlert = (text: string) => {
+    toast({
+      title: text,
+      status: "success",
+      duration: 2000,
+      isClosable: true,
+    });
+  };
+
+  const tradeAlert = (text: string) => {
+    return Swal.fire({
+      title: text,
+      icon: "success",
+      draggable: true,
     });
   };
 
@@ -47,10 +96,15 @@ const useAlert = (): useAlertReturn => {
   };
 
   return {
+    successAlert,
+    errorAlert,
     defaultAlert,
     followAlert,
+    tradeAlert,
     sweetSuccessOverAlert,
+    sweetSuccessTextOverAlert,
     sweetErrorOverAlert,
+    favoriteAlert,
   };
 };
 

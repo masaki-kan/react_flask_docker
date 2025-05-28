@@ -1,11 +1,22 @@
 import { configureStore } from "@reduxjs/toolkit";
-import { persistReducer, persistStore } from "redux-persist";
+import {
+  FLUSH,
+  PAUSE,
+  PERSIST,
+  persistReducer,
+  persistStore,
+  PURGE,
+  REGISTER,
+  REHYDRATE,
+} from "redux-persist";
 import storage from "redux-persist/lib/storage";
 import usersReducer from "./usersSlice";
 import itemsReducer from "./itemsSlice";
 import savedReducer from "./savedSlice";
 import profileReducer from "./profileSlice";
 import loadingReducer from "./loadingSlice";
+import navigationReducer from "./navigationSlice";
+import chatReducer from "./chatSlice";
 
 const persistConfig = {
   key: "profile",
@@ -22,7 +33,16 @@ const store = configureStore({
     profile: persistedProfileReducer,
     saved: savedReducer,
     load: loadingReducer,
+    navigation: navigationReducer,
+    chat: chatReducer,
   },
+  middleware: (getDefaultMiddleware) =>
+    getDefaultMiddleware({
+      serializableCheck: {
+        // redux-persist の非シリアライズ可能な action を許可
+        ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
+      },
+    }),
 });
 
 const persistor = persistStore(store);

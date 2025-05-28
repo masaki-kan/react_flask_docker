@@ -1,4 +1,4 @@
-import { useEffect, useMemo, type FC } from "react";
+import { useMemo, type FC } from "react";
 import { Heading } from "@chakra-ui/react";
 import ItemForm from "../common/form/itemForm";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -11,20 +11,16 @@ const Home: FC = () => {
   const { memorizeProfile } = useMyProfile();
   const userItemNumver = searchParams.get("userItem");
   const memorizeProfileItem = useMemo(() => {
-    if (userItemNumver) {
-      return memorizeProfile.items.filter(
-        (item) => item.itemId === Number(userItemNumver)
-      );
-    }
-  }, [memorizeProfile.items, userItemNumver]);
+    return memorizeProfile.items.filter(
+      (item) => String(item.itemId) === String(userItemNumver)
+    );
+  }, [memorizeProfile, userItemNumver]);
 
-  useEffect(() => {
-    if (memorizeProfileItem) {
-      if (memorizeProfileItem.length === 0) {
-        navigate(route.home);
-      }
-    }
-  }, [memorizeProfileItem, navigate, userItemNumver]);
+  if (userItemNumver === null || !userItemNumver) {
+    navigate(route.home);
+
+    return;
+  }
 
   if (memorizeProfileItem !== undefined)
     return (
@@ -36,7 +32,10 @@ const Home: FC = () => {
         >
           Item Eidt
         </Heading>
-        <ItemForm profileItem={memorizeProfileItem[0]} />
+        <ItemForm
+          profileItem={memorizeProfileItem[0]}
+          ItemNumver={userItemNumver}
+        />
       </>
     );
 };

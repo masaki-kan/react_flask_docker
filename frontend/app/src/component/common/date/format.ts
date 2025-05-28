@@ -7,5 +7,5 @@ export const viewDate = (value: Date): string => {
   const hours = String(date.getHours()).padStart(2, "0");
   const minutes = String(date.getMinutes()).padStart(2, "0");
 
-  return `${year}年${month}月${day}日 ${hours}時${minutes}分`;
+  return `${year}年${month}月${day}日 ${hours}:${minutes}`;
 };

@@ -3,6 +3,8 @@ import { useDispatch, useSelector } from "react-redux";
 import { setSaveList } from "../store/savedSlice";
 import { RootState } from "../store";
 import { savedListType } from "../types/savedType";
+import { getSavedList } from "../api/trageApi";
+import useLoading from "./useLaoding";
 
 type useSavedReturn = {
   memorizeSavedList: savedListType[];
@@ -11,30 +13,36 @@ type useSavedReturn = {
 
 const useSaved = (): useSavedReturn => {
   const dispatch = useDispatch();
+  const { changeLoading } = useLoading();
   const memorizeSavedList = useSelector(
     (state: RootState) => state.saved.saveList
   );
 
-  const getSavedListHandler = useCallback(() => {
-    const demoDate = [
-      {
-        user: {
-          id: 1,
-          name: "demo user",
-          image:
-            "https://cdn.usegalileo.ai/sdxl10/014920d7-e0b4-4ffa-823a-811dd0d3cdbc.png",
-        },
-        item: {
-          id: 1,
-          name: "Vintage 90s Grunge Plaid Flannel Shirt",
-          image:
-            "https://cdn.usegalileo.ai/sdxl10/783d7af6-179e-4116-a3b6-0fdd9ad99bcc.png",
-        },
-        savedtime: "2024/05/21 22:54:20",
-      },
-    ];
-    dispatch(setSaveList(demoDate));
-  }, [dispatch]);
+  const profile = useSelector((state: RootState) => state.profile);
+
+  const getSavedListHandler = useCallback(async () => {
+    changeLoading(true);
+    const response = await getSavedList(profile.profile.id);
+    if (response !== undefined) {
+      console.log(response);
+
+      const savedData = response.trades.map((trage) => {
+        return {
+          image_url: trage.image_url,
+          status: trage.status,
+          title: trage.title,
+          trade_created_at: trage.trade_created_at,
+          trade_id: trage.trade_id,
+          user_image_url: trage.user_image_url,
+          user_name: trage.user_name,
+          user_id: trage.user_id,
+        };
+      });
+
+      dispatch(setSaveList(savedData));
+    }
+    changeLoading(false);
+  }, [changeLoading, dispatch, profile.profile.id]);
 
   return {
     memorizeSavedList,

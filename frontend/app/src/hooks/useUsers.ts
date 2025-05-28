@@ -8,7 +8,7 @@ import {
 } from "../store/usersSlice";
 import { RootState } from "../store";
 import { getUsersApi } from "../api/userApis";
-import { followListType, tagType } from "../types/listTye";
+import { followListType, tagType } from "../types/listType";
 import useLoading from "./useLaoding";
 
 type useListingReturn = {
@@ -73,39 +73,25 @@ const useUsers = (): useListingReturn => {
     const response = await getUsersApi(profile.profile.id);
 
     if (response !== undefined) {
-      console.log("useUsers getUserListHandler> ", response);
-      const userListData: followListType[] = response.users.map(
-        (user: followListType) => {
-          return {
-            user_id: user.user_id,
-            name: user.name,
-            location: user.location,
-            age: user.age,
-            image_url: user.image_url,
-            uploaded_at: user.uploaded_at,
-            item_count: user.item_count,
-            is_followed: user.is_followed,
-            is_following: user.is_following,
-            tags: user.tags.map((tag: tagType) => {
-              return {
-                key: tag.key,
-                name: tag.name,
-              };
-            }),
-          };
-        }
-      );
-
-      const userTagList: tagType[] = response.tags.map((tag: tagType) => {
-        return {
+      const newUserList: followListType[] = response.users.map((user) => ({
+        user_id: user.user_id,
+        name: user.name,
+        location: user.location,
+        age: user.age,
+        image_url: user.image_url,
+        uploaded_at: user.uploaded_at,
+        item_count: user.item_count,
+        is_followed: user.is_followed,
+        is_following: user.is_following,
+        tags: user.tags.map((tag: tagType) => ({
           key: tag.key,
           name: tag.name,
-        };
-      });
+        })),
+      }));
 
-      dispatch(setTagList(userTagList));
-      dispatch(setUserList(userListData));
-      dispatch(setOriginalData(userListData));
+      // 保存
+      dispatch(setUserList(newUserList));
+      dispatch(setOriginalData(newUserList)); // 更新はこの後
     }
 
     changeLoading(false);

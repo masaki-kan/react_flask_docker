@@ -1,13 +1,10 @@
 export interface savedListType {
-  user: {
-    id: number;
-    name: string;
-    image: string;
-  };
-  item: {
-    id: number;
-    name: string;
-    image: string;
-  };
-  savedtime: string;
+  image_url: string;
+  status: string;
+  title: string;
+  trade_created_at: Date;
+  trade_id: number;
+  user_image_url: string;
+  user_name: string;
+  user_id: number;
 }

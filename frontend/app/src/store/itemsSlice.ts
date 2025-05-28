@@ -1,6 +1,6 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-import { itemListType } from "../types/item";
-import { tagType } from "../types/listTye";
+import { itemListType } from "../types/itemType";
+import { tagType } from "../types/listType";
 
 type initialStateType = {
   originalItemsList: itemListType[];

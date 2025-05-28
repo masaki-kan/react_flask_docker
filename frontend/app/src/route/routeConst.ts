@@ -10,5 +10,6 @@ export const route = {
   myItemEdit: "/my_item/edit",
   shopPage: "/shop_page",
   transactionChat: "/transaction/chat",
+  favorite: "/favorite",
   profile: "/",
 };

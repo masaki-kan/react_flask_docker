@@ -10,10 +10,12 @@ import { FC } from "react";
 
 type KeyboardControlGallerySliderProps = {
   images: string[];
+  sm?: boolean;
 };
 
 const KeyboardControlGallerySlider: FC<KeyboardControlGallerySliderProps> = ({
   images,
+  sm = false,
 }) => {
   return (
     <>
@@ -38,7 +40,7 @@ const KeyboardControlGallerySlider: FC<KeyboardControlGallerySliderProps> = ({
                 key={index}
                 src={img}
                 objectFit={"contain"}
-                height={"350px"}
+                h={sm ? "200px!important" : "350px"}
               />
             </SwiperSlide>
           );

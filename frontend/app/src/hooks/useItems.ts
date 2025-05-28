@@ -7,8 +7,8 @@ import {
   setOriginalItemsList,
 } from "../store/itemsSlice";
 import { RootState } from "../store";
-import { itemListType } from "../types/item";
-import { tagType } from "../types/listTye";
+import { itemListType } from "../types/itemType";
+import { tagType } from "../types/listType";
 import { getUserItemsApi } from "../api/itemApi";
 import useLoading from "./useLaoding";
 
@@ -81,9 +81,11 @@ const useItems = (): userItemsReturn => {
           images: string[];
           uploaded_at: Date;
           profile_image: string;
+          user_id: number;
         }) => {
           return {
             itemId: item.item_id,
+            user_id: item.user_id,
             title: item.title,
             price: item.price,
             curr: item.curr,

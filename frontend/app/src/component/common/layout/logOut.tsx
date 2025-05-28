@@ -11,7 +11,6 @@ const LogOut: FC = () => {
       leftIcon={<RiLogoutBoxRLine />}
       variant="solid"
       onClick={logOutHandler}
-      my={10}
     >
       Log out
     </Button>

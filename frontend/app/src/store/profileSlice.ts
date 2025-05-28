@@ -1,6 +1,6 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-import { profileType } from "../types/profile";
-import { itemListType } from "../types/item";
+import { profileType } from "../types/profileType";
+import { itemListType } from "../types/itemType";
 
 type initialStateType = {
   profile: profileType;
@@ -20,6 +20,7 @@ const initialState: initialStateType = {
       url: "",
     },
     reasen: "",
+    likes: [],
   },
   items: [],
 };

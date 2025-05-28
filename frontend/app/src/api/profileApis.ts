@@ -3,7 +3,7 @@ import {
   apiRetuenProfileType,
   profileType,
   profileItemType,
-} from "../types/profile";
+} from "../types/profileType";
 // import { sweetErrorAlert } from "../src/component/common/toast/alert";
 
 // プロフ取得
@@ -33,6 +33,7 @@ export const getProfileApi = async (
       },
       reasen: response.data.profile.reasen,
       is_following: response.data.profile.is_following,
+      likes: response.data.profile.likes,
     };
 
     const items = response.data.items.map(

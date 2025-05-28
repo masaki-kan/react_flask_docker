@@ -1,12 +1,14 @@
 import { useCallback, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { profileType } from "../types/profile";
+import { profileType } from "../types/profileType";
 import { type RootState } from "../store";
-import { itemListType } from "../types/item";
+import { itemListType } from "../types/itemType";
 import { getProfileApi } from "../api/profileApis";
 import { setProfile } from "../store/profileSlice";
 import { setProfile as setSliceProfile } from "../store/usersSlice";
 import useLoading from "./useLaoding";
+import { itemLikeApi } from "../api/likeApi";
+import useAlert from "./useAlert";
 
 type useMyProfileReturn = {
   memorizeProfile: {
@@ -20,10 +22,12 @@ type useMyProfileReturn = {
   getMyProfile: () => Promise<void>;
   getUserProfile: () => { profile: profileType; items: itemListType[] };
   getProfile: (userNumver: string, myUserNumber: string) => Promise<void>;
+  favoriteUpdateHandler: (itemId: string, userId: string) => Promise<void>;
 };
 
 const useMyProfile = (): useMyProfileReturn => {
   const dispatch = useDispatch();
+  const { favoriteAlert } = useAlert();
   const { changeLoading } = useLoading();
   const profile = useSelector((state: RootState) => state.profile);
 
@@ -76,12 +80,42 @@ const useMyProfile = (): useMyProfileReturn => {
     };
   }, [profile.items, profile.profile]);
 
+  const favoriteUpdateHandler = useCallback(
+    async (itemId: string, userId: string) => {
+      const response = await itemLikeApi(itemId, userId);
+
+      if (response !== undefined) {
+        const item_id = Number(itemId);
+
+        const newLikes = response.liked
+          ? memorizeProfile.profile.likes.includes(item_id)
+            ? memorizeProfile.profile.likes
+            : [...memorizeProfile.profile.likes, item_id]
+          : memorizeProfile.profile.likes.filter((id) => id !== item_id);
+
+        dispatch(
+          setProfile({
+            profile: {
+              ...memorizeProfile.profile,
+              likes: newLikes,
+            },
+            items: memorizeProfile.items,
+          })
+        );
+
+        favoriteAlert(response.message);
+      }
+    },
+    [dispatch, favoriteAlert, memorizeProfile.items, memorizeProfile.profile]
+  );
+
   return {
     memorizeuserProfile,
     memorizeProfile,
     getMyProfile,
     getUserProfile,
     getProfile,
+    favoriteUpdateHandler,
   };
 };
 

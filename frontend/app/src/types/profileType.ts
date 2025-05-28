@@ -12,6 +12,7 @@ export interface profileType {
   };
   reasen: string;
   is_following?: boolean;
+  likes: number[];
 }
 
 export interface apiRetuenProfileType {

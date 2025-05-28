@@ -1,19 +1,38 @@
-from flask import Flask, jsonify, request
-from flask_cors import CORS
-from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
-from werkzeug.security import generate_password_hash, check_password_hash
+import os
+os.environ["EVENTLET_NO_GREENDNS"] = "yes"
+basedir = os.path.abspath(os.path.dirname(__file__))
+ssl_cert = os.path.join(basedir, "cert/localhost.pem")
+ssl_key = os.path.join(basedir, "cert/localhost-key.pem")
+
+import eventlet
+eventlet.monkey_patch()  
+
 import mysql.connector # type: ignore
 from datetime import timedelta
 from database import create_table
+
+from flask import Flask, jsonify, request, send_from_directory
+from flask_cors import CORS
+from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
+from flask_socketio import SocketIO, emit, join_room
+
+from werkzeug.utils import secure_filename
+from werkzeug.security import generate_password_hash, check_password_hash
 import json
+from datetime import datetime
 
 app = Flask(__name__)
 # appを定義した後にCORSを設定
-CORS(app, resources={r"/*": {"origins": "http://localhost:5173"}}) # 特定のオリジンだけを許可する場合
+CORS(app, resources={r"/*": {"origins": "https://localhost:5173"}}) # 特定のオリジンだけを許可する場合
 
+socketio = SocketIO(app, cors_allowed_origins="*",async_mode="eventlet")  # CORS対応も忘れずに
+# socketio = SocketIO(app, cors_allowed_origins="*")  # CORS対応も忘れずに
 app.config['JWT_SECRET_KEY'] = 'c5d5fd2e2543b248957a148ae9a572466bb2bbd4c628da19be37c07cf6094ac49c97607425d5d1ceac6d914e5399ca7fcd34cbf2995654c962b7233c42f8ebc14aa9025d0d335c3fb95c541a69b3e8b5d4ffb2fc86b5b15a276b6b90d06a94915c60392ebb950d962f6be6f5a3392bea80b460736082166b7cd9a72a2b7e8a29'  # シークレットキーを設定
 app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=1)
 jwt = JWTManager(app)
+
+# アップロードディレクトリの絶対パスを設定
+UPLOAD_FOLDER = os.path.join(os.getcwd(), 'uploads')  # 絶対パスで指定
 
 # MySQL接続設定
 app.config['MYSQL_HOST'] = 'mysql_db'
@@ -75,12 +94,10 @@ def singUp():
     username = request.json.get('username', None)
     email = request.json.get('email', None)
     password = request.json.get('password', None)
-    
-    print(request.json ,  flush=True)
+    plan = request.json.get('plan',None )
         
     if not all([username, email, password]):
-        return jsonify({"error": "Missing data"}), 400
-    
+        return jsonify({"error": "登録に失敗しました。"}), 400
     
     hashed_password = generate_password_hash(password)
     conn = get_db_connection()
@@ -89,14 +106,13 @@ def singUp():
     try:
         cursor.execute("INSERT INTO users (name, email, password) VALUES (%s, %s, %s)", (username, email, hashed_password))
         conn.commit()
-        return jsonify({"message": "User registered successfully",
+        return jsonify({"message": "登録しました。ログイン画面に移ります",
                         "result" : True}), 201
     except mysql.connector.Error as err:
         return jsonify({"error": str(err)}), 500
 
     finally:
         conn.close()
-    
 
 @app.route('/postStoreProfile' , methods=['POST'])
 def postStoreProfile():
@@ -113,10 +129,7 @@ def postStoreProfile():
     shop_url = user_data.get('favoriteShop', {}).get("url")
     reasen = user_data.get("reasen")
     
-    print("受け取った値:", {
-    'user_id' :user_id,
-
-}, flush=True)
+    print("受け取った値:", {'user_id' :user_id,}, flush=True)
     
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -131,7 +144,8 @@ def postStoreProfile():
                 age = %s,
                 shop_name = %s,
                 shop_url = %s,
-                reasen = %s
+                reasen = %s,
+                uploaded_at = CURRENT_TIMESTAMP
             WHERE user_id = %s
         ''', (name, location, old, age, shop_name, shop_url, reasen, user_id))
         
@@ -272,9 +286,17 @@ def getMyProfile():
             ''', (item['item_id'],))
             item_images = cursor.fetchall()
             item['images'] = [r['image_url'] for r in item_images]
-
             items.append(item)
-
+    
+        cursor.execute('''
+        SELECT item_id
+        FROM likes
+        WHERE user_id = %s
+        ''', (user_id,))
+        liked_items = cursor.fetchall()
+        
+        # item_id のみ抽出
+        user_data['likes'] = [like['item_id'] for like in liked_items]
             
         # 全体をまとめて返す
         response = {
@@ -306,25 +328,32 @@ def postStoreProfileItem():
     mode = request.json.get('dateUpChange')
 
     conn = get_db_connection()
-    cursor = conn.cursor()
+    cursor = conn.cursor(buffered=True, dictionary=True)
 
     try:
         if mode == "update":
             # すでに登録されている item_id を検索
             cursor.execute('''
-                SELECT item_id FROM items WHERE user_id = %s ''', (user_id,))
+                SELECT item_id FROM items WHERE user_id = %s AND item_id = %s ''', (user_id,item_id))
             existing = cursor.fetchone()
-            # 挿入された item_id を取得（AUTO_INCREMENT の値）
+            
+            cursor.execute('''
+                UPDATE users
+                SET uploaded_at = CURRENT_TIMESTAMP
+                WHERE user_id = %s
+            ''', (user_id,))
 
+            # 挿入された item_id を取得（AUTO_INCREMENT の値）
             if existing:
-                item_id = existing[0]
+                item_id = existing.get('item_id')
                 cursor.execute('''
                     UPDATE items 
                     SET title = %s, description = %s, type = %s, brand = %s, curr = %s, price = %s, uploaded_at = CURRENT_TIMESTAMP
                     WHERE item_id = %s
                 ''', (title, description, type_json, brand_json, curr, price, item_id))
+
             else:
-                return jsonify({"error": "更新対象が見つかりません"}), 404
+                return jsonify({"error": "更新対象が見つかりません"}), 404 
                 
             # 古い画像を削除
             cursor.execute("DELETE FROM item_images WHERE item_id = %s", (item_id,))
@@ -334,7 +363,6 @@ def postStoreProfileItem():
                     INSERT INTO item_images (item_id, user_id, image_url)
                     VALUES (%s, %s, %s)
                 ''', (item_id, user_id, url))
-                
                 
         else:
              # 新規作成
@@ -353,7 +381,7 @@ def postStoreProfileItem():
 
         conn.commit()
         return jsonify({"message": "登録成功",
-                        "result" : True}), 201
+                        "result" : True}), 200
 
     except mysql.connector.Error as err:
         return jsonify({"error": str(err)}), 500
@@ -377,8 +405,9 @@ def getUsers():
                 u.age,
                 u.shop_name, 
                 u.shop_url,
+                u.uploaded_at,
                 IFNULL(p.image_url, '') AS image_url,
-                IFNULL(i.uploaded_at, '') AS uploaded_at,
+                IFNULL(i.created_at, '') AS created_at,
                 IFNULL(ic.item_count, 0) AS item_count,
                 tg.tag,
                 CASE WHEN f1.follower_id IS NOT NULL THEN TRUE ELSE FALSE END AS is_following,
@@ -387,13 +416,13 @@ def getUsers():
             LEFT JOIN profile_images p ON u.user_id = p.user_id
             LEFT JOIN tags tg ON u.user_id = tg.user_id
             LEFT JOIN (
-                SELECT i1.*
-                FROM items i1
-                INNER JOIN (
-                    SELECT user_id, MAX(uploaded_at) AS latest_upload
+                SELECT *
+                FROM (
+                    SELECT *,
+                        ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY uploaded_at DESC) AS rn
                     FROM items
-                    GROUP BY user_id
-                ) i2 ON i1.user_id = i2.user_id AND i1.uploaded_at = i2.latest_upload
+                ) ranked_items
+                WHERE rn = 1
             ) i ON u.user_id = i.user_id
             LEFT JOIN (
                 SELECT user_id, COUNT(*) AS item_count
@@ -416,7 +445,12 @@ def getUsers():
                 user["tags"] = []
                 #不要
                 user.pop('tag')
-
+                
+            created = user.get("created_at")
+            uploaded = user.get("uploaded_at")
+            print("created:", created, flush=True)
+            print("uploaded:", uploaded, flush=True)
+                
         cursor.execute('''
             SELECT tag FROM tags
             WHERE user_id != %s
@@ -464,14 +498,14 @@ def userFollow():
                 DELETE FROM follows
                 WHERE follower_id = %s AND followed_id = %s
             ''', (my_user_id, follow_user_id))
-            action = "unfollowed"
+            action = "フォロー解除しました。"
         else:
             # フォローしていない場合 → 新たにフォロー（INSERT）
             cursor.execute('''
                 INSERT INTO follows (follower_id, followed_id)
                 VALUES (%s, %s)
             ''', (my_user_id, follow_user_id))
-            action = "followed"
+            action = "フォローしました。"
 
         conn.commit()
         return jsonify({"result": True, "action": action}), 200
@@ -492,17 +526,19 @@ def getUserItems():
     try:
         cursor.execute('''
             SELECT 
-                item_id,
-                user_id,
-                title,
-                description,
-                type,
-                brand,
-                curr,
-                price,
-                uploaded_at
+                items.item_id,
+                items.user_id,
+                items.title,
+                items.description,
+                items.type,
+                items.brand,
+                items.curr,
+                items.price,
+                items.uploaded_at
             FROM items
+            LEFT JOIN trades ON items.item_id = trades.item_id
             WHERE user_id != %s
+            AND trades.item_id IS NULL
             ORDER BY uploaded_at ASC
         ''', (user_id,))
         
@@ -557,7 +593,6 @@ def getUserItems():
             item['profile_image'] = profile_img['image_url'] if profile_img else ""
             items.append(item)
         
-        
         brand_list = [{'key': k, 'name': v} for k, v in brand_set.items()]
         
         return jsonify({
@@ -571,6 +606,359 @@ def getUserItems():
 
     finally:
         conn.close()
+        
+@app.route('/itemLike' ,methods=['POST'])
+def itemLike():
+    item_id = request.json.get('item_id',None )
+    my_user_id = request.json.get('my_user_id',None )
     
+    if not item_id or not my_user_id:
+        return jsonify({"result": False, "error": "Missing item_id or my_user_id"}), 400
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)  # dict形式で取得できるようにする
+    try:
+        # 既に「いいね」されているか確認
+        cursor.execute('''
+            SELECT * FROM likes
+            WHERE user_id = %s AND item_id = %s
+        ''', (my_user_id, item_id))
+        like = cursor.fetchone()
+        
+        if like:
+            # 「いいね」を外す
+            cursor.execute('''
+                DELETE FROM likes
+                WHERE user_id = %s AND item_id = %s
+            ''', (my_user_id, item_id))
+            conn.commit()
+            return jsonify({"result": True, "liked": False , "message" : "お気に入り解除しました。"}), 200
+        else:
+            # 「いいね」を追加
+            cursor.execute('''
+                INSERT INTO likes (user_id, item_id)
+                VALUES (%s, %s)
+            ''', (my_user_id, item_id))
+            conn.commit()
+            return jsonify({"result": True, "liked": True, "message" : "お気に入り保存しました。"}), 200
+        
+    except mysql.connector.Error as err:
+        return jsonify({"error": str(err)}), 500
+
+    finally:
+        conn.close()
+        
+@app.route('/trade' ,methods=['POST'])
+def trade():
+    data = request.json
+    item_id = data.get('item_id')
+    buyer_id = data.get('buyer_id')
+    seller_id = data.get('seller_id')
+    
+    # print(item_id,buyer_id, seller_id , flush=True)
+    
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)  # dict形式で取得できるようにする
+    try:
+        # 既存の取引チェック（重複防止）
+        cursor.execute('''
+            SELECT trade_id FROM trades
+            WHERE item_id = %s AND buyer_id = %s AND seller_id = %s
+        ''', (item_id, buyer_id ,seller_id))
+        existing_trade = cursor.fetchone()
+
+        if existing_trade:
+            return jsonify({"result": False, "message": "すでに取引が存在します。"}), 400
+        
+        # trades テーブルへ挿入
+        cursor.execute('''
+            INSERT INTO trades (item_id, buyer_id,seller_id)
+            VALUES (%s, %s, %s)
+        ''', (item_id, buyer_id,seller_id))
+        trade_id = cursor.lastrowid
+        # cursor.execute('''
+        #     INSERT INTO trade_messages (trade_id, sender_id, message)
+        #     VALUES (%s, %s, %s)
+        # ''', (trade_id, buyer_id, "よろしくお願いします。"))
+        
+        conn.commit()
+
+        return jsonify({
+            "result": True,
+            "message": "取引が開始されました。",
+            "trade_id": trade_id
+        }), 200
+    except mysql.connector.Error as err:
+        return jsonify({"error": str(err)}), 500
+    finally:
+        conn.close()     
+        
+@app.route('/getSavedList', methods=['POST'])
+def get_active_trades():
+    user_id = request.json.get('user_id')
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    
+    try:
+        cursor.execute('''
+            SELECT 
+                trades.trade_id,
+                trades.created_at AS trade_created_at,
+                trades.status,
+                items.item_id,
+                items.user_id AS seller_id,
+                trades.buyer_id,
+                items.title,
+                items.description,
+                item_img.image_url,
+                users.name AS user_name,
+                users.user_id AS user_id,
+                profile_img.image_url AS user_image_url
+            FROM trades
+            JOIN items ON trades.item_id = items.item_id
+            JOIN users ON items.user_id = users.user_id
+            LEFT JOIN (
+                SELECT ii.item_id, ii.image_url
+                FROM item_images ii
+                WHERE ii.item_image_id = (
+                    SELECT MIN(ii2.item_image_id)
+                    FROM item_images ii2
+                    WHERE ii2.item_id = ii.item_id
+                )
+            ) AS item_img ON item_img.item_id = items.item_id
+            LEFT JOIN (
+                SELECT pi1.user_id, pi1.image_url
+                FROM profile_images pi1
+                JOIN (
+                    SELECT user_id, MAX(uploaded_at) AS max_uploaded
+                    FROM profile_images
+                    GROUP BY user_id
+                ) pi2 ON pi1.user_id = pi2.user_id AND pi1.uploaded_at = pi2.max_uploaded
+            ) AS profile_img ON profile_img.user_id = users.user_id
+            WHERE 
+                (trades.buyer_id = %s OR items.user_id = %s)
+                AND trades.status NOT IN ('completed', 'cancelled')
+            ORDER BY trades.created_at DESC
+        ''', (user_id, user_id))
+
+        active_trades = cursor.fetchall()
+        
+        return jsonify({"trades": active_trades, "result": True}), 200
+    except mysql.connector.Error as err:
+        return jsonify({"error": str(err)}), 500
+    finally:
+        conn.close()
+        
+@app.route('/getChatItemDetail' ,methods=['POST'])
+def get_chat_item_detail():
+    item_id = request.json.get('item_id')
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    try:
+        
+        # 商品の基本情報 + 出品者情報
+        cursor.execute('''
+            SELECT 
+                items.item_id,
+                items.title,
+                items.description,
+                items.price,
+                items.curr,
+                items.type,
+                items.brand,
+                items.uploaded_at,
+                users.user_id,
+                users.name AS seller_name
+            FROM trades
+            JOIN items ON items.item_id = trades.item_id
+            JOIN users ON users.user_id = items.user_id
+            WHERE trades.trade_id = %s
+        ''', (item_id,))
+        item_data = cursor.fetchone()
+
+        if not item_data:
+            return jsonify({"error": "Item not found"}), 404
+
+        # 商品の画像をすべて取得
+        cursor.execute('''
+            SELECT image_url
+            FROM item_images
+            WHERE item_id = %s
+            ORDER BY uploaded_at ASC
+        ''', (item_data["item_id"],))
+        item_images = cursor.fetchall()
+        item_data["images"] = [img['image_url'] for img in item_images]
+
+        # 出品者の最新プロフィール画像（あれば）
+        cursor.execute('''
+            SELECT image_url
+            FROM profile_images
+            WHERE user_id = %s
+            ORDER BY uploaded_at DESC
+            LIMIT 1
+        ''', (item_data["user_id"],))
+        profile_image = cursor.fetchone()
+        item_data["profile_image"] = profile_image['image_url'] if profile_image else ""
+
+        # brand/type を JSON に変換（必要なら）
+        import json
+        for key in ["brand", "type"]:
+            try:
+                item_data[key] = json.loads(item_data[key]) if item_data[key] else []
+            except:
+                item_data[key] = []
+
+        return jsonify({"item": item_data, "result": True}), 200
+    except mysql.connector.Error as err:
+        return jsonify({"error": str(err)}), 500
+    finally:
+        conn.close()
+        
+@app.route('/upload_image', methods=['POST'])
+def upload_image():
+    image = request.files['image']
+
+    if not image or image.filename == "":
+        return jsonify({"error": "No image provided"}), 400
+
+    filename = secure_filename(image.filename)
+    save_dir = 'uploads'  # 例：Flaskプロジェクト直下の uploads ディレクトリ
+    os.makedirs(save_dir, exist_ok=True)
+    save_path = os.path.join(save_dir, filename)
+
+    image.save(save_path)
+
+    image_url = f"http://localhost:5001/uploads/{filename}"
+
+    return jsonify({'image_url': image_url}), 200
+
+@app.route('/get_trade_messages', methods=['GET'])
+def get_trade_messages():
+    trade_id = request.args.get('trade_id')
+    if not trade_id:
+        return jsonify({'error': 'trade_id is required'}), 400
+
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute('''
+            SELECT 
+                tm.sender_id, 
+                tm.message, 
+                tm.sent_at,
+                pi.image_url AS sender_image_url
+            FROM trade_messages tm
+            LEFT JOIN (
+                SELECT user_id, image_url
+                FROM (
+                    SELECT 
+                        user_id,
+                        image_url,
+                        ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY uploaded_at DESC) AS rn
+                    FROM profile_images
+                ) ranked
+                WHERE rn = 1
+            ) pi ON tm.sender_id = pi.user_id
+            WHERE tm.trade_id = %s
+            ORDER BY tm.sent_at ASC
+        ''', (trade_id,))
+        messages = cursor.fetchall()
+        return jsonify({'messages': messages}), 200
+    except mysql.connector.Error as err:
+        return jsonify({'error': str(err)}), 500
+    finally:
+        conn.close()
+        
+@app.route('/uploads/<path:filename>')
+def uploaded_file(filename):
+    return send_from_directory(UPLOAD_FOLDER, filename)
+
+# Chat server 
+# クライアントが接続
+@socketio.on('connect')
+def handle_connect():
+    print('クライアントがWebSocketで接続しました', request.sid ,flush=True)
+
+# クライアントが部屋に参加
+@socketio.on('join')
+def handle_join(data):
+    room = data['room']
+    join_room(room)
+    print(f'Client joined room: {room}', flush=True)
+
+# メッセージ受信時の処理
+@socketio.on('send_message')
+def handle_send_message(data):
+    room = data['room']
+    message = data['message']
+    trade_id = data['trade_id']
+    sender_id = data['sender_id']
+    print(f' room: {room}', f' message: {message}', flush=True)
+    # DBに保存
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute('''
+            INSERT INTO trade_messages (trade_id, sender_id, message)
+            VALUES (%s, %s, %s)
+        ''', (trade_id, sender_id, message))
+        conn.commit()
+        
+              # 最新のプロフィール画像を取得
+        cursor.execute('''
+            SELECT image_url 
+            FROM profile_images 
+            WHERE user_id = %s 
+            ORDER BY uploaded_at DESC 
+            LIMIT 1
+        ''', (sender_id,))
+        image_row = cursor.fetchone()
+        image_url = image_row['image_url'] if image_row else ""
+
+        emit('receive_message', {'message': message , 'sender_id' :sender_id,'sender_image_url': image_url}, to=room)
+    except mysql.connector.Error as err:
+        return jsonify({'error': str(err)}), 500
+    finally:
+        conn.close()
+
+# 切断
+@socketio.on('disconnect')
+def handle_disconnect():
+    print('Client disconnected:', request.sid)
+
+@app.route('/create-payment-intent', methods=['POST'])
+def create_payment():
+    import stripe
+    stripe.api_key = "REMOVED_SECRET"
+
+    # 金額等を必要に応じて取得
+    data = request.get_json()
+    amount = data.get("amount")
+
+    # intent = stripe.PaymentIntent.create(
+    #     amount=amount,
+    #     currency='jpy',
+    #     automatic_payment_methods={'enabled': True},
+    # )
+    
+    intent = stripe.PaymentIntent.create(
+        amount=amount,
+        currency='jpy',
+        automatic_payment_methods={'enabled': True},
+        payment_method_options={
+        "card": {
+            "setup_future_usage": "off_session"
+        }
+    }
+    )
+    return jsonify({'clientSecret': intent.client_secret})
+
+
 if __name__ == "__main__":
-    app.run(debug=True, host='0.0.0.0', port=5001)
+    socketio.run(
+    app,
+    host="0.0.0.0",
+    port=5001,
+    debug=True,
+    use_reloader=False
+)

@@ -8,6 +8,7 @@ import {
   Wrap,
   Link,
   Button,
+  Card,
 } from "@chakra-ui/react";
 import MyItems from "./myItems";
 import useMyProfile from "../../hooks/useProfile";
@@ -107,56 +108,57 @@ const ProfileIndex: FC<profileIndexType> = ({ editFormSwitch }) => {
             プロフィール編集
           </Button>
         </VStack>
+        <Card p={2} w={{ base: "100%", md: "70%" }}>
+          <VStack gap={10}>
+            <VStack align={"start"} width={"100%"}>
+              <Text size={"sm"}>名前</Text>
+              <Wrap gap={2} color={"#887563"} ml={4}>
+                {profile.profile.name}
+              </Wrap>
+            </VStack>
+            <VStack align={"start"} width={"100%"}>
+              <Text size={"sm"}>Location</Text>
+              <Wrap gap={2} color={"#887563"} ml={4}>
+                {profile.profile.location ?? "未設定"}
+              </Wrap>
+            </VStack>
+            <VStack align={"start"} width={"100%"}>
+              <Text size={"sm"}>年代</Text>
+              <Wrap gap={2} color={"#887563"} ml={4}>
+                {" "}
+                {profile.profile.old ? `${profile.profile.old} 代` : "未設定"}
+              </Wrap>
+            </VStack>
+            <VStack align={"start"} width={"100%"}>
+              <Text size={"sm"}>古着歴</Text>
+              <Wrap gap={2} color={"#887563"} ml={4}>
+                {" "}
+                {profile.profile.age ? `${profile.profile.age} 年目` : "未設定"}
+              </Wrap>
+            </VStack>
+            <VStack align={"start"} width={"100%"}>
+              <Text size={"sm"}>好きなジャンル</Text>
+              <Wrap gap={2} ml={4}>
+                {tagsViewRender()}
+              </Wrap>
+            </VStack>
+            <VStack align={"start"} spacing={2} width={"100%"}>
+              <Text size={"sm"} w={"50%"}>
+                お気に入りお店
+              </Text>
+              {favoriteShopViewRender()}
+            </VStack>
+            <VStack align={"start"} width={"100%"}>
+              <Text size={"sm"}>古着にハマったきっかけ</Text>
+              {reasenViewRender()}
+            </VStack>
 
-        <VStack gap={10}>
-          <VStack align={"start"} width={"100%"}>
-            <Text size={"sm"}>名前</Text>
-            <Wrap gap={2} color={"#887563"} ml={4}>
-              {profile.profile.name}
-            </Wrap>
+            <MyItems />
+            <VStack align={"start"} width={"100%"}>
+              <LogOut />
+            </VStack>
           </VStack>
-          <VStack align={"start"} width={"100%"}>
-            <Text size={"sm"}>Location</Text>
-            <Wrap gap={2} color={"#887563"} ml={4}>
-              {profile.profile.location ?? "未設定"}
-            </Wrap>
-          </VStack>
-          <VStack align={"start"} width={"100%"}>
-            <Text size={"sm"}>年代</Text>
-            <Wrap gap={2} color={"#887563"} ml={4}>
-              {" "}
-              {profile.profile.old ? `${profile.profile.old} 代` : "未設定"}
-            </Wrap>
-          </VStack>
-          <VStack align={"start"} width={"100%"}>
-            <Text size={"sm"}>古着歴</Text>
-            <Wrap gap={2} color={"#887563"} ml={4}>
-              {" "}
-              {profile.profile.age ? `${profile.profile.age} 年目` : "未設定"}
-            </Wrap>
-          </VStack>
-          <VStack align={"start"} width={"100%"}>
-            <Text size={"sm"}>好きなジャンル</Text>
-            <Wrap gap={2} ml={4}>
-              {tagsViewRender()}
-            </Wrap>
-          </VStack>
-          <VStack align={"start"} spacing={2} width={"100%"}>
-            <Text size={"sm"} w={"50%"}>
-              お気に入りお店
-            </Text>
-            {favoriteShopViewRender()}
-          </VStack>
-          <VStack align={"start"} width={"100%"}>
-            <Text size={"sm"}>古着にハマったきっかけ</Text>
-            {reasenViewRender()}
-          </VStack>
-
-          <MyItems />
-          <VStack align={"start"} width={"100%"}>
-            <LogOut />
-          </VStack>
-        </VStack>
+        </Card>
       </Stack>
     </>
   );

@@ -13,26 +13,21 @@ const AuthProvider: FC<{ children: React.ReactNode }> = ({ children }) => {
   const login = useCallback(
     (user: string, token: string, userId: string) => {
       localStorage.setItem("token", token);
-      changeLoading(true);
       dispath(
         setLoginAfterProfile({ profile: { id: userId.toString(), name: user } })
       );
     },
-    [changeLoading, dispath]
+    [dispath]
   );
 
   const logout = useCallback(() => {
     dispath(deleteProfile());
-    changeLoading(false);
     localStorage.removeItem("token");
-  }, [changeLoading, dispath]);
+  }, [dispath]);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
-    if (token) {
-      changeLoading(true);
-    } else {
-      changeLoading(false);
+    if (!token) {
       logout();
       navigate("/login"); // ログインページへのルートを直接指定
     }

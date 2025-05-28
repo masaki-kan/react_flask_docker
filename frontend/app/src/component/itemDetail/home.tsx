@@ -1,4 +1,4 @@
-import { FC, useCallback, useMemo } from "react";
+import { FC, useCallback, useEffect, useMemo, useState } from "react";
 import {
   Heading,
   Text,
@@ -9,6 +9,8 @@ import {
   Button,
   Box,
   HStack,
+  VStack,
+  Avatar,
 } from "@chakra-ui/react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import useAlert from "../../hooks/useAlert";
@@ -16,16 +18,29 @@ import { route } from "../../route/routeConst";
 import useMyProfile from "../../hooks/useProfile";
 import useItems from "../../hooks/useItems";
 import KeyboardControlGallerySlider from "../common/slider/keyboardControlGallerySlider";
-import { itemParts } from "../../consts/itemConsts";
 import { viewDate } from "../common/date/format";
-const Home: FC = () => {
-  const { defaultAlert } = useAlert();
-  const navigate = useNavigate();
+import { getProfileApi } from "../../api/profileApis";
+import { FaHeart } from "react-icons/fa";
+import { trageApi } from "../../api/trageApi";
+import { itemTypeViewHanlder } from "../common/type/itemTypeView";
 
+const Home: FC = () => {
+  const { tradeAlert } = useAlert();
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { memorizeuserProfile } = useMyProfile();
+  const { memorizeuserProfile, memorizeProfile, favoriteUpdateHandler } =
+    useMyProfile();
+
   const { memorizeItemList } = useItems();
   const userItemNumver = searchParams.get("number"); // 'userItem' パラメータの値を取得
+  const [itemUser, setItemUser] = useState<{
+    name: string;
+    image: string;
+  }>({
+    name: "",
+    image: "",
+  });
+  const [like, setLike] = useState<boolean>(false);
 
   const memorizeItem = useMemo(() => {
     if (userItemNumver !== null) {
@@ -42,13 +57,6 @@ const Home: FC = () => {
     return [];
   }, [memorizeItemList, memorizeuserProfile.items, userItemNumver]);
 
-  const toSaveHandler = useCallback(() => {
-    // フラグ更新 更新アラート表示
-    // save一覧に遷移
-    defaultAlert(false);
-    navigate(route.saved);
-  }, [defaultAlert, navigate]);
-
   const toPrevPageHandler = useCallback(() => {
     if (memorizeuserProfile.items.length === 0) {
       navigate(`${route.items}`);
@@ -56,20 +64,99 @@ const Home: FC = () => {
     }
     navigate(`${route.shopPage}?userItem=${memorizeuserProfile.profile.id}`);
     return;
-  }, [memorizeuserProfile, navigate]);
+  }, [
+    memorizeuserProfile.items.length,
+    memorizeuserProfile.profile.id,
+    navigate,
+  ]);
 
-  const itemTypeViewHanlder = useCallback((key: string): string => {
-    const type = itemParts.filter((type) => type.key === Number(key));
+  useEffect(() => {
+    // itemsが空 または userItemNumverがnull/undefined/空文字なら遷移
+    const noParam =
+      userItemNumver === null ||
+      userItemNumver === undefined ||
+      userItemNumver === "";
+    const noItems = memorizeItem.length === 0;
 
-    return type[0].name;
-  }, []);
+    if (noParam && noItems) {
+      navigate(route.items); // パラメータなし + itemsなし → /itemsへ
+    } else if (noParam) {
+      navigate(route.users); // パラメータなしのみ → /usersへ
+    } else if (noItems) {
+      navigate(route.items); // itemsなしのみ → /itemsへ
+    }
+  }, [
+    userItemNumver,
+    memorizeuserProfile.items.length,
+    navigate,
+    memorizeItem,
+  ]);
 
-  if (userItemNumver === null || !userItemNumver) {
-    if (memorizeuserProfile.items.length === 0) {
-      navigate(route.items);
+  useEffect(() => {
+    const itemUser = async () => {
+      // 非同期処理
+      const response = await getProfileApi(String(memorizeItem[0].user_id));
+      if (response !== undefined)
+        setItemUser({
+          name: response?.profile.name,
+          image: response?.profile.image,
+        });
+    };
+
+    // 即時実行
+    if (memorizeItem[0] !== undefined) {
+      itemUser();
+      const isLiked = memorizeProfile.profile.likes?.includes(
+        Number(memorizeItem[0].itemId)
+      );
+      setLike(isLiked);
+
       return;
     }
-    navigate(route.users);
+  }, [
+    memorizeItem,
+    memorizeProfile.profile,
+    memorizeuserProfile.items.length,
+    navigate,
+    userItemNumver,
+  ]);
+
+  // 取引開始
+  const tradeHandler = useCallback(async () => {
+    if (userItemNumver !== null) {
+      const response = await trageApi(
+        userItemNumver, // 商品ID
+        memorizeProfile.profile.id, // 商品購入ユーザーID
+        memorizeItem[0].user_id.toString() // 商品出品ユーザーID
+      );
+
+      if (response !== undefined) {
+        tradeAlert(response.message).then((result) => {
+          if (result.isConfirmed) {
+            // OK 押下時の処理
+            navigate(route.saved);
+          }
+        });
+      }
+    }
+  }, [
+    memorizeItem,
+    memorizeProfile.profile.id,
+    navigate,
+    tradeAlert,
+    userItemNumver,
+  ]);
+
+  const favoriteClickHandler = useCallback(async () => {
+    setLike((prev) => !prev);
+    await favoriteUpdateHandler(
+      memorizeItem[0].itemId,
+      memorizeProfile.profile.id
+    );
+  }, [favoriteUpdateHandler, memorizeItem, memorizeProfile.profile.id]);
+
+  if (memorizeItem[0] === undefined) {
+    navigate(route.items);
 
     return;
   }
@@ -91,14 +178,51 @@ const Home: FC = () => {
         >
           <KeyboardControlGallerySlider images={memorizeItem[0].images} />
         </Box>
+
         <Card
           w={{ base: "full", md: "70%" }}
           mx={"auto"}
           borderWidth={1}
           borderColor={"#edf2f7"}
         >
+          <VStack align={"end"} m={2}>
+            {like ? (
+              <FaHeart
+                size={30}
+                color="#ff0000"
+                onClick={favoriteClickHandler}
+                cursor={"pointer"}
+              />
+            ) : (
+              <FaHeart
+                size={30}
+                onClick={favoriteClickHandler}
+                cursor={"pointer"}
+              />
+            )}
+          </VStack>
+
           <CardBody>
             <Stack divider={<StackDivider />} spacing="4">
+              <Box>
+                <Heading size="xs" textTransform="uppercase" mb={2}>
+                  投稿主
+                </Heading>
+                <HStack alignItems={"center"}>
+                  <Avatar
+                    size={"md"}
+                    name={"my name"}
+                    src={
+                      itemUser.image.length > 0
+                        ? itemUser.image
+                        : "https://bit.ly/broken-link"
+                    }
+                  />
+                  <Text pt="2" fontSize="sm">
+                    {itemUser.name}
+                  </Text>
+                </HStack>
+              </Box>
               <Box>
                 <Heading size="xs" textTransform="uppercase">
                   投稿日
@@ -162,7 +286,7 @@ const Home: FC = () => {
                 loadingText="登録..."
                 variant="outline"
                 spinnerPlacement="start"
-                onClick={toSaveHandler}
+                onClick={tradeHandler}
               >
                 {"取引する"}
               </Button>

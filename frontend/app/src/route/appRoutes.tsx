@@ -1,7 +1,7 @@
-import { FC } from "react";
-import { Routes, Route } from "react-router-dom";
+import { FC, useEffect } from "react";
+import { Routes, Route, useLocation } from "react-router-dom";
 import AuthProvider from "../provider/authProvider";
-import ChatLayout from "../component/layout/chatLayout";
+import ChatHome from "../component/chat/home";
 import PublicLayout from "../component/layout/publicLayout";
 import SecureLayout from "../component/layout/secureLayout";
 import Login from "../component/pages/login";
@@ -14,8 +14,19 @@ import MyItemHome from "../component/myItem/home";
 import MyItemEditIndex from "../component/myItemEdit/home";
 import ItemDetailHome from "../component/itemDetail/home";
 import ProfileHome from "../component/profile/home";
+import FavoriteHome from "../component/favorite/home";
+import { useDispatch } from "react-redux";
+import { setPreviousUrl } from "../store/navigationSlice";
 
 const AppRoutes: FC = () => {
+  const location = useLocation();
+  const dispatch = useDispatch();
+
+  useEffect(() => {
+    // pathname 変更のたびに保存（初回除くなら条件追加）
+    dispatch(setPreviousUrl(location.pathname));
+  }, [dispatch, location.pathname]);
+
   return (
     <>
       <AuthProvider>
@@ -34,12 +45,12 @@ const AppRoutes: FC = () => {
             <Route path={route.myItem} element={<MyItemHome />} />
             <Route path={route.myItemEdit} element={<MyItemEditIndex />} />
             <Route path={route.itemDetail} element={<ItemDetailHome />} />
-            {/* チャット公開ページ*/}
+            <Route path={route.favorite} element={<FavoriteHome />} />
+            <Route path={route.transactionChat} element={<ChatHome />} />
           </Route>
 
-          <Route path={route.transactionChat} element={<ChatLayout />} />
-
-          <Route path="*" element={<h1>Not Found Page</h1>} />
+          {/* <Route path="*" element={<h1>Not Found Page</h1>} /> */}
+          <Route path={route.home} element={<ProfileHome />} />
         </Routes>
       </AuthProvider>
     </>

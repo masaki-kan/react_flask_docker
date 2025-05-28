@@ -1,5 +1,12 @@
 import React, { FC, useState } from "react";
-import { Tabs, TabList, Tab, TabPanels, TabPanel } from "@chakra-ui/react";
+import {
+  Tabs,
+  TabList,
+  Tab,
+  TabPanels,
+  TabPanel,
+  Text,
+} from "@chakra-ui/react";
 import RenderTabPanel from "./renderPanel";
 import useListing from "../../hooks/useUsers";
 import SearchForm from "../common/form/searchForm";
@@ -25,7 +32,7 @@ const ListingsIndex: FC = React.memo(() => {
         selectedTag={memorizeSelectedTag}
         route={pathname}
       />
-      <Tabs mt={10} colorScheme="teal">
+      <Tabs mt={10} colorScheme="teal" bgColor={"white"}>
         <TabList>
           <Tab width={"50%"} onClick={() => setUserSearchHidden(true)}>
             ユーザー
@@ -40,6 +47,9 @@ const ListingsIndex: FC = React.memo(() => {
 
         <TabPanels>
           <TabPanel>
+            {memorizeUserList.length === 0 && (
+              <Text px={4}>ユーザーがいません。</Text>
+            )}
             <RenderTabPanel data={memorizeUserList} />
           </TabPanel>
           <TabPanel>

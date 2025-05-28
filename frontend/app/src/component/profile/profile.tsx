@@ -1,21 +1,20 @@
-import { FC, useCallback, useEffect, useState } from "react";
+import { FC, useCallback, useState } from "react";
 import ProfileIndex from "./profileIndex";
 import ProfileForm from "./profileForm";
 import { VStack } from "@chakra-ui/react";
 
 import useMyProfile from "../../hooks/useProfile";
 import { postStoreProfileApi } from "../../api/profileApis";
-import { profileType } from "../../types/profile";
-import { useDispatch } from "react-redux";
-import { updateLoad } from "../../store/loadingSlice";
+import { profileType } from "../../types/profileType";
 import useAlert from "../../hooks/useAlert";
+import useLoading from "../../hooks/useLaoding";
+import { useEffectOnce } from "react-use";
 
 const Profile: FC = () => {
   const { getMyProfile } = useMyProfile();
   const { sweetSuccessOverAlert } = useAlert();
+  const { changeLoading } = useLoading();
   const [editSwitch, setEditSwitch] = useState<boolean>(false);
-
-  const dispath = useDispatch();
 
   const editFormSwitchHandler = useCallback(() => {
     setEditSwitch((prev) => !prev);
@@ -23,10 +22,10 @@ const Profile: FC = () => {
 
   const formStoreEventHandler = useCallback(
     async (formdata: profileType) => {
-      dispath(updateLoad(true));
+      changeLoading(true);
       const response = await postStoreProfileApi(formdata);
       if (response?.status !== false) {
-        dispath(updateLoad(false));
+        changeLoading(false);
         sweetSuccessOverAlert().then((result) => {
           if (result.isConfirmed) {
             // OK 押下時の処理
@@ -36,14 +35,14 @@ const Profile: FC = () => {
         });
       }
     },
-    [dispath, getMyProfile, sweetSuccessOverAlert]
+    [changeLoading, getMyProfile, sweetSuccessOverAlert]
   );
 
-  useEffect(() => {
+  useEffectOnce(() => {
     if (editSwitch !== true) {
       getMyProfile();
     }
-  }, []);
+  });
 
   return (
     <VStack align={"start"} gap={9} w={"100%"}>

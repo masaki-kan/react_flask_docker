@@ -40,10 +40,22 @@ export const loginApi = async (formdata: {
   }
 };
 
-export const singupApi = async (formdata: sinupFormType) => {
+export const singupApi = async (
+  formdata: sinupFormType
+): Promise<
+  | {
+      result: string;
+      message: string;
+    }
+  | undefined
+> => {
   try {
     const response = await axios.post("http://localhost:5001/singUp", formdata);
-    console.log("Access :", response.data);
+
+    return {
+      result: response.data.result,
+      message: response.data.message,
+    };
   } catch (error: unknown) {
     // エラーが Error インスタンスかつ response プロパティを持っているか確認
     if (axios.isAxiosError(error)) {

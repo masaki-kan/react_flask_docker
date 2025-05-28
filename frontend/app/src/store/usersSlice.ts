@@ -1,7 +1,7 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-import { followListType, tagType } from "../types/listTye";
-import { profileType } from "../types/profile";
-import { itemListType } from "../types/item";
+import { followListType, tagType } from "../types/listType";
+import { profileType } from "../types/profileType";
+import { itemListType } from "../types/itemType";
 
 type initialStateType = {
   originalData: followListType[];

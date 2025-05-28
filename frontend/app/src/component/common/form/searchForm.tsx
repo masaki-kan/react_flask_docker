@@ -12,7 +12,7 @@ import {
 } from "@chakra-ui/react";
 import useUsers from "../../../hooks/useUsers";
 import useItems from "../../../hooks/useItems";
-import { tagType } from "../../../types/listTye";
+import { tagType } from "../../../types/listType";
 import { route as routeName } from "../../../route/routeConst";
 import { useLocation } from "react-router-dom";
 
@@ -117,6 +117,7 @@ const SearchForm: FC<SearchFormProps> = React.memo(
         <FormControl>
           <FormLabel>検索</FormLabel>
           <Input
+            bg={"white"}
             placeholder="ユーザー名検索"
             size="md"
             defaultValue={search}
