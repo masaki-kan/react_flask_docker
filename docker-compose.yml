@@ -11,6 +11,8 @@ services:
     depends_on:
       - flask
   flask:
+    env_file:
+      - ./backend/.env
     build:
       context: ./backend
       dockerfile: Dockerfile

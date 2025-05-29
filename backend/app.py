@@ -1,8 +1,14 @@
+from dotenv import load_dotenv
 import os
 os.environ["EVENTLET_NO_GREENDNS"] = "yes"
 basedir = os.path.abspath(os.path.dirname(__file__))
 ssl_cert = os.path.join(basedir, "cert/localhost.pem")
 ssl_key = os.path.join(basedir, "cert/localhost-key.pem")
+
+load_dotenv()  # ← ローカル開発で .env を読み込む（本番では docker-compose が代わりに設定する）
+
+import stripe
+stripe.api_key = os.environ.get("STRIPE_SECRET_KEY")
 
 import eventlet
 eventlet.monkey_patch()  
@@ -27,7 +33,7 @@ CORS(app, resources={r"/*": {"origins": "https://localhost:5173"}}) # 特定の�
 
 socketio = SocketIO(app, cors_allowed_origins="*",async_mode="eventlet")  # CORS対応も忘れずに
 # socketio = SocketIO(app, cors_allowed_origins="*")  # CORS対応も忘れずに
-app.config['JWT_SECRET_KEY'] = 'c5d5fd2e2543b248957a148ae9a572466bb2bbd4c628da19be37c07cf6094ac49c97607425d5d1ceac6d914e5399ca7fcd34cbf2995654c962b7233c42f8ebc14aa9025d0d335c3fb95c541a69b3e8b5d4ffb2fc86b5b15a276b6b90d06a94915c60392ebb950d962f6be6f5a3392bea80b460736082166b7cd9a72a2b7e8a29'  # シークレットキーを設定
+app.config['JWT_SECRET_KEY'] = os.environ.get('JWT_SECRET_KEY')  # シークレットキーを設定
 app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=1)
 jwt = JWTManager(app)
 
@@ -928,9 +934,6 @@ def handle_disconnect():
 
 @app.route('/create-payment-intent', methods=['POST'])
 def create_payment():
-    import stripe
-    stripe.api_key = "REMOVED_SECRET"
-
     # 金額等を必要に応じて取得
     data = request.get_json()
     amount = data.get("amount")
