@@ -32,8 +32,12 @@ $ docker logs -f flask_app
 #reaxt_app コンテ内　インストール
 $docker exec -it react_app /bin/sh
 
-docker compose build --no-cache
-
 #node_modules,package-lock.json 削除
 rm -rf node_modules package-lock.json
 npm install
+
+# 2. Docker イメージを再構築　（完全破棄）
+
+docker compose down -v
+docker volume prune -f
+docker compose up -d

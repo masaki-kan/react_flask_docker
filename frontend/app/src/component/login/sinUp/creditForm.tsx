@@ -15,6 +15,7 @@ type SelectedPlanView = {
   form: sinupFormType;
   changePlanHandler: (nextValue: string) => void;
   loginClick: () => void;
+  changeStripeCustomerIdHandler: (stripeCustomerId: string) => void;
 };
 
 const CreditForm: FC<SelectedPlanView> = ({
@@ -22,6 +23,7 @@ const CreditForm: FC<SelectedPlanView> = ({
   stepStatue,
   singUpEvent,
   loginClick,
+  changeStripeCustomerIdHandler,
 }) => {
   const { getCreatePaymentIntent } = useCredit();
   const [clientSecret, setClientSecret] = useState<string>("");
@@ -29,16 +31,18 @@ const CreditForm: FC<SelectedPlanView> = ({
   useEffect(() => {
     (async () => {
       const secret = await getCreatePaymentIntent(
-        form.plan === "1" ? "550" : "5500"
+        form.plan === "1" ? "550" : "5500",
+        form.plan
       );
       if (secret) {
-        setClientSecret(secret);
+        setClientSecret(secret.clientSecret);
+        changeStripeCustomerIdHandler(secret.stripeCustomerId);
       }
     })();
-  }, [form.plan, getCreatePaymentIntent, stepStatue.credit]);
+  }, [changeStripeCustomerIdHandler, form.plan, getCreatePaymentIntent]);
 
   const options = {
-    clientSecret, // ← ここに取得した値を渡す
+    clientSecret,
   };
 
   return (

@@ -10,6 +10,7 @@ import {
 import { CheckIcon } from "@chakra-ui/icons";
 import { FC } from "react";
 import { sinupFormType, stepsStatueType } from "../../../types/loginType";
+import { plans } from "../../../consts/profileConsts";
 
 type SelectedPlanView = {
   stepStatue: stepsStatueType;
@@ -116,20 +117,20 @@ const SelectedPlanView: FC<SelectedPlanView> = ({
           </Text>
           <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6} mt={6}>
             <PLanContent
-              planHead="初月無料"
-              planTitle="月額プラン"
-              planText="¥550/月"
-              planSub="いつでも解約可能"
-              value={"1"}
+              planHead={plans[0].planContents.option}
+              planTitle={plans[0].planContents.title}
+              planText={plans[0].planContents.text}
+              planSub={plans[0].planContents.sub}
+              value={plans[0].planKey}
               formValue={form.plan}
               click={changePlanHandler}
             />
             <PLanContent
-              planHead="2ヶ月無料"
-              planTitle="年額プラン"
-              planText="¥5500/年"
-              planSub="いつでも解約可能"
-              value={"2"}
+              planHead={plans[1].planContents.option}
+              planTitle={plans[1].planContents.title}
+              planText={plans[1].planContents.text}
+              planSub={plans[1].planContents.sub}
+              value={plans[1].planKey}
               formValue={form.plan}
               click={changePlanHandler}
             />

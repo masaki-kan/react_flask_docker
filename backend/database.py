@@ -12,6 +12,7 @@ def create_users_table(cursor):
             shop_name VARCHAR(255),
             shop_url VARCHAR(255),
             reasen TEXT,
+            stripe_customer_id VARCHAR(255) NOT NULL,
             plan  VARCHAR(1) DEFAULT '1',
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP

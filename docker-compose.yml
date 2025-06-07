@@ -5,11 +5,14 @@ services:
     image: nginx:latest
     volumes:
       - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
-      - ./cert:/etc/nginx/ssl
+      - ./nginx/ssl:/etc/nginx/ssl
     ports:
       - "443:443"
     depends_on:
       - flask
+    networks:
+      - app_network
+
   flask:
     env_file:
       - ./backend/.env
@@ -42,9 +45,8 @@ services:
   mysql_db:
     image: mysql:8.0
     build: #カレントディレクトリをコンテキトとして使用し ./db/DockerfileからMySQLデータベースサーバーのイメージをビルドする
-      context: .
+      context: ./
       dockerfile: ./db/Dockerfile
-
     volumes: #名前付きボリューム db-test をデータベースのデータを保存するディレクトリ /var/lib/mysql にマウントします。
       - type: volume
         source: react_flask_db
@@ -70,6 +72,8 @@ services:
       - PMA_HOST=mysql_db # データベース名　mysql_dbはmysql_dbサービス名を使用して相互に通信できる　下のlinksを設定することで可能となる
       - PMA_USER=admin # phpMyAdminのユーザー名
       - PMA_PASSWORD=password # phpMyAdminのパスワード
+    depends_on:
+      - mysql_db
     links: #mysql_db サービスへのリンクを設定。ネットワーク内で名前を使って他のコンテナに簡単にアクセスするため
       - mysql_db
     ports:

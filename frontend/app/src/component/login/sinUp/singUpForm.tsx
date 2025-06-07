@@ -1,5 +1,5 @@
 import { ChangeEvent, FC, useCallback, useState } from "react";
-import { Heading, Card, Box, Button, Text } from "@chakra-ui/react";
+import { Heading, Card, Box, Button } from "@chakra-ui/react";
 import RenderButton from "../../common/render/renderButton";
 import {
   sinupFormType,
@@ -8,13 +8,16 @@ import {
 } from "../../../types/loginType";
 import SelectedPlanView from "./selectedPlanView";
 import FormView from "./formView";
+import { loginCheckApi } from "../../../api/loginApis";
 import CreditForm from "./creditForm";
+import useAlert from "../../../hooks/useAlert";
 
 type SingUpFormType = {
   loginClick: () => void;
 };
 
 const SingUpForm: FC<SingUpFormType> = ({ loginClick }) => {
+  const { errorAlert } = useAlert();
   const [error, setError] = useState<errorStateType>({
     usernameError: "",
     emailError: "",
@@ -25,6 +28,7 @@ const SingUpForm: FC<SingUpFormType> = ({ loginClick }) => {
     email: "",
     password: "",
     plan: "1",
+    stripeCustomerId: "",
   });
 
   const [stepsStatue, setStepsStatue] = useState<stepsStatueType>({
@@ -32,7 +36,39 @@ const SingUpForm: FC<SingUpFormType> = ({ loginClick }) => {
     select: false,
     credit: false,
   });
-  const [errorState, setErrorState] = useState<boolean>(false);
+
+  const errorCheck = useCallback(async (): Promise<boolean> => {
+    const { email, password, username } = form;
+
+    // バリデーションチェック
+    const usernameValid = username.length > 0 ? true : false;
+    const emailValid = validateEmail(email);
+    const passwordValid = validatePassword(password);
+
+    // エラーがあれば表示して終了
+    setError({
+      usernameError: usernameValid ? "" : "Please enter a valid user name.",
+      emailError: emailValid ? "" : "Please enter a valid email address.",
+      passwordError: passwordValid
+        ? ""
+        : "Password must contain only lowercase and digits.",
+    });
+    if (!usernameValid || !emailValid || !passwordValid) {
+      return false; // エラーがあるため処理中断
+    }
+
+    const formdata = { email: email };
+    const response = await loginCheckApi(formdata);
+
+    if (!response?.result) {
+      return true;
+    } else {
+      errorAlert(
+        "このメールアドレスはすでに登録されております。別のアドレスで登録してください。"
+      );
+      return false; // エラーがあるため処理中断
+    }
+  }, [errorAlert, form]);
 
   const singUp = useCallback(async () => {
     const { email, password, username } = form;
@@ -51,14 +87,12 @@ const SingUpForm: FC<SingUpFormType> = ({ loginClick }) => {
         : "Password must contain only lowercase and digits.",
     });
     if (!usernameValid || !emailValid || !passwordValid) {
-      setErrorState(true);
       return; // エラーがあるため処理中断
     }
   }, [form]);
 
   const validatePassword = (password: string): boolean => {
-    // 半角英数字かつ16文字以下
-    return /^[a-zA-Z0-9]+$/.test(password) && password.length <= 16;
+    return /^[a-zA-Z0-9]{8,16}$/.test(password);
   };
 
   const validateEmail = (email: string): boolean => {
@@ -121,6 +155,16 @@ const SingUpForm: FC<SingUpFormType> = ({ loginClick }) => {
     }));
   }, []);
 
+  const changeStripeCustomerIdHandler = useCallback(
+    (stripeCustomerId: string) => {
+      setForm((prev) => ({
+        ...prev,
+        stripeCustomerId: stripeCustomerId,
+      }));
+    },
+    []
+  );
+
   return (
     <>
       <Heading
@@ -134,14 +178,6 @@ const SingUpForm: FC<SingUpFormType> = ({ loginClick }) => {
         Create an account
       </Heading>
       <Card w={{ md: "550px", base: "90%" }} py={4} px={3} margin={"auto"}>
-        <Text
-          hidden={!errorState}
-          fontSize={"sm"}
-          textAlign={"center"}
-          color={"red"}
-        >
-          未入力項目もしくは、正しく入力されていない項目があります。
-        </Text>
         <FormView
           error={error}
           form={form}
@@ -158,6 +194,7 @@ const SingUpForm: FC<SingUpFormType> = ({ loginClick }) => {
             form={form}
             singUpEvent={singUp}
             stepStatue={stepsStatue}
+            changeStripeCustomerIdHandler={changeStripeCustomerIdHandler}
             changePlanHandler={changePlanHandler}
             loginClick={loginClick}
           />
@@ -167,12 +204,13 @@ const SingUpForm: FC<SingUpFormType> = ({ loginClick }) => {
           {stepsStatue.form && (
             <>
               <RenderButton
-                clickEvent={() => {
-                  setStepsStatue((prev) => ({
-                    ...prev,
-                    form: false,
-                    select: true,
-                  }));
+                clickEvent={async () => {
+                  if (await errorCheck())
+                    setStepsStatue((prev) => ({
+                      ...prev,
+                      form: false,
+                      select: true,
+                    }));
                 }}
                 title="次へ"
               />
@@ -203,6 +241,7 @@ const SingUpForm: FC<SingUpFormType> = ({ loginClick }) => {
 
               <RenderButton
                 clickEvent={() => {
+                  errorCheck();
                   setStepsStatue((prev) => ({
                     ...prev,
                     form: false,

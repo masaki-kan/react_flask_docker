@@ -3,7 +3,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { profileType } from "../types/profileType";
 import { type RootState } from "../store";
 import { itemListType } from "../types/itemType";
-import { getProfileApi } from "../api/profileApis";
+import { getProfileApi, cancellationProcessApi } from "../api/profileApis";
 import { setProfile } from "../store/profileSlice";
 import { setProfile as setSliceProfile } from "../store/usersSlice";
 import useLoading from "./useLaoding";
@@ -23,6 +23,7 @@ type useMyProfileReturn = {
   getUserProfile: () => { profile: profileType; items: itemListType[] };
   getProfile: (userNumver: string, myUserNumber: string) => Promise<void>;
   favoriteUpdateHandler: (itemId: string, userId: string) => Promise<void>;
+  cancellationProcess: () => Promise<string>;
 };
 
 const useMyProfile = (): useMyProfileReturn => {
@@ -46,7 +47,6 @@ const useMyProfile = (): useMyProfileReturn => {
     const response = await getProfileApi(profile.profile.id);
 
     if (response !== undefined) {
-      console.log("getMyProfile getMyProfile", response);
       dispatch(
         setProfile({ profile: response.profile, items: response.items })
       );
@@ -109,6 +109,16 @@ const useMyProfile = (): useMyProfileReturn => {
     [dispatch, favoriteAlert, memorizeProfile.items, memorizeProfile.profile]
   );
 
+  // 退会処理
+  const cancellationProcess = useCallback(async () => {
+    const userId = memorizeProfile.profile.id;
+    const response = await cancellationProcessApi(userId);
+    if (response !== undefined) {
+      console.log(response);
+      return response;
+    }
+  }, [memorizeProfile.profile.id]);
+
   return {
     memorizeuserProfile,
     memorizeProfile,
@@ -116,6 +126,7 @@ const useMyProfile = (): useMyProfileReturn => {
     getUserProfile,
     getProfile,
     favoriteUpdateHandler,
+    cancellationProcess,
   };
 };
 

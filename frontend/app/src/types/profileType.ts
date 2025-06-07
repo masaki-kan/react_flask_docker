@@ -13,6 +13,7 @@ export interface profileType {
   reasen: string;
   is_following?: boolean;
   likes: number[];
+  plan: string;
 }
 
 export interface apiRetuenProfileType {

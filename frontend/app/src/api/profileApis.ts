@@ -4,6 +4,7 @@ import {
   profileType,
   profileItemType,
 } from "../types/profileType";
+import { errorSweetalert2 } from "../component/alert/sweetalert2";
 // import { sweetErrorAlert } from "../src/component/common/toast/alert";
 
 // プロフ取得
@@ -34,6 +35,7 @@ export const getProfileApi = async (
       reasen: response.data.profile.reasen,
       is_following: response.data.profile.is_following,
       likes: response.data.profile.likes,
+      plan: response.data.profile.plan,
     };
 
     const items = response.data.items.map(
@@ -140,16 +142,46 @@ export const postStoreProfileItemApi = async (
     if (axios.isAxiosError(error)) {
       // Axios エラーで、かつレスポンスが存在する場合
       if (error.response) {
-        console.error("postStoreProfile error:", error.response.data);
+        errorSweetalert2("Error");
+        // console.error("postStoreProfile error:", error.response.data);
       } else {
         // レスポンスがない場合はネットワークエラーなど
-        console.error(
-          "Error: The request was made but no response was received"
-        );
+        errorSweetalert2("Error");
+        // console.error(
+        //   "Error: The request was made but no response was received"
+        // );
       }
     } else {
       // それ以外のエラータイプ
-      console.error("Error:", error);
+      errorSweetalert2("Error");
+      // console.error("Error:", error);
+    }
+  }
+};
+
+// 退会処理
+export const cancellationProcessApi = async (userID: string) => {
+  try {
+    const response = await axios.post(
+      "http://localhost:5001/cancellationProcess",
+      {
+        userID,
+      }
+    );
+
+    return response.data.message;
+  } catch (error: unknown) {
+    if (axios.isAxiosError(error)) {
+      // Axios エラーで、かつレスポンスが存在する場合
+      if (error.response) {
+        errorSweetalert2("Error");
+      } else {
+        // レスポンスがない場合はネットワークエラーなど
+        errorSweetalert2("Error");
+      }
+    } else {
+      // それ以外のエラータイプ
+      errorSweetalert2("Error");
     }
   }
 };

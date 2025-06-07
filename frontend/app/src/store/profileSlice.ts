@@ -21,6 +21,7 @@ const initialState: initialStateType = {
     },
     reasen: "",
     likes: [],
+    plan: "1",
   },
   items: [],
 };

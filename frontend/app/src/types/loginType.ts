@@ -3,6 +3,7 @@ export interface sinupFormType {
   email: string;
   password: string;
   plan: string;
+  stripeCustomerId: string;
 }
 
 export interface errorStateType {

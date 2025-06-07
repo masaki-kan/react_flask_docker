@@ -9,10 +9,13 @@ import {
   Link,
   Button,
   Card,
+  HStack,
 } from "@chakra-ui/react";
 import MyItems from "./myItems";
 import useMyProfile from "../../hooks/useProfile";
 import LogOut from "../common/layout/logOut";
+import { plans } from "../../consts/profileConsts";
+import Withdrawal from "../common/layout/withdrawal";
 
 type profileIndexType = {
   editFormSwitch: () => void;
@@ -84,6 +87,16 @@ const ProfileIndex: FC<profileIndexType> = ({ editFormSwitch }) => {
     return noValueText();
   }, [profile.profile.reasen]);
 
+  const planView = () => {
+    const plan = plans
+      .filter((plan) => plan.planKey === profile.profile.plan)
+      .map((plan) => {
+        return plan.planContents;
+      });
+
+    return plan[0];
+  };
+
   return (
     <>
       <Stack
@@ -108,7 +121,7 @@ const ProfileIndex: FC<profileIndexType> = ({ editFormSwitch }) => {
             プロフィール編集
           </Button>
         </VStack>
-        <Card p={2} w={{ base: "100%", md: "70%" }}>
+        <Card px={2} py={4} w={{ base: "100%", md: "70%" }}>
           <VStack gap={10}>
             <VStack align={"start"} width={"100%"}>
               <Text size={"sm"}>名前</Text>
@@ -125,14 +138,12 @@ const ProfileIndex: FC<profileIndexType> = ({ editFormSwitch }) => {
             <VStack align={"start"} width={"100%"}>
               <Text size={"sm"}>年代</Text>
               <Wrap gap={2} color={"#887563"} ml={4}>
-                {" "}
                 {profile.profile.old ? `${profile.profile.old} 代` : "未設定"}
               </Wrap>
             </VStack>
             <VStack align={"start"} width={"100%"}>
               <Text size={"sm"}>古着歴</Text>
               <Wrap gap={2} color={"#887563"} ml={4}>
-                {" "}
                 {profile.profile.age ? `${profile.profile.age} 年目` : "未設定"}
               </Wrap>
             </VStack>
@@ -152,10 +163,18 @@ const ProfileIndex: FC<profileIndexType> = ({ editFormSwitch }) => {
               <Text size={"sm"}>古着にハマったきっかけ</Text>
               {reasenViewRender()}
             </VStack>
-
+            <VStack align="start" width="100%">
+              <Text size="sm">現在のプラン</Text>
+              <Text color={"#887563"}>
+                {`${planView().title}(${planView().text}) * ${planView().option}`}
+              </Text>
+            </VStack>
             <MyItems />
             <VStack align={"start"} width={"100%"}>
-              <LogOut />
+              <HStack justifyContent={"space-between"} width={"full"}>
+                <LogOut />
+                <Withdrawal />
+              </HStack>
             </VStack>
           </VStack>
         </Card>

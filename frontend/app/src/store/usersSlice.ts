@@ -30,6 +30,8 @@ const initialState: initialStateType = {
     },
     reasen: "",
     is_following: false,
+    likes: [],
+    plan: "1",
   },
   items: [],
 };

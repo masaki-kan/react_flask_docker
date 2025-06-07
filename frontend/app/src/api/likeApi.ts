@@ -1,4 +1,5 @@
 import axios from "axios";
+import { errorSweetalert2 } from "../component/alert/sweetalert2";
 
 export const itemLikeApi = async (
   item_id: string,
@@ -22,16 +23,20 @@ export const itemLikeApi = async (
     if (axios.isAxiosError(error)) {
       // Axios エラーで、かつレスポンスが存在する場合
       if (error.response) {
-        console.error("Login error:", error.response.data);
+        errorSweetalert2("Error");
+        // console.error("Login error:", error.response.data);
       } else {
         // レスポンスがない場合はネットワークエラーなど
-        console.error(
-          "Error: The request was made but no response was received"
-        );
+        errorSweetalert2("Error");
+        console
+          .error
+          // "Error: The request was made but no response was received"
+          ();
       }
     } else {
       // それ以外のエラータイプ
-      console.error("Error:", error);
+      errorSweetalert2("Error");
+      // console.error("Error:", error);
     }
   }
 };

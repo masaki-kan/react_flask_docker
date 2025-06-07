@@ -1,7 +1,7 @@
 import { FC } from "react";
 import Select, { MultiValue } from "react-select";
 import makeAnimated from "react-select/animated";
-import { genres } from "../../../consts/profileGenreConsts";
+import { genres } from "../../../consts/profileConsts";
 
 const animatedComponents = makeAnimated();
 

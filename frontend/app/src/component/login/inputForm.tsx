@@ -203,6 +203,14 @@ const InputForm: FC = () => {
         <VStack marginTop={4}>
           <Link color="#887563">Forgot your password?</Link>
           <Link color="#887563">Don't have an account? Sign up</Link>
+          {/* <Button
+          テスト用
+            onClick={async () => {
+              await toMail();
+            }}
+          >
+            メールテスト
+          </Button> */}
         </VStack>
       </Card>
     </>

@@ -1,17 +1,23 @@
-from dotenv import load_dotenv
+
 import os
 os.environ["EVENTLET_NO_GREENDNS"] = "yes"
 basedir = os.path.abspath(os.path.dirname(__file__))
 ssl_cert = os.path.join(basedir, "cert/localhost.pem")
 ssl_key = os.path.join(basedir, "cert/localhost-key.pem")
 
+import eventlet
+eventlet.monkey_patch()  
+
+from dotenv import load_dotenv
 load_dotenv()  # ← ローカル開発で .env を読み込む（本番では docker-compose が代わりに設定する）
 
 import stripe
 stripe.api_key = os.environ.get("STRIPE_SECRET_KEY")
 
-import eventlet
-eventlet.monkey_patch()  
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from email.utils import formatdate
 
 import mysql.connector # type: ignore
 from datetime import timedelta
@@ -66,6 +72,22 @@ def initialize_database():
         conn.commit()
     finally:
         conn.close()
+        
+@app.route('/loginCheck', methods=['POST'])
+def loginCheck():
+    email = request.json.get('email', None)
+    
+    # データベース接続とユーザー確認をここで実施
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute("SELECT user_id, name, password , email FROM users WHERE email = %s", (email,))
+    user_data = cursor.fetchone()
+    
+    if user_data:
+        return jsonify({'result': True}), 200
+    else:
+        return jsonify({'result': False}), 200
 
 @app.route('/login', methods=['POST'])
 def login():
@@ -94,13 +116,13 @@ def login():
     else:
         return jsonify({'login': False}), 401
 
-
 @app.route('/singUp', methods=['POST']) 
 def singUp():
     username = request.json.get('username', None)
     email = request.json.get('email', None)
     password = request.json.get('password', None)
     plan = request.json.get('plan',None )
+    stripeCustomerId = request.json.get('stripeCustomerId',None )
         
     if not all([username, email, password]):
         return jsonify({"error": "登録に失敗しました。"}), 400
@@ -110,8 +132,9 @@ def singUp():
     cursor = conn.cursor()
     
     try:
-        cursor.execute("INSERT INTO users (name, email, password) VALUES (%s, %s, %s)", (username, email, hashed_password))
+        cursor.execute("INSERT INTO users (name, email, password , stripe_customer_id ) VALUES (%s, %s, %s, %s)", (username, email, hashed_password ,stripeCustomerId))
         conn.commit()
+        send_welcome_email(username,plan,email)
         return jsonify({"message": "登録しました。ログイン画面に移ります",
                         "result" : True}), 201
     except mysql.connector.Error as err:
@@ -119,6 +142,45 @@ def singUp():
 
     finally:
         conn.close()
+        
+#メールテスト用
+def send_welcome_email(user_name ,plan_type ,to_email):
+    if not all([user_name, plan_type, to_email]):
+        return jsonify({"error": "Missing fields"}), 400
+    
+    plan = ""
+    if plan_type == 1:
+        plan = "月額プラン ¥550/月"
+    else :
+        plan = "年額プラン ¥5500/年"
+        
+    html = f"""
+    <html>
+      <body>
+        <h3>ようこそ、僕らのヴィンテージへ</h3>
+        <p>{user_name} 様</p>
+        <p>現在のご契約プラン：<strong>{plan}</strong></p>
+        <p>ご登録ありがとうございます。</p>
+        <p>引き続きご利用ください。</p>
+      </body>
+    </html>
+    """
+    msg = MIMEMultipart("alternative")
+    msg["Subject"] = "ようこそ！会員登録完了のお知らせ"
+    msg["From"] = os.getenv("MAIL_FROM")
+    msg["To"] = to_email
+    msg["Date"] = formatdate(localtime=True)
+    msg.attach(MIMEText(html, "html"))
+    
+    try:
+        with smtplib.SMTP_SSL(os.getenv("SMTP_HOST"), int(os.getenv("SMTP_PORT"))) as server:
+            server.login(os.getenv("SMTP_USER"), os.getenv("SMTP_PASS"))
+            server.send_message(msg)
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 
 @app.route('/postStoreProfile' , methods=['POST'])
 def postStoreProfile():
@@ -208,7 +270,7 @@ def getMyProfile():
     try:
         # ユーザー情報
         cursor.execute('''
-            SELECT user_id, name, location, old, age, shop_name, shop_url, reasen 
+            SELECT user_id, name, location, old, age, shop_name, shop_url, reasen ,plan
             FROM users 
             WHERE user_id = %s
         ''', (user_id,))
@@ -934,29 +996,72 @@ def handle_disconnect():
 
 @app.route('/create-payment-intent', methods=['POST'])
 def create_payment():
-    # 金額等を必要に応じて取得
     data = request.get_json()
     amount = data.get("amount")
-
-    # intent = stripe.PaymentIntent.create(
-    #     amount=amount,
-    #     currency='jpy',
-    #     automatic_payment_methods={'enabled': True},
-    # )
+    plan_status = data.get("status")
     
-    intent = stripe.PaymentIntent.create(
-        amount=amount,
-        currency='jpy',
-        automatic_payment_methods={'enabled': True},
-        payment_method_options={
-        "card": {
-            "setup_future_usage": "off_session"
+    try:
+        # Stripe Customer を作成
+        customer = stripe.Customer.create()
+        
+        # 初月無料にする場合（plan_status == 1）は amount を 0 にする
+        payment_amount = 0 if plan_status == 1 else amount
+        
+        intent = stripe.PaymentIntent.create(
+            customer=customer.id,
+            amount=payment_amount,
+            currency='jpy',
+            automatic_payment_methods={'enabled': True},
+            payment_method_options={
+            "card": {
+                "setup_future_usage": "off_session",
+            }
         }
-    }
-    )
-    return jsonify({'clientSecret': intent.client_secret})
+        )
+        return jsonify({
+            'clientSecret': intent.client_secret,
+            'stripeCustomerId': customer.id  # ← フロント・DBに保存する用
+        }) 
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    
+# 退会処理
+@app.route('/cancellationProcess' ,methods=['POST'])
+def cancellationProcess():
+    data = request.get_json()
+    user_id = data.get('userID')
+    
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+            # ユーザー情報
+        cursor.execute("SELECT stripe_customer_id FROM users WHERE user_id = %s", (user_id,))
+        result = cursor.fetchone()
+        if result and result['stripe_customer_id']:
+            stripe.Customer.delete(result['stripe_customer_id'])
+                
+        # 子テーブルから先に削除（ON DELETE CASCADEが効かない場合の対処）
+        cursor.execute('DELETE FROM trade_reviews WHERE reviewer_id = %s OR reviewee_id = %s', (user_id, user_id))
+        cursor.execute('DELETE FROM trade_messages WHERE sender_id = %s', (user_id,))
+        cursor.execute('DELETE FROM trades WHERE seller_id = %s OR buyer_id = %s', (user_id, user_id))
+        cursor.execute('DELETE FROM item_images WHERE user_id = %s', (user_id,))
+        cursor.execute('DELETE FROM items WHERE user_id = %s', (user_id,))
+        cursor.execute('DELETE FROM likes WHERE user_id = %s', (user_id,))
+        cursor.execute('DELETE FROM plans WHERE user_id = %s', (user_id,))
+        cursor.execute('DELETE FROM tags WHERE user_id = %s', (user_id,))
+        cursor.execute('DELETE FROM profile_images WHERE user_id = %s', (user_id,))
+        cursor.execute('DELETE FROM follows WHERE follower_id = %s OR followed_id = %s', (user_id, user_id))
 
+        # 最後にusersを削除
+        cursor.execute('DELETE FROM users WHERE user_id = %s', (user_id,))
 
+        conn.commit()
+        return jsonify({'message': '退会処理が完了しました。ご利用ありがとうございました。'}), 200
+    except mysql.connector.Error as err:
+        return jsonify({'error': str(err)}), 500
+    finally:
+        conn.close()
+    
 if __name__ == "__main__":
     socketio.run(
     app,

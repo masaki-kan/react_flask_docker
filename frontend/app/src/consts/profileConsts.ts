@@ -14,3 +14,24 @@ export const genres = [
   { brandKey: 12, brandName: "JUNK ジャンク" },
   { brandKey: 13, brandName: "BAND T-SHIRTS バンT" },
 ];
+
+export const plans = [
+  {
+    planKey: "1",
+    planContents: {
+      title: "月額プラン",
+      text: "¥550/月",
+      option: "初月無料",
+      sub: "いつでも解約可能",
+    },
+  },
+  {
+    planKey: "2",
+    planContents: {
+      title: "年額プラン",
+      text: "¥5500/年",
+      option: "2ヶ月分無料",
+      sub: "いつでも解約可能",
+    },
+  },
+];
