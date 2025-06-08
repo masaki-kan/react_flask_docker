@@ -3,24 +3,23 @@ import { FC, useCallback } from "react";
 import { RiLogoutBoxRLine } from "react-icons/ri";
 import useMyProfile from "../../../hooks/useProfile";
 import useAlert from "../../../hooks/useAlert";
-import { useNavigate } from "react-router-dom";
-import { route } from "../../../route/routeConst";
+import useLog from "../../../hooks/useLog";
 
 const Withdrawal: FC = () => {
   const { tradeAlert } = useAlert();
-  const navigate = useNavigate();
+  const { logOutHandler } = useLog();
   const { cancellationProcess } = useMyProfile();
 
   const pushCancellationProcess = useCallback(async () => {
     const response = await cancellationProcess();
     console.log("response", response);
-    // tradeAlert(response).then((result) => {
-    //   if (result.isConfirmed) {
-    //     // OK 押下時の処理
-    //     // navigate(route.login);
-    //   }
-    // });
-  }, [cancellationProcess]);
+    tradeAlert(response).then((result) => {
+      if (result.isConfirmed) {
+        // OK 押下時の処理
+        logOutHandler();
+      }
+    });
+  }, [cancellationProcess, logOutHandler, tradeAlert]);
 
   return (
     <Button

@@ -123,16 +123,24 @@ def singUp():
     password = request.json.get('password', None)
     plan = request.json.get('plan',None )
     stripeCustomerId = request.json.get('stripeCustomerId',None )
+    amount = request.json.get("amount",None)
+    plan_status = request.json.get("status",None)
         
     if not all([username, email, password]):
         return jsonify({"error": "登録に失敗しました。"}), 400
+    
+    # Stripe Customer を作成
+    customer = stripe.Customer.create()
+        
+    # 初月無料にする場合（plan_status == 1）は amount を 0 にする
+    payment_amount = 0 if plan_status == 1 else amount
     
     hashed_password = generate_password_hash(password)
     conn = get_db_connection()
     cursor = conn.cursor()
     
     try:
-        cursor.execute("INSERT INTO users (name, email, password , stripe_customer_id ) VALUES (%s, %s, %s, %s)", (username, email, hashed_password ,stripeCustomerId))
+        cursor.execute("INSERT INTO users (name, email, password , plan , stripe_customer_id ) VALUES (%s, %s, %s, %s, %s)", (username, email, hashed_password ,plan ,stripeCustomerId))
         conn.commit()
         send_welcome_email(username,plan,email)
         return jsonify({"message": "登録しました。ログイン画面に移ります",
@@ -179,8 +187,6 @@ def send_welcome_email(user_name ,plan_type ,to_email):
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
-
 
 @app.route('/postStoreProfile' , methods=['POST'])
 def postStoreProfile():
@@ -1036,9 +1042,13 @@ def cancellationProcess():
         cursor = conn.cursor(dictionary=True)
             # ユーザー情報
         cursor.execute("SELECT stripe_customer_id FROM users WHERE user_id = %s", (user_id,))
+        
         result = cursor.fetchone()
-        if result and result['stripe_customer_id']:
-            stripe.Customer.delete(result['stripe_customer_id'])
+        print( 'result _ stripe_customer_id :' , result,  flush=True)
+        if result:
+            stripe_customer_id = result.get('stripe_customer_id')
+            if stripe_customer_id:
+                stripe.Customer.delete(stripe_customer_id)
                 
         # 子テーブルから先に削除（ON DELETE CASCADEが効かない場合の対処）
         cursor.execute('DELETE FROM trade_reviews WHERE reviewer_id = %s OR reviewee_id = %s', (user_id, user_id))

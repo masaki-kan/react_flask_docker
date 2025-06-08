@@ -72,6 +72,7 @@ const CheckoutForm: FC<checkoutFormType> = ({
           return;
         }
       }
+      setLoading(false);
     },
     [
       elements,
