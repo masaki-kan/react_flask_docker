@@ -64,7 +64,6 @@ const useItems = (): userItemsReturn => {
     changeLoading(true);
     const response = await getUserItemsApi(profile.profile.id);
     if (response !== undefined) {
-      console.log("getItemListHandler", response);
       const rawItems = Array.isArray(response.items)
         ? response.items
         : [response.items];
@@ -73,8 +72,6 @@ const useItems = (): userItemsReturn => {
         (item: {
           item_id: string;
           title: string;
-          price: number;
-          curr: string;
           description: string;
           type: string;
           brand: { key: string; name: string }[];
@@ -82,19 +79,19 @@ const useItems = (): userItemsReturn => {
           uploaded_at: Date;
           profile_image: string;
           user_id: number;
+          trade_status_flag: number;
         }) => {
           return {
             itemId: item.item_id,
             user_id: item.user_id,
             title: item.title,
-            price: item.price,
-            curr: item.curr,
             description: item.description,
             type: item.type,
             brand: item.brand[0],
             images: item.images,
             uploaded_at: item.uploaded_at,
             profile_image: item.profile_image,
+            tradeStatusFlag: item.trade_status_flag,
           };
         }
       );

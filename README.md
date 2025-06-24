@@ -1,43 +1,27 @@
 # react_flask_docker
 
-#コンテナをビルド
+# コンテナをビルド
+
 $ docker-compose up -d --build
 
-#ビルド
-$ docker-compose build
-$ docker-compose up --build
+# node_modules,package-lock.json 削除
 
-# コンテナ停止時に、名前付きボリュームをすべて削除
-
-docker-compose down -v
-
-# 再度 Build を実行
-
-docker-compose build
-
-#flask コンテナの Bash シェルに接続 flask デバッグ用
-$ docker exec -it flask_app /bin/bash
-終了 exit
-
-python app.py
-終了　 control + c
-
-python
-終了　 control + d
-
-#コンテナのログ flask_app
-
-$ docker logs -f flask_app
-
-#reaxt_app コンテ内　インストール
-$docker exec -it react_app /bin/sh
-
-#node_modules,package-lock.json 削除
 rm -rf node_modules package-lock.json
 npm install
 
-# 2. Docker イメージを再構築　（完全破棄）
+# Docker イメージを再構築　（完全破棄）
 
 docker compose down -v
 docker volume prune -f
-docker compose up -d
+
+docker compose build --no-cache
+docker compose up
+
+# flask コンテナの Bash シェルに接続 flask デバッグ用
+
+$ docker exec -it flask_app /bin/bash
+終了 exit
+
+# react_app コンテ内　インストール
+
+$docker exec -it react_app /bin/sh

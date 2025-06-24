@@ -9,6 +9,7 @@ type useCreditReturn = {
     | {
         clientSecret: string;
         stripeCustomerId: string;
+        intentId: string;
       }
     | undefined
   >;
@@ -23,6 +24,7 @@ const useCredit = (): useCreditReturn => {
       | {
           clientSecret: string;
           stripeCustomerId: string;
+          intentId: string;
         }
       | undefined
     > => {
@@ -32,6 +34,7 @@ const useCredit = (): useCreditReturn => {
         return {
           clientSecret: clientSecret.clientSecret,
           stripeCustomerId: clientSecret.stripeCustomerId,
+          intentId: clientSecret.intentId,
         };
       }
     },

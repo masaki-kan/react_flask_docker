@@ -14,6 +14,8 @@ import {
 } from "../store/chatSlice";
 import { viewDate } from "../component/common/date/format";
 import useLoading from "./useLaoding";
+import { trageStatusChange } from "../api/tradeApi";
+import { errorSweetalert2 } from "../component/alert/sweetalert2";
 
 type useChatReturn = {
   memorizeChatMessages: messagesType[];
@@ -21,6 +23,7 @@ type useChatReturn = {
   memorizeChatHight: string;
   getItemDetail: (item_id: string) => Promise<void>;
   uploadImage: (FormData: File) => Promise<string | undefined>;
+  tradeStatusChangeHandler: (trade_id: string, status: string) => Promise<void>;
   fetchMessages: (
     tradeIdNumver: string,
     userIdNumver: string | null
@@ -83,11 +86,10 @@ const useChat = (): useChatReturn => {
 
       if (response !== undefined) {
         const itemData = {
+          trade_id: response.item.trade_id,
           item_id: response.item.item_id,
           title: response.item.title,
           description: response.item.description,
-          price: response.item.price,
-          curr: response.item.curr,
           type: response.item.type,
           brand: {
             key: response.item.brand.key,
@@ -97,9 +99,12 @@ const useChat = (): useChatReturn => {
           user_id: response.item.user_id,
           profile_image: response.item.profile_image,
           seller_name: response.item.seller_name,
+          status: response.item.status,
         };
         dispatch(updateItemData(itemData));
+        return;
       }
+      errorSweetalert2("Error");
     },
     [dispatch]
   );
@@ -116,10 +121,19 @@ const useChat = (): useChatReturn => {
   const upDateChatHight = useCallback(
     (hight: number | undefined): void => {
       if (hight === undefined) return;
-      console.log(hight);
       dispatch(updateChatHight(`${hight}px`));
     },
     [dispatch]
+  );
+
+  const tradeStatusChangeHandler = useCallback(
+    async (trade_id: string, status: string) => {
+      const result = await trageStatusChange(trade_id, status);
+      if (result !== undefined) {
+        dispatch(updateItemData({ ...memorizeChatItemData, status }));
+      }
+    },
+    [dispatch, memorizeChatItemData]
   );
 
   return {
@@ -130,6 +144,7 @@ const useChat = (): useChatReturn => {
     uploadImage,
     fetchMessages,
     upDateChatHight,
+    tradeStatusChangeHandler,
   };
 };
 

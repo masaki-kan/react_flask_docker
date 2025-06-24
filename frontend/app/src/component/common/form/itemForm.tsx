@@ -5,11 +5,6 @@ import {
   FormControl,
   FormLabel,
   Input,
-  NumberDecrementStepper,
-  NumberIncrementStepper,
-  NumberInput,
-  NumberInputField,
-  NumberInputStepper,
   Select,
   Textarea,
   Tooltip,
@@ -49,7 +44,6 @@ const ItemForm: FC<ItemFormProps> = ({ profileItem, ItemNumver }) => {
     title: string;
     description: string;
     images: string[];
-    price: number;
     type: string;
     brand: { key: string; name: string };
   }>({
@@ -58,7 +52,6 @@ const ItemForm: FC<ItemFormProps> = ({ profileItem, ItemNumver }) => {
     images: [],
     type: "",
     brand: { key: "", name: "" },
-    price: 0,
   });
 
   const [formError, setFormError] = useState<{
@@ -67,14 +60,12 @@ const ItemForm: FC<ItemFormProps> = ({ profileItem, ItemNumver }) => {
     images: boolean;
     type: boolean;
     brand: boolean;
-    price: boolean;
   }>({
     title: false,
     description: false,
     images: false,
     type: false,
     brand: false,
-    price: false,
   });
 
   useEffect(() => {
@@ -84,7 +75,6 @@ const ItemForm: FC<ItemFormProps> = ({ profileItem, ItemNumver }) => {
         title: profileItem.title,
         description: profileItem.description,
         images: profileItem.images,
-        price: profileItem.price,
         type: profileItem.type,
         brand: profileItem.brand,
       }));
@@ -167,7 +157,6 @@ const ItemForm: FC<ItemFormProps> = ({ profileItem, ItemNumver }) => {
       description: formValues.description.trim() === "",
       type: formValues.type === "",
       brand: formValues.brand.name.trim() === "",
-      price: formValues.price <= 0,
     };
 
     setFormError(newErrors);
@@ -185,8 +174,6 @@ const ItemForm: FC<ItemFormProps> = ({ profileItem, ItemNumver }) => {
         images: formValues.images,
         type: formValues.type,
         brand: formValues.brand,
-        curr: "¥",
-        price: formValues.price,
       };
 
       const dateUpChange = profileItem !== undefined ? "update" : "insert";
@@ -212,7 +199,6 @@ const ItemForm: FC<ItemFormProps> = ({ profileItem, ItemNumver }) => {
     formValues.brand,
     formValues.description,
     formValues.images,
-    formValues.price,
     formValues.title,
     formValues.type,
     navigate,
@@ -247,6 +233,7 @@ const ItemForm: FC<ItemFormProps> = ({ profileItem, ItemNumver }) => {
               isInvalid={formError.title}
               placeholder=""
               name="title"
+              maxLength={20}
               value={formValues.title}
               onChange={formChangeHandler}
             />
@@ -263,6 +250,7 @@ const ItemForm: FC<ItemFormProps> = ({ profileItem, ItemNumver }) => {
               isInvalid={formError.description}
               placeholder=""
               name="description"
+              maxLength={100}
               value={formValues.description}
               onChange={formChangeHandler}
             />
@@ -378,7 +366,7 @@ const ItemForm: FC<ItemFormProps> = ({ profileItem, ItemNumver }) => {
               </Text>
             )}
           </FormControl>
-
+          {/* 
           <FormControl>
             <FormLabel>Price (¥)</FormLabel>
             <NumberInput
@@ -403,7 +391,7 @@ const ItemForm: FC<ItemFormProps> = ({ profileItem, ItemNumver }) => {
                 商品値段は必須です。
               </Text>
             )}
-          </FormControl>
+          </FormControl> */}
 
           <HStack align={"start"} width={"100%"} spacing={5}>
             <Button onClick={toProfile}>戻る</Button>

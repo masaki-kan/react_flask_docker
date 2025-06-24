@@ -5,7 +5,6 @@ import {
   profileItemType,
 } from "../types/profileType";
 import { errorSweetalert2 } from "../component/alert/sweetalert2";
-// import { sweetErrorAlert } from "../src/component/common/toast/alert";
 
 // プロフ取得
 export const getProfileApi = async (
@@ -36,6 +35,7 @@ export const getProfileApi = async (
       is_following: response.data.profile.is_following,
       likes: response.data.profile.likes,
       plan: response.data.profile.plan,
+      tradeStatusFlag: response.data.profile.trade_status_flag,
     };
 
     const items = response.data.items.map(
@@ -49,6 +49,7 @@ export const getProfileApi = async (
         curr: string;
         type: string;
         uploaded_at: Date;
+        trade_status_flag: number;
       }) => {
         return {
           itemId: items.item_id,
@@ -60,6 +61,7 @@ export const getProfileApi = async (
           curr: items.curr,
           brand: items.brand,
           uploaded_at: items.uploaded_at,
+          tradeStatusFlag: items.trade_status_flag,
         };
       }
     );

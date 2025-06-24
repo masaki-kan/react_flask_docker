@@ -44,21 +44,18 @@ services:
 
   mysql_db:
     image: mysql:8.0
-    build: #カレントディレクトリをコンテキトとして使用し ./db/DockerfileからMySQLデータベースサーバーのイメージをビルドする
+    build:
       context: ./
       dockerfile: ./db/Dockerfile
     volumes: #名前付きボリューム db-test をデータベースのデータを保存するディレクトリ /var/lib/mysql にマウントします。
       - type: volume
         source: react_flask_db
         target: /var/lib/mysql
-        volume:
-          nocopy: true
     environment:
       MYSQL_DATABASE: react_flask_app # 作成するデータベース名
       MYSQL_ROOT_PASSWORD: password # rootのパスワード
       MYSQL_USER: admin # ユーザー名
       MYSQL_PASSWORD: password # ユーザーのパスワード
-    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
     ports:
       - "3306:3306"
     networks: # app_network ネットワークに所属

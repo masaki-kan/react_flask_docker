@@ -22,9 +22,11 @@ export const getChatItemDetailApi = async (
     if (axios.isAxiosError(error)) {
       // Axios エラーで、かつレスポンスが存在する場合
       if (error.response) {
+        console.log("_1");
         errorSweetalert2("Error");
         // console.error("Login error:", error.response.data);
       } else {
+        console.log("_2");
         // レスポンスがない場合はネットワークエラーなど
         errorSweetalert2("Error");
         // console.error(
@@ -32,6 +34,7 @@ export const getChatItemDetailApi = async (
         // );
       }
     } else {
+      console.log("_3");
       // それ以外のエラータイプ
       errorSweetalert2("Error");
       // console.error("Error:", error);
@@ -55,8 +58,6 @@ export const uploadImageApi = async (
       }
     );
 
-    console.log("response", response.data.image_url);
-
     return {
       imageUrl: response.data.image_url,
     };
@@ -66,15 +67,18 @@ export const uploadImageApi = async (
       // Axios エラーで、かつレスポンスが存在する場合
       if (error.response) {
         console.error("Login error:", error.response.data);
+        errorSweetalert2("Error");
       } else {
         // レスポンスがない場合はネットワークエラーなど
         console.error(
           "Error: The request was made but no response was received"
         );
+        errorSweetalert2("Error");
       }
     } else {
       // それ以外のエラータイプ
       console.error("Error:", error);
+      errorSweetalert2("Error");
     }
   }
 };
@@ -105,15 +109,18 @@ export const getMessagesApi = async (
       // Axios エラーで、かつレスポンスが存在する場合
       if (error.response) {
         console.error("Login error:", error.response.data);
+        errorSweetalert2("Error");
       } else {
         // レスポンスがない場合はネットワークエラーなど
         console.error(
           "Error: The request was made but no response was received"
         );
+        errorSweetalert2("Error");
       }
     } else {
       // それ以外のエラータイプ
       console.error("Error:", error);
+      errorSweetalert2("Error");
     }
   }
 };

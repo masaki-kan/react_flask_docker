@@ -187,7 +187,11 @@ const ChatLayout: FC = () => {
         h={isMobile ? "600px" : memorizeChatHight}
       >
         {/* メッセージ表示部分（スクロール） */}
-        <Box overflowY="auto" w={"full"}>
+        <Box
+          overflowY="auto"
+          w={"full"}
+          h={isMobile ? "600px" : memorizeChatHight}
+        >
           {messages.map((msg, index) => (
             <HStack
               key={index}

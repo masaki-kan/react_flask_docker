@@ -5,9 +5,8 @@ import {
   FormControl,
   FormLabel,
   Input,
-  Link,
+  // Link,
   Text,
-  Card,
   Box,
   HStack,
 } from "@chakra-ui/react";
@@ -148,7 +147,7 @@ const InputForm: FC = () => {
       >
         Welcome back to Retro Threads
       </Heading>
-      <Card w={{ md: "550px", base: "90%" }} py={2} px={3} margin={"auto"}>
+      <Box w={{ md: "550px", base: "90%" }} py={2} px={3} margin={"auto"}>
         <VStack py="3">
           <FormControl id="email">
             <FormLabel>Email</FormLabel>
@@ -200,19 +199,11 @@ const InputForm: FC = () => {
         <Box mx={"auto"} width={"80%"}>
           <RenderButton clickEvent={loginClick} title="Log in" />
         </Box>
-        <VStack marginTop={4}>
+        {/* <VStack marginTop={4}>
           <Link color="#887563">Forgot your password?</Link>
           <Link color="#887563">Don't have an account? Sign up</Link>
-          {/* <Button
-          テスト用
-            onClick={async () => {
-              await toMail();
-            }}
-          >
-            メールテスト
-          </Button> */}
-        </VStack>
-      </Card>
+        </VStack> */}
+      </Box>
     </>
   );
 };

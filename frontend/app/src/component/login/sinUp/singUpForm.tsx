@@ -1,4 +1,4 @@
-import { ChangeEvent, FC, useCallback, useState } from "react";
+import { ChangeEvent, FC, memo, useCallback, useMemo, useState } from "react";
 import { Heading, Card, Box, Button } from "@chakra-ui/react";
 import RenderButton from "../../common/render/renderButton";
 import {
@@ -11,12 +11,14 @@ import FormView from "./formView";
 import { loginCheckApi } from "../../../api/loginApis";
 import CreditForm from "./creditForm";
 import useAlert from "../../../hooks/useAlert";
+import useLoading from "../../../hooks/useLaoding";
 
 type SingUpFormType = {
   loginClick: () => void;
 };
 
-const SingUpForm: FC<SingUpFormType> = ({ loginClick }) => {
+const SingUpForm: FC<SingUpFormType> = memo(({ loginClick }) => {
+  const { memorizeLoading, changeLoading } = useLoading();
   const { errorAlert } = useAlert();
   const [error, setError] = useState<errorStateType>({
     usernameError: "",
@@ -29,6 +31,8 @@ const SingUpForm: FC<SingUpFormType> = ({ loginClick }) => {
     password: "",
     plan: "1",
     stripeCustomerId: "",
+    intentId: "",
+    clientSecret: "",
   });
 
   const [stepsStatue, setStepsStatue] = useState<stepsStatueType>({
@@ -38,6 +42,7 @@ const SingUpForm: FC<SingUpFormType> = ({ loginClick }) => {
   });
 
   const errorCheck = useCallback(async (): Promise<boolean> => {
+    changeLoading(true);
     const { email, password, username } = form;
 
     // バリデーションチェック
@@ -61,14 +66,16 @@ const SingUpForm: FC<SingUpFormType> = ({ loginClick }) => {
     const response = await loginCheckApi(formdata);
 
     if (!response?.result) {
+      changeLoading(false);
       return true;
     } else {
       errorAlert(
         "このメールアドレスはすでに登録されております。別のアドレスで登録してください。"
       );
+      changeLoading(false);
       return false; // エラーがあるため処理中断
     }
-  }, [errorAlert, form]);
+  }, [changeLoading, errorAlert, form]);
 
   const singUp = useCallback(async () => {
     const { email, password, username } = form;
@@ -159,11 +166,70 @@ const SingUpForm: FC<SingUpFormType> = ({ loginClick }) => {
     (stripeCustomerId: string) => {
       setForm((prev) => ({
         ...prev,
-        stripeCustomerId: stripeCustomerId,
+        stripeCustomerId,
       }));
     },
     []
   );
+
+  const changeClientSecretIdHandler = useCallback((clientSecret: string) => {
+    setForm((prev) => ({
+      ...prev,
+      clientSecret,
+    }));
+  }, []);
+
+  const changeIntentIdIdHandler = useCallback((intentId: string) => {
+    setForm((prev) => ({
+      ...prev,
+      intentId,
+    }));
+  }, []);
+
+  const formViewComponent = useMemo(() => {
+    return (
+      <FormView
+        error={error}
+        form={form}
+        updateFormHandler={updateFormHandler}
+        stepStatue={stepsStatue}
+      />
+    );
+  }, [error, form, stepsStatue, updateFormHandler]);
+
+  const selectedPlanView = useMemo(() => {
+    return (
+      <SelectedPlanView
+        stepStatue={stepsStatue}
+        form={form}
+        changePlanHandler={changePlanHandler}
+      />
+    );
+  }, [changePlanHandler, form, stepsStatue]);
+
+  const creditFormComponent = useMemo(() => {
+    return (
+      <CreditForm
+        form={form}
+        singUpEvent={singUp}
+        stepStatue={stepsStatue}
+        changeStripeCustomerIdHandler={changeStripeCustomerIdHandler}
+        changeClientSecretIdHandler={changeClientSecretIdHandler}
+        changeIntentIdIdHandler={changeIntentIdIdHandler}
+        changePlanHandler={changePlanHandler}
+        loginClick={loginClick}
+      />
+    );
+  }, [
+    form,
+    singUp,
+    stepsStatue,
+    changeStripeCustomerIdHandler,
+    changeClientSecretIdHandler,
+    changeIntentIdIdHandler,
+    changePlanHandler,
+    loginClick,
+  ]);
 
   return (
     <>
@@ -178,27 +244,9 @@ const SingUpForm: FC<SingUpFormType> = ({ loginClick }) => {
         Create an account
       </Heading>
       <Card w={{ md: "550px", base: "90%" }} py={4} px={3} margin={"auto"}>
-        <FormView
-          error={error}
-          form={form}
-          updateFormHandler={updateFormHandler}
-          stepStatue={stepsStatue}
-        />
-        <SelectedPlanView
-          stepStatue={stepsStatue}
-          form={form}
-          changePlanHandler={changePlanHandler}
-        />
-        {stepsStatue.credit && (
-          <CreditForm
-            form={form}
-            singUpEvent={singUp}
-            stepStatue={stepsStatue}
-            changeStripeCustomerIdHandler={changeStripeCustomerIdHandler}
-            changePlanHandler={changePlanHandler}
-            loginClick={loginClick}
-          />
-        )}
+        {formViewComponent}
+        {selectedPlanView}
+        {stepsStatue.credit && <>{creditFormComponent}</>}
 
         <Box mx={"auto"} width={"80%"}>
           {stepsStatue.form && (
@@ -212,6 +260,7 @@ const SingUpForm: FC<SingUpFormType> = ({ loginClick }) => {
                       select: true,
                     }));
                 }}
+                disable={memorizeLoading}
                 title="次へ"
               />
             </>
@@ -282,6 +331,6 @@ const SingUpForm: FC<SingUpFormType> = ({ loginClick }) => {
       </Card>
     </>
   );
-};
+});
 
 export default SingUpForm;

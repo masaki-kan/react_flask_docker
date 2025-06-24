@@ -57,7 +57,6 @@ const useMyProfile = (): useMyProfileReturn => {
   const getProfile = useCallback(
     async (userNumver: string, myUserNumber: string) => {
       const response = await getProfileApi(userNumver, myUserNumber);
-      console.log("getMyProfile getProfile", response);
       if (response !== undefined) {
         dispatch(
           setSliceProfile({ profile: response.profile, items: response.items })

@@ -4,6 +4,8 @@ export interface sinupFormType {
   password: string;
   plan: string;
   stripeCustomerId: string;
+  intentId: string;
+  clientSecret: string;
 }
 
 export interface errorStateType {

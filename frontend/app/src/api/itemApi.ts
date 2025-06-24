@@ -8,8 +8,6 @@ export const getUserItemsApi = async (
       items: {
         item_id: string;
         title: string;
-        price: number;
-        curr: string;
         description: string;
         type: string;
         brand: { key: string; name: string }[];
@@ -17,6 +15,7 @@ export const getUserItemsApi = async (
         uploaded_at: Date;
         profile_image: string;
         user_id: number;
+        trade_status_flag: number;
       };
       brands: { key: string; name: string }[];
     }

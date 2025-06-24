@@ -4,7 +4,7 @@ import {
   PaymentElement,
 } from "@stripe/react-stripe-js";
 import { Box, Button, FormLabel, Heading, Input } from "@chakra-ui/react";
-import { FC, useCallback, useState } from "react";
+import { FC, memo, useCallback, useState } from "react";
 import useAlert from "../../../hooks/useAlert";
 import { sinupFormType } from "../../../types/loginType";
 import { singupApi } from "../../../api/loginApis";
@@ -15,95 +15,110 @@ type checkoutFormType = {
   loginClick: () => void;
 };
 
-const CheckoutForm: FC<checkoutFormType> = ({
-  singUpEvent,
-  form,
-  loginClick,
-}) => {
-  const { sweetSuccessTextOverAlert, sweetErrorOverAlert, errorAlert } =
-    useAlert();
-  const stripe = useStripe();
-  const elements = useElements();
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [loading, setLoading] = useState<boolean>(false);
+const CheckoutForm: FC<checkoutFormType> = memo(
+  ({ singUpEvent, form, loginClick }) => {
+    const { sweetSuccessTextOverAlert, sweetErrorOverAlert } = useAlert();
+    const stripe = useStripe();
+    const elements = useElements();
+    const [name, setName] = useState(form.username);
+    const [email, setEmail] = useState(form.email);
+    const [loading, setLoading] = useState<boolean>(false);
+    const [responseResult, setResponseResult] = useState<boolean>(false);
 
-  const handleSubmit = useCallback(
-    async (e: React.FormEvent) => {
-      e.preventDefault();
-      singUpEvent();
-      if (!stripe || !elements) return;
-      setLoading(true);
-      const response = await singupApi(form);
-      if (response !== undefined) {
-        if (response.result) {
+    const handleSubmit = useCallback(
+      async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!stripe || !elements) return;
+        if (!form.clientSecret) {
+          console.warn("clientSecret が未設定です");
+          return;
+        }
+        if (responseResult) return;
+
+        singUpEvent();
+        setLoading(true);
+
+        // const result = await stripe.confirmPayment({
+        //   elements,
+        //   redirect: "if_required",
+        // });
+        try {
+          // ✅ 必須：まず elements.submit()
+          await elements.submit();
+
+          // ✅ その後に confirmPayment を実行
           const result = await stripe.confirmPayment({
             elements,
+            clientSecret: form.clientSecret,
             confirmParams: {
               payment_method_data: {
-                billing_details: { name, email },
+                billing_details: {
+                  name: form.username,
+                  email: form.email,
+                },
               },
-              // return_url: window.location.href, 遷移させないなら不要
             },
-            redirect: "if_required", // ← これが重要！
+            redirect: "if_required",
           });
 
           if (result.error) {
-            sweetErrorOverAlert().then((result) => {
-              if (result.isConfirmed) {
-                loginClick();
-                return;
-              }
+            await sweetErrorOverAlert();
+            loginClick();
+          } else if (result.paymentIntent?.status === "succeeded") {
+            setResponseResult(true);
+            const response = await singupApi({
+              ...form,
+              intentId: result.paymentIntent.id,
             });
-          } else {
-            sweetSuccessTextOverAlert(
-              "登録しました。ログイン画面に移ります。"
-            ).then((result) => {
-              if (result.isConfirmed) {
-                loginClick();
-                return;
-              }
-            });
-          }
-          return;
-        } else {
-          errorAlert(response.message);
-          setLoading(false);
-          return;
-        }
-      }
-      setLoading(false);
-    },
-    [
-      elements,
-      email,
-      errorAlert,
-      form,
-      loginClick,
-      name,
-      singUpEvent,
-      stripe,
-      sweetErrorOverAlert,
-      sweetSuccessTextOverAlert,
-    ]
-  );
 
-  return (
-    <Box
-      w="100%"
-      mx="auto"
-      my={4}
-      p={6}
-      bg="white"
-      borderRadius="md"
-      boxShadow="md"
-      overflowY={"scroll"}
-      height={"500px"}
-    >
-      <Heading size="sm" textAlign="center" mb={2}>
-        クレジットカード情報を登録します
-      </Heading>
-      <form onSubmit={handleSubmit}>
+            if (response?.result) {
+              await sweetSuccessTextOverAlert(
+                "登録しました。ログイン画面に移ります。"
+              );
+              loginClick();
+            } else {
+              await sweetErrorOverAlert();
+              loginClick();
+            }
+          } else {
+            console.log("❌ 支払いが完了していません。");
+            await sweetErrorOverAlert();
+            loginClick();
+          }
+        } catch (error) {
+          console.error("処理中にエラーが発生しました:", error);
+          await sweetErrorOverAlert();
+        }
+
+        setLoading(false);
+      },
+      [
+        elements,
+        form,
+        loginClick,
+        responseResult,
+        singUpEvent,
+        stripe,
+        sweetErrorOverAlert,
+        sweetSuccessTextOverAlert,
+      ]
+    );
+
+    return (
+      <Box
+        w="100%"
+        mx="auto"
+        my={4}
+        p={6}
+        bg="white"
+        borderRadius="md"
+        boxShadow="md"
+        overflowY={"scroll"}
+        height={"500px"}
+      >
+        <Heading size="sm" textAlign="center" mb={2}>
+          クレジットカード情報を登録します
+        </Heading>
         <Box my={4}>
           <FormLabel>氏名</FormLabel>
           <Input
@@ -130,19 +145,19 @@ const CheckoutForm: FC<checkoutFormType> = ({
         />
 
         <Button
-          type="submit"
           bgColor={"#e68019"}
           mt={6}
           w={"100%"}
           colorScheme="teal"
           isLoading={loading}
           mx={"auto"}
+          onClick={handleSubmit}
         >
           登録して無料から始める
         </Button>
-      </form>
-    </Box>
-  );
-};
+      </Box>
+    );
+  }
+);
 
 export default CheckoutForm;

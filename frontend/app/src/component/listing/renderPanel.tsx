@@ -61,7 +61,6 @@ const RenderPanel: FC<renderTabPanelType> = ({ data }) => {
           {data.map((list, index) => {
             const userKey: string = list.user_id.toString();
             const lastRead = readUserTimestamps[userKey];
-            console.log(list.uploaded_at, lastRead);
             const isNew =
               !lastRead || new Date(list.uploaded_at) > new Date(lastRead);
             return (

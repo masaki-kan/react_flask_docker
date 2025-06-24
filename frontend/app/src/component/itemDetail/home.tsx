@@ -21,8 +21,9 @@ import KeyboardControlGallerySlider from "../common/slider/keyboardControlGaller
 import { viewDate } from "../common/date/format";
 import { getProfileApi } from "../../api/profileApis";
 import { FaHeart } from "react-icons/fa";
-import { trageApi } from "../../api/trageApi";
+import { tradeApi } from "../../api/tradeApi";
 import { itemTypeViewHanlder } from "../common/type/itemTypeView";
+import { tradeStatusFlags } from "../../consts/profileConsts";
 
 const Home: FC = () => {
   const { tradeAlert } = useAlert();
@@ -96,6 +97,7 @@ const Home: FC = () => {
     const itemUser = async () => {
       // 非同期処理
       const response = await getProfileApi(String(memorizeItem[0].user_id));
+
       if (response !== undefined)
         setItemUser({
           name: response?.profile.name,
@@ -124,7 +126,7 @@ const Home: FC = () => {
   // 取引開始
   const tradeHandler = useCallback(async () => {
     if (userItemNumver !== null) {
-      const response = await trageApi(
+      const response = await tradeApi(
         userItemNumver, // 商品ID
         memorizeProfile.profile.id, // 商品購入ユーザーID
         memorizeItem[0].user_id.toString() // 商品出品ユーザーID
@@ -155,11 +157,20 @@ const Home: FC = () => {
     );
   }, [favoriteUpdateHandler, memorizeItem, memorizeProfile.profile.id]);
 
+  const getTradeStatusFlag = useCallback((tradeStatusFlag: number) => {
+    const tradeStatus = tradeStatusFlags.filter((flag) => {
+      return flag.value === tradeStatusFlag;
+    });
+    return <>{tradeStatus[0].text}</>;
+  }, []);
+
   if (memorizeItem[0] === undefined) {
     navigate(route.items);
 
     return;
   }
+
+  console.log("memorizeItem", memorizeItem);
 
   return (
     <>
@@ -175,7 +186,25 @@ const Home: FC = () => {
           w={{ base: "100%", md: "50%" }}
           p={4}
           my={2}
+          position={"relative"}
         >
+          <Box
+            position="absolute"
+            top="0"
+            right="0"
+            bg="red.400"
+            color="white"
+            fontWeight="bold"
+            fontSize="md"
+            px={3}
+            py={1}
+            borderRadius="md"
+            transform="rotate(5deg)"
+            zIndex={2}
+            hidden={memorizeItem[0].tradeStatusFlag === 0}
+          >
+            {getTradeStatusFlag(memorizeItem[0].tradeStatusFlag)}
+          </Box>
           <KeyboardControlGallerySlider images={memorizeItem[0].images} />
         </Box>
 
@@ -263,15 +292,6 @@ const Home: FC = () => {
                   {memorizeItem[0].brand.name}
                 </Text>
               </Box>
-              <Box>
-                <Heading size="xs" textTransform="uppercase">
-                  価格
-                </Heading>
-                <Text pt="2" fontSize="sm">
-                  {memorizeItem[0].curr}
-                  {memorizeItem[0].price}
-                </Text>
-              </Box>
             </Stack>
 
             <HStack
@@ -282,6 +302,10 @@ const Home: FC = () => {
             >
               <Button onClick={toPrevPageHandler}>戻る</Button>
               <Button
+                hidden={
+                  memorizeItem[0].tradeStatusFlag === 1 ||
+                  memorizeItem[0].tradeStatusFlag === 2
+                }
                 colorScheme="blue"
                 loadingText="登録..."
                 variant="outline"

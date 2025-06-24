@@ -10,17 +10,17 @@ type initialStateType = {
 const initialState: initialStateType = {
   messages: [],
   itemData: {
+    trade_id: "",
     item_id: 0,
     title: "",
     description: "",
-    price: 0,
-    curr: "",
     type: "",
     brand: { key: "", name: "" },
     images: [],
     user_id: 0,
     profile_image: "",
     seller_name: "",
+    status: "",
   },
   chatHight: "",
 };

@@ -28,6 +28,4 @@ export interface profileItemType {
   images: string[];
   type: string;
   brand: { key: string; name: string };
-  curr: string;
-  price: number;
 }

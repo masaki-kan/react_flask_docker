@@ -2,7 +2,7 @@ import axios from "axios";
 import { savedListType } from "../types/savedType";
 import { errorSweetalert2 } from "../component/alert/sweetalert2";
 
-export const trageApi = async (
+export const tradeApi = async (
   item_id: string,
   buyer_id: string,
   seller_id: string
@@ -44,6 +44,45 @@ export const getSavedList = async (
     const response = await axios.post("http://localhost:5001/getSavedList", {
       user_id,
     });
+
+    return {
+      trades: response.data.trades,
+      result: response.data.result,
+    };
+  } catch (error: unknown) {
+    // エラーが Error インスタンスかつ response プロパティを持っているか確認
+    if (axios.isAxiosError(error)) {
+      // Axios エラーで、かつレスポンスが存在する場合
+      if (error.response) {
+        errorSweetalert2("Error");
+        // console.error("Login error:", error.response.data);
+      } else {
+        // レスポンスがない場合はネットワークエラーなど
+        errorSweetalert2("Error");
+        // console.error(
+        //   "Error: The request was made but no response was received"
+        // );
+      }
+    } else {
+      // それ以外のエラータイプ
+      errorSweetalert2("Error");
+      // console.error("Error:", error);
+    }
+  }
+};
+
+export const trageStatusChange = async (
+  trade_id: string,
+  status: string
+): Promise<{ trades: savedListType[]; result: string } | undefined> => {
+  try {
+    const response = await axios.post(
+      "http://localhost:5001/trade_status_change",
+      {
+        trade_id,
+        status,
+      }
+    );
 
     return {
       trades: response.data.trades,

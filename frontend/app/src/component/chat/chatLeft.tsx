@@ -1,4 +1,4 @@
-import { FC, useRef, useEffect } from "react";
+import { FC, useRef, useEffect, useCallback } from "react";
 import {
   Box,
   Card,
@@ -12,14 +12,25 @@ import {
   useDisclosure,
   IconButton,
   Collapse,
+  Button,
 } from "@chakra-ui/react";
 import KeyboardControlGallerySlider from "../common/slider/keyboardControlGallerySlider";
 import useChat from "../../hooks/useChat";
 import { itemTypeViewHanlder } from "../common/type/itemTypeView";
 import { FaChevronDown, FaChevronUp } from "react-icons/fa";
+import {
+  statusView,
+  chatDetailTradeStatus,
+} from "../common/saved/saveStatusView.ts";
+import useMyProfile from "../../hooks/useProfile.ts";
+import { useNavigate } from "react-router-dom";
+import { route } from "../../route/routeConst.ts";
 
 const ChatLeft: FC = () => {
-  const { memorizeChatItemData, upDateChatHight } = useChat();
+  const navigate = useNavigate();
+  const { memorizeChatItemData, upDateChatHight, tradeStatusChangeHandler } =
+    useChat();
+  const { memorizeProfile } = useMyProfile();
   const { isOpen, onToggle } = useDisclosure();
   const cardRef = useRef<HTMLDivElement>(null);
 
@@ -32,9 +43,55 @@ const ChatLeft: FC = () => {
     return () => clearTimeout(timer);
   }, [upDateChatHight]);
 
+  const tradesStatusUpdateHandler = useCallback(
+    async (status: string) => {
+      if (status === "cancelled") {
+        const checkFlg = window.confirm("取引を終了してもよろしいですか？");
+        if (checkFlg) {
+          await tradeStatusChangeHandler(memorizeChatItemData.trade_id, status);
+          navigate(route.home);
+        }
+        return;
+      } else {
+        await tradeStatusChangeHandler(memorizeChatItemData.trade_id, status);
+      }
+    },
+    [memorizeChatItemData.trade_id, navigate, tradeStatusChangeHandler]
+  );
+
+  const renderTradeStatus = useCallback(
+    (status: string, sellerId: number) => {
+      if (memorizeProfile.profile.id !== String(sellerId)) return <></>;
+      const results = chatDetailTradeStatus(status);
+      return (
+        <>
+          {results.map((list, index) => {
+            return (
+              <Button
+                key={index}
+                size={"xs"}
+                colorScheme={list.color}
+                onClick={() => tradesStatusUpdateHandler(list.status)}
+              >
+                {list.text}
+              </Button>
+            );
+          })}
+        </>
+      );
+    },
+    [memorizeProfile.profile.id, tradesStatusUpdateHandler]
+  );
+
   const ItemViewCard: FC = () => (
     <Card mx="auto" borderWidth={1} borderColor="#edf2f7" ref={cardRef}>
       <CardBody>
+        <HStack justifyContent={"center"} mb={3}>
+          <Text size="xs" fontWeight={"bold"}>
+            {statusView(memorizeChatItemData.status)}
+          </Text>
+        </HStack>
+
         <Stack spacing="2">
           {/* 常に表示される画像（スマホでも） */}
           <KeyboardControlGallerySlider
@@ -55,7 +112,7 @@ const ChatLeft: FC = () => {
 
           {/* 折りたたみ：PCでは常に開く、スマホはトグル */}
           <Collapse in={isOpen || window.innerWidth >= 768} animateOpacity>
-            <Stack divider={<StackDivider />} spacing="2">
+            <Stack divider={<StackDivider />} spacing="2" mb={4}>
               <Box>
                 <Heading size="xs" textTransform="uppercase" mb={2}>
                   投稿主
@@ -85,15 +142,6 @@ const ChatLeft: FC = () => {
               </Box>
               <Box>
                 <Heading size="xs" textTransform="uppercase">
-                  価格
-                </Heading>
-                <Text pt="2" fontSize="sm" color="gray.500">
-                  {memorizeChatItemData.curr}
-                  {memorizeChatItemData.price}
-                </Text>
-              </Box>
-              <Box>
-                <Heading size="xs" textTransform="uppercase">
                   タイプ
                 </Heading>
                 <Text pt="2" fontSize="sm" color="gray.500">
@@ -110,6 +158,19 @@ const ChatLeft: FC = () => {
               </Box>
             </Stack>
           </Collapse>
+          <HStack
+            spacing={3}
+            justifyContent={"end"}
+            align={"center"}
+            width={"100%"}
+          >
+            <HStack justifyContent={"space-around"}>
+              {renderTradeStatus(
+                memorizeChatItemData.status,
+                memorizeChatItemData.user_id
+              )}
+            </HStack>
+          </HStack>
         </Stack>
       </CardBody>
     </Card>

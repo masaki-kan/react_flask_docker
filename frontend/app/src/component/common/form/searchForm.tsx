@@ -131,6 +131,7 @@ const SearchForm: FC<SearchFormProps> = React.memo(
           borderWidth="1px"
           borderRadius="lg"
           width={"full"}
+          bg={"white"}
           hidden={selectedTag.length > 0 ? false : true}
         >
           {selectedTag.map((tag, index) => {
@@ -148,6 +149,9 @@ const SearchForm: FC<SearchFormProps> = React.memo(
             <Tag
               size="lg"
               key={index}
+              colorScheme="blue"
+              variant="outline"
+              bg={"white"}
               cursor="pointer"
               onClick={() => selectedTagAddHandler(index)}
             >

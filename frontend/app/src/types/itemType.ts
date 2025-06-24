@@ -1,8 +1,6 @@
 export interface itemListType {
   itemId: string;
   title: string;
-  price: number;
-  curr: string;
   description: string;
   type: string;
   brand: { key: string; name: string };
@@ -11,6 +9,7 @@ export interface itemListType {
   profile_image: string;
   user_id: number;
   likes?: number[];
+  tradeStatusFlag: number;
 }
 
 export interface itemDetailType {

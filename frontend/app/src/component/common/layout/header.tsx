@@ -4,14 +4,9 @@ import { type FC } from "react";
 type HeaderPropsType = {
   singupClick: () => void;
   loginSwitch: () => void;
-  formSwitchStatus: boolean;
 };
 
-const Header: FC<HeaderPropsType> = ({
-  singupClick,
-  loginSwitch,
-  formSwitchStatus,
-}) => {
+const Header: FC<HeaderPropsType> = ({ singupClick, loginSwitch }) => {
   return (
     <>
       <Stack
@@ -27,14 +22,14 @@ const Header: FC<HeaderPropsType> = ({
           borderBottom={1}
           borderBottomColor={"#f4f2f0"}
         >
-          <HStack justifyContent={"start"}>
+          <HStack justifyContent={"start"} alignItems={"center"}>
             <Box
               color="currentColor"
               as="svg"
               viewBox="0 0 48 48"
               width={"30px"}
               height={"30px"}
-              margin={4}
+              margin={2}
             >
               <svg
                 viewBox="0 0 48 48"
@@ -55,28 +50,36 @@ const Header: FC<HeaderPropsType> = ({
                 ></path>
               </svg>
             </Box>
-            <Heading as="h2" size="lg" color="#181411">
+            <Heading as="h2" size="sm" color="#181411">
               僕らのヴィンテージ
             </Heading>
           </HStack>
-          <Button
-            minW="84px"
-            maxW="480px"
-            bg="#e68019"
-            color="#181411"
-            fontSize="sm"
-            marginRight={4}
-            fontWeight="bold"
-            onClick={() => {
-              if (!formSwitchStatus) {
-                singupClick();
-              } else {
-                loginSwitch();
-              }
-            }}
-          >
-            {formSwitchStatus ? "Log in" : "Sign up"}
-          </Button>
+          <HStack justifyContent={"end"} alignItems={"center"} mr={2}>
+            <Button
+              minW="80px"
+              maxW="480px"
+              bg="#e68019"
+              color="#181411"
+              fontSize="xs"
+              fontWeight="bold"
+              size="sm"
+              onClick={loginSwitch}
+            >
+              Log in
+            </Button>
+            <Button
+              minW="80px"
+              maxW="480px"
+              bg="#e68019"
+              color="#181411"
+              fontSize="xs"
+              fontWeight="bold"
+              size="sm"
+              onClick={singupClick}
+            >
+              Sign up
+            </Button>
+          </HStack>
         </HStack>
       </Stack>
     </>

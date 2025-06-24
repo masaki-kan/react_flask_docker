@@ -12,4 +12,5 @@ export const route = {
   transactionChat: "/transaction/chat",
   favorite: "/favorite",
   profile: "/",
+  launch: "/launch",
 };

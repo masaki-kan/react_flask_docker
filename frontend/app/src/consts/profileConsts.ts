@@ -35,3 +35,9 @@ export const plans = [
     },
   },
 ];
+
+export const tradeStatusFlags = [
+  { value: 0, text: "" },
+  { value: 1, text: "取引中" },
+  { value: 2, text: "取引終了" },
+];

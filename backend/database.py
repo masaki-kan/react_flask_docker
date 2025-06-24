@@ -77,8 +77,6 @@ def create_items_table(cursor):
             description TEXT,
             type JSON,
             brand JSON,
-            curr VARCHAR(10),
-            price INT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (user_id) REFERENCES users(user_id)
@@ -138,6 +136,7 @@ def create_trade_messages_table(cursor):
             sender_id INT NOT NULL,
             message TEXT NOT NULL,
             sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             FOREIGN KEY (trade_id) REFERENCES trades(trade_id) ON DELETE CASCADE,
             FOREIGN KEY (sender_id) REFERENCES users(user_id) ON DELETE CASCADE
         );

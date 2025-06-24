@@ -1,1 +1,4 @@
-.env
+# 機密情報を除外
+client_secret.json
+token.json
+.env*

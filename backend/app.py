@@ -1,68 +1,101 @@
-
 import os
 os.environ["EVENTLET_NO_GREENDNS"] = "yes"
-basedir = os.path.abspath(os.path.dirname(__file__))
-ssl_cert = os.path.join(basedir, "cert/localhost.pem")
-ssl_key = os.path.join(basedir, "cert/localhost-key.pem")
 
 import eventlet
-eventlet.monkey_patch()  
+eventlet.monkey_patch()
 
 from dotenv import load_dotenv
-load_dotenv()  # ← ローカル開発で .env を読み込む（本番では docker-compose が代わりに設定する）
-
-import stripe
-stripe.api_key = os.environ.get("STRIPE_SECRET_KEY")
-
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
-from email.utils import formatdate
-
-import mysql.connector # type: ignore
-from datetime import timedelta
-from database import create_table
+load_dotenv()
 
 from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
 from flask_socketio import SocketIO, emit, join_room
-
 from werkzeug.utils import secure_filename
 from werkzeug.security import generate_password_hash, check_password_hash
+
+import mysql.connector
+import stripe
 import json
-from datetime import datetime
+import threading
+import schedule
+import time
+from datetime import datetime, timedelta
+from sendgrid import SendGridAPIClient
+from sendgrid.helpers.mail import Mail
 
+import base64
+from email.message import EmailMessage
+
+from google.auth.transport.requests import Request
+from google.oauth2.credentials import Credentials
+from google_auth_oauthlib.flow import InstalledAppFlow
+from googleapiclient.discovery import build
+from google_auth_oauthlib.flow import InstalledAppFlow
+
+from database import create_table
+
+
+# === Flask App Init ===
 app = Flask(__name__)
-# appを定義した後にCORSを設定
-CORS(app, resources={r"/*": {"origins": "https://localhost:5173"}}) # 特定のオリジンだけを許可する場合
+CORS(app, resources={r"/*": {"origins": "https://localhost:5173"}})
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode="eventlet")
 
-socketio = SocketIO(app, cors_allowed_origins="*",async_mode="eventlet")  # CORS対応も忘れずに
-# socketio = SocketIO(app, cors_allowed_origins="*")  # CORS対応も忘れずに
+# === Config ===
 app.config['JWT_SECRET_KEY'] = os.environ.get('JWT_SECRET_KEY')  # シークレットキーを設定
 app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=1)
+stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
 jwt = JWTManager(app)
 
-# アップロードディレクトリの絶対パスを設定
-UPLOAD_FOLDER = os.path.join(os.getcwd(), 'uploads')  # 絶対パスで指定
+UPLOAD_FOLDER = os.path.join(os.getcwd(), 'uploads')  # 絶対パスで指定　アップロードディレクトリの絶対パスを設定
+SCOPES = ['https://www.googleapis.com/auth/gmail.send']
 
-# MySQL接続設定
-app.config['MYSQL_HOST'] = 'mysql_db'
-app.config['MYSQL_USER'] = 'admin'
-app.config['MYSQL_PASSWORD'] = 'password'
-app.config['MYSQL_DB'] = 'react_flask_app'
+# === Scheduler ===
+def cleanup_old_unpaid_intents():
+    # 1週間前のUnixタイムスタンプを取得
+    one_week_ago = int((datetime.datetime.utcnow() - datetime.timedelta(days=7)).timestamp())
 
-# db 接続
+    # 作成が1週間より前で、最大100件のIntentを取得
+    intents = stripe.PaymentIntent.list(
+        created={"lt": one_week_ago},
+        limit=100,
+    )
+
+    # 1件ずつループ処理
+    for intent in intents.auto_paging_iter():
+        # 状態が requires_payment_method のもの（支払い未確定）を対象に削除
+        if intent.status == "requires_payment_method":
+            try:
+                print(f"Deleting intent: {intent.id}, created: {intent.created}")
+                stripe.PaymentIntent.cancel(intent.id)
+            except stripe.error.StripeError as e:
+                print(f"Error cancelling intent {intent.id}: {str(e)}")
+
+    return "クリーンアップ完了"
+
+# === 毎日2:00に実行 ===
+def schedule_job():
+    schedule.every().day.at("02:00").do(cleanup_old_unpaid_intents)
+    while True:
+        schedule.run_pending()
+        time.sleep(60)
+
+@app.before_first_request
+def activate_scheduler():
+    thread = threading.Thread(target=schedule_job)
+    thread.daemon = True
+    thread.start()
+
+# === DB Connection ===
 def get_db_connection():
     conn = mysql.connector.connect(
-        host=app.config['MYSQL_HOST'],
-        user=app.config['MYSQL_USER'],
-        password=app.config['MYSQL_PASSWORD'],
-        database=app.config['MYSQL_DB']
+        host=os.getenv("DB_HOST"),  
+        user=os.getenv("DB_USER"),
+        password=os.getenv("DB_PASSWORD"),
+        database=os.getenv("DB_NAME")
     )
     return conn
 
-    
 @app.before_first_request
 def initialize_database():
     conn = get_db_connection()
@@ -72,18 +105,18 @@ def initialize_database():
         conn.commit()
     finally:
         conn.close()
-        
+
 @app.route('/loginCheck', methods=['POST'])
 def loginCheck():
     email = request.json.get('email', None)
-    
+
     # データベース接続とユーザー確認をここで実施
     conn = get_db_connection()
     cursor = conn.cursor()
-    
+
     cursor.execute("SELECT user_id, name, password , email FROM users WHERE email = %s", (email,))
     user_data = cursor.fetchone()
-    
+
     if user_data:
         return jsonify({'result': True}), 200
     else:
@@ -93,14 +126,14 @@ def loginCheck():
 def login():
     email = request.json.get('email', None)
     password = request.json.get('password', None)
-    
+
     # データベース接続とユーザー確認をここで実施
     conn = get_db_connection()
     cursor = conn.cursor()
-    
+
     cursor.execute("SELECT user_id, name, password , email FROM users WHERE email = %s", (email,))
     user_data = cursor.fetchone()
-    
+
     if user_data and check_password_hash(user_data[2], password):
         access_token = create_access_token(identity=email)
         response = jsonify({
@@ -115,32 +148,27 @@ def login():
         return response, 200
     else:
         return jsonify({'login': False}), 401
-
+    
 @app.route('/singUp', methods=['POST']) 
 def singUp():
-    username = request.json.get('username', None)
-    email = request.json.get('email', None)
-    password = request.json.get('password', None)
-    plan = request.json.get('plan',None )
-    stripeCustomerId = request.json.get('stripeCustomerId',None )
-    amount = request.json.get("amount",None)
-    plan_status = request.json.get("status",None)
-        
-    if not all([username, email, password]):
+    data = request.get_json()
+    username = data['username']
+    email = data['email']
+    password = data['password']
+    plan = data['plan']
+    stripe_customer_id = data['stripeCustomerId']
+    
+    print(username, email, password, stripe_customer_id , flush=True  )
+
+    if not all([username, email, password, stripe_customer_id]):
         return jsonify({"error": "登録に失敗しました。"}), 400
-    
-    # Stripe Customer を作成
-    customer = stripe.Customer.create()
-        
-    # 初月無料にする場合（plan_status == 1）は amount を 0 にする
-    payment_amount = 0 if plan_status == 1 else amount
-    
+
     hashed_password = generate_password_hash(password)
     conn = get_db_connection()
     cursor = conn.cursor()
     
     try:
-        cursor.execute("INSERT INTO users (name, email, password , plan , stripe_customer_id ) VALUES (%s, %s, %s, %s, %s)", (username, email, hashed_password ,plan ,stripeCustomerId))
+        cursor.execute("INSERT INTO users (name, email, password , plan , stripe_customer_id ) VALUES (%s, %s, %s, %s, %s)", (username, email, hashed_password ,plan ,stripe_customer_id))
         conn.commit()
         send_welcome_email(username,plan,email)
         return jsonify({"message": "登録しました。ログイン画面に移ります",
@@ -150,9 +178,41 @@ def singUp():
 
     finally:
         conn.close()
-        
-#メールテスト用
+
+#認証
+def get_credentials():
+    creds = None
+    if os.path.exists('token.json'):
+        creds = Credentials.from_authorized_user_file('token.json', SCOPES)
+
+    if not creds or not creds.valid:
+        if creds and creds.expired and creds.refresh_token:
+            creds.refresh(Request())
+        else:
+            # 認証フローを生成
+            flow = InstalledAppFlow.from_client_secrets_file(
+                'client_secret.json', 
+                SCOPES,
+                redirect_uri='http://localhost:8080/')
+
+            # 認証URLを取得
+            auth_url, _ = flow.authorization_url(prompt='consent')
+            print("\n🌐 以下のURLをブラウザで開いて、Googleログイン・許可を行ってください：")
+            print(auth_url)
+            code = input("認証コードを入力: ")
+            flow.fetch_token(code=code)
+            # localhost:8080 で待機し、トークン取得（自動で code を取りに行く）
+            # creds = flow.run_local_server(port=8080, open_browser=False)
+            creds = flow.credentials
+        with open('token.json', 'w') as token:
+            token.write(creds.to_json())
+
+    return creds
+
+#メール用
 def send_welcome_email(user_name ,plan_type ,to_email):
+    
+    print("user_name, plan_type, to_email :",user_name, plan_type, to_email , flush=True )
     if not all([user_name, plan_type, to_email]):
         return jsonify({"error": "Missing fields"}), 400
     
@@ -162,30 +222,34 @@ def send_welcome_email(user_name ,plan_type ,to_email):
     else :
         plan = "年額プラン ¥5500/年"
         
-    html = f"""
-    <html>
-      <body>
-        <h3>ようこそ、僕らのヴィンテージへ</h3>
-        <p>{user_name} 様</p>
-        <p>現在のご契約プラン：<strong>{plan}</strong></p>
-        <p>ご登録ありがとうございます。</p>
-        <p>引き続きご利用ください。</p>
-      </body>
-    </html>
-    """
-    msg = MIMEMultipart("alternative")
-    msg["Subject"] = "ようこそ！会員登録完了のお知らせ"
-    msg["From"] = os.getenv("MAIL_FROM")
-    msg["To"] = to_email
-    msg["Date"] = formatdate(localtime=True)
-    msg.attach(MIMEText(html, "html"))
-    
-    try:
-        with smtplib.SMTP_SSL(os.getenv("SMTP_HOST"), int(os.getenv("SMTP_PORT"))) as server:
-            server.login(os.getenv("SMTP_USER"), os.getenv("SMTP_PASS"))
-            server.send_message(msg)
+    body = f"""{user_name} 様
 
+    現在のご契約プラン：{plan}
+
+    ご登録ありがとうございます。
+    引き続きご利用ください。
+    """
+    try:
+        creds = get_credentials()
+        print("🔥 エラー発生　creds:", creds, flush=True)
+        service = build('gmail', 'v1', credentials=creds)
+
+        message = EmailMessage()
+        message.set_content(body)
+        message['To'] = to_email
+        message['From'] = os.getenv("GMAIL_FROM")
+        message['Subject'] = 'ようこそ！僕らのヴィンテージへ！会員登録完了のお知らせ'
+
+        encoded_message = base64.urlsafe_b64encode(message.as_bytes()).decode()
+
+        send_message = service.users().messages().send(userId="me", body={
+            'raw': encoded_message
+        }).execute()
+
+        print(f"✅ メール送信成功: {send_message['id']}")
+        return True  # 成功時
     except Exception as e:
+        print("🔥 エラー発生　Exception:", str(e), flush=True)
         return jsonify({"error": str(e)}), 500
 
 @app.route('/postStoreProfile' , methods=['POST'])
@@ -265,10 +329,8 @@ def postStoreProfile():
 
 @app.route('/getProfile' , methods=['GET'])
 def getMyProfile():
-    user_id = request.args.get('id')
-    my_user_id = request.args.get('my_id')  # ログイン中のユーザーID
-    
-    print( my_user_id , flush=True )
+    user_id = request.args.get('id')# ログイン中のユーザーID
+    my_user_id = request.args.get('my_id')  
 
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)  # dict型で結果を取得するため
@@ -328,7 +390,7 @@ def getMyProfile():
 
         # アイテム
         cursor.execute('''
-            SELECT item_id, title, description, type, brand, curr, price ,uploaded_at
+            SELECT item_id, title, description, type, brand,uploaded_at
             FROM items 
             WHERE user_id = %s
             ORDER BY uploaded_at DESC
@@ -338,7 +400,6 @@ def getMyProfile():
         items = []
 
         for item in item_rows:
-            
             # type
             try:
                 item['type'] = json.loads(item['type']) if item['type'] else []
@@ -360,8 +421,32 @@ def getMyProfile():
             ''', (item['item_id'],))
             item_images = cursor.fetchall()
             item['images'] = [r['image_url'] for r in item_images]
+
+            # ✅ トレードステータスを確認（completed最優先）
+            cursor.execute('''
+                SELECT status 
+                FROM trades
+                WHERE item_id = %s AND seller_id = %s
+                ORDER BY FIELD(status, 'completed', 'pending', 'purchased', 'shipped') DESC
+                LIMIT 1
+            ''', (item['item_id'], user_id))
+            trade_status_row = cursor.fetchone()
+            
+            print('trades',trade_status_row ,flush=True )
+
+            if trade_status_row:
+                status = trade_status_row['status']
+                if status == 'completed':
+                    item['trade_status_flag'] = 2
+                elif status in ('pending', 'purchased', 'shipped'):
+                    item['trade_status_flag'] = 1
+                else:
+                    item['trade_status_flag'] = 0
+            else:
+                item['trade_status_flag'] = 0
+
             items.append(item)
-    
+        
         cursor.execute('''
         SELECT item_id
         FROM likes
@@ -396,8 +481,6 @@ def postStoreProfileItem():
     type_json = json.dumps(type, ensure_ascii=False)
     brand = item_data.get('brand',[])
     brand_json = json.dumps(brand, ensure_ascii=False)
-    curr = item_data.get('curr')
-    price = item_data.get('price')
     image_urls = item_data.get("images", [])  # list型を想定
     mode = request.json.get('dateUpChange')
 
@@ -422,9 +505,9 @@ def postStoreProfileItem():
                 item_id = existing.get('item_id')
                 cursor.execute('''
                     UPDATE items 
-                    SET title = %s, description = %s, type = %s, brand = %s, curr = %s, price = %s, uploaded_at = CURRENT_TIMESTAMP
+                    SET title = %s, description = %s, type = %s, brand = %s , uploaded_at = CURRENT_TIMESTAMP
                     WHERE item_id = %s
-                ''', (title, description, type_json, brand_json, curr, price, item_id))
+                ''', (title, description, type_json, brand_json, item_id))
 
             else:
                 return jsonify({"error": "更新対象が見つかりません"}), 404 
@@ -439,11 +522,11 @@ def postStoreProfileItem():
                 ''', (item_id, user_id, url))
                 
         else:
-             # 新規作成
+            # 新規作成
             cursor.execute('''
-                INSERT INTO items (user_id, title, description, type, brand, curr, price)
-                VALUES (%s, %s, %s, %s, %s, %s, %s)
-            ''', (user_id, title, description, type_json, brand_json, curr, price))
+                INSERT INTO items (user_id, title, description, type, brand)
+                VALUES (%s, %s, %s, %s, %s)
+            ''', (user_id, title, description, type_json, brand_json))
             
             # item_items テーブルに挿入
             item_id = cursor.lastrowid
@@ -452,7 +535,7 @@ def postStoreProfileItem():
                     INSERT INTO item_images (item_id, user_id, image_url)
                     VALUES (%s, %s, %s)
                 ''', (item_id, user_id, url))
-
+                
         conn.commit()
         return jsonify({"message": "登録成功",
                         "result" : True}), 200
@@ -606,13 +689,11 @@ def getUserItems():
                 items.description,
                 items.type,
                 items.brand,
-                items.curr,
-                items.price,
                 items.uploaded_at
             FROM items
             LEFT JOIN trades ON items.item_id = trades.item_id
             WHERE user_id != %s
-            AND trades.item_id IS NULL
+            # AND trades.item_id IS NULL
             ORDER BY uploaded_at ASC
         ''', (user_id,))
         
@@ -665,6 +746,27 @@ def getUserItems():
             ''', (item['user_id'],))
             profile_img = cursor.fetchone()
             item['profile_image'] = profile_img['image_url'] if profile_img else ""
+            
+            # ✅ トレードステータスを確認（completed最優先）
+            cursor.execute('''
+                SELECT status 
+                FROM trades
+                WHERE item_id = %s AND (seller_id = %s OR buyer_id = %s)
+                ORDER BY FIELD(status, 'completed', 'pending', 'purchased', 'shipped') DESC
+                LIMIT 1
+            ''', (item['item_id'],user_id,user_id))
+            trade_status_row = cursor.fetchone()
+            
+            if trade_status_row:
+                status = trade_status_row['status']
+                if status == 'completed':
+                    item['trade_status_flag'] = 2
+                elif status in ('pending', 'purchased', 'shipped'):
+                    item['trade_status_flag'] = 1
+                else:
+                    item['trade_status_flag'] = 0
+            else:
+                item['trade_status_flag'] = 0
             items.append(item)
         
         brand_list = [{'key': k, 'name': v} for k, v in brand_set.items()]
@@ -787,7 +889,8 @@ def get_active_trades():
                 item_img.image_url,
                 users.name AS user_name,
                 users.user_id AS user_id,
-                profile_img.image_url AS user_image_url
+                profile_img.image_url AS user_image_url,
+                tm.last_message_time 
             FROM trades
             JOIN items ON trades.item_id = items.item_id
             JOIN users ON items.user_id = users.user_id
@@ -809,9 +912,14 @@ def get_active_trades():
                     GROUP BY user_id
                 ) pi2 ON pi1.user_id = pi2.user_id AND pi1.uploaded_at = pi2.max_uploaded
             ) AS profile_img ON profile_img.user_id = users.user_id
+            LEFT JOIN (
+                SELECT trade_id, MAX(created_at) AS last_message_time
+                FROM trade_messages
+                GROUP BY trade_id
+            ) AS tm ON tm.trade_id = trades.trade_id
             WHERE 
                 (trades.buyer_id = %s OR items.user_id = %s)
-                AND trades.status NOT IN ('completed', 'cancelled')
+                AND trades.status NOT IN ('cancelled')
             ORDER BY trades.created_at DESC
         ''', (user_id, user_id))
 
@@ -829,15 +937,14 @@ def get_chat_item_detail():
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
     try:
-        
         # 商品の基本情報 + 出品者情報
         cursor.execute('''
             SELECT 
+                trades.trade_id,
+                trades.status,
                 items.item_id,
                 items.title,
                 items.description,
-                items.price,
-                items.curr,
                 items.type,
                 items.brand,
                 items.uploaded_at,
@@ -947,6 +1054,37 @@ def get_trade_messages():
 def uploaded_file(filename):
     return send_from_directory(UPLOAD_FOLDER, filename)
 
+@app.route('/trade_status_change' , methods=['POST'])
+def trage_status_change():
+    trade_id = request.json.get('trade_id')
+    trade_status = request.json.get('status')
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    try:
+        
+        # 2. "cancelled" の場合、関連メッセージを削除
+        if trade_status == "cancelled":
+            cursor.execute('''
+                DELETE FROM trade_messages WHERE trade_id = %s
+            ''', (trade_id,))
+            cursor.execute('''
+                DELETE FROM trades WHERE trade_id = %s
+            ''', (trade_id,))
+        else : 
+            cursor.execute('''
+                UPDATE trades SET 
+                    status = %s,
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE trade_id = %s
+            ''', (trade_status, trade_id))
+
+        conn.commit() 
+        return jsonify({"result": True}), 200
+    except mysql.connector.Error as err:
+        return jsonify({"error": str(err)}), 500
+    finally:
+        conn.close()
+
 # Chat server 
 # クライアントが接続
 @socketio.on('connect')
@@ -967,7 +1105,7 @@ def handle_send_message(data):
     message = data['message']
     trade_id = data['trade_id']
     sender_id = data['sender_id']
-    print(f' room: {room}', f' message: {message}', flush=True)
+    # print(f' room: {room}', f' message: {message}', flush=True)
     # DBに保存
     try:
         conn = get_db_connection()
@@ -978,7 +1116,7 @@ def handle_send_message(data):
         ''', (trade_id, sender_id, message))
         conn.commit()
         
-              # 最新のプロフィール画像を取得
+        # 最新のプロフィール画像を取得
         cursor.execute('''
             SELECT image_url 
             FROM profile_images 
@@ -1000,6 +1138,7 @@ def handle_send_message(data):
 def handle_disconnect():
     print('Client disconnected:', request.sid)
 
+# stripe intent作成
 @app.route('/create-payment-intent', methods=['POST'])
 def create_payment():
     data = request.get_json()
@@ -1009,10 +1148,8 @@ def create_payment():
     try:
         # Stripe Customer を作成
         customer = stripe.Customer.create()
-        
         # 初月無料にする場合（plan_status == 1）は amount を 0 にする
         payment_amount = 0 if plan_status == 1 else amount
-        
         intent = stripe.PaymentIntent.create(
             customer=customer.id,
             amount=payment_amount,
@@ -1021,10 +1158,10 @@ def create_payment():
             payment_method_options={
             "card": {
                 "setup_future_usage": "off_session",
-            }
-        }
+            }}
         )
         return jsonify({
+            'intentId' :intent.id,
             'clientSecret': intent.client_secret,
             'stripeCustomerId': customer.id  # ← フロント・DBに保存する用
         }) 

@@ -10,16 +10,19 @@ export const toMail = async () => {
     if (axios.isAxiosError(error)) {
       // Axios エラーで、かつレスポンスが存在する場合
       if (error.response) {
-        console.error("mail error:", error.response.data);
+        errorSweetalert2("Error");
+        // console.error("mail error:", error.response.data);
       } else {
+        errorSweetalert2("Error");
         // レスポンスがない場合はネットワークエラーなど
-        console.error(
-          "Error: The request was made but no response was received"
-        );
+        // console.error(
+        //   "Error: The request was made but no response was received"
+        // );
       }
     } else {
+      errorSweetalert2("Error");
       // それ以外のエラータイプ
-      console.error("Error:", error);
+      // console.error("Error:", error);
     }
   }
 };
@@ -33,7 +36,6 @@ export const loginCheckApi = async (formdata: {
       formdata
     );
 
-    console.log("loginCheck >", response.data.result);
     return {
       result: response.data.result,
     };
@@ -42,16 +44,19 @@ export const loginCheckApi = async (formdata: {
     if (axios.isAxiosError(error)) {
       // Axios エラーで、かつレスポンスが存在する場合
       if (error.response) {
-        console.error("loginCheck error:", error.response.data);
+        // console.error("loginCheck error:", error.response.data);
+        errorSweetalert2("Error");
       } else {
         // レスポンスがない場合はネットワークエラーなど
-        console.error(
-          "Error: The request was made but no response was received"
-        );
+        // console.error(
+        //   "Error: The request was made but no response was received"
+        // );
+        errorSweetalert2("Error");
       }
     } else {
       // それ以外のエラータイプ
-      console.error("Error:", error);
+      // console.error("Error:", error);
+      errorSweetalert2("Error");
     }
   }
 };
@@ -69,7 +74,6 @@ export const loginApi = async (formdata: {
 > => {
   try {
     const response = await axios.post("http://localhost:5001/login", formdata);
-    console.log("Logged in successfully");
 
     return {
       token: response.data.access_token,
@@ -81,16 +85,19 @@ export const loginApi = async (formdata: {
     if (axios.isAxiosError(error)) {
       // Axios エラーで、かつレスポンスが存在する場合
       if (error.response) {
-        console.error("Login error:", error.response.data);
+        // console.error("Login error:", error.response.data);
+        errorSweetalert2("Error");
       } else {
         // レスポンスがない場合はネットワークエラーなど
-        console.error(
-          "Error: The request was made but no response was received"
-        );
+        // console.error(
+        //   "Error: The request was made but no response was received"
+        // );
+        errorSweetalert2("Error");
       }
     } else {
       // それ以外のエラータイプ
-      console.error("Error:", error);
+      // console.error("Error:", error);
+      errorSweetalert2("Error");
     }
   }
 };
@@ -99,7 +106,7 @@ export const singupApi = async (
   formdata: sinupFormType
 ): Promise<
   | {
-      result: string;
+      result: boolean;
       message: string;
     }
   | undefined
