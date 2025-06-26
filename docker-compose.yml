@@ -4,9 +4,12 @@ services:
   nginx:
     image: nginx:latest
     volumes:
+      # - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
+      # - ./nginx/ssl:/etc/nginx/ssl
+      - ./frontend/dist:/usr/share/nginx/html
       - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
-      - ./nginx/ssl:/etc/nginx/ssl
     ports:
+      - "80:80"
       - "443:443"
     depends_on:
       - flask
@@ -40,7 +43,7 @@ services:
     volumes:
       - ./frontend/app:/app
       - node_modules:/app/node_modules
-    command: npm run dev
+    command: npm run build
 
   mysql_db:
     image: mysql:8.0
