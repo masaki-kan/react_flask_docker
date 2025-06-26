@@ -7,20 +7,17 @@ import {
   DrawerContent,
   DrawerCloseButton,
   useDisclosure,
-  Box,
   DrawerHeader,
   Text,
   HStack,
   VStack,
-  Icon,
 } from "@chakra-ui/react";
-import { GiHamburgerMenu } from "react-icons/gi";
 import { useNavigate } from "react-router-dom";
 import { menuLists, footerMenu } from "../../../consts/menuList";
 
 const Side: FC = () => {
   const navigate = useNavigate();
-  const { isOpen, onOpen, onClose } = useDisclosure();
+  const { isOpen, onClose } = useDisclosure();
 
   // 遷移関数
   const routePushHandler = (routePath: string): void => {

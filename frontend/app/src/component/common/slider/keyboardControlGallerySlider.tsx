@@ -1,7 +1,4 @@
 import { Swiper, SwiperSlide } from "swiper/react";
-import "swiper/css";
-import "swiper/css/pagination";
-import "swiper/css/navigation";
 import { Image } from "@chakra-ui/react";
 import "./styles.css";
 
