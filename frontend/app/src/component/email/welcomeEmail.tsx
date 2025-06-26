@@ -1,7 +1,6 @@
 import {
   Html,
   Text,
-  Button,
   Head,
   Body,
   Container,
@@ -14,7 +13,7 @@ type WelcomeEmailType = {
   planType: string;
 };
 
-const WelcomeEmail: FC<WelcomeEmailType> = ({ userName, planType }) => (
+const WelcomeEmail: FC<WelcomeEmailType> = () => (
   <Html>
     <Head />
     <Preview>ようこそ、僕らのヴィンテージへ</Preview>
