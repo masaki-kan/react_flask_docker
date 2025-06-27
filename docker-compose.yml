@@ -42,6 +42,8 @@ services:
       args:
         MODE: production # development にすればローカル向けに production にすれば本番環境向け
       dockerfile: Dockerfile
+    volumes:
+      - ./frontend/app/dist:/dist
     ports:
       - "5173:5173"
     command: ["npm", "run", "build"]
