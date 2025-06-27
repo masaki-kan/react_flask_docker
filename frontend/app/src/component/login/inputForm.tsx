@@ -189,6 +189,7 @@ const InputForm: FC = () => {
                 variant="filled"
                 value={form.password}
                 onChange={updateFormHandler}
+                autoComplete="current-password"
               />
               {error.passwordError && (
                 <Text fontSize="sm" style={{ color: "red" }}>
