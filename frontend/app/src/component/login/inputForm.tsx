@@ -163,6 +163,7 @@ const InputForm: FC = () => {
                 variant="filled"
                 value={form.email}
                 onChange={updateFormHandler}
+                autoComplete="username"
               />
               {error.emailError && (
                 <Text fontSize="sm" style={{ color: "red" }}>
