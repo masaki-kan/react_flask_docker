@@ -10,7 +10,7 @@
 FROM node:20.12-alpine
 
 # ビルド時引数（development or production）
-ARG MODE=production
+ARG MODE=development
 ENV NODE_ENV=$MODE
 
 # 作業ディレクトリ
