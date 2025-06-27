@@ -12,7 +12,7 @@ import {
   useBreakpointValue,
 } from "@chakra-ui/react";
 import useChat from "../../hooks/useChat";
-import { FaRegImage } from "react-icons/fa6";
+// import { FaRegImage } from "react-icons/fa6";
 import { useEffectOnce } from "react-use";
 import { messagesType } from "../../types/chatType";
 import { viewDate } from "../common/date/format";
@@ -32,7 +32,7 @@ const ChatLayout: FC = () => {
   const searchParams = new URLSearchParams(location.search);
   const tradeIdNumver = searchParams.get("item_id");
   const userIdNumver = searchParams.get("user_id");
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  // const fileInputRef = useRef<HTMLInputElement>(null);
   const [image, setImage] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [roomId, setRoomId] = useState<string>("");
@@ -97,20 +97,20 @@ const ChatLayout: FC = () => {
   }, [roomId, tradeIdNumver, userIdNumver]);
 
   // 🔵 画像選択
-  const handleFileChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
-      if (!file) return;
-      setImageFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64Image = reader.result as string;
-        setImage(base64Image);
-      };
-      reader.readAsDataURL(file);
-    },
-    []
-  );
+  // const handleFileChange = useCallback(
+  //   (e: React.ChangeEvent<HTMLInputElement>) => {
+  //     const file = e.target.files?.[0];
+  //     if (!file) return;
+  //     setImageFile(file);
+  //     const reader = new FileReader();
+  //     reader.onloadend = () => {
+  //       const base64Image = reader.result as string;
+  //       setImage(base64Image);
+  //     };
+  //     reader.readAsDataURL(file);
+  //   },
+  //   []
+  // );
 
   // テキスト
   const handleMessageChange = useCallback(
@@ -220,7 +220,7 @@ const ChatLayout: FC = () => {
         {/* 入力エリア：スクロール固定 */}
         <Box pt={2} w={"full"}>
           <HStack>
-            <FaRegImage
+            {/* <FaRegImage
               onClick={() => fileInputRef.current?.click()}
               cursor="pointer"
               fontSize="40px"
@@ -232,7 +232,7 @@ const ChatLayout: FC = () => {
               ref={fileInputRef}
               hidden
               onChange={handleFileChange}
-            />
+            /> */}
             <Input
               placeholder="Type your message..."
               value={message}
