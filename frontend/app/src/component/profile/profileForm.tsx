@@ -49,22 +49,26 @@ const ProfileForm: FC<ProfileIndexProps> = ({
 
   // 画像ファイルが選択されたときのハンドラー
   const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files === null) return;
+    const file = e.target.files?.[0];
+    if (!file) return;
 
-    const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (loadEvent) => {
-        const result = loadEvent.target?.result;
-        if (typeof result === "string") {
-          setFormData((prev) => ({
-            ...prev,
-            image: result,
-          }));
-        }
-      };
-      reader.readAsDataURL(file);
+    const acceptedTypes = ["image/jpeg", "image/png"];
+    if (!acceptedTypes.includes(file.type)) {
+      alert("JPEGまたはPNG形式の画像を選択してください。");
+      return;
     }
+
+    const reader = new FileReader();
+    reader.onload = (loadEvent) => {
+      const result = loadEvent.target?.result;
+      if (typeof result === "string") {
+        setFormData((prev) => ({
+          ...prev,
+          image: result,
+        }));
+      }
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleTagChange = useCallback(
@@ -162,7 +166,7 @@ const ProfileForm: FC<ProfileIndexProps> = ({
               <Input
                 ref={imageInputRef}
                 type="file"
-                accept="image/*"
+                accept="image/png, image/jpeg"
                 onChange={handleImageChange}
                 hidden
               />

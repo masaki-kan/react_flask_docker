@@ -48,7 +48,7 @@ else:
     origins = ["https://localhost"]
 
 CORS(app, supports_credentials=True, resources={r"/api/*": {"origins": origins}, r"/socket.io/*": {"origins": origins}})
-socketio = SocketIO(app, cors_allowed_origins="*", async_mode="eventlet")
+socketio = SocketIO(app, cors_allowed_origins=origins, async_mode="eventlet")
 
 # === Config ===
 app.config['JWT_SECRET_KEY'] = os.environ.get('JWT_SECRET_KEY')  # シークレットキーを設定
@@ -275,8 +275,6 @@ def postStoreProfile():
     shop_name = user_data.get('favoriteShop', {}).get("name")
     shop_url = user_data.get('favoriteShop', {}).get("url")
     reasen = user_data.get("reasen")
-    
-    print("受け取った値:", {'user_id' :user_id,}, flush=True)
     
     conn = get_db_connection()
     cursor = conn.cursor()
