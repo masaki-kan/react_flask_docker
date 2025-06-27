@@ -53,6 +53,7 @@ const ProfileForm: FC<ProfileIndexProps> = ({
     if (!file) return;
 
     const acceptedTypes = ["image/jpeg", "image/png"];
+
     if (!acceptedTypes.includes(file.type)) {
       alert("JPEGまたはPNG形式の画像を選択してください。");
       return;
