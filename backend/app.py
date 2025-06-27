@@ -48,7 +48,7 @@ else:
     origins = ["https://localhost"]
 
 CORS(app, supports_credentials=True, resources={r"/api/*": {"origins": origins}, r"/socket.io/*": {"origins": origins}})
-socketio = SocketIO(app, cors_allowed_origins={"*"}, async_mode="eventlet")
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode="eventlet")
 
 # === Config ===
 app.config['JWT_SECRET_KEY'] = os.environ.get('JWT_SECRET_KEY')  # シークレットキーを設定
