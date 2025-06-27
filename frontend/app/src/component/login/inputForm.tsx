@@ -148,7 +148,7 @@ const InputForm: FC = () => {
       </Heading>
       <Box w={{ md: "100%", base: "90%" }} py={2} px={3} margin={"auto"}>
         <VStack py="3">
-          <Box as="form" onSubmit={loginClick}>
+          <Box as="form" onSubmit={loginClick} w={"full"}>
             <FormControl id="email">
               <FormLabel>Email</FormLabel>
               <Input
