@@ -43,7 +43,7 @@ env = os.getenv("FLASK_ENV", "development")
 print( env , flush=True )
     
 if env == "production":
-    origins = ["https://localhost", "https://3.142.247.77"]
+    origins = ["https://3.142.247.77"]
 else:
     origins = ["https://localhost"]
 
