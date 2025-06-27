@@ -29,7 +29,7 @@ services:
     ports:
       - "5001:5001"
     environment:
-      - FLASK_ENV=development # development にすればローカル向けに production にすれば本番環境向け
+      - FLASK_ENV=production # development にすればローカル向けに production にすれば本番環境向け
     depends_on:
       - mysql_db
     networks: # app_network ネットワークに所属
@@ -40,7 +40,7 @@ services:
     build:
       context: ./frontend
       args:
-        MODE: development # development にすればローカル向けに production にすれば本番環境向け
+        MODE: production # development にすればローカル向けに production にすれば本番環境向け
       dockerfile: Dockerfile
     ports:
       - "5173:5173"
