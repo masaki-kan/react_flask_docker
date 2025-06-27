@@ -17,14 +17,12 @@ import { useEffectOnce } from "react-use";
 import { messagesType } from "../../types/chatType";
 import { viewDate } from "../common/date/format";
 
-console.log("import.meta.env.VITE_API_URL", import.meta.env.VITE_API_URL);
 const socket = io(`${import.meta.env.VITE_API_URL}`, {
   path: "/socket.io",
   transports: ["websocket"],
   secure: true,
   withCredentials: true,
 });
-// const socket = io("http://localhost:5001");
 
 const ChatLayout: FC = () => {
   const isMobile = useBreakpointValue({ base: true, md: false });
