@@ -21,7 +21,7 @@ COPY app/.env.$MODE .env
 
 # 依存関係をインストール
 COPY app/package*.json ./
-RUN npm install
+RUN npm install --include=dev
 
 # ソースコードをコピー
 COPY app .

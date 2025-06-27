@@ -47,7 +47,6 @@ services:
     volumes:
       - ./frontend/app:/app
       - node_modules:/app/node_modules
-    command: npm run build
 
   mysql_db:
     image: mysql:8.0
