@@ -10,7 +10,21 @@ export default defineConfig({
       key: fs.readFileSync("./cert/localhost-key.pem"),
       cert: fs.readFileSync("./cert/localhost.pem"),
     },
+    proxy: {
+      "/api": {
+        target: "https://localhost", // or http://nginx:443 if you’re inside Docker network
+        changeOrigin: true,
+        secure: false,
+      },
+      "/socket.io": {
+        target: "https://localhost",
+        ws: true,
+        changeOrigin: true,
+        secure: false,
+      },
+    },
   },
+
   plugins: [react()],
   optimizeDeps: {
     include: ["socket.io-client"],

@@ -6,7 +6,7 @@ const Home: FC = () => {
   const [data, setData] = useState<string>("");
 
   const fetchData = async () => {
-    const result = await axios.get("http://localhost:5001");
+    const result = await axios.get(`${import.meta.env.VITE_API_URL}`);
     setData(result.data);
   };
 

@@ -8,10 +8,13 @@ export const itemLikeApi = async (
   { result: boolean; liked: boolean; message: string } | undefined
 > => {
   try {
-    const response = await axios.post("http://localhost:5001/itemLike", {
-      item_id: item_id,
-      my_user_id: my_user_id,
-    });
+    const response = await axios.post(
+      `${import.meta.env.VITE_API_URL}/api/itemLike`,
+      {
+        item_id: item_id,
+        my_user_id: my_user_id,
+      }
+    );
 
     return {
       result: response.data.result,

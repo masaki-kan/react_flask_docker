@@ -147,7 +147,7 @@ const InputForm: FC = () => {
       >
         Welcome back to Retro Threads
       </Heading>
-      <Box w={{ md: "550px", base: "90%" }} py={2} px={3} margin={"auto"}>
+      <Box w={{ md: "100%", base: "90%" }} py={2} px={3} margin={"auto"}>
         <VStack py="3">
           <FormControl id="email">
             <FormLabel>Email</FormLabel>
@@ -158,6 +158,7 @@ const InputForm: FC = () => {
               borderColor="transparent"
               h="14"
               p="4"
+              w={"full"}
               type="email"
               variant="filled"
               value={form.email}

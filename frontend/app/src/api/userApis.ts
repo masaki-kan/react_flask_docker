@@ -12,9 +12,12 @@ export const getUsersApi = async (
   | undefined
 > => {
   try {
-    const response = await axios.post("http://localhost:5001/getUsers", {
-      user_id: myId,
-    });
+    const response = await axios.post(
+      `${import.meta.env.VITE_API_URL}/api/getUsers`,
+      {
+        user_id: myId,
+      }
+    );
 
     return {
       users: response.data.users,

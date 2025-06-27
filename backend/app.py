@@ -38,8 +38,17 @@ from database import create_table
 
 # === Flask App Init ===
 app = Flask(__name__)
-CORS(app, resources={r"/*": {"origins": "https://localhost:5173"}})
-socketio = SocketIO(app, cors_allowed_origins="*", async_mode="eventlet")
+env = os.getenv("FLASK_ENV", "development")
+
+print( env , flush=True )
+    
+if env == "production":
+    origins = ["https://localhost", "https://3.142.247.77"]
+else:
+    origins = ["https://localhost"]
+
+CORS(app, supports_credentials=True, resources={r"/api/*": {"origins": origins}, r"/socket.io/*": {"origins": origins}})
+socketio = SocketIO(app, cors_allowed_origins=origins, async_mode="eventlet")
 
 # === Config ===
 app.config['JWT_SECRET_KEY'] = os.environ.get('JWT_SECRET_KEY')  # シークレットキーを設定
@@ -126,7 +135,7 @@ def loginCheck():
 def login():
     email = request.json.get('email', None)
     password = request.json.get('password', None)
-
+    print( 'email > ',email , flush=True )
     # データベース接続とユーザー確認をここで実施
     conn = get_db_connection()
     cursor = conn.cursor()

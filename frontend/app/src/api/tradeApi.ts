@@ -8,11 +8,14 @@ export const tradeApi = async (
   seller_id: string
 ): Promise<{ result: boolean; message: string } | undefined> => {
   try {
-    const response = await axios.post("http://localhost:5001/trade", {
-      item_id: item_id,
-      buyer_id: buyer_id,
-      seller_id: seller_id,
-    });
+    const response = await axios.post(
+      `${import.meta.env.VITE_API_URL}/api/trade`,
+      {
+        item_id: item_id,
+        buyer_id: buyer_id,
+        seller_id: seller_id,
+      }
+    );
 
     return {
       result: response.data.result,
@@ -41,9 +44,12 @@ export const getSavedList = async (
   user_id: string
 ): Promise<{ trades: savedListType[]; result: string } | undefined> => {
   try {
-    const response = await axios.post("http://localhost:5001/getSavedList", {
-      user_id,
-    });
+    const response = await axios.post(
+      `${import.meta.env.VITE_API_URL}/api/getSavedList`,
+      {
+        user_id,
+      }
+    );
 
     return {
       trades: response.data.trades,
@@ -77,7 +83,7 @@ export const trageStatusChange = async (
 ): Promise<{ trades: savedListType[]; result: string } | undefined> => {
   try {
     const response = await axios.post(
-      "http://localhost:5001/trade_status_change",
+      `${import.meta.env.VITE_API_URL}/api/trade_status_change`,
       {
         trade_id,
         status,

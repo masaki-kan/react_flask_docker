@@ -6,17 +6,25 @@
 # EXPOSE 5173
 # CMD [ "npm", "run", "dev" ]
 
+# Nodeの軽量イメージ
 FROM node:20.12-alpine
+
+# ビルド時引数（production or production）
+ARG MODE=development
+ENV NODE_ENV=$MODE
 
 # 作業ディレクトリ
 WORKDIR /app
 
-# 依存関係インストール
+# モードに応じた.envファイルをコピー
+COPY app/.env.$MODE .env
+
+# 依存関係をインストール
 COPY app/package*.json ./
 RUN npm install
 
 # ソースコードをコピー
 COPY app .
 
-# 本番ビルド
+# 開発環境
 RUN npm run build

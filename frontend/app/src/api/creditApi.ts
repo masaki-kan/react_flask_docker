@@ -10,7 +10,7 @@ export const createPaymentIntent = async (
 > => {
   try {
     const response = await axios.post(
-      "http://localhost:5001/create-payment-intent",
+      `${import.meta.env.VITE_API_URL}/api/create-payment-intent`,
       {
         amount,
         status,

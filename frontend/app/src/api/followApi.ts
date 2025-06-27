@@ -6,10 +6,13 @@ export const userFollewApi = async (
   my_user_id: string
 ): Promise<{ result: boolean; action: string } | undefined> => {
   try {
-    const response = await axios.post("http://localhost:5001/userFollow", {
-      follew_user_id: user_id,
-      my_user_id: my_user_id,
-    });
+    const response = await axios.post(
+      `${import.meta.env.VITE_API_URL}/api/userFollow`,
+      {
+        follew_user_id: user_id,
+        my_user_id: my_user_id,
+      }
+    );
 
     return {
       result: response.data.result,

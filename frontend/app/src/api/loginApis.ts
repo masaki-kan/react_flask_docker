@@ -4,7 +4,7 @@ import { errorSweetalert2 } from "../component/alert/sweetalert2";
 
 export const toMail = async () => {
   try {
-    await axios.post("http://localhost:5001/mail");
+    await axios.post(`${import.meta.env.VITE_API_URL}/api/mail`);
   } catch (error: unknown) {
     // エラーが Error インスタンスかつ response プロパティを持っているか確認
     if (axios.isAxiosError(error)) {
@@ -32,7 +32,7 @@ export const loginCheckApi = async (formdata: {
 }): Promise<undefined | { result: string }> => {
   try {
     const response = await axios.post(
-      "http://localhost:5001/loginCheck",
+      `${import.meta.env.VITE_API_URL}/api/loginCheck`,
       formdata
     );
 
@@ -73,7 +73,10 @@ export const loginApi = async (formdata: {
   | undefined
 > => {
   try {
-    const response = await axios.post("http://localhost:5001/login", formdata);
+    const response = await axios.post(
+      `${import.meta.env.VITE_API_URL}/api/login`,
+      formdata
+    );
 
     return {
       token: response.data.access_token,
@@ -112,7 +115,10 @@ export const singupApi = async (
   | undefined
 > => {
   try {
-    const response = await axios.post("http://localhost:5001/singUp", formdata);
+    const response = await axios.post(
+      `${import.meta.env.VITE_API_URL}/api/singUp`,
+      formdata
+    );
 
     return {
       result: response.data.result,

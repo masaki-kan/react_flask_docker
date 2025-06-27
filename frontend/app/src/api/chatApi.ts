@@ -7,7 +7,7 @@ export const getChatItemDetailApi = async (
 ): Promise<{ result: boolean; item: chatItemDataType } | undefined> => {
   try {
     const response = await axios.post(
-      "http://localhost:5001/getChatItemDetail",
+      `${import.meta.env.VITE_API_URL}/api/getChatItemDetail`,
       {
         item_id,
       }
@@ -49,7 +49,7 @@ export const uploadImageApi = async (
     const formData = new FormData();
     formData.append("image", fileData);
     const response = await axios.post(
-      "http://localhost:5001/upload_image",
+      `${import.meta.env.VITE_API_URL}/api/upload_image`,
       formData,
       {
         headers: {
@@ -98,7 +98,7 @@ export const getMessagesApi = async (
 > => {
   try {
     const response = await axios.get(
-      `http://localhost:5001/get_trade_messages?trade_id=${tradeIdNumver}`
+      `${import.meta.env.VITE_API_URL}/api/get_trade_messages?trade_id=${tradeIdNumver}`
     );
     return {
       messages: response.data.messages,

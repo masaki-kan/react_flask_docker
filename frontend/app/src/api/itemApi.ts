@@ -22,9 +22,12 @@ export const getUserItemsApi = async (
   | undefined
 > => {
   try {
-    const response = await axios.post("http://localhost:5001/getUserItems", {
-      user_id: myId,
-    });
+    const response = await axios.post(
+      `${import.meta.env.VITE_API_URL}/api/getUserItems`,
+      {
+        user_id: myId,
+      }
+    );
 
     return {
       items: response.data.items,

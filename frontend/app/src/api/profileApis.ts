@@ -12,12 +12,15 @@ export const getProfileApi = async (
   myId?: string
 ): Promise<apiRetuenProfileType | undefined> => {
   try {
-    const response = await axios.get("http://localhost:5001/getProfile", {
-      params: {
-        id: id,
-        my_id: myId ?? undefined,
-      },
-    });
+    const response = await axios.get(
+      `${import.meta.env.VITE_API_URL}/api/getProfile`,
+      {
+        params: {
+          id: id,
+          my_id: myId ?? undefined,
+        },
+      }
+    );
 
     const profile = {
       id: id,
@@ -93,7 +96,7 @@ export const getProfileApi = async (
 export const postStoreProfileApi = async (formData: profileType) => {
   try {
     const response = await axios.post(
-      "http://localhost:5001/postStoreProfile",
+      `${import.meta.env.VITE_API_URL}/api/postStoreProfile`,
       {
         userData: formData,
       }
@@ -128,7 +131,7 @@ export const postStoreProfileItemApi = async (
 ) => {
   try {
     const response = await axios.post(
-      "http://localhost:5001/postStoreProfileItem",
+      `${import.meta.env.VITE_API_URL}/api/postStoreProfileItem`,
       {
         itemData: formData,
         dateUpChange,
@@ -165,7 +168,7 @@ export const postStoreProfileItemApi = async (
 export const cancellationProcessApi = async (userID: string) => {
   try {
     const response = await axios.post(
-      "http://localhost:5001/cancellationProcess",
+      `${import.meta.env.VITE_API_URL}/api/cancellationProcess`,
       {
         userID,
       }
