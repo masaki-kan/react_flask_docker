@@ -9,7 +9,7 @@
 # Nodeの軽量イメージ
 FROM node:20.12-alpine
 
-# ビルド時引数（production or production）
+# ビルド時引数（development or production）
 ARG MODE=production
 ENV NODE_ENV=$MODE
 

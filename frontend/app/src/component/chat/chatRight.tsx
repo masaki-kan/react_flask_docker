@@ -55,7 +55,6 @@ const ChatLayout: FC = () => {
       secure: true,
       withCredentials: true,
     });
-    // const socket = io("http://localhost:5001");
     socketRef.current = socket;
 
     // 接続確認（初期化直後に発火しない可能性を回避）
