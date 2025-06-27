@@ -11,7 +11,7 @@ import {
   HStack,
 } from "@chakra-ui/react";
 import { route } from "../../route/routeConst";
-import { useNavigate } from "react-router-dom";
+import { Form, useNavigate } from "react-router-dom";
 import RenderButton from "../common/render/renderButton";
 import { loginApi } from "../../api/loginApis";
 import { useAuth } from "../../provider/authContext";
@@ -149,53 +149,55 @@ const InputForm: FC = () => {
       </Heading>
       <Box w={{ md: "100%", base: "90%" }} py={2} px={3} margin={"auto"}>
         <VStack py="3">
-          <FormControl id="email">
-            <FormLabel>Email</FormLabel>
-            <Input
-              isInvalid={!!error.emailError}
-              placeholder="example@gmail.com"
-              bg="#f4f2f0"
-              borderColor="transparent"
-              h="14"
-              p="4"
-              w={"full"}
-              type="email"
-              variant="filled"
-              value={form.email}
-              onChange={updateFormHandler}
-            />
-            {error.emailError && (
-              <Text fontSize="sm" style={{ color: "red" }}>
-                {error.emailError}
-              </Text>
-            )}
-          </FormControl>
-          <FormControl id="password">
-            <HStack alignItems={"center"} mb={3}>
-              <FormLabel mb={0}>Password</FormLabel>
-              <Text fontSize={"xs"} color={"gray.500"}>
-                半角英数字16文字以下
-              </Text>
-            </HStack>
+          <Form>
+            <FormControl id="email">
+              <FormLabel>Email</FormLabel>
+              <Input
+                isInvalid={!!error.emailError}
+                placeholder="example@gmail.com"
+                bg="#f4f2f0"
+                borderColor="transparent"
+                h="14"
+                p="4"
+                w={"full"}
+                type="email"
+                variant="filled"
+                value={form.email}
+                onChange={updateFormHandler}
+              />
+              {error.emailError && (
+                <Text fontSize="sm" style={{ color: "red" }}>
+                  {error.emailError}
+                </Text>
+              )}
+            </FormControl>
+            <FormControl id="password">
+              <HStack alignItems={"center"} mb={3}>
+                <FormLabel mb={0}>Password</FormLabel>
+                <Text fontSize={"xs"} color={"gray.500"}>
+                  半角英数字16文字以下
+                </Text>
+              </HStack>
 
-            <Input
-              isInvalid={!!error.passwordError}
-              placeholder="Enter your password"
-              bg="#f4f2f0"
-              borderColor="transparent"
-              h="14"
-              p="4"
-              type="password"
-              variant="filled"
-              value={form.password}
-              onChange={updateFormHandler}
-            />
-            {error.passwordError && (
-              <Text fontSize="sm" style={{ color: "red" }}>
-                {error.passwordError}
-              </Text>
-            )}
-          </FormControl>
+              <Input
+                isInvalid={!!error.passwordError}
+                placeholder="Enter your password"
+                bg="#f4f2f0"
+                borderColor="transparent"
+                h="14"
+                p="4"
+                type="password"
+                variant="filled"
+                value={form.password}
+                onChange={updateFormHandler}
+              />
+              {error.passwordError && (
+                <Text fontSize="sm" style={{ color: "red" }}>
+                  {error.passwordError}
+                </Text>
+              )}
+            </FormControl>
+          </Form>
         </VStack>
         <Box mx={"auto"} width={"80%"}>
           <RenderButton clickEvent={loginClick} title="Log in" />
