@@ -5,14 +5,13 @@ import {
   FormControl,
   FormLabel,
   Input,
-  // Link,
   Text,
   Box,
   HStack,
+  Button,
 } from "@chakra-ui/react";
 import { route } from "../../route/routeConst";
-import { Form, useNavigate } from "react-router-dom";
-import RenderButton from "../common/render/renderButton";
+import { useNavigate } from "react-router-dom";
 import { loginApi } from "../../api/loginApis";
 import { useAuth } from "../../provider/authContext";
 import useAlert from "../../hooks/useAlert";
@@ -149,7 +148,7 @@ const InputForm: FC = () => {
       </Heading>
       <Box w={{ md: "100%", base: "90%" }} py={2} px={3} margin={"auto"}>
         <VStack py="3">
-          <Form>
+          <Box as="form" onSubmit={loginClick}>
             <FormControl id="email">
               <FormLabel>Email</FormLabel>
               <Input
@@ -197,11 +196,24 @@ const InputForm: FC = () => {
                 </Text>
               )}
             </FormControl>
-          </Form>
+            <Box mx={"auto"} width={"80%"} mt={4}>
+              <Button
+                type="submit"
+                minW="84px"
+                maxW={{ base: "100%", md: "480px" }}
+                bg="#e68019"
+                color="#181411"
+                fontSize="sm"
+                fontWeight="bold"
+                mt="3"
+                w="full"
+              >
+                Log in"
+              </Button>
+            </Box>
+          </Box>
         </VStack>
-        <Box mx={"auto"} width={"80%"}>
-          <RenderButton clickEvent={loginClick} title="Log in" />
-        </Box>
+
         {/* <VStack marginTop={4}>
           <Link color="#887563">Forgot your password?</Link>
           <Link color="#887563">Don't have an account? Sign up</Link>
