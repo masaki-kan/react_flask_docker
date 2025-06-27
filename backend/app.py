@@ -1017,7 +1017,7 @@ def upload_image():
 
     image.save(save_path)
 
-    image_url = f"http://localhost:5001/uploads/{filename}"
+    image_url = f"{origins}/uploads/{filename}"
 
     return jsonify({'image_url': image_url}), 200
 
