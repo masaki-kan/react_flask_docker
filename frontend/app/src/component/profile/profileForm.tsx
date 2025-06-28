@@ -53,22 +53,53 @@ const ProfileForm: FC<ProfileIndexProps> = ({
     if (!file) return;
 
     const acceptedTypes = ["image/jpeg", "image/png"];
-
     if (!acceptedTypes.includes(file.type)) {
       alert("JPEGまたはPNG形式の画像を選択してください。");
       return;
     }
 
+    const img = new Image();
     const reader = new FileReader();
+
     reader.onload = (loadEvent) => {
       const result = loadEvent.target?.result;
-      if (typeof result === "string") {
+      if (typeof result !== "string") return;
+
+      img.onload = () => {
+        // リサイズ処理：最大幅・高さを制限
+        const MAX_WIDTH = 800;
+        const MAX_HEIGHT = 800;
+
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height && width > MAX_WIDTH) {
+          height *= MAX_WIDTH / width;
+          width = MAX_WIDTH;
+        } else if (height > MAX_HEIGHT) {
+          width *= MAX_HEIGHT / height;
+          height = MAX_HEIGHT;
+        }
+
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return;
+
+        ctx.drawImage(img, 0, 0, width, height);
+        const resizedBase64 = canvas.toDataURL(file.type, 0.8); // 画質80%
+
         setFormData((prev) => ({
           ...prev,
-          image: result,
+          image: resizedBase64,
         }));
-      }
+      };
+
+      img.src = result;
     };
+
     reader.readAsDataURL(file);
   };
 
@@ -172,7 +203,7 @@ const ProfileForm: FC<ProfileIndexProps> = ({
                 hidden
               />
               <FormControl>
-                <FormLabel>名前</FormLabel>
+                <FormLabel>名前</FormLabel>z
                 <Input
                   isInvalid={formError.name}
                   errorBorderColor="red.300"

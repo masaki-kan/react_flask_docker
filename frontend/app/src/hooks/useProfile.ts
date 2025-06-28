@@ -6,7 +6,6 @@ import { itemListType } from "../types/itemType";
 import { getProfileApi, cancellationProcessApi } from "../api/profileApis";
 import { setProfile } from "../store/profileSlice";
 import { setProfile as setSliceProfile } from "../store/usersSlice";
-import useLoading from "./useLaoding";
 import { itemLikeApi } from "../api/likeApi";
 import useAlert from "./useAlert";
 
@@ -29,7 +28,6 @@ type useMyProfileReturn = {
 const useMyProfile = (): useMyProfileReturn => {
   const dispatch = useDispatch();
   const { favoriteAlert } = useAlert();
-  const { changeLoading } = useLoading();
   const profile = useSelector((state: RootState) => state.profile);
 
   const memorizeProfile = useMemo(() => {
@@ -43,7 +41,6 @@ const useMyProfile = (): useMyProfileReturn => {
   }, [userProfile]);
 
   const getMyProfile = useCallback(async () => {
-    changeLoading(true);
     const response = await getProfileApi(profile.profile.id);
 
     if (response !== undefined) {
@@ -51,8 +48,7 @@ const useMyProfile = (): useMyProfileReturn => {
         setProfile({ profile: response.profile, items: response.items })
       );
     }
-    changeLoading(false);
-  }, [changeLoading, dispatch, profile.profile.id]);
+  }, [dispatch, profile.profile.id]);
 
   const getProfile = useCallback(
     async (userNumver: string, myUserNumber: string) => {

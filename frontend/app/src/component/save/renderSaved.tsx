@@ -109,7 +109,6 @@ const RenderSaved: FC<RenderSavedType> = ({ savedList }) => {
                   <Box
                     position={"absolute"}
                     top={-2}
-                    right={-2}
                     borderRadius={"50%"}
                     bgColor={"#b03a3a"}
                     p={1}

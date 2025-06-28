@@ -8,6 +8,7 @@ import { postStoreProfileApi } from "../../api/profileApis";
 import { profileType } from "../../types/profileType";
 import useAlert from "../../hooks/useAlert";
 import useLoading from "../../hooks/useLaoding";
+
 import { useEffectOnce } from "react-use";
 
 const Profile: FC = () => {
@@ -24,8 +25,8 @@ const Profile: FC = () => {
     async (formdata: profileType) => {
       changeLoading(true);
       const response = await postStoreProfileApi(formdata);
+      changeLoading(false);
       if (response?.status !== false) {
-        changeLoading(false);
         sweetSuccessOverAlert().then((result) => {
           if (result.isConfirmed) {
             // OK 押下時の処理
@@ -40,7 +41,9 @@ const Profile: FC = () => {
 
   useEffectOnce(() => {
     if (editSwitch !== true) {
+      changeLoading(true);
       getMyProfile();
+      changeLoading(false);
     }
   });
 
