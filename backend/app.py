@@ -43,7 +43,7 @@ env = os.getenv("FLASK_ENV", "development")
 print( env , flush=True )
     
 if env == "production":
-    origins = ["https://3.142.247.77"]
+    origins = ["https://35.78.248.43"]
 else:
     origins = ["https://localhost"]
 
@@ -1017,7 +1017,7 @@ def upload_image():
 
     image.save(save_path)
 
-    image_url = f"https://3.142.247.77/uploads/{filename}"
+    image_url = f"https://35.78.248.43/uploads/{filename}"
 
     return jsonify({'image_url': image_url}), 200
 
