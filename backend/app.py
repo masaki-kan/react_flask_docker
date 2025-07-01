@@ -40,12 +40,12 @@ from database import create_table
 app = Flask(__name__)
 env = os.getenv("FLASK_ENV", "development")
 
-print( env , flush=True )
+print( 'env >' ,env , flush=True )
     
 if env == "production":
     origins = ["https://35.78.248.43"]
 else:
-    origins = ["https://localhost"]
+    origins = ["http://localhost:5173"] # ローカル
 
 CORS(app, supports_credentials=True, resources={r"/api/*": {"origins": origins}, r"/socket.io/*": {"origins": origins}})
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode="eventlet")
@@ -116,10 +116,10 @@ def initialize_database():
     finally:
         conn.close()
 
-@app.route('/loginCheck', methods=['POST'])
+@app.route('/api/loginCheck', methods=['POST'])
 def loginCheck():
     email = request.json.get('email', None)
-
+    print( 'email' , email , flush=True )
     # データベース接続とユーザー確認をここで実施
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -132,11 +132,11 @@ def loginCheck():
     else:
         return jsonify({'result': False}), 200
 
-@app.route('/login', methods=['POST'])
+@app.route('/api/login', methods=['POST'])
 def login():
     email = request.json.get('email', None)
     password = request.json.get('password', None)
-    print( 'email > ',email , flush=True )
+
     # データベース接続とユーザー確認をここで実施
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -158,8 +158,8 @@ def login():
         return response, 200
     else:
         return jsonify({'login': False}), 401
-    
-@app.route('/singUp', methods=['POST']) 
+
+@app.route('/api/singUp', methods=['POST'])
 def singUp():
     data = request.get_json()
     username = data['username']
@@ -167,8 +167,6 @@ def singUp():
     password = data['password']
     plan = data['plan']
     stripe_customer_id = data['stripeCustomerId']
-    
-    print(username, email, password, stripe_customer_id , flush=True  )
 
     if not all([username, email, password, stripe_customer_id]):
         return jsonify({"error": "登録に失敗しました。"}), 400
@@ -176,7 +174,7 @@ def singUp():
     hashed_password = generate_password_hash(password)
     conn = get_db_connection()
     cursor = conn.cursor()
-    
+
     try:
         cursor.execute("INSERT INTO users (name, email, password , plan , stripe_customer_id ) VALUES (%s, %s, %s, %s, %s)", (username, email, hashed_password ,plan ,stripe_customer_id))
         conn.commit()
@@ -221,17 +219,16 @@ def get_credentials():
 
 #メール用
 def send_welcome_email(user_name ,plan_type ,to_email):
-    
-    print("user_name, plan_type, to_email :",user_name, plan_type, to_email , flush=True )
+
     if not all([user_name, plan_type, to_email]):
         return jsonify({"error": "Missing fields"}), 400
-    
+
     plan = ""
     if plan_type == 1:
         plan = "月額プラン ¥550/月"
     else :
         plan = "年額プラン ¥5500/年"
-        
+
     body = f"""{user_name} 様
 
     現在のご契約プラン：{plan}
@@ -262,7 +259,7 @@ def send_welcome_email(user_name ,plan_type ,to_email):
         print("🔥 エラー発生　Exception:", str(e), flush=True)
         return jsonify({"error": str(e)}), 500
 
-@app.route('/postStoreProfile' , methods=['POST'])
+@app.route('/api/postStoreProfile' , methods=['POST'])
 def postStoreProfile():
     user_data = request.json.get('userData', {})
     user_id = user_data.get('id')
@@ -335,7 +332,7 @@ def postStoreProfile():
     finally:
         conn.close()
 
-@app.route('/getProfile' , methods=['GET'])
+@app.route('/api/getProfile' , methods=['GET'])
 def getMyProfile():
     user_id = request.args.get('id')# ログイン中のユーザーID
     my_user_id = request.args.get('my_id')  
@@ -478,7 +475,7 @@ def getMyProfile():
     finally:
         conn.close()
 
-@app.route('/postStoreProfileItem' ,methods=['POST'] )
+@app.route('/api/postStoreProfileItem' ,methods=['POST'] )
 def postStoreProfileItem():
     item_data = request.json.get('itemData', {})
     item_id = item_data.get('itemId')
@@ -554,7 +551,7 @@ def postStoreProfileItem():
     finally:
         conn.close()
         
-@app.route('/getUsers' ,methods=['POST'] )
+@app.route('/api/getUsers' ,methods=['POST'] )
 def getUsers():
     user_id = request.json.get('user_id',None )
     conn = get_db_connection()
@@ -642,7 +639,7 @@ def getUsers():
     finally:
         conn.close()
     
-@app.route('/userFollow' ,methods=['POST'])
+@app.route('/api/userFollow' ,methods=['POST'])
 def userFollow():
     follow_user_id = request.json.get('follew_user_id',None )
     my_user_id = request.json.get('my_user_id',None )
@@ -682,7 +679,7 @@ def userFollow():
         conn.close()
     
     
-@app.route('/getUserItems' ,methods=['POST'])
+@app.route('/api/getUserItems' ,methods=['POST'])
 def getUserItems():
     user_id = request.json.get('user_id',None )
     conn = get_db_connection()
@@ -791,7 +788,7 @@ def getUserItems():
     finally:
         conn.close()
         
-@app.route('/itemLike' ,methods=['POST'])
+@app.route('/api/itemLike' ,methods=['POST'])
 def itemLike():
     item_id = request.json.get('item_id',None )
     my_user_id = request.json.get('my_user_id',None )
@@ -832,7 +829,7 @@ def itemLike():
     finally:
         conn.close()
         
-@app.route('/trade' ,methods=['POST'])
+@app.route('/api/trade' ,methods=['POST'])
 def trade():
     data = request.json
     item_id = data.get('item_id')
@@ -877,7 +874,7 @@ def trade():
     finally:
         conn.close()     
         
-@app.route('/getSavedList', methods=['POST'])
+@app.route('/api/getSavedList', methods=['POST'])
 def get_active_trades():
     user_id = request.json.get('user_id')
     conn = get_db_connection()
@@ -939,7 +936,7 @@ def get_active_trades():
     finally:
         conn.close()
         
-@app.route('/getChatItemDetail' ,methods=['POST'])
+@app.route('/api/getChatItemDetail' ,methods=['POST'])
 def get_chat_item_detail():
     item_id = request.json.get('item_id')
     conn = get_db_connection()
@@ -1003,7 +1000,7 @@ def get_chat_item_detail():
     finally:
         conn.close()
         
-@app.route('/upload_image', methods=['POST'])
+@app.route('/api/upload_image', methods=['POST'])
 def upload_image():
     image = request.files['image']
 
@@ -1021,7 +1018,7 @@ def upload_image():
 
     return jsonify({'image_url': image_url}), 200
 
-@app.route('/get_trade_messages', methods=['GET'])
+@app.route('/api/get_trade_messages', methods=['GET'])
 def get_trade_messages():
     trade_id = request.args.get('trade_id')
     if not trade_id:
@@ -1058,11 +1055,11 @@ def get_trade_messages():
     finally:
         conn.close()
         
-@app.route('/uploads/<path:filename>')
+@app.route('/api/uploads/<path:filename>')
 def uploaded_file(filename):
     return send_from_directory(UPLOAD_FOLDER, filename)
 
-@app.route('/trade_status_change' , methods=['POST'])
+@app.route('/api/trade_status_change' , methods=['POST'])
 def trage_status_change():
     trade_id = request.json.get('trade_id')
     trade_status = request.json.get('status')
@@ -1147,7 +1144,7 @@ def handle_disconnect():
     print('Client disconnected:', request.sid)
 
 # stripe intent作成
-@app.route('/create-payment-intent', methods=['POST'])
+@app.route('/api/create-payment-intent', methods=['POST'])
 def create_payment():
     data = request.get_json()
     amount = data.get("amount")
@@ -1177,7 +1174,7 @@ def create_payment():
         return jsonify({'error': str(e)}), 500
     
 # 退会処理
-@app.route('/cancellationProcess' ,methods=['POST'])
+@app.route('/api/cancellationProcess' ,methods=['POST'])
 def cancellationProcess():
     data = request.get_json()
     user_id = data.get('userID')

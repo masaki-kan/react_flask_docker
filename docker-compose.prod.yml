@@ -1,0 +1,31 @@
+services:
+  flask:
+    environment:
+      - FLASK_ENV=production
+    env_file:
+      - ./backend/.env.production
+
+  react:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        MODE: production
+    command: ["/bin/sh", "-c", "npm run build"]
+    volumes:
+      - ./frontend/app/dist:/dist
+
+  nginx:
+    image: nginx:latest
+    container_name: nginx
+    volumes:
+      - ./nginx/ssl:/etc/nginx/ssl
+      - ./frontend/app/dist:/usr/share/nginx/html
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - flask
+    networks:
+      - app_network

@@ -1,0 +1,54 @@
+services:
+  flask:
+    environment:
+      - FLASK_ENV=development
+    env_file:
+      - ./backend/.env.development
+    depends_on:
+      - mysql_db
+
+  react:
+    container_name: react_app
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    command: ["npm", "run", "dev"]
+    volumes:
+      - ./frontend/app:/app
+      - /app/node_modules
+    working_dir: /app
+    ports:
+      - "5173:5173"
+    networks:
+      - app_network
+
+  mysql_db:
+    image: mysql:8.0
+    volumes:
+      - react_flask_db:/var/lib/mysql
+    environment:
+      MYSQL_DATABASE: react_flask_app
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_USER: admin
+      MYSQL_PASSWORD: password
+    ports:
+      - "3306:3306"
+    networks:
+      - app_network
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    platform: linux/amd64
+    environment:
+      - PMA_HOST=mysql_db
+      - PMA_USER=admin
+      - PMA_PASSWORD=password
+    ports:
+      - "8080:80"
+    networks:
+      - app_network
+    depends_on:
+      - mysql_db
+
+volumes:
+  react_flask_db:

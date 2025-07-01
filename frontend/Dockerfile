@@ -1,30 +1,27 @@
-# FROM node:20.12
-# WORKDIR /app
-# COPY app/package*.json ./
-# RUN npm install
-# COPY . ./
-# EXPOSE 5173
-# CMD [ "npm", "run", "dev" ]
-
-# Nodeの軽量イメージ
+# ベースイメージ
 FROM node:20.12-alpine
 
-# ビルド時引数（development or production）
+# モード（development or production）をビルド引数として受け取る
 ARG MODE=development
 ENV NODE_ENV=$MODE
 
 # 作業ディレクトリ
 WORKDIR /app
 
-# モードに応じた.envファイルをコピー
-COPY app/.env.$MODE .env
+# .envファイル（例: .env.development or .env.production）を適切にコピー
+COPY app/.env.${MODE} .env
 
-# 依存関係をインストール
+# パッケージ定義だけ先にコピーしてキャッシュを効かせる
 COPY app/package*.json ./
+
+# 依存パッケージのインストール（devDependenciesも含める）
 RUN npm install --include=dev
 
-# ソースコードをコピー
+# アプリ全体をコピー
 COPY app .
 
-# 開発環境
-RUN npm run build
+# ビルド or 開発サーバー起動（本番用ならビルド、開発用なら起動）
+RUN if [ "$MODE" = "production" ]; then npm run build; fi
+
+# デフォルトコマンド（ただしdocker-composeで上書きされることが前提）
+CMD ["npm", "run", "dev"]
