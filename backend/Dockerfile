@@ -3,7 +3,7 @@ FROM python:3.8-slim-buster
 WORKDIR /app
 
 # ビルド引数（development or production）
-ARG MODE=development
+ARG MODE=production
 ENV FLASK_ENV=$MODE
 
 # .envファイルを動的に切り替え（.env.development or .env.production）
