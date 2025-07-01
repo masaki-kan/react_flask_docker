@@ -2,7 +2,7 @@
 FROM node:20.12-alpine
 
 # モード（development or production）をビルド引数として受け取る
-ARG MODE=development
+ARG MODE=production
 ENV NODE_ENV=$MODE
 
 # 作業ディレクトリ
