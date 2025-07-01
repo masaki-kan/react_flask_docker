@@ -1,9 +1,9 @@
 services:
   flask:
     environment:
-      - FLASK_ENV=production
+      - FLASK_ENV=development
     env_file:
-      - ./backend/.env.production
+      - ./backend/.env.development
     depends_on:
       - mysql_db
 
