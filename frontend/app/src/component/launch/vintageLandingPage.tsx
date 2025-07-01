@@ -19,7 +19,7 @@ import {
 import { motion } from "framer-motion";
 
 const VintageLandingPage: FC = () => {
-  const MotionBox = motion(Box);
+  const MotionBox = motion.create(Box);
 
   const renderTextView = useCallback((text: string) => {
     return (

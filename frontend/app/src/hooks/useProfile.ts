@@ -8,6 +8,7 @@ import { setProfile } from "../store/profileSlice";
 import { setProfile as setSliceProfile } from "../store/usersSlice";
 import { itemLikeApi } from "../api/likeApi";
 import useAlert from "./useAlert";
+import useLoading from "./useLaoding";
 
 type useMyProfileReturn = {
   memorizeProfile: {
@@ -27,6 +28,7 @@ type useMyProfileReturn = {
 
 const useMyProfile = (): useMyProfileReturn => {
   const dispatch = useDispatch();
+  const { changeLoading } = useLoading();
   const { favoriteAlert } = useAlert();
   const profile = useSelector((state: RootState) => state.profile);
 
@@ -41,6 +43,7 @@ const useMyProfile = (): useMyProfileReturn => {
   }, [userProfile]);
 
   const getMyProfile = useCallback(async () => {
+    changeLoading(true);
     const response = await getProfileApi(profile.profile.id);
 
     if (response !== undefined) {
@@ -48,7 +51,8 @@ const useMyProfile = (): useMyProfileReturn => {
         setProfile({ profile: response.profile, items: response.items })
       );
     }
-  }, [dispatch, profile.profile.id]);
+    changeLoading(false);
+  }, [changeLoading, dispatch, profile.profile.id]);
 
   const getProfile = useCallback(
     async (userNumver: string, myUserNumber: string) => {

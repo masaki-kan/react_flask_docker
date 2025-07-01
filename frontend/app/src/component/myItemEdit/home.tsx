@@ -4,9 +4,12 @@ import ItemForm from "../common/form/itemForm";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import useMyProfile from "../../hooks/useProfile";
 import { route } from "../../route/routeConst";
+import FullScreenSpinner from "../common/spliner/FullScreenSpinner";
+import useLaoding from "../../hooks/useLaoding";
 
 const Home: FC = () => {
   const [searchParams] = useSearchParams();
+  const { memorizeLoading } = useLaoding();
   const navigate = useNavigate();
   const { memorizeProfile } = useMyProfile();
   const userItemNumver = searchParams.get("userItem");
@@ -32,6 +35,7 @@ const Home: FC = () => {
         >
           Item Eidt
         </Heading>
+        {memorizeLoading && <FullScreenSpinner />}
         <ItemForm
           profileItem={memorizeProfileItem[0]}
           ItemNumver={userItemNumver}

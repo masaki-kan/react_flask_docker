@@ -10,10 +10,10 @@ import {
   Tooltip,
   VStack,
   Wrap,
-  Image,
   HStack,
   Text,
   Card,
+  Image as ChakraImage,
 } from "@chakra-ui/react";
 import { useNavigate } from "react-router-dom";
 import { CiTrash } from "react-icons/ci";
@@ -24,9 +24,8 @@ import { itemListType } from "../../../types/itemType";
 import { route } from "../../../route/routeConst";
 import { postStoreProfileItemApi } from "../../../api/profileApis";
 import { RootState } from "../../../store";
-import { useDispatch, useSelector } from "react-redux";
+import { useSelector } from "react-redux";
 import useAlert from "../../../hooks/useAlert";
-import { updateLoad } from "../../../store/loadingSlice";
 import useLoading from "../../../hooks/useLaoding";
 
 type ItemFormProps = {
@@ -35,7 +34,6 @@ type ItemFormProps = {
 };
 
 const ItemForm: FC<ItemFormProps> = ({ profileItem, ItemNumver }) => {
-  const dispath = useDispatch();
   const { changeLoading } = useLoading();
   const { sweetSuccessOverAlert } = useAlert();
   const profile = useSelector((state: RootState) => state.profile);
@@ -97,33 +95,71 @@ const ItemForm: FC<ItemFormProps> = ({ profileItem, ItemNumver }) => {
       const fileArray = Array.from(files).slice(
         0,
         5 - formValues.images.length
-      ); // 最大5枚制限
+      ); // 最大5枚まで
 
-      Promise.all(
-        fileArray.map((file) => {
-          return new Promise<string>((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = () => {
-              if (typeof reader.result === "string") {
-                resolve(reader.result);
-              } else {
-                reject("読み込み失敗");
+      const acceptedTypes = ["image/jpeg", "image/png"];
+      const MAX_WIDTH = 800;
+      const MAX_HEIGHT = 800;
+
+      const resizeImage = (file: File): Promise<string> => {
+        return new Promise((resolve, reject) => {
+          if (!acceptedTypes.includes(file.type)) {
+            return reject("JPEGまたはPNG形式の画像のみ対応しています。");
+          }
+
+          const reader = new FileReader();
+          reader.onload = () => {
+            if (typeof reader.result !== "string")
+              return reject("ファイル読み込み失敗");
+
+            const img = new Image();
+            img.onload = () => {
+              let width = img.width;
+              let height = img.height;
+
+              // サイズを制限
+              if (width > height && width > MAX_WIDTH) {
+                height *= MAX_WIDTH / width;
+                width = MAX_WIDTH;
+              } else if (height > MAX_HEIGHT) {
+                width *= MAX_HEIGHT / height;
+                height = MAX_HEIGHT;
               }
+
+              // canvas に描画して base64 に変換
+              const canvas = document.createElement("canvas");
+              canvas.width = width;
+              canvas.height = height;
+              const ctx = canvas.getContext("2d");
+              if (!ctx) return reject("Canvas エラー");
+
+              ctx.drawImage(img, 0, 0, width, height);
+              const resizedBase64 = canvas.toDataURL(file.type, 0.8); // 画質 80%
+              resolve(resizedBase64);
             };
-            reader.onerror = () => reject("読み込みエラー");
-            reader.readAsDataURL(file);
-          });
+
+            img.onerror = () => reject("画像読み込みエラー");
+            img.src = reader.result;
+          };
+
+          reader.onerror = () => reject("ファイル読み込みエラー");
+          reader.readAsDataURL(file);
+        });
+      };
+
+      Promise.all(fileArray.map((file) => resizeImage(file)))
+        .then((resizedBase64Images) => {
+          const totalImages = formValues.images
+            .concat(resizedBase64Images)
+            .slice(0, 5); // 5枚まで
+          setFormValues((prev) => ({
+            ...prev,
+            images: totalImages,
+          }));
         })
-      ).then((base64Images) => {
-        const formattedImages = base64Images.map((img) => img);
-        const totalImages = formValues.images
-          .concat(formattedImages)
-          .slice(0, 5);
-        setFormValues((prev) => ({
-          ...prev,
-          images: totalImages,
-        }));
-      });
+        .catch((err) => {
+          alert(`画像の処理に失敗しました: ${err}`);
+        });
     },
     [formValues.images]
   );
@@ -151,6 +187,7 @@ const ItemForm: FC<ItemFormProps> = ({ profileItem, ItemNumver }) => {
   }, []);
 
   const storeItemsHandler = useCallback(async () => {
+    changeLoading(true);
     const newErrors = {
       title: formValues.title.trim() === "",
       images: formValues.images.length === 0 ? true : false,
@@ -164,7 +201,6 @@ const ItemForm: FC<ItemFormProps> = ({ profileItem, ItemNumver }) => {
     const hasError = Object.values(newErrors).some((val) => val); // 一つでも true（＝エラー）なら実行しない
 
     if (!hasError) {
-      changeLoading(true);
       // ここで内容保存処理
       const formData = {
         itemId: ItemNumver,
@@ -177,10 +213,10 @@ const ItemForm: FC<ItemFormProps> = ({ profileItem, ItemNumver }) => {
       };
 
       const dateUpChange = profileItem !== undefined ? "update" : "insert";
-      const response = await postStoreProfileItemApi(formData, dateUpChange);
 
+      const response = await postStoreProfileItemApi(formData, dateUpChange);
+      changeLoading(false);
       if (response?.status !== false) {
-        dispath(updateLoad(false));
         sweetSuccessOverAlert().then((result) => {
           if (result.isConfirmed) {
             // OK 押下時の処理
@@ -189,13 +225,12 @@ const ItemForm: FC<ItemFormProps> = ({ profileItem, ItemNumver }) => {
           }
         });
       }
-
-      changeLoading(false);
     }
+
+    changeLoading(false);
   }, [
     ItemNumver,
     changeLoading,
-    dispath,
     formValues.brand,
     formValues.description,
     formValues.images,
@@ -289,7 +324,7 @@ const ItemForm: FC<ItemFormProps> = ({ profileItem, ItemNumver }) => {
                       bg="white"
                       borderRadius="md"
                     >
-                      <Image
+                      <ChakraImage
                         src={src}
                         alt={`Image ${index}`}
                         h="200px" // 高さを固定

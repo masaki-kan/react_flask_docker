@@ -27,7 +27,7 @@ type RebderItemProps = {
 const RebderItem: FC<RebderItemProps> = React.memo(
   ({ itemList, avatar = true, navigate }) => {
     const location = useLocation();
-    const MotionCard = motion(Card);
+    const MotionCard = motion.create(Card);
 
     const [isMatch, setIsMatch] = useState<boolean>(false);
 

@@ -203,7 +203,7 @@ const ProfileForm: FC<ProfileIndexProps> = ({
                 hidden
               />
               <FormControl>
-                <FormLabel>名前</FormLabel>z
+                <FormLabel>名前</FormLabel>
                 <Input
                   isInvalid={formError.name}
                   errorBorderColor="red.300"

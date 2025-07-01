@@ -1,4 +1,4 @@
-import { FC, useCallback, useState } from "react";
+import { FC, useCallback, useEffect, useState } from "react";
 import ProfileIndex from "./profileIndex";
 import ProfileForm from "./profileForm";
 import { VStack } from "@chakra-ui/react";
@@ -8,8 +8,6 @@ import { postStoreProfileApi } from "../../api/profileApis";
 import { profileType } from "../../types/profileType";
 import useAlert from "../../hooks/useAlert";
 import useLoading from "../../hooks/useLaoding";
-
-import { useEffectOnce } from "react-use";
 
 const Profile: FC = () => {
   const { getMyProfile } = useMyProfile();
@@ -39,13 +37,11 @@ const Profile: FC = () => {
     [changeLoading, getMyProfile, sweetSuccessOverAlert]
   );
 
-  useEffectOnce(() => {
+  useEffect(() => {
     if (editSwitch !== true) {
-      changeLoading(true);
       getMyProfile();
-      changeLoading(false);
     }
-  });
+  }, [editSwitch, getMyProfile]);
 
   return (
     <VStack align={"start"} gap={9} w={"100%"}>

@@ -22,11 +22,9 @@ export const getChatItemDetailApi = async (
     if (axios.isAxiosError(error)) {
       // Axios エラーで、かつレスポンスが存在する場合
       if (error.response) {
-        console.log("_1");
         errorSweetalert2("Error");
         // console.error("Login error:", error.response.data);
       } else {
-        console.log("_2");
         // レスポンスがない場合はネットワークエラーなど
         errorSweetalert2("Error");
         // console.error(
@@ -34,7 +32,6 @@ export const getChatItemDetailApi = async (
         // );
       }
     } else {
-      console.log("_3");
       // それ以外のエラータイプ
       errorSweetalert2("Error");
       // console.error("Error:", error);
