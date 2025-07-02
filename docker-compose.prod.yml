@@ -37,10 +37,10 @@ services:
     ports:
       - "8080:80" # http://<EC2のIP>:8080 でアクセス
     environment:
-      # PMA_HOST: ourvintagedb.cneu42i26p7f.ap-northeast-1.rds.amazonaws.com
+      # PMA_HOST:
       # PMA_PORT: 3306
       # PMA_USER: admin
-      # PMA_PASSWORD: ourVintageAdmin
+      # PMA_PASSWORD:
     depends_on:
       - flask
     networks:
