@@ -5,7 +5,7 @@ import eventlet
 eventlet.monkey_patch()
 
 from dotenv import load_dotenv
-load_dotenv()
+from pathlib import Path
 
 from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
@@ -44,8 +44,10 @@ print( 'env >' ,env , flush=True )
     
 if env == "production":
     origins = ["https://35.78.248.43"]
+    load_dotenv(dotenv_path=Path(".env.production"))
 else:
     origins = ["http://localhost:5173"] # ローカル
+    load_dotenv(dotenv_path=Path(".env.development"))
 
 CORS(app, supports_credentials=True, resources={r"/api/*": {"origins": origins}, r"/socket.io/*": {"origins": origins}})
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode="eventlet")
@@ -98,13 +100,18 @@ def activate_scheduler():
 
 # === DB Connection ===
 def get_db_connection():
-    conn = mysql.connector.connect(
-        host=os.getenv("DB_HOST"),  
-        user=os.getenv("DB_USER"),
-        password=os.getenv("DB_PASSWORD"),
-        database=os.getenv("DB_NAME")
-    )
-    return conn
+    try:
+        conn = mysql.connector.connect(
+            host=os.getenv("DB_HOST"),
+            user=os.getenv("DB_USER"),
+            password=os.getenv("DB_PASSWORD"),
+            database=os.getenv("DB_NAME"),
+        )
+        print("✅ DB connected", flush=True)
+        return conn
+    except Exception as e:
+        print("❌ DB connection failed:", e, flush=True)
+        raise
 
 @app.before_first_request
 def initialize_database():
