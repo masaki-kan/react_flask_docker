@@ -15,7 +15,7 @@ import {
 import { viewDate } from "../component/common/date/format";
 import useLoading from "./useLaoding";
 import { trageStatusChange } from "../api/tradeApi";
-import { errorSweetalert2 } from "../component/alert/sweetalert2";
+import { errorSweetalert2 } from "../component/common/alert/sweetalert2";
 
 type useChatReturn = {
   memorizeChatMessages: messagesType[];
@@ -80,11 +80,12 @@ const useChat = (): useChatReturn => {
     },
     [changeLoading, dispatch]
   );
+
   const getItemDetail = useCallback(
     async (item_id: string) => {
       const response = await getChatItemDetailApi(item_id);
 
-      if (response !== undefined) {
+      if (response !== undefined && response.item) {
         const itemData = {
           trade_id: response.item.trade_id,
           item_id: response.item.item_id,

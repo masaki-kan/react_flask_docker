@@ -39,7 +39,7 @@ export const chatDetailTradeStatus = (
         {
           color: "green",
           status: "completed",
-          text: "取引完了",
+          text: "取引終了",
         },
       ];
     default:

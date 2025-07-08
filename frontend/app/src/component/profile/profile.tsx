@@ -11,7 +11,7 @@ import useLoading from "../../hooks/useLaoding";
 
 const Profile: FC = () => {
   const { getMyProfile } = useMyProfile();
-  const { sweetSuccessOverAlert } = useAlert();
+  const { defaultToast } = useAlert();
   const { changeLoading } = useLoading();
   const [editSwitch, setEditSwitch] = useState<boolean>(false);
 
@@ -25,16 +25,12 @@ const Profile: FC = () => {
       const response = await postStoreProfileApi(formdata);
       changeLoading(false);
       if (response?.status !== false) {
-        sweetSuccessOverAlert().then((result) => {
-          if (result.isConfirmed) {
-            // OK 押下時の処理
-            getMyProfile();
-            setEditSwitch(false);
-          }
-        });
+        defaultToast(response?.message);
+        getMyProfile();
+        setEditSwitch(false);
       }
     },
-    [changeLoading, getMyProfile, sweetSuccessOverAlert]
+    [changeLoading, defaultToast, getMyProfile]
   );
 
   useEffect(() => {

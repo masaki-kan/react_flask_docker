@@ -1,11 +1,12 @@
 import { FC, useMemo, useCallback, useEffect, useState } from "react";
-import { Avatar, Box, HStack, Link } from "@chakra-ui/react";
+import { Avatar, Box, HStack, Link, Text } from "@chakra-ui/react";
 import { route } from "../../../route/routeConst";
 import { useNavigate } from "react-router-dom";
 import { menuLists } from "../../../consts/menuList";
 import useMyProfile from "../../../hooks/useProfile";
 import useSaved from "../../../hooks/useSaved";
 import { FaExclamation } from "react-icons/fa";
+import { useEffectOnce } from "react-use";
 
 const RenderRouteLinks: FC = () => {
   const { memorizeProfile } = useMyProfile();
@@ -13,7 +14,8 @@ const RenderRouteLinks: FC = () => {
     return memorizeProfile;
   }, [memorizeProfile]);
   const navigate = useNavigate();
-  const { savedList } = useSaved();
+
+  const { savedList, getSavedListHandler } = useSaved();
   const [readSaveStatus, setReadSaveStatus] = useState<boolean>(false);
   const readSaveTimestamps = useCallback(() => {
     const stored = localStorage.getItem("readSaveTimestamps");
@@ -47,17 +49,19 @@ const RenderRouteLinks: FC = () => {
       newArray.push({ tradeId: save.trade_id, isNew });
     });
 
-    console.log("newArray", newArray);
     const isNew = newArray.find((item) => item.isNew === true)?.isNew ?? false;
     setReadSaveStatus(isNew);
   }, [readSaveTimestamps, savedList, unCompletedList]);
+
+  useEffectOnce(() => {
+    getSavedListHandler();
+  });
 
   return (
     <>
       <HStack
         justifyContent={{ md: "space-between", base: "end" }}
         alignItems={"end"}
-        align="center"
         gap={{ base: 3, md: 9 }}
         mr={0}
       >
@@ -70,22 +74,21 @@ const RenderRouteLinks: FC = () => {
               fontWeight="medium"
               href={menu.route}
               onClick={() => {}}
-              mr={{ base: 4, md: 0 }}
               position={"relative"}
             >
-              {menu.text}
+              <Text fontSize={"sm"}>{menu.text}</Text>
               {menu.route === route.saved && (
                 <>
                   <Box
                     hidden={!readSaveStatus}
                     position={"absolute"}
-                    top={0}
-                    right={-5}
+                    top={-2}
+                    right={-2}
                     borderRadius={"50%"}
                     bgColor={"#b03a3a"}
                     p={1}
                   >
-                    <FaExclamation size={10} color="white" />
+                    <FaExclamation size={7} color="white" />
                   </Box>
                 </>
               )}
@@ -94,8 +97,8 @@ const RenderRouteLinks: FC = () => {
         })}
 
         <Avatar
-          size={"sm"}
-          mr={4}
+          size={"md"}
+          ml={4}
           name={"my name"}
           onClick={toProfile}
           src={

@@ -113,7 +113,6 @@ const useMyProfile = (): useMyProfileReturn => {
     const userId = memorizeProfile.profile.id;
     const response = await cancellationProcessApi(userId);
     if (response !== undefined) {
-      console.log(response);
       return response;
     }
   }, [memorizeProfile.profile.id]);

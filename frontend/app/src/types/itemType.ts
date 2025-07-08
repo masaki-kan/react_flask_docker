@@ -10,6 +10,7 @@ export interface itemListType {
   user_id: number;
   likes?: number[];
   tradeStatusFlag: number;
+  tradeApprovalsFlag?: number;
 }
 
 export interface itemDetailType {

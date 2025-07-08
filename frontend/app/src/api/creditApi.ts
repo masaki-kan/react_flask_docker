@@ -1,5 +1,5 @@
 import axios from "axios";
-import { errorSweetalert2 } from "../component/alert/sweetalert2";
+import { errorSweetalert2 } from "../component/common/alert/sweetalert2";
 
 export const createPaymentIntent = async (
   amount: string,
@@ -23,23 +23,13 @@ export const createPaymentIntent = async (
       intentId: response.data.intentId,
     };
   } catch (error: unknown) {
-    // エラーが Error インスタンスかつ response プロパティを持っているか確認
-    if (axios.isAxiosError(error)) {
-      // Axios エラーで、かつレスポンスが存在する場合
-      if (error.response) {
-        console.error("response error:", error.response.data);
-        errorSweetalert2("Error");
-      } else {
-        // レスポンスがない場合はネットワークエラーなど
-        errorSweetalert2("Error");
-        console.error(
-          "Error: The request was made but no response was received"
-        );
-      }
-    } else {
-      // それ以外のエラータイプ
-      console.error("Login それ以外のエラータイプ:");
-      errorSweetalert2("Error");
+    let errorMessage = "予期しないエラーが発生しました";
+
+    if (axios.isAxiosError(error) && error.response?.data?.error) {
+      errorMessage = error.response.data.error;
     }
+
+    errorSweetalert2(errorMessage);
+    return;
   }
 };

@@ -13,7 +13,6 @@ import {
   Avatar,
 } from "@chakra-ui/react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import useAlert from "../../hooks/useAlert";
 import { route } from "../../route/routeConst";
 import useMyProfile from "../../hooks/useProfile";
 import useItems from "../../hooks/useItems";
@@ -21,12 +20,12 @@ import KeyboardControlGallerySlider from "../common/slider/keyboardControlGaller
 import { viewDate } from "../common/date/format";
 import { getProfileApi } from "../../api/profileApis";
 import { FaHeart } from "react-icons/fa";
-import { tradeApi } from "../../api/tradeApi";
 import { itemTypeViewHanlder } from "../common/type/itemTypeView";
 import { tradeStatusFlags } from "../../consts/profileConsts";
+import useApprovals from "../../hooks/useApprovals";
 
 const Home: FC = () => {
-  const { tradeAlert } = useAlert();
+  const { requestApprovals } = useApprovals();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { memorizeuserProfile, memorizeProfile, favoriteUpdateHandler } =
@@ -34,6 +33,7 @@ const Home: FC = () => {
 
   const { memorizeItemList } = useItems();
   const userItemNumver = searchParams.get("number"); // 'userItem' パラメータの値を取得
+
   const [itemUser, setItemUser] = useState<{
     name: string;
     image: string;
@@ -42,7 +42,6 @@ const Home: FC = () => {
     image: "",
   });
   const [like, setLike] = useState<boolean>(false);
-
   const memorizeItem = useMemo(() => {
     if (userItemNumver !== null) {
       if (memorizeuserProfile.items.length === 0) {
@@ -50,6 +49,7 @@ const Home: FC = () => {
           (item) => String(item.itemId) === String(userItemNumver)
         );
       } else {
+        console.log("なし");
         return memorizeuserProfile.items.filter(
           (item) => String(item.itemId) === String(userItemNumver)
         );
@@ -57,6 +57,8 @@ const Home: FC = () => {
     }
     return [];
   }, [memorizeItemList, memorizeuserProfile.items, userItemNumver]);
+
+  console.log(memorizeItem);
 
   const toPrevPageHandler = useCallback(() => {
     if (memorizeuserProfile.items.length === 0) {
@@ -78,13 +80,12 @@ const Home: FC = () => {
       userItemNumver === undefined ||
       userItemNumver === "";
     const noItems = memorizeItem.length === 0;
-
-    if (noParam && noItems) {
-      navigate(route.items); // パラメータなし + itemsなし → /itemsへ
-    } else if (noParam) {
+    if (noParam) {
       navigate(route.users); // パラメータなしのみ → /usersへ
+      return;
     } else if (noItems) {
       navigate(route.items); // itemsなしのみ → /itemsへ
+      return;
     }
   }, [
     userItemNumver,
@@ -123,31 +124,49 @@ const Home: FC = () => {
     userItemNumver,
   ]);
 
-  // 取引開始
+  // 取引申請
   const tradeHandler = useCallback(async () => {
     if (userItemNumver !== null) {
-      const response = await tradeApi(
-        userItemNumver, // 商品ID
-        memorizeProfile.profile.id, // 商品購入ユーザーID
-        memorizeItem[0].user_id.toString() // 商品出品ユーザーID
-      );
+      await requestApprovals(userItemNumver, memorizeProfile.profile.id);
+      // const response = await tradeApi(
+      //   userItemNumver, // 商品ID
+      //   memorizeProfile.profile.id, // 商品購入ユーザーID
+      //   memorizeItem[0].user_id.toString() // 商品出品ユーザーID
+      // );
 
-      if (response !== undefined) {
-        tradeAlert(response.message).then((result) => {
-          if (result.isConfirmed) {
-            // OK 押下時の処理
-            navigate(route.saved);
-          }
-        });
-      }
+      // if (response !== undefined) {
+      //   tradeAlert(response.message).then((result) => {
+      //     if (result.isConfirmed) {
+      //       // OK 押下時の処理
+      //       navigate(route.saved);
+      //     }
+      //   });
+      // }
     }
-  }, [
-    memorizeItem,
-    memorizeProfile.profile.id,
-    navigate,
-    tradeAlert,
-    userItemNumver,
-  ]);
+  }, [memorizeProfile.profile.id, requestApprovals, userItemNumver]);
+
+  const storeButtonViewHandler = useCallback(() => {
+    // 申請中
+    if (memorizeItem[0].tradeApprovalsFlag === 0) {
+      return <Button disabled>申請中</Button>;
+    }
+    // 承認
+    if (memorizeItem[0].tradeApprovalsFlag === 1) {
+      return <Button disabled>承認済</Button>;
+    }
+
+    return (
+      <Button
+        colorScheme="blue"
+        loadingText="登録..."
+        variant="outline"
+        spinnerPlacement="start"
+        onClick={tradeHandler}
+      >
+        {"取引申請する"}
+      </Button>
+    );
+  }, [memorizeItem, tradeHandler]);
 
   const favoriteClickHandler = useCallback(async () => {
     setLike((prev) => !prev);
@@ -169,8 +188,6 @@ const Home: FC = () => {
 
     return;
   }
-
-  console.log("memorizeItem", memorizeItem);
 
   return (
     <>
@@ -205,6 +222,7 @@ const Home: FC = () => {
           >
             {getTradeStatusFlag(memorizeItem[0].tradeStatusFlag)}
           </Box>
+          {/* <PureCarousel images={memorizeItem[0].images} /> */}
           <KeyboardControlGallerySlider images={memorizeItem[0].images} />
         </Box>
 
@@ -298,22 +316,11 @@ const Home: FC = () => {
               align={"start"}
               width={"100%"}
               spacing={5}
+              mt={4}
               justifyContent={"center"}
             >
               <Button onClick={toPrevPageHandler}>戻る</Button>
-              <Button
-                hidden={
-                  memorizeItem[0].tradeStatusFlag === 1 ||
-                  memorizeItem[0].tradeStatusFlag === 2
-                }
-                colorScheme="blue"
-                loadingText="登録..."
-                variant="outline"
-                spinnerPlacement="start"
-                onClick={tradeHandler}
-              >
-                {"取引する"}
-              </Button>
+              {storeButtonViewHandler()}
             </HStack>
           </CardBody>
         </Card>

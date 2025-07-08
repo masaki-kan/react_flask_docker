@@ -18,6 +18,7 @@ import ProfileHome from "../component/profile/home";
 import FavoriteHome from "../component/favorite/home";
 import { useDispatch } from "react-redux";
 import { setPreviousUrl } from "../store/navigationSlice";
+import ApprovalsHome from "../component/approvals/home";
 
 const AppRoutes: FC = () => {
   const location = useLocation();
@@ -49,6 +50,7 @@ const AppRoutes: FC = () => {
             <Route path={route.itemDetail} element={<ItemDetailHome />} />
             <Route path={route.favorite} element={<FavoriteHome />} />
             <Route path={route.transactionChat} element={<ChatHome />} />
+            <Route path={route.approvals} element={<ApprovalsHome />} />
           </Route>
           <Route path="*" element={<h1>Not Found Page</h1>} />
         </Routes>

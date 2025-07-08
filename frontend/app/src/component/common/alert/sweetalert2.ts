@@ -1,10 +1,10 @@
 import Swal from "sweetalert2";
-import { route } from "../../route/routeConst";
+import { route } from "../../../route/routeConst";
 
 export const errorSweetalert2 = (errorTitle: string) => {
   Swal.fire({
-    title: errorTitle,
-    text: "エラーが発生しました。",
+    title: "",
+    text: errorTitle,
     icon: "error",
   }).then((result) => {
     if (result.isConfirmed) {

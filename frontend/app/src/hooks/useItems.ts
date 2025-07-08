@@ -80,6 +80,7 @@ const useItems = (): userItemsReturn => {
           profile_image: string;
           user_id: number;
           trade_status_flag: number;
+          trade_approvals_status_flag?: number;
         }) => {
           return {
             itemId: item.item_id,
@@ -92,6 +93,7 @@ const useItems = (): userItemsReturn => {
             uploaded_at: item.uploaded_at,
             profile_image: item.profile_image,
             tradeStatusFlag: item.trade_status_flag,
+            tradeApprovalsFlag: item.trade_approvals_status_flag,
           };
         }
       );

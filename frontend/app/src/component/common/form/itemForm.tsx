@@ -5,7 +5,6 @@ import {
   FormControl,
   FormLabel,
   Input,
-  Select,
   Textarea,
   Tooltip,
   VStack,
@@ -15,18 +14,21 @@ import {
   Card,
   Image as ChakraImage,
 } from "@chakra-ui/react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { CiTrash } from "react-icons/ci";
 import { IoIosAdd } from "react-icons/io";
-import { itemParts } from "../../../consts/itemConsts";
 import CustomBrandSelect from "../select/customBrandSelect";
 import { itemListType } from "../../../types/itemType";
 import { route } from "../../../route/routeConst";
-import { postStoreProfileItemApi } from "../../../api/profileApis";
+import {
+  postStoreProfileItemApi,
+  deleteUserItemApi,
+} from "../../../api/profileApis";
 import { RootState } from "../../../store";
 import { useSelector } from "react-redux";
 import useAlert from "../../../hooks/useAlert";
 import useLoading from "../../../hooks/useLaoding";
+import CustomTypeSelect from "../select/customTypeSelect";
 
 type ItemFormProps = {
   profileItem?: itemListType;
@@ -38,6 +40,8 @@ const ItemForm: FC<ItemFormProps> = ({ profileItem, ItemNumver }) => {
   const { sweetSuccessOverAlert } = useAlert();
   const profile = useSelector((state: RootState) => state.profile);
   const navigate = useNavigate();
+  const location = useLocation();
+  console.log(location.pathname);
   const [formValues, setFormValues] = useState<{
     title: string;
     description: string;
@@ -179,12 +183,48 @@ const ItemForm: FC<ItemFormProps> = ({ profileItem, ItemNumver }) => {
     []
   );
 
+  const typeChange = useCallback((key: string) => {
+    setFormValues((prev) => ({
+      ...prev,
+      type: key,
+    }));
+  }, []);
+
   const tagChange = useCallback((newTags: { key: string; name: string }) => {
     setFormValues((prev) => ({
       ...prev,
       brand: newTags,
     }));
   }, []);
+
+  const deleteUserItemHandler = useCallback(async () => {
+    changeLoading(true);
+
+    if (profileItem !== undefined) {
+      const response = await deleteUserItemApi(
+        profileItem?.itemId,
+        Number(profile.profile.id)
+      );
+
+      if (response?.message) {
+        changeLoading(false);
+        sweetSuccessOverAlert(response?.message).then((result) => {
+          if (result.isConfirmed) {
+            // OK 押下時の処理
+            // プロフィール戻る
+            navigate(route.profile);
+          }
+        });
+      }
+    }
+    changeLoading(false);
+  }, [
+    changeLoading,
+    navigate,
+    profile.profile.id,
+    profileItem,
+    sweetSuccessOverAlert,
+  ]);
 
   const storeItemsHandler = useCallback(async () => {
     changeLoading(true);
@@ -217,7 +257,7 @@ const ItemForm: FC<ItemFormProps> = ({ profileItem, ItemNumver }) => {
       const response = await postStoreProfileItemApi(formData, dateUpChange);
       changeLoading(false);
       if (response?.status !== false) {
-        sweetSuccessOverAlert().then((result) => {
+        sweetSuccessOverAlert(response?.message).then((result) => {
           if (result.isConfirmed) {
             // OK 押下時の処理
             // プロフィール戻る
@@ -366,23 +406,11 @@ const ItemForm: FC<ItemFormProps> = ({ profileItem, ItemNumver }) => {
 
           <FormControl>
             <FormLabel>タイプ</FormLabel>
-            <Select
-              isInvalid={formError.type}
-              placeholder="タイプを選択してください"
-              required
-              name="type"
-              w={{ base: "100%", md: "50%" }}
+            <CustomTypeSelect
               value={formValues.type}
-              onChange={formChangeHandler}
-            >
-              {itemParts.map((part, index) => {
-                return (
-                  <option value={part.key} key={index}>
-                    {part.name}
-                  </option>
-                );
-              })}{" "}
-            </Select>
+              onChange={typeChange}
+              isInvalid={formError.type}
+            />
             {formError.type && (
               <Text fontSize="sm" style={{ color: "red" }}>
                 商品タイプは必須です。
@@ -401,36 +429,24 @@ const ItemForm: FC<ItemFormProps> = ({ profileItem, ItemNumver }) => {
               </Text>
             )}
           </FormControl>
-          {/* 
-          <FormControl>
-            <FormLabel>Price (¥)</FormLabel>
-            <NumberInput
-              isInvalid={formError.price}
-              value={formValues.price}
-              w={{ base: "100%", md: "50%" }}
-              onChange={(e) => {
-                setFormValues((prev) => ({
-                  ...prev,
-                  price: Number(e),
-                }));
-              }}
+          <HStack
+            align={"center"}
+            justifyContent={"space-between"}
+            width={"100%"}
+            spacing={5}
+          >
+            <Button
+              onClick={deleteUserItemHandler}
+              colorScheme={"red"}
+              color={"white"}
+              hidden={location.pathname === route.myItem}
             >
-              <NumberInputField />
-              <NumberInputStepper>
-                <NumberIncrementStepper />
-                <NumberDecrementStepper />
-              </NumberInputStepper>
-            </NumberInput>
-            {formError.brand && (
-              <Text fontSize="sm" style={{ color: "red" }}>
-                商品値段は必須です。
-              </Text>
-            )}
-          </FormControl> */}
-
-          <HStack align={"start"} width={"100%"} spacing={5}>
-            <Button onClick={toProfile}>戻る</Button>
-            <Button onClick={storeItemsHandler}>登録</Button>
+              削除
+            </Button>
+            <HStack>
+              <Button onClick={toProfile}>戻る</Button>
+              <Button onClick={storeItemsHandler}>登録</Button>
+            </HStack>
           </HStack>
         </VStack>
       </Card>

@@ -37,10 +37,11 @@ const CustomBrandSelect: FC<CustomBrandSelectProps> = ({
       options={options}
       className="basic-multi-select"
       classNamePrefix="select"
-      // onKeyDown={onKeyDown}
       onChange={handleInputChange}
-      placeholder="Select brand"
+      placeholder="ブランドを選択してください"
       value={value}
+      menuPlacement="auto"
+      noOptionsMessage={() => "選択肢がありません"}
     />
   );
 };

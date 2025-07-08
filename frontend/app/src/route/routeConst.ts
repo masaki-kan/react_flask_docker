@@ -11,6 +11,7 @@ export const route = {
   shopPage: "/shop_page",
   transactionChat: "/transaction/chat",
   favorite: "/favorite",
+  approvals: "/approvals",
   profile: "/",
   launch: "/launch",
 };

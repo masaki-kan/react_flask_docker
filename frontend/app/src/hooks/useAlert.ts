@@ -5,9 +5,9 @@ type useAlertReturn = {
   errorAlert: (text: string) => void;
   defaultAlert: (status: boolean) => void;
   successAlert: (text: string) => void;
-  followAlert: (text: string) => void;
+  defaultToast: (text: string) => void;
   tradeAlert: (text: string) => Promise<SweetAlertResult<unknown>>;
-  sweetSuccessOverAlert: () => Promise<SweetAlertResult<unknown>>;
+  sweetSuccessOverAlert: (title: string) => Promise<SweetAlertResult<unknown>>;
   sweetSuccessTextOverAlert: (
     text: string
   ) => Promise<SweetAlertResult<unknown>>;
@@ -35,7 +35,7 @@ const useAlert = (): useAlertReturn => {
     });
   };
 
-  const followAlert = (text: string) => {
+  const defaultToast = (text: string) => {
     toast({
       title: text,
       status: "success",
@@ -78,9 +78,9 @@ const useAlert = (): useAlertReturn => {
     });
   };
 
-  const sweetSuccessOverAlert = () => {
+  const sweetSuccessOverAlert = (title: string) => {
     return Swal.fire({
-      title: "更新完了",
+      title,
       icon: "success",
       draggable: true,
     });
@@ -99,7 +99,7 @@ const useAlert = (): useAlertReturn => {
     successAlert,
     errorAlert,
     defaultAlert,
-    followAlert,
+    defaultToast,
     tradeAlert,
     sweetSuccessOverAlert,
     sweetSuccessTextOverAlert,

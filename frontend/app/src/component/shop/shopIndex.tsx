@@ -22,7 +22,7 @@ import useLaoding from "../../hooks/useLaoding";
 
 const ShopIndex: FC = () => {
   const dispath = useDispatch();
-  const { followAlert } = useAlert();
+  const { defaultToast } = useAlert();
   const { memorizeuserProfile } = useMyProfile();
   const { changeLoading } = useLaoding();
 
@@ -120,11 +120,12 @@ const ShopIndex: FC = () => {
       memorizeuserProfile.profile.id,
       myProfile.profile.id
     );
-    if (response !== undefined) {
-      followAlert(response.action);
+    if (response !== undefined && response.result !== false) {
+      defaultToast(response.action);
       setFollowCheck(response.result ?? false);
+      return;
     }
-  }, [followAlert, memorizeuserProfile.profile.id, myProfile.profile.id]);
+  }, [defaultToast, memorizeuserProfile.profile.id, myProfile.profile.id]);
 
   return (
     <>

@@ -22,9 +22,9 @@ import {
   statusView,
   chatDetailTradeStatus,
 } from "../common/saved/saveStatusView.ts";
-import useMyProfile from "../../hooks/useProfile.ts";
+import useMyProfile from "../../hooks/useProfile";
 import { useNavigate } from "react-router-dom";
-import { route } from "../../route/routeConst.ts";
+import { route } from "../../route/routeConst";
 
 const ChatLeft: FC = () => {
   const navigate = useNavigate();
