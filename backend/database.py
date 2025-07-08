@@ -157,6 +157,24 @@ def create_trade_reviews_table(cursor):
             FOREIGN KEY (reviewee_id) REFERENCES users(user_id) ON DELETE CASCADE
         );
     ''')
+    
+def create_trade_approvals_table(cursor): 
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS trade_approvals (
+            approval_id INT PRIMARY KEY AUTO_INCREMENT,
+            item_id INT NOT NULL,
+            requester_id INT NOT NULL,
+            owner_id INT NOT NULL,
+            status TINYINT DEFAULT 0,
+            rejection_reason TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            FOREIGN KEY (item_id) REFERENCES items(item_id) ON DELETE CASCADE,
+            FOREIGN KEY (requester_id) REFERENCES users(user_id) ON DELETE CASCADE,
+            FOREIGN KEY (owner_id) REFERENCES users(user_id) ON DELETE CASCADE,
+            UNIQUE KEY unique_request (item_id, requester_id)
+        );
+    ''')
 
 def create_table(cursor):
     create_users_table(cursor)
@@ -170,3 +188,4 @@ def create_table(cursor):
     create_trades_table(cursor)
     create_trade_messages_table(cursor)
     create_trade_reviews_table(cursor)
+    create_trade_approvals_table(cursor)
