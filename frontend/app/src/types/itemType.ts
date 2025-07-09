@@ -8,6 +8,7 @@ export interface itemListType {
   uploaded_at: Date;
   profile_image: string;
   user_id: number;
+  user_name: string;
   likes?: number[];
   tradeStatusFlag: number;
   tradeApprovalsFlag?: number;

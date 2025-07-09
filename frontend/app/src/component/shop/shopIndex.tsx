@@ -10,7 +10,7 @@ import {
   Button,
 } from "@chakra-ui/react";
 import RebderItem from "../common/render/renderItem";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { route } from "../../route/routeConst";
 import useMyProfile from "../../hooks/useProfile";
 import { RootState } from "../../store";
@@ -19,21 +19,34 @@ import { userFollewApi } from "./../../api/followApi";
 import { useDispatch } from "react-redux";
 import useAlert from "../../hooks/useAlert";
 import useLaoding from "../../hooks/useLaoding";
+import { setTargetDetailUser } from "../../store/usersSlice";
 
 const ShopIndex: FC = () => {
   const dispath = useDispatch();
+  const navigate = useNavigate();
   const { defaultToast } = useAlert();
+  const [searchParams] = useSearchParams();
+  const userNumver = searchParams.get("user");
   const { memorizeuserProfile } = useMyProfile();
   const { changeLoading } = useLaoding();
 
   const myProfile = useSelector((state: RootState) => state.profile);
   const [followCheck, setFollowCheck] = useState<boolean>(false);
-  const navigate = useNavigate();
+
   const itemDetailHanlder = useCallback(
-    (index: number) => {
-      navigate(`${route.itemDetail}?number=${index}`);
+    (index: string) => {
+      if (userNumver !== null) {
+        dispath(
+          setTargetDetailUser({
+            userName: memorizeuserProfile.profile.name,
+            userId: userNumver,
+            itemId: index,
+          })
+        );
+        navigate(`${route.itemDetail}`);
+      }
     },
-    [navigate]
+    [dispath, memorizeuserProfile.profile.name, navigate, userNumver]
   );
 
   useEffect(() => {

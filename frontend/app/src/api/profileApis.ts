@@ -8,8 +8,8 @@ import { errorSweetalert2 } from "../component/common/alert/sweetalert2";
 
 // プロフ取得
 export const getProfileApi = async (
-  id: string,
-  myId?: string
+  id: number,
+  myId?: number
 ): Promise<apiRetuenProfileType | undefined> => {
   try {
     const response = await axios.get(
@@ -23,7 +23,7 @@ export const getProfileApi = async (
     );
 
     const profile = {
-      id: id,
+      id: String(id),
       image: response.data.profile.image,
       name: response.data.profile.name,
       location: response.data.profile.location,

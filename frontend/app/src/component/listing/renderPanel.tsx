@@ -49,7 +49,7 @@ const RenderPanel: FC<renderTabPanelType> = ({ data }) => {
       setReadUserTimestamps(newTimestamps);
       // ここで保存しても良い
       localStorage.setItem("readUserTimestamps", JSON.stringify(newTimestamps));
-      navigate(`${route.shopPage}?userItem=${user_id}`);
+      navigate(`${route.shopPage}?user=${user_id}`);
     },
     [navigate, readUserTimestamps]
   );

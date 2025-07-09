@@ -6,6 +6,7 @@ export const getUserItemsApi = async (
 ): Promise<
   | {
       items: {
+        seller_name: string;
         item_id: string;
         title: string;
         description: string;

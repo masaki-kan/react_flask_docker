@@ -70,6 +70,7 @@ const useItems = (): userItemsReturn => {
 
       const itemList: itemListType[] = rawItems.map(
         (item: {
+          seller_name: string;
           item_id: string;
           title: string;
           description: string;
@@ -83,6 +84,7 @@ const useItems = (): userItemsReturn => {
           trade_approvals_status_flag?: number;
         }) => {
           return {
+            user_name: item.seller_name,
             itemId: item.item_id,
             user_id: item.user_id,
             title: item.title,

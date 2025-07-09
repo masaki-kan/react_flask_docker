@@ -20,7 +20,7 @@ import { tradeStatusFlags } from "../../../consts/profileConsts";
 
 type RebderItemProps = {
   itemList: itemListType[];
-  navigate: (index: number) => void;
+  navigate: (index: string) => void;
   avatar?: boolean;
 };
 
@@ -109,7 +109,7 @@ const RebderItem: FC<RebderItemProps> = React.memo(
               bgRepeat="no-repeat"
               bgColor={"white"}
               bgSize="cover"
-              onClick={() => navigate(Number(product.itemId))}
+              onClick={() => navigate(product.itemId)}
             />
             <VStack spacing={2} bg={"white"} w={"100%"} my={2}>
               <Text color="#181411" fontSize="xs" fontWeight="medium">

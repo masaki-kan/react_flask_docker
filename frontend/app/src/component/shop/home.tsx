@@ -15,7 +15,7 @@ const Home: FC = () => {
   const [searchParams] = useSearchParams();
   const { memorizeLoading } = useLaoding();
   const myProfile = useSelector((state: RootState) => state.profile);
-  const userNumver = searchParams.get("userItem");
+  const userNumver = searchParams.get("user");
   const { getProfile } = useProfile();
 
   if (userNumver === undefined || userNumver === null) {
@@ -25,7 +25,7 @@ const Home: FC = () => {
   useEffectOnce(() => {
     if (userNumver !== null) {
       // userNumver プロフ対象ユーザー myProfile.profile.id フォローしているかどうか
-      getProfile(userNumver, myProfile.profile.id);
+      getProfile(Number(userNumver), Number(myProfile.profile.id));
     }
   });
 

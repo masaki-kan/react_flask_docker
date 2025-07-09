@@ -16,10 +16,6 @@ export const menuLists = [
     route: route.favorite,
   },
   {
-    text: "Approvals",
-    route: route.approvals,
-  },
-  {
     text: "Saved",
     route: route.saved,
   },

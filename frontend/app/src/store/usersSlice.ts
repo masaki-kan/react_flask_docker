@@ -10,6 +10,11 @@ type initialStateType = {
   tagList: tagType[];
   profile: profileType;
   items: itemListType[];
+  targetDetailUser: {
+    userName: string;
+    userId: string;
+    itemId: string;
+  };
 };
 const initialState: initialStateType = {
   originalData: [],
@@ -34,6 +39,11 @@ const initialState: initialStateType = {
     plan: "1",
   },
   items: [],
+  targetDetailUser: {
+    userName: "",
+    userId: "",
+    itemId: "",
+  },
 };
 
 export const listingSlice = createSlice({
@@ -59,6 +69,16 @@ export const listingSlice = createSlice({
       state.profile = action.payload.profile;
       state.items = action.payload.items;
     },
+    setTargetDetailUser: (
+      state,
+      action: PayloadAction<{
+        userName: string;
+        userId: string;
+        itemId: string;
+      }>
+    ) => {
+      state.targetDetailUser = action.payload;
+    },
   },
 });
 
@@ -68,6 +88,7 @@ export const {
   setTagList,
   setSelectedTag,
   setProfile,
+  setTargetDetailUser,
 } = listingSlice.actions;
 
 export default listingSlice.reducer;

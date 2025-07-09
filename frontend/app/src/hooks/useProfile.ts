@@ -21,7 +21,7 @@ type useMyProfileReturn = {
   };
   getMyProfile: () => Promise<void>;
   getUserProfile: () => { profile: profileType; items: itemListType[] };
-  getProfile: (userNumver: string, myUserNumber: string) => Promise<void>;
+  getProfile: (userNumver: number, myUserNumber: number) => Promise<void>;
   favoriteUpdateHandler: (itemId: string, userId: string) => Promise<void>;
   cancellationProcess: () => Promise<string>;
 };
@@ -44,9 +44,10 @@ const useMyProfile = (): useMyProfileReturn => {
 
   const getMyProfile = useCallback(async () => {
     changeLoading(true);
-    const response = await getProfileApi(profile.profile.id);
+    const response = await getProfileApi(Number(profile.profile.id));
 
     if (response !== undefined) {
+      console.log("response", response);
       dispatch(
         setProfile({ profile: response.profile, items: response.items })
       );
@@ -55,7 +56,7 @@ const useMyProfile = (): useMyProfileReturn => {
   }, [changeLoading, dispatch, profile.profile.id]);
 
   const getProfile = useCallback(
-    async (userNumver: string, myUserNumber: string) => {
+    async (userNumver: number, myUserNumber: number) => {
       const response = await getProfileApi(userNumver, myUserNumber);
       if (response !== undefined) {
         dispatch(

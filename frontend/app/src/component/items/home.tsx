@@ -5,14 +5,15 @@ import RebderItem from "../common/render/renderItem";
 import useItems from "../../hooks/useItems";
 import { useLocation, useNavigate } from "react-router-dom";
 import { route } from "../../route/routeConst";
-import useProfile from "../../hooks/useProfile";
 import useLoading from "../../hooks/useLaoding";
 import { useEffectOnce } from "react-use";
 import FullScreenSpinner from "../common/spliner/FullScreenSpinner";
+import { useDispatch } from "react-redux";
+import { setTargetDetailUser } from "../../store/usersSlice";
 
 const Home: FC = () => {
   const navigate = useNavigate();
-  const { getUserProfile } = useProfile();
+  const dispath = useDispatch();
   const pathname = useLocation().pathname;
   const { memorizeLoading } = useLoading();
   const {
@@ -27,15 +28,17 @@ const Home: FC = () => {
   });
 
   const itemDetailHanlder = useCallback(
-    (index: number) => {
-      if (getUserProfile().items[index] === undefined) {
-        navigate(`${route.itemDetail}?number=${index}`);
-
-        return;
-      }
-      navigate(`${route.itemDetail}?number=${index}`);
+    (index: string) => {
+      dispath(
+        setTargetDetailUser({
+          userName: memorizeItemList[0].user_name,
+          userId: "",
+          itemId: index,
+        })
+      );
+      navigate(`${route.itemDetail}`);
     },
-    [getUserProfile, navigate]
+    [dispath, memorizeItemList, navigate]
   );
 
   return (

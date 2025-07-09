@@ -37,11 +37,10 @@ type ItemFormProps = {
 
 const ItemForm: FC<ItemFormProps> = ({ profileItem, ItemNumver }) => {
   const { changeLoading } = useLoading();
-  const { sweetSuccessOverAlert } = useAlert();
+  const { defaultToast } = useAlert();
   const profile = useSelector((state: RootState) => state.profile);
   const navigate = useNavigate();
   const location = useLocation();
-  console.log(location.pathname);
   const [formValues, setFormValues] = useState<{
     title: string;
     description: string;
@@ -208,23 +207,12 @@ const ItemForm: FC<ItemFormProps> = ({ profileItem, ItemNumver }) => {
 
       if (response?.message) {
         changeLoading(false);
-        sweetSuccessOverAlert(response?.message).then((result) => {
-          if (result.isConfirmed) {
-            // OK 押下時の処理
-            // プロフィール戻る
-            navigate(route.profile);
-          }
-        });
+        defaultToast(response?.message);
+        navigate(route.profile);
       }
     }
     changeLoading(false);
-  }, [
-    changeLoading,
-    navigate,
-    profile.profile.id,
-    profileItem,
-    sweetSuccessOverAlert,
-  ]);
+  }, [changeLoading, defaultToast, navigate, profile.profile.id, profileItem]);
 
   const storeItemsHandler = useCallback(async () => {
     changeLoading(true);
@@ -257,13 +245,8 @@ const ItemForm: FC<ItemFormProps> = ({ profileItem, ItemNumver }) => {
       const response = await postStoreProfileItemApi(formData, dateUpChange);
       changeLoading(false);
       if (response?.status !== false) {
-        sweetSuccessOverAlert(response?.message).then((result) => {
-          if (result.isConfirmed) {
-            // OK 押下時の処理
-            // プロフィール戻る
-            navigate(route.profile);
-          }
-        });
+        defaultToast(response?.message);
+        navigate(route.profile);
       }
     }
 
@@ -271,6 +254,7 @@ const ItemForm: FC<ItemFormProps> = ({ profileItem, ItemNumver }) => {
   }, [
     ItemNumver,
     changeLoading,
+    defaultToast,
     formValues.brand,
     formValues.description,
     formValues.images,
@@ -279,7 +263,6 @@ const ItemForm: FC<ItemFormProps> = ({ profileItem, ItemNumver }) => {
     navigate,
     profile.profile.id,
     profileItem,
-    sweetSuccessOverAlert,
   ]);
 
   const toProfile = useCallback(() => {

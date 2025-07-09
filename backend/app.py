@@ -476,8 +476,6 @@ def getMyProfile():
                 LIMIT 1
             ''', (item['item_id'], user_id))
             trade_status_row = cursor.fetchone()
-            
-            print('trades',trade_status_row ,flush=True )
 
             if trade_status_row:
                 status = trade_status_row['status']
@@ -502,12 +500,10 @@ def getMyProfile():
         # item_id のみ抽出
         user_data['likes'] = [like['item_id'] for like in liked_items]
             
-        # 全体をまとめて返す
-        response = {
+        return jsonify({
             "profile": user_data,
             "items": items
-        }
-        return jsonify(response), 201
+        }), 200
     
     except mysql.connector.Error as err:
         return jsonify({
@@ -742,7 +738,8 @@ def getUserItems():
     user_id = request.json.get('user_id',None )
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)  # dict形式で取得できるようにする
-    
+
+    # 自分以外の商品情報を取得
     try:
         cursor.execute('''
             SELECT 
@@ -752,18 +749,20 @@ def getUserItems():
                 items.description,
                 items.type,
                 items.brand,
-                items.uploaded_at
+                items.uploaded_at,
+                users.name AS seller_name
             FROM items
             LEFT JOIN trades ON items.item_id = trades.item_id
-            WHERE user_id != %s
-            # AND trades.item_id IS NULL
-            ORDER BY uploaded_at ASC
+            LEFT JOIN users ON items.user_id = users.user_id
+            WHERE items.user_id != %s
+            ORDER BY items.uploaded_at ASC
         ''', (user_id,))
-        
+
+
         item_rows = cursor.fetchall()
         items = []
         brand_set = {}  # key を重複排除の基準にする
-        
+
         for item in item_rows:
             # ブランド（JSON → リスト）
             try:
@@ -774,16 +773,16 @@ def getUserItems():
                     brands = []
             except Exception:
                 brands = []
-                
+
             item['brand'] = brands
-            
+
             for brand in brands:
                 if isinstance(brand, dict):
                     key = str(brand.get('key'))
                     name = brand.get('name')
                     if key and name and key not in brand_set:
                         brand_set[key] = name
-                
+
             # 画像取得（全件）
             cursor.execute('''
                 SELECT image_url 
@@ -798,7 +797,7 @@ def getUserItems():
                 item['type'] = json.loads(item['type']) if item['type'] else []
             except Exception:
                 item['type'] = []
-            
+
             # プロフィール画像取得
             cursor.execute('''
                 SELECT image_url 
@@ -809,7 +808,7 @@ def getUserItems():
             ''', (item['user_id'],))
             profile_img = cursor.fetchone()
             item['profile_image'] = profile_img['image_url'] if profile_img else ""
-            
+
             # ✅ トレードステータスを確認（completed最優先）
             cursor.execute('''
                 SELECT status 
@@ -819,7 +818,7 @@ def getUserItems():
                 LIMIT 1
             ''', (item['item_id'],user_id,user_id))
             trade_status_row = cursor.fetchone()
-            
+
             if trade_status_row:
                 status = trade_status_row['status']
                 if status == 'completed':
@@ -830,22 +829,6 @@ def getUserItems():
                     item['trade_status_flag'] = 0
             else:
                 item['trade_status_flag'] = 0
-                
-            # ✅ 承認テーブルとの紐付け
-            # 1. 自分が申請した承認情報を取得
-            cursor.execute('''
-                SELECT 
-                    approval_id,
-                    status as approval_status,
-                    created_at as approval_created_at
-                FROM trade_approvals
-                WHERE item_id = %s AND requester_id = %s
-                LIMIT 1
-            ''', (item['item_id'], user_id))
-            my_approval = cursor.fetchone()
-
-            if my_approval:
-                item['trade_approvals_status_flag'] = my_approval["approval_status"]
 
             items.append(item)
 
@@ -856,7 +839,7 @@ def getUserItems():
             "brands": brand_list,
             "result": True
         }), 200
-        
+
     except mysql.connector.Error as err:
         conn.rollback()
         return jsonify({
@@ -867,7 +850,7 @@ def getUserItems():
     finally:
         conn.close()
         cursor.close()
-        
+
 
 @app.route('/api/deleteUserItem', methods=['POST'])
 def deleteUserItem():
@@ -1060,78 +1043,6 @@ def itemLike():
     finally:
         conn.close()
         cursor.close()
-
-# 承認申請を作成
-@app.route('/api/trade_approval/request', methods=['POST'])
-def trade_approval_request():
-    data = request.get_json()
-    item_id = data.get('item_id')
-    requester_id = data.get('requester_id')
-
-    conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
-    try:
-        # 1. 商品の存在確認と所有者情報の取得
-        cursor.execute('''
-            SELECT user_id as owner_id, title 
-            FROM items 
-            WHERE item_id = %s
-        ''', (item_id,))
-        item_data = cursor.fetchone()
-        
-        if not item_data:
-            conn.rollback()
-            return jsonify({
-                "error": "指定された商品が見つかりません",
-                "result": False
-            }), 404
-        owner_id = item_data['owner_id']
-    
-        if not item_data:
-            conn.rollback()
-            return jsonify({
-                "error": "指定された商品が見つかりません",
-                "result": False
-            }), 404
-
-        # 3. すでに取引が成立している商品かチェック
-        cursor.execute('''
-            SELECT trade_id, status 
-            FROM trades 
-            WHERE item_id = %s AND status IN ('pending', 'purchased', 'shipped', 'completed')
-        ''', (item_id,))
-        existing_trade = cursor.fetchone()
-    
-        if existing_trade:
-            conn.rollback()
-            return jsonify({
-                "error": "この商品はすでに取引中または取引済みです",
-                "result": False
-            }), 400
-        
-        # 5. 新規申請を作成
-        cursor.execute('''
-            INSERT INTO trade_approvals (item_id, requester_id, owner_id, status)
-            VALUES (%s, %s, %s, 0)
-        ''', (item_id, requester_id, owner_id))
-        conn.commit()
-    
-        return jsonify({
-            "message": "取引申請を送信しました",
-            "result": True,
-        }), 200
-    
-    except mysql.connector.Error as err:
-        conn.rollback()
-        print(f"Database error: {err}", flush=True)
-        return jsonify({
-            "error": "申請の作成中にエラーが発生しました",
-            "result": False
-        }), 500
-        
-    finally:
-        cursor.close()
-        conn.close()
 
 @app.route('/api/getSavedList', methods=['POST'])
 def get_active_trades():
@@ -1336,6 +1247,146 @@ def get_trade_messages():
 def uploaded_file(filename):
     return send_from_directory(UPLOAD_FOLDER, filename)
 
+
+@app.route('/api/trade', methods=['POST'])
+def create_trade():
+    """新規取引を作成"""
+    try:
+        data = request.get_json()
+        item_id = data.get('item_id')
+        buyer_id = data.get('buyer_id')
+        seller_id = data.get('seller_id')
+        
+        # 必須パラメータのチェック
+        if not all([item_id, buyer_id, seller_id]):
+            return jsonify({
+                'result': False,
+                'message': '必須パラメータが不足しています',
+                'error': '必須パラメータが不足しています'
+            }), 400
+        
+        connection = get_db_connection()
+        if not connection:
+            return jsonify({
+                'result': False,
+                'message': 'データベース接続エラー',
+                'error': 'データベース接続エラー'
+            }), 500
+        
+        cursor = connection.cursor(dictionary=True)
+        
+        try:
+            # トランザクション開始
+            connection.start_transaction()
+            
+            # アイテムの存在確認
+            cursor.execute("""
+                SELECT item_id, user_id 
+                FROM items 
+                WHERE item_id = %s
+            """, (item_id,))
+            item = cursor.fetchone()
+            
+            if not item:
+                return jsonify({
+                    'result': False,
+                    'message': '指定されたアイテムが存在しません',
+                    'error': '指定されたアイテムが存在しません'
+                }), 404
+            
+            # 売り手の確認（アイテムの所有者と一致するか）
+            if int(item['user_id']) != int(seller_id):
+                return jsonify({
+                    'result': False,
+                    'message': '売り手がアイテムの所有者ではありません',
+                    'error': '売り手がアイテムの所有者ではありません'
+                }), 400
+            
+            # 買い手と売り手が同じでないか確認
+            if int(buyer_id) == int(seller_id):
+                return jsonify({
+                    'result': False,
+                    'message': '自分のアイテムは購入できません',
+                    'error': '自分のアイテムは購入できません'
+                }), 400
+            
+            # 既存の取引があるか確認
+            cursor.execute("""
+                SELECT trade_id, status 
+                FROM trades 
+                WHERE item_id = %s AND buyer_id = %s
+            """, (item_id, buyer_id))
+            existing_trade = cursor.fetchone()
+            
+            if existing_trade:
+                # キャンセルされた取引以外は重複エラー
+                if existing_trade['status'] != 'cancelled':
+                    return jsonify({
+                        'result': False,
+                        'message': 'すでに取引が存在します',
+                        'error': 'すでに取引が存在します'
+                    }), 400
+            
+            # アイテムが他の進行中の取引に含まれていないか確認
+            cursor.execute("""
+                SELECT trade_id 
+                FROM trades 
+                WHERE item_id = %s 
+                AND status IN ('pending', 'purchased', 'shipped')
+            """, (item_id,))
+            active_trade = cursor.fetchone()
+            
+            if active_trade:
+                return jsonify({
+                    'result': False,
+                    'message': 'このアイテムは既に取引中です',
+                    'error': 'このアイテムは既に取引中です'
+                }), 400
+            
+            # 新規取引を作成
+            cursor.execute("""
+                INSERT INTO trades (item_id, seller_id, buyer_id, status)
+                VALUES (%s, %s, %s, 'pending')
+            """, (item_id, seller_id, buyer_id))
+            
+            trade_id = cursor.lastrowid
+            
+            # 初期メッセージを作成（オプション）
+            cursor.execute("""
+                INSERT INTO trade_messages (trade_id, sender_id, message)
+                VALUES (%s, %s, %s)
+            """, (trade_id, buyer_id, 'こんにちは、このアイテムを購入希望です。'))
+            
+            # コミット
+            connection.commit()
+            
+            return jsonify({
+                'result': True,
+                'message': '取引を開始しました',
+                'trade_id': trade_id
+            }), 201
+            
+        except Exception as e:
+            connection.rollback()
+            print(f"取引作成エラー: {e}")
+            return jsonify({
+                'result': False,
+                'message': '取引の作成に失敗しました',
+                'error': str(e)
+            }), 500
+            
+        finally:
+            cursor.close()
+            connection.close()
+            
+    except Exception as e:
+        print(f"エラー: {e}")
+        return jsonify({
+            'result': False,
+            'message': '予期しないエラーが発生しました',
+            'error': str(e)
+        }), 500
+        
 @app.route('/api/trade_status_change' , methods=['POST'])
 def trage_status_change():
     trade_id = request.json.get('trade_id')
@@ -1372,270 +1423,6 @@ def trage_status_change():
         conn.close()
         cursor.close()
 
-# 承認一覧を取得（送信・受信両方）
-@app.route('/api/trade_approval/list', methods=['POST'])
-def get_approval_list():
-    data = request.get_json()
-    user_id = data.get('user_id')
-    
-    if not user_id:
-        return jsonify({
-            "error": "user_id は必須です",
-            "result": False
-        }), 400
-    
-    conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
-    
-    try:
-        # 1. 自分が送信した申請を取得
-        cursor.execute('''
-            SELECT 
-                ta.approval_id,
-                ta.item_id,
-                ta.owner_id as target_user_id,
-                ta.status,
-                ta.rejection_reason,
-                ta.created_at,
-                ta.updated_at,
-                i.title as item_title,
-                i.description as item_description,
-                u.name as target_user_name,
-                pi.image_url as target_user_image,
-                ii.image_url as item_image,
-                'sent' as type
-            FROM trade_approvals ta
-            JOIN items i ON ta.item_id = i.item_id
-            JOIN users u ON ta.owner_id = u.user_id
-            LEFT JOIN (
-                SELECT user_id, image_url
-                FROM profile_images
-                WHERE profile_image_id IN (
-                    SELECT MAX(profile_image_id)
-                    FROM profile_images
-                    GROUP BY user_id
-                )
-            ) pi ON u.user_id = pi.user_id
-            LEFT JOIN (
-                SELECT item_id, MIN(item_image_id) as first_image_id
-                FROM item_images
-                GROUP BY item_id
-            ) first_img ON i.item_id = first_img.item_id
-            LEFT JOIN item_images ii ON first_img.first_image_id = ii.item_image_id
-            WHERE ta.requester_id = %s
-            ORDER BY ta.created_at DESC
-        ''', (user_id,))
-        sent_approvals = cursor.fetchall()
-        
-        # 2. 自分が受信した申請を取得
-        cursor.execute('''
-            SELECT 
-                ta.approval_id,
-                ta.item_id,
-                ta.requester_id as target_user_id,
-                ta.status,
-                ta.rejection_reason,
-                ta.created_at,
-                ta.updated_at,
-                i.title as item_title,
-                i.description as item_description,
-                u.name as target_user_name,
-                pi.image_url as target_user_image,
-                ii.image_url as item_image,
-                'received' as type
-            FROM trade_approvals ta
-            JOIN items i ON ta.item_id = i.item_id
-            JOIN users u ON ta.requester_id = u.user_id
-            LEFT JOIN (
-                SELECT user_id, image_url
-                FROM profile_images
-                WHERE profile_image_id IN (
-                    SELECT MAX(profile_image_id)
-                    FROM profile_images
-                    GROUP BY user_id
-                )
-            ) pi ON u.user_id = pi.user_id
-            LEFT JOIN (
-                SELECT item_id, MIN(item_image_id) as first_image_id
-                FROM item_images
-                GROUP BY item_id
-            ) first_img ON i.item_id = first_img.item_id
-            LEFT JOIN item_images ii ON first_img.first_image_id = ii.item_image_id
-            WHERE ta.owner_id = %s
-            ORDER BY ta.created_at DESC
-        ''', (user_id,))
-        received_approvals = cursor.fetchall()
-        
-        # データの整形関数
-        def format_approval(approval):
-            formatted = {
-                'approval_id': approval['approval_id'],
-                'item_id': approval['item_id'],
-                'type': approval['type'],  # 'sent' or 'received'
-                'status': approval['status'],
-                'status_text': ['申請中', '承認済み', '却下'][approval['status']],
-                'rejection_reason': approval['rejection_reason'],
-                'created_at': approval['created_at'].isoformat() if approval['created_at'] else None,
-                'updated_at': approval['updated_at'].isoformat() if approval['updated_at'] else None,
-                'item': {
-                    'title': approval['item_title'],
-                    'description': approval['item_description'],
-                    'image': approval['item_image'] or ''
-                },
-                'target_user': {
-                    'id': approval['target_user_id'],
-                    'name': approval['target_user_name'],
-                    'image': approval['target_user_image'] or ''
-                }
-            }
-            
-            # 時間差を計算（○分前、○時間前など）
-            if approval['created_at']:
-                time_diff = datetime.now() - approval['created_at']
-                if time_diff.days > 0:
-                    formatted['time_ago'] = f"{time_diff.days}日前"
-                elif time_diff.seconds >= 3600:
-                    hours = time_diff.seconds // 3600
-                    formatted['time_ago'] = f"{hours}時間前"
-                elif time_diff.seconds >= 60:
-                    minutes = time_diff.seconds // 60
-                    formatted['time_ago'] = f"{minutes}分前"
-                else:
-                    formatted['time_ago'] = "たった今"
-            else:
-                formatted['time_ago'] = ""
-            
-            return formatted
-        
-        # 送信・受信それぞれのデータを整形
-        formatted_sent = [format_approval(a) for a in sent_approvals]
-        formatted_received = [format_approval(a) for a in received_approvals]
-        
-        # 統計情報
-        sent_stats = {
-            'total': len(sent_approvals),
-            'pending': len([a for a in sent_approvals if a['status'] == 0]),
-            'approved': len([a for a in sent_approvals if a['status'] == 1]),
-            'rejected': len([a for a in sent_approvals if a['status'] == 2])
-        }
-        
-        received_stats = {
-            'total': len(received_approvals),
-            'pending': len([a for a in received_approvals if a['status'] == 0]),
-            'approved': len([a for a in received_approvals if a['status'] == 1]),
-            'rejected': len([a for a in received_approvals if a['status'] == 2])
-        }
-        
-        return jsonify({
-            'sent_approvals': formatted_sent,      # 送信した申請
-            'received_approvals': formatted_received,  # 受信した申請
-            'sent_stats': sent_stats,
-            'received_stats': received_stats,
-            'result': True
-        }), 200
-        
-    except mysql.connector.Error as err:
-        print(f"Database error: {err}", flush=True)
-        return jsonify({
-            "error": "承認一覧の取得中にエラーが発生しました",
-            "result": False
-        }), 500
-        
-    finally:
-        cursor.close()
-        conn.close()
-
-# 承認/却下処理
-@app.route('/api/trade_approval/respond', methods=['POST'])
-def respond_to_approval():
-    data = request.get_json()
-    approval_id = data.get('approval_id')
-    status = data.get('status')  # 1: 承認, 2: 却下
-    user_id = data.get('user_id')  # 操作者のID
-    
-    if not all([approval_id, status, user_id]):
-        return jsonify({
-            "error": "必須パラメータが不足しています",
-            "result": False
-        }), 400
-        
-    if status not in [1, 2]:
-        return jsonify({
-            "error": "不正なステータスです",
-            "result": False
-        }), 400
-    
-    conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
-    
-    try:
-        # 承認情報の取得と権限チェック
-        cursor.execute('''
-            SELECT ta.*, i.title as item_title
-            FROM trade_approvals ta
-            JOIN items i ON ta.item_id = i.item_id
-            WHERE ta.approval_id = %s AND ta.owner_id = %s
-        ''', (approval_id, user_id))
-        approval = cursor.fetchone()
-        
-        if not approval:
-            return jsonify({
-                "error": "承認情報が見つからないか、権限がありません",
-                "result": False
-            }), 404
-            
-        # すでに処理済みかチェック
-        if approval['status'] != 0:
-            return jsonify({
-                "error": "この申請はすでに処理済みです",
-                "result": False
-            }), 400
-        
-        # ステータスを更新
-        cursor.execute('''
-            UPDATE trade_approvals
-            SET status = %s, 
-                updated_at = CURRENT_TIMESTAMP
-            WHERE approval_id = %s
-        ''', (status, approval_id))
-        
-        conn.commit()
-        
-        # 承認された場合、取引を開始
-        if status == 1:
-            cursor.execute('''
-                INSERT INTO trades (item_id, seller_id, buyer_id, status)
-                VALUES (%s, %s, %s, 'pending')
-            ''', (approval['item_id'], approval['owner_id'], approval['requester_id']))
-            trade_id = cursor.lastrowid
-            conn.commit()
-            
-        else:
-            # 却下通知
-            socketio.emit('approval_rejected', {
-                'approval_id': approval_id,
-                'item_id': approval['item_id'],
-                'item_title': approval['item_title'],
-            }, room=f'user_{approval["requester_id"]}')
-        
-        return jsonify({
-            "message": "承認" if status == 1 else "却下" + "しました",
-            "result": True,
-            "trade_id": trade_id if status == 1 else None
-        }), 200
-        
-    except mysql.connector.Error as err:
-        conn.rollback()
-        print(f"Database error: {err}", flush=True)
-        return jsonify({
-            "error": "処理中にエラーが発生しました",
-            "result": False
-        }), 500
-        
-    finally:
-        cursor.close()
-        conn.close()
-        
 # Chat server 
 # クライアントが接続
 @socketio.on('connect')
