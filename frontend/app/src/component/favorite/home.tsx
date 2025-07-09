@@ -5,16 +5,17 @@ import useItems from "../../hooks/useItems";
 import useLaoding from "../../hooks/useLaoding";
 import FullScreenSpinner from "../common/spliner/FullScreenSpinner";
 import RebderItem from "../common/render/renderItem";
-import useProfile from "../../hooks/useProfile";
 import { route } from "../../route/routeConst";
 import { useNavigate } from "react-router-dom";
 import useMyProfile from "../../hooks/useProfile";
+import { useDispatch } from "react-redux";
+import { setTargetDetailUser } from "../../store/usersSlice";
 
 const Home: FC = () => {
   const navigate = useNavigate();
+  const dispath = useDispatch();
   const { getItemListHandler, memorizeItemList } = useItems();
   const { memorizeProfile } = useMyProfile();
-  const { getUserProfile } = useProfile();
   const { memorizeLoading } = useLaoding();
 
   const likedFileterList = useMemo(() => {
@@ -28,14 +29,19 @@ const Home: FC = () => {
   });
 
   const itemDetailHanlder = useCallback(
-    (index: number) => {
-      if (getUserProfile().items[index] === undefined) {
-        navigate(`${route.itemDetail}?number=${index}`);
-        return;
-      }
-      navigate(`${route.itemDetail}?number=${index}`);
+    (index: string) => {
+      dispath(
+        setTargetDetailUser({
+          userName: memorizeItemList[0].user_name,
+          userId: "",
+          itemId: index,
+        })
+      );
+      navigate(`${route.itemDetail}`);
+
+      return;
     },
-    [getUserProfile, navigate]
+    [dispath, memorizeItemList, navigate]
   );
 
   return (

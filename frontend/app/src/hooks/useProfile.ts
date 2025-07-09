@@ -20,7 +20,6 @@ type useMyProfileReturn = {
     items: itemListType[];
   };
   getMyProfile: () => Promise<void>;
-  getUserProfile: () => { profile: profileType; items: itemListType[] };
   getProfile: (userNumver: number, myUserNumber: number) => Promise<void>;
   favoriteUpdateHandler: (itemId: string, userId: string) => Promise<void>;
   cancellationProcess: () => Promise<string>;
@@ -67,19 +66,6 @@ const useMyProfile = (): useMyProfileReturn => {
     [dispatch]
   );
 
-  const getUserProfile = useCallback((): {
-    profile: profileType;
-    items: itemListType[];
-  } => {
-    const profileDate = profile.profile;
-    const items = profile.items;
-
-    return {
-      profile: profileDate,
-      items,
-    };
-  }, [profile.items, profile.profile]);
-
   const favoriteUpdateHandler = useCallback(
     async (itemId: string, userId: string) => {
       const response = await itemLikeApi(itemId, userId);
@@ -122,7 +108,6 @@ const useMyProfile = (): useMyProfileReturn => {
     memorizeuserProfile,
     memorizeProfile,
     getMyProfile,
-    getUserProfile,
     getProfile,
     favoriteUpdateHandler,
     cancellationProcess,
