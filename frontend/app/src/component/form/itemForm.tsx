@@ -39,14 +39,13 @@ const ItemForm: FC<ItemFormProps> = ({ profileItem, ItemNumver }) => {
   const { changeLoading } = useLoading();
   const { defaultToast } = useAlert();
   const profile = useSelector((state: RootState) => state.profile);
-  console.log("profile", profile);
   const [previewImages, setPreviewImages] = useState<string[]>([]);
   const navigate = useNavigate();
   const location = useLocation();
   const [formValues, setFormValues] = useState<{
     title: string;
     description: string;
-    images: File[];
+    images: (File | string)[];
     type: string;
     brand: { key: string; name: string };
   }>({
@@ -87,8 +86,9 @@ const ItemForm: FC<ItemFormProps> = ({ profileItem, ItemNumver }) => {
   const handleRemoveImageHandler = useCallback((index: number) => {
     setFormValues((prev) => ({
       ...prev,
-      images: prev.images.filter((_, idx) => idx !== index),
+      images: prev.images.filter((_, i) => i !== index),
     }));
+    setPreviewImages((prev) => prev.filter((_, i) => i !== index));
   }, []);
 
   // 商品画像
@@ -225,16 +225,6 @@ const ItemForm: FC<ItemFormProps> = ({ profileItem, ItemNumver }) => {
     const hasError = Object.values(newErrors).some((val) => val); // 一つでも true（＝エラー）なら実行しない
 
     if (!hasError) {
-      // ここで内容保存処理
-      // const formData = {
-      //   itemId: ItemNumver,
-      //   userId: profile.profile.id,
-      //   title: formValues.title,
-      //   description: formValues.description,
-      //   images: formValues.images,
-      //   type: formValues.type,
-      //   brand: formValues.brand,
-      // };
       const dateUpChange = ItemNumver !== undefined ? "update" : "insert";
       const formData = new FormData();
       formData.append("itemId", ItemNumver || "");
@@ -329,7 +319,9 @@ const ItemForm: FC<ItemFormProps> = ({ profileItem, ItemNumver }) => {
           <FormControl>
             <FormLabel>商品画像</FormLabel>
             <Wrap w="full" spacing="20px" justify="start">
-              {formValues.images.map((src, index) => {
+              {formValues.images.map((img, index) => {
+                const src =
+                  typeof img === "string" ? img : URL.createObjectURL(img);
                 return (
                   <Box key={index} w={{ base: "45%", md: "250px" }}>
                     <VStack align="end" position="relative">
