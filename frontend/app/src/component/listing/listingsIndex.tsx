@@ -129,7 +129,7 @@ const ListingsIndex: FC = React.memo(() => {
           </AnimatePresence>
 
           <TabPanels>
-            <TabPanel p={0}>
+            <TabPanel p={0} mb={10}>
               <AnimatePresence mode="wait">
                 <MotionBox
                   initial={{ opacity: 0, y: 20 }}

@@ -8,6 +8,7 @@ import {
   Text,
   Link,
   Button,
+  Box,
 } from "@chakra-ui/react";
 import RebderItem from "../common/render/renderItem";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -20,6 +21,7 @@ import { useDispatch } from "react-redux";
 import useAlert from "../../hooks/useAlert";
 import useLaoding from "../../hooks/useLaoding";
 import { setTargetDetailUser } from "../../store/usersSlice";
+import { FaUserCircle } from "react-icons/fa";
 
 const ShopIndex: FC = () => {
   const dispath = useDispatch();
@@ -38,15 +40,13 @@ const ShopIndex: FC = () => {
       if (userNumver !== null) {
         dispath(
           setTargetDetailUser({
-            userName: memorizeuserProfile.profile.name,
-            userId: userNumver,
             itemId: index,
           })
         );
         navigate(`${route.itemDetail}`);
       }
     },
-    [dispath, memorizeuserProfile.profile.name, navigate, userNumver]
+    [dispath, navigate, userNumver]
   );
 
   useEffect(() => {
@@ -150,16 +150,20 @@ const ShopIndex: FC = () => {
         my={4}
       >
         <VStack align={"center"} mr={4}>
-          <Avatar
-            size={"xl"}
-            mx={"auto"}
-            name={"my name"}
-            src={
-              memorizeuserProfile.profile.image.length > 0
-                ? memorizeuserProfile.profile.image
-                : "https://bit.ly/broken-link"
-            }
-          />
+          {memorizeuserProfile.profile.image.length > 0 ? (
+            <Avatar
+              size={"xl"}
+              mx={"auto"}
+              name={memorizeuserProfile.profile.name}
+              src={memorizeuserProfile.profile.image}
+            />
+          ) : (
+            <>
+              <Box mx={"auto"}>
+                <FaUserCircle size={"60px"} color="gray.500" />
+              </Box>
+            </>
+          )}
 
           <Button variant="solid" size={"xs"} onClick={followUpdataHandler}>
             {followCheck === false ? "フォローする" : "フォロー解除する"}

@@ -4,7 +4,7 @@ export interface itemListType {
   description: string;
   type: string;
   brand: { key: string; name: string };
-  images: string[];
+  images: File[];
   uploaded_at: Date;
   profile_image: string;
   user_id: number;

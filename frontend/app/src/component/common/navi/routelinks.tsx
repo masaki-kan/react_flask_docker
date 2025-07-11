@@ -7,6 +7,7 @@ import useMyProfile from "../../../hooks/useProfile";
 import useSaved from "../../../hooks/useSaved";
 import { FaExclamation } from "react-icons/fa";
 import { useEffectOnce } from "react-use";
+import { FaUserCircle } from "react-icons/fa";
 
 const RenderRouteLinks: FC = () => {
   const { memorizeProfile } = useMyProfile();
@@ -96,17 +97,25 @@ const RenderRouteLinks: FC = () => {
           );
         })}
 
-        <Avatar
-          size={"md"}
-          ml={4}
-          name={"my name"}
-          onClick={toProfile}
-          src={
-            profile.profile.image.length > 0
-              ? profile.profile.image
-              : "https://bit.ly/broken-link"
-          }
-        />
+        {profile.profile.image.length > 0 ? (
+          <Avatar
+            size={"md"}
+            ml={4}
+            name={"my name"}
+            onClick={toProfile}
+            src={profile.profile.image}
+          />
+        ) : (
+          <>
+            <Box ml={4}>
+              <FaUserCircle
+                size={"45px"}
+                color="gray.500"
+                onClick={toProfile}
+              />
+            </Box>
+          </>
+        )}
       </HStack>
     </>
   );

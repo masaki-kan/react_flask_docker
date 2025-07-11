@@ -21,7 +21,7 @@ import useMyProfile from "../../hooks/useProfile";
 import useItems from "../../hooks/useItems";
 import CustomImageSlider from "../common/slider/customImageSlider";
 import { viewDate } from "../common/date/format";
-import { FaArrowLeft, FaHeart, FaRegHeart } from "react-icons/fa";
+import { FaHeart, FaRegHeart, FaUserCircle } from "react-icons/fa";
 import { itemTypeViewHanlder } from "../common/type/itemTypeView";
 import { tradeStatusFlags } from "../../consts/profileConsts";
 import { tradeApi } from "../../api/tradeApi";
@@ -171,18 +171,18 @@ const Home: FC = () => {
     updateItemDetailData,
   ]);
 
-  const toPrevPageHandler = useCallback(() => {
-    if (memorizeuserProfile.items.length === 0) {
-      navigate(`${route.items}`);
-      return;
-    }
-    navigate(`${route.shopPage}?userItem=${memorizeuserProfile.profile.id}`);
-    return;
-  }, [
-    memorizeuserProfile.items.length,
-    memorizeuserProfile.profile.id,
-    navigate,
-  ]);
+  // const toPrevPageHandler = useCallback(() => {
+  //   if (memorizeuserProfile.items.length === 0) {
+  //     navigate(`${route.items}`);
+  //     return;
+  //   }
+  //   navigate(`${route.shopPage}?userItem=${memorizeuserProfile.profile.id}`);
+  //   return;
+  // }, [
+  //   memorizeuserProfile.items.length,
+  //   memorizeuserProfile.profile.id,
+  //   navigate,
+  // ]);
 
   useEffect(() => {
     const isLiked = memorizeProfile.profile.likes?.includes(
@@ -254,15 +254,15 @@ const Home: FC = () => {
       <Container maxW="container.xl" py={4} px={{ base: 0, md: 4 }}>
         <VStack spacing={4} align="stretch">
           {/* ヘッダーセクション */}
-          <HStack justify="space-between" px={{ base: 2, md: 0 }}>
-            <IconButton
+          <HStack justify="end" px={{ base: 2, md: 0 }}>
+            {/* <IconButton
               aria-label="戻る"
               icon={<FaArrowLeft />}
               variant="ghost"
               size="lg"
               onClick={toPrevPageHandler}
               _hover={{ bg: hoverBg }}
-            />
+            /> */}
             <Badge
               fontSize="sm"
               px={3}
@@ -360,13 +360,19 @@ const Home: FC = () => {
                     navigate(`${route.shopPage}?user=${itemDetailData.userId}`);
                   }}
                 >
-                  <Avatar
-                    size="md"
-                    src={
-                      itemDetailData.profImage || "https://bit.ly/broken-link"
-                    }
-                    name={itemDetailData.uesrname}
-                  />
+                  {itemDetailData.profImage.length > 0 ? (
+                    <Avatar
+                      size={"md"}
+                      name={itemDetailData.uesrname}
+                      src={itemDetailData.profImage}
+                    />
+                  ) : (
+                    <>
+                      <Box mx={"auto"}>
+                        <FaUserCircle size={"60px"} color="gray.500" />
+                      </Box>
+                    </>
+                  )}
                   <VStack align="start" spacing={0} flex={1}>
                     <Text fontWeight="medium">{itemDetailData.uesrname}</Text>
                     <Text fontSize="sm" color={textMuted}>

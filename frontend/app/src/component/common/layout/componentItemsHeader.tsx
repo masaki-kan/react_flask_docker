@@ -44,7 +44,7 @@ const ComponentItemsHeader: FC<MinimalHeaderType> = ({ title, itemCount }) => {
           <Text color="gray.600" fontSize="md">
             {itemCount > 0
               ? `${itemCount}件の商品が見つかりました`
-              : "商品を探してみましょう"}
+              : "ぜひ出品してみましょう"}
           </Text>
         </VStack>
         <HStack spacing={4}>

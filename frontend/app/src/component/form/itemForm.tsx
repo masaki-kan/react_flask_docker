@@ -39,12 +39,14 @@ const ItemForm: FC<ItemFormProps> = ({ profileItem, ItemNumver }) => {
   const { changeLoading } = useLoading();
   const { defaultToast } = useAlert();
   const profile = useSelector((state: RootState) => state.profile);
+  console.log("profile", profile);
+  const [previewImages, setPreviewImages] = useState<string[]>([]);
   const navigate = useNavigate();
   const location = useLocation();
   const [formValues, setFormValues] = useState<{
     title: string;
     description: string;
-    images: string[];
+    images: File[];
     type: string;
     brand: { key: string; name: string };
   }>({
@@ -98,8 +100,7 @@ const ItemForm: FC<ItemFormProps> = ({ profileItem, ItemNumver }) => {
       const fileArray = Array.from(files).slice(
         0,
         5 - formValues.images.length
-      ); // 最大5枚まで
-
+      );
       const acceptedTypes = ["image/jpeg", "image/png"];
       const MAX_WIDTH = 800;
       const MAX_HEIGHT = 800;
@@ -107,20 +108,16 @@ const ItemForm: FC<ItemFormProps> = ({ profileItem, ItemNumver }) => {
       const resizeImage = (file: File): Promise<string> => {
         return new Promise((resolve, reject) => {
           if (!acceptedTypes.includes(file.type)) {
-            return reject("JPEGまたはPNG形式の画像のみ対応しています。");
+            return reject("JPEGまたはPNG形式のみ対応");
           }
 
           const reader = new FileReader();
           reader.onload = () => {
-            if (typeof reader.result !== "string")
-              return reject("ファイル読み込み失敗");
-
             const img = new Image();
             img.onload = () => {
               let width = img.width;
               let height = img.height;
 
-              // サイズを制限
               if (width > height && width > MAX_WIDTH) {
                 height *= MAX_WIDTH / width;
                 width = MAX_WIDTH;
@@ -129,20 +126,21 @@ const ItemForm: FC<ItemFormProps> = ({ profileItem, ItemNumver }) => {
                 height = MAX_HEIGHT;
               }
 
-              // canvas に描画して base64 に変換
               const canvas = document.createElement("canvas");
               canvas.width = width;
               canvas.height = height;
               const ctx = canvas.getContext("2d");
-              if (!ctx) return reject("Canvas エラー");
+              if (!ctx) return reject("Canvasエラー");
 
               ctx.drawImage(img, 0, 0, width, height);
-              const resizedBase64 = canvas.toDataURL(file.type, 0.8); // 画質 80%
-              resolve(resizedBase64);
+              const base64 = canvas.toDataURL(file.type, 0.8);
+              resolve(base64);
             };
 
             img.onerror = () => reject("画像読み込みエラー");
-            img.src = reader.result;
+            if (typeof reader.result === "string") {
+              img.src = reader.result;
+            }
           };
 
           reader.onerror = () => reject("ファイル読み込みエラー");
@@ -151,20 +149,22 @@ const ItemForm: FC<ItemFormProps> = ({ profileItem, ItemNumver }) => {
       };
 
       Promise.all(fileArray.map((file) => resizeImage(file)))
-        .then((resizedBase64Images) => {
-          const totalImages = formValues.images
-            .concat(resizedBase64Images)
-            .slice(0, 5); // 5枚まで
+        .then((base64Images) => {
+          // base64 → string[]
+          const newPreview = previewImages.concat(base64Images).slice(0, 5);
+          setPreviewImages(newPreview);
+
+          // 同時に元画像データ（File）も保持したい場合はこちら
           setFormValues((prev) => ({
             ...prev,
-            images: totalImages,
+            images: prev.images.concat(fileArray).slice(0, 5),
           }));
         })
         .catch((err) => {
-          alert(`画像の処理に失敗しました: ${err}`);
+          alert(`画像処理に失敗しました: ${err}`);
         });
     },
-    [formValues.images]
+    [formValues.images, previewImages]
   );
 
   const formChangeHandler = useCallback(
@@ -197,8 +197,6 @@ const ItemForm: FC<ItemFormProps> = ({ profileItem, ItemNumver }) => {
   }, []);
 
   const deleteUserItemHandler = useCallback(async () => {
-    changeLoading(true);
-
     if (profileItem !== undefined) {
       const response = await deleteUserItemApi(
         profileItem?.itemId,
@@ -206,13 +204,11 @@ const ItemForm: FC<ItemFormProps> = ({ profileItem, ItemNumver }) => {
       );
 
       if (response?.message) {
-        changeLoading(false);
         defaultToast(response?.message);
         navigate(route.profile);
       }
     }
-    changeLoading(false);
-  }, [changeLoading, defaultToast, navigate, profile.profile.id, profileItem]);
+  }, [defaultToast, navigate, profile.profile.id, profileItem]);
 
   const storeItemsHandler = useCallback(async () => {
     changeLoading(true);
@@ -230,19 +226,30 @@ const ItemForm: FC<ItemFormProps> = ({ profileItem, ItemNumver }) => {
 
     if (!hasError) {
       // ここで内容保存処理
-      const formData = {
-        itemId: ItemNumver,
-        userId: profile.profile.id,
-        title: formValues.title,
-        description: formValues.description,
-        images: formValues.images,
-        type: formValues.type,
-        brand: formValues.brand,
-      };
+      // const formData = {
+      //   itemId: ItemNumver,
+      //   userId: profile.profile.id,
+      //   title: formValues.title,
+      //   description: formValues.description,
+      //   images: formValues.images,
+      //   type: formValues.type,
+      //   brand: formValues.brand,
+      // };
+      const dateUpChange = ItemNumver !== undefined ? "update" : "insert";
+      const formData = new FormData();
+      formData.append("itemId", ItemNumver || "");
+      formData.append("userId", profile.profile.id);
+      formData.append("title", formValues.title);
+      formData.append("description", formValues.description);
+      formData.append("type", JSON.stringify(formValues.type));
+      formData.append("brand", JSON.stringify(formValues.brand));
+      formData.append("dateUpChange", dateUpChange);
 
-      const dateUpChange = profileItem !== undefined ? "update" : "insert";
+      formValues.images.forEach((file) => {
+        formData.append("images", file);
+      });
 
-      const response = await postStoreProfileItemApi(formData, dateUpChange);
+      const response = await postStoreProfileItemApi(formData);
       changeLoading(false);
       if (response?.status !== false) {
         defaultToast(response?.message);
@@ -262,7 +269,6 @@ const ItemForm: FC<ItemFormProps> = ({ profileItem, ItemNumver }) => {
     formValues.type,
     navigate,
     profile.profile.id,
-    profileItem,
   ]);
 
   const toProfile = useCallback(() => {
@@ -323,42 +329,44 @@ const ItemForm: FC<ItemFormProps> = ({ profileItem, ItemNumver }) => {
           <FormControl>
             <FormLabel>商品画像</FormLabel>
             <Wrap w="full" spacing="20px" justify="start">
-              {formValues.images.map((src, index) => (
-                <Box key={index} w={{ base: "45%", md: "250px" }}>
-                  <VStack align="end" position="relative">
-                    <Tooltip label="削除" hasArrow>
-                      <CiTrash
-                        color="#000"
-                        cursor="pointer"
-                        style={{
-                          width: "25px",
-                          height: "25px",
-                          position: "absolute",
-                          top: "5px",
-                          right: "5px",
-                        }}
-                        onClick={() => handleRemoveImageHandler(index)}
-                      />
-                    </Tooltip>
-                    <Box
-                      width="100%"
-                      p={2}
-                      boxShadow="md"
-                      bg="white"
-                      borderRadius="md"
-                    >
-                      <ChakraImage
-                        src={src}
-                        alt={`Image ${index}`}
-                        h="200px" // 高さを固定
-                        w="full" // 幅はコンテナに合わせて調整
-                        objectFit={"contain"} // 画像をカバーとして設定
+              {formValues.images.map((src, index) => {
+                return (
+                  <Box key={index} w={{ base: "45%", md: "250px" }}>
+                    <VStack align="end" position="relative">
+                      <Tooltip label="削除" hasArrow>
+                        <CiTrash
+                          color="#000"
+                          cursor="pointer"
+                          style={{
+                            width: "25px",
+                            height: "25px",
+                            position: "absolute",
+                            top: "5px",
+                            right: "5px",
+                          }}
+                          onClick={() => handleRemoveImageHandler(index)}
+                        />
+                      </Tooltip>
+                      <Box
+                        width="100%"
+                        p={2}
+                        boxShadow="md"
+                        bg="white"
                         borderRadius="md"
-                      />
-                    </Box>
-                  </VStack>
-                </Box>
-              ))}
+                      >
+                        <ChakraImage
+                          src={src}
+                          alt={`Image ${index}`}
+                          h="200px"
+                          w="full"
+                          objectFit={"contain"}
+                          borderRadius="md"
+                        />
+                      </Box>
+                    </VStack>
+                  </Box>
+                );
+              })}
             </Wrap>
             {formError.images && (
               <Text fontSize="sm" style={{ color: "red" }}>

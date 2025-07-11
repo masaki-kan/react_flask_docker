@@ -10,12 +10,14 @@ import {
   Button,
   Card,
   HStack,
+  Box,
 } from "@chakra-ui/react";
 import MyItems from "./myItems";
 import useMyProfile from "../../hooks/useProfile";
 import LogOut from "../common/layout/logOut";
 import { plans } from "../../consts/profileConsts";
 import Withdrawal from "../common/layout/withdrawal";
+import { FaUserCircle } from "react-icons/fa";
 
 type profileIndexType = {
   editFormSwitch: () => void;
@@ -107,16 +109,20 @@ const ProfileIndex: FC<profileIndexType> = ({ editFormSwitch }) => {
         my={4}
       >
         <VStack align={"center"}>
-          <Avatar
-            size={"xl"}
-            mr={4}
-            name={"my name"}
-            src={
-              profile.profile.image.length > 0
-                ? profile.profile.image
-                : "https://bit.ly/broken-link"
-            }
-          />
+          {profile.profile.image.length > 0 ? (
+            <Avatar
+              size={"xl"}
+              ml={4}
+              name={"my name"}
+              src={profile.profile.image}
+            />
+          ) : (
+            <>
+              <Box mx={"auto"}>
+                <FaUserCircle size={"60px"} color="gray.500" />
+              </Box>
+            </>
+          )}
           <Button variant="solid" onClick={editFormSwitch}>
             プロフィール編集
           </Button>

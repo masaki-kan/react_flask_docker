@@ -15,6 +15,7 @@ import {
   GridItem,
 } from "@chakra-ui/react";
 import { FaExclamation } from "react-icons/fa";
+import { FaUserCircle } from "react-icons/fa";
 
 const RenderPanel: FC<renderTabPanelType> = ({ data }) => {
   const [readUserTimestamps, setReadUserTimestamps] = useState<
@@ -94,18 +95,25 @@ const RenderPanel: FC<renderTabPanelType> = ({ data }) => {
                   bgColor: "#f4f2f0",
                 }}
               >
-                <VStack align="stretch" spacing={3} p={{ base: 3, md: 4 }}>
+                <VStack align="stretch" spacing={2} p={{ base: 3, md: 4 }}>
                   {/* アバターセクション */}
                   <HStack justify="center">
                     <Box position="relative">
-                      <Avatar
-                        size={{ base: "lg", md: "xl" }}
-                        src={
-                          list.image_url.length > 0
-                            ? list.image_url
-                            : "https://bit.ly/broken-link"
-                        }
-                      />
+                      {list.image_url.length > 0 ? (
+                        <Avatar
+                          size={{ base: "lg", md: "xl" }}
+                          ml={4}
+                          name={"my name"}
+                          src={list.image_url}
+                        />
+                      ) : (
+                        <>
+                          <Box ml={4} mx={"auto"}>
+                            <FaUserCircle size={"60px"} color="gray.500" />
+                          </Box>
+                        </>
+                      )}
+
                       {isNew && (
                         <Box
                           position="absolute"

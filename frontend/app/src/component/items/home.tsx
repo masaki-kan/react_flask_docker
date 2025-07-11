@@ -1,5 +1,5 @@
 import { FC, useCallback } from "react";
-import { VStack, Text } from "@chakra-ui/react";
+import { VStack } from "@chakra-ui/react";
 import SearchForm from "../form/searchForm";
 import RebderItem from "../common/render/renderItem";
 import useItems from "../../hooks/useItems";
@@ -55,14 +55,7 @@ const Home: FC = () => {
           route={pathname}
           selectedTag={memorizeSelectedTag}
         />
-        {memorizeItemList.length === 0 && (
-          <Text px={4}>現在出品商品はありません。</Text>
-        )}
-        <RebderItem
-          itemList={memorizeItemList}
-          avatar={false}
-          navigate={itemDetailHanlder}
-        />
+        <RebderItem itemList={memorizeItemList} navigate={itemDetailHanlder} />
       </VStack>
     </>
   );

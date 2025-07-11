@@ -17,8 +17,9 @@ import {
   HStack,
   Text,
   Card,
+  Box,
 } from "@chakra-ui/react";
-import { FaUpload } from "react-icons/fa";
+import { FaUpload, FaUserCircle } from "react-icons/fa";
 import CustomBrandsSelect from "../common/select/customMultipleSelect";
 import useMyProfile from "../../hooks/useProfile";
 import { profileType } from "../../types/profileType";
@@ -105,7 +106,6 @@ const ProfileForm: FC<ProfileIndexProps> = ({
 
   const handleTagChange = useCallback(
     (newTags: { key: string; name: string }[]) => {
-      // setTags(newTags); // 直接更新
       if (newTags.length > 5) {
         alert("規定の数に達しました。");
         return;
@@ -171,17 +171,20 @@ const ProfileForm: FC<ProfileIndexProps> = ({
         <Card p={2} w={"full"}>
           <VStack gap={10} width={"full"}>
             <VStack align={"start"} width={"100%"} spacing={5}>
-              <HStack justifyContent={"start"} alignItems={"center"} py={2}>
+              <VStack justifyContent={"start"} alignItems={"center"} py={2}>
                 <VStack align={"center"}>
-                  <Avatar
-                    size={"xl"}
-                    mr={4}
-                    name={formData.name}
-                    src={formData.image}
-                  />
+                  {formData.image.length > 0 ? (
+                    <Avatar size={"xl"} name={"my name"} src={formData.image} />
+                  ) : (
+                    <>
+                      <Box mx={"auto"}>
+                        <FaUserCircle size={"70px"} color="gray.500" />
+                      </Box>
+                    </>
+                  )}
                 </VStack>
-                <VStack align={"start"}>
-                  <FormLabel cursor="pointer">
+                <VStack align={"center"} w={"full"} mt={2}>
+                  <FormLabel cursor="pointer" m={0}>
                     <Button
                       leftIcon={<FaUpload />}
                       colorScheme="teal"
@@ -193,7 +196,7 @@ const ProfileForm: FC<ProfileIndexProps> = ({
                     </Button>
                   </FormLabel>
                 </VStack>
-              </HStack>
+              </VStack>
 
               <Input
                 ref={imageInputRef}

@@ -5,7 +5,6 @@ import {
   Image,
   Text,
   Card,
-  // Avatar,
   HStack,
   VStack,
   Box,
@@ -27,10 +26,8 @@ type RebderItemProps = {
 
 const RebderItem: FC<RebderItemProps> = React.memo(({ itemList, navigate }) => {
   const location = useLocation();
-
   const MotionCard = motion.create(Card);
   const [isMatch, setIsMatch] = useState<boolean>(false);
-
   // カラーモード対応
   const bgColor = useColorModeValue("white", "gray.800");
   const borderColor = useColorModeValue("gray.200", "gray.700");
@@ -51,6 +48,7 @@ const RebderItem: FC<RebderItemProps> = React.memo(({ itemList, navigate }) => {
     };
     return statusMap[tradeStatusFlag as keyof typeof statusMap] || statusMap[0];
   }, []);
+
   return (
     <Grid
       width="full"
@@ -61,15 +59,14 @@ const RebderItem: FC<RebderItemProps> = React.memo(({ itemList, navigate }) => {
         lg: "repeat(5, 1fr)",
       }}
       gap={{ base: 2, sm: 3, md: 4 }}
-      my={4}
-      px={{ base: 0, md: 0 }}
-      overflowY={"auto"}
+      mb={10}
+      mt={2}
+      px={0}
       height={isMatch ? "auto" : { base: "auto", md: "550px" }}
-      overflow={"visible"}
+      overflowY={isMatch ? "visible" : "scroll"}
     >
       {itemList.map((product, index) => {
         const statusInfo = getTradeStatusInfo(product.tradeStatusFlag);
-
         return (
           <MotionCard
             key={index}
@@ -171,14 +168,6 @@ const RebderItem: FC<RebderItemProps> = React.memo(({ itemList, navigate }) => {
                 >
                   {viewDate(product.uploaded_at)}
                 </Badge>
-                {/* {avatar && (
-                    <Avatar
-                      size={{ base: "2xs", sm: "xs" }}
-                      src={product.profile_image}
-                      border="2px solid white"
-                      boxShadow="sm"
-                    />
-                  )} */}
               </HStack>
             </Box>
 

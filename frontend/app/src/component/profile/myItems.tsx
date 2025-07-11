@@ -16,7 +16,7 @@ const MyItems: FC = () => {
   }, [navigate]);
 
   const itemDetailHanlder = useCallback(
-    (index: number) => {
+    (index: string) => {
       navigate(`${route.myItemEdit}?userItem=${index}`);
     },
     [navigate]
