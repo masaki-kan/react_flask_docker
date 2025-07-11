@@ -2,7 +2,6 @@ import React, { ChangeEvent, FC, useCallback, useState } from "react";
 import {
   VStack,
   FormControl,
-  FormLabel,
   Input,
   Box,
   Tag,
@@ -10,10 +9,10 @@ import {
   TagCloseButton,
   Wrap,
 } from "@chakra-ui/react";
-import useUsers from "../../../hooks/useUsers";
-import useItems from "../../../hooks/useItems";
-import { tagType } from "../../../types/listType";
-import { route as routeName } from "../../../route/routeConst";
+import useUsers from "../../hooks/useUsers";
+import useItems from "../../hooks/useItems";
+import { tagType } from "../../types/listType";
+import { route as routeName } from "../../route/routeConst";
 import { useLocation } from "react-router-dom";
 
 type SearchFormProps = {
@@ -113,9 +112,8 @@ const SearchForm: FC<SearchFormProps> = React.memo(
     );
 
     return (
-      <VStack hidden={hidden} align={"start"} w={"full"} gap={3}>
+      <VStack hidden={hidden} align={"start"} mt={4} w={"full"} gap={3}>
         <FormControl>
-          <FormLabel>検索</FormLabel>
           <Input
             bg={"white"}
             placeholder="ユーザー名検索"

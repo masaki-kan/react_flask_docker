@@ -1,14 +1,15 @@
 import { type FC } from "react";
-import { Heading } from "@chakra-ui/react";
 import SavedIndex from "./savedIndex";
 import useSaved from "../../hooks/useSaved";
 import { useEffectOnce } from "react-use";
 import FullScreenSpinner from "../common/spliner/FullScreenSpinner";
 import useLaoding from "../../hooks/useLaoding";
+import { menuLists } from "../../consts/menuList";
+import ComponentTradeHeader from "../common/layout/componentTradeHeader";
 
 const Home: FC = () => {
   const { memorizeLoading } = useLaoding();
-  const { getSavedListHandler } = useSaved();
+  const { getSavedListHandler, savedList } = useSaved();
 
   useEffectOnce(() => {
     getSavedListHandler();
@@ -16,13 +17,10 @@ const Home: FC = () => {
 
   return (
     <>
-      <Heading
-        pl={{ md: 4, base: 0 }}
-        mb={10}
-        textAlign={{ base: "justify", md: "justify" }}
-      >
-        Saved
-      </Heading>
+      <ComponentTradeHeader
+        title={menuLists[3].text}
+        itemCount={savedList.length}
+      />
       {memorizeLoading && <FullScreenSpinner />}
       <SavedIndex />
     </>

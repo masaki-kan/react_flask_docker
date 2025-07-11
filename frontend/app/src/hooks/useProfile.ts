@@ -42,11 +42,11 @@ const useMyProfile = (): useMyProfileReturn => {
   }, [userProfile]);
 
   const getMyProfile = useCallback(async () => {
+    if (Number(profile.profile.id) === 0) return;
     changeLoading(true);
     const response = await getProfileApi(Number(profile.profile.id));
 
     if (response !== undefined) {
-      console.log("response", response);
       dispatch(
         setProfile({ profile: response.profile, items: response.items })
       );

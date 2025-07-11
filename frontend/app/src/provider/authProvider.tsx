@@ -21,8 +21,8 @@ const AuthProvider: FC<{ children: React.ReactNode }> = ({ children }) => {
   );
 
   const logout = useCallback(() => {
-    dispath(deleteProfile());
     localStorage.removeItem("token");
+    dispath(deleteProfile());
   }, [dispath]);
 
   useEffect(() => {

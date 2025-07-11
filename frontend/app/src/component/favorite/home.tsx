@@ -1,6 +1,6 @@
 import { useCallback, useMemo, type FC } from "react";
 import { useEffectOnce } from "react-use";
-import { Heading, VStack, Text } from "@chakra-ui/react";
+import { VStack } from "@chakra-ui/react";
 import useItems from "../../hooks/useItems";
 import useLaoding from "../../hooks/useLaoding";
 import FullScreenSpinner from "../common/spliner/FullScreenSpinner";
@@ -10,6 +10,8 @@ import { useNavigate } from "react-router-dom";
 import useMyProfile from "../../hooks/useProfile";
 import { useDispatch } from "react-redux";
 import { setTargetDetailUser } from "../../store/usersSlice";
+import { menuLists } from "../../consts/menuList";
+import ComponentFavoriteHeader from "../common/layout/componentFavoriteHeader";
 
 const Home: FC = () => {
   const navigate = useNavigate();
@@ -32,8 +34,6 @@ const Home: FC = () => {
     (index: string) => {
       dispath(
         setTargetDetailUser({
-          userName: memorizeItemList[0].user_name,
-          userId: "",
           itemId: index,
         })
       );
@@ -41,23 +41,17 @@ const Home: FC = () => {
 
       return;
     },
-    [dispath, memorizeItemList, navigate]
+    [dispath, navigate]
   );
 
   return (
     <>
-      <Heading
-        pl={{ md: 4, base: 0 }}
-        mb={10}
-        textAlign={{ base: "justify", md: "justify" }}
-      >
-        Favorite
-      </Heading>
+      <ComponentFavoriteHeader
+        itemCount={likedFileterList.length}
+        title={menuLists[2].text}
+      />
       {memorizeLoading && <FullScreenSpinner />}
-      <VStack align={"start"} mt={10}>
-        {likedFileterList.length === 0 && (
-          <Text px={4}>現在お気に入り件数はありません。</Text>
-        )}
+      <VStack align={"start"}>
         <RebderItem
           itemList={likedFileterList}
           avatar={false}

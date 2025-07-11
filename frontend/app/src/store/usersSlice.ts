@@ -11,8 +11,6 @@ type initialStateType = {
   profile: profileType;
   items: itemListType[];
   targetDetailUser: {
-    userName: string;
-    userId: string;
     itemId: string;
   };
 };
@@ -40,8 +38,6 @@ const initialState: initialStateType = {
   },
   items: [],
   targetDetailUser: {
-    userName: "",
-    userId: "",
     itemId: "",
   },
 };
@@ -72,8 +68,6 @@ export const listingSlice = createSlice({
     setTargetDetailUser: (
       state,
       action: PayloadAction<{
-        userName: string;
-        userId: string;
         itemId: string;
       }>
     ) => {

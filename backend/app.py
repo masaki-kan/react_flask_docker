@@ -733,6 +733,45 @@ def userFollow():
         conn.close()
         cursor.close()
 
+    user_id = request.json.get('item_id',None )
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)  # dict形式で取得できるようにする
+    
+    # 洗濯した商品からユーザーデータを取得
+    try:
+        cursor.execute('''
+            SELECT 
+                items.item_id,
+                items.title,
+                items.description,
+                item.type,
+                item.brand,
+                users.name,
+                users.user_id
+            FROM items
+            WHERE items.item_id != %s
+            LEFT JOIN users ON items.user_id = users.user_id
+            ORDER BY users.uploaded_at ASC
+        ''', (user_id,))
+        
+        user_row = cursor.fetchall()
+
+        return jsonify({
+            "users": user_row,
+            "result": True
+        }), 200
+
+    except mysql.connector.Error as err:
+        conn.rollback()
+        return jsonify({
+            "error": "ユーザーデータ取得中にエラーが発生しました",
+            "result": False
+        }), 500
+
+    finally:
+        conn.close()
+        cursor.close()
+
 @app.route('/api/getUserItems' ,methods=['POST'])
 def getUserItems():
     user_id = request.json.get('user_id',None )
@@ -1061,6 +1100,8 @@ def get_active_trades():
                 trades.buyer_id,
                 items.title,
                 items.description,
+                items.type,
+                items.brand,
                 item_img.image_url,
                 users.name AS user_name,
                 users.user_id AS user_id,
@@ -1100,6 +1141,29 @@ def get_active_trades():
 
         active_trades = cursor.fetchall()
         
+       # データの後処理
+        for trade in active_trades:
+            # 日付をISO形式に変換
+            if trade.get('trade_created_at'):
+                trade['trade_created_at'] = trade['trade_created_at'].isoformat()
+            if trade.get('last_message_time'):
+                trade['last_message_time'] = trade['last_message_time'].isoformat()
+            
+            # JSON型フィールドをパース
+            if trade.get('type') and isinstance(trade['type'], str):
+                try:
+                    import json
+                    trade['type'] = json.loads(trade['type'])
+                except json.JSONDecodeError:
+                    trade['type'] = None
+                    
+            if trade.get('brand') and isinstance(trade['brand'], str):
+                try:
+                    import json
+                    trade['brand'] = json.loads(trade['brand'])
+                except json.JSONDecodeError:
+                    trade['brand'] = None
+            
         return jsonify({"trades": active_trades, "result": True}), 200
     except mysql.connector.Error as err:
         conn.rollback()
@@ -1355,7 +1419,7 @@ def create_trade():
             cursor.execute("""
                 INSERT INTO trade_messages (trade_id, sender_id, message)
                 VALUES (%s, %s, %s)
-            """, (trade_id, buyer_id, 'こんにちは、このアイテムを購入希望です。'))
+            """, (trade_id, buyer_id, 'こんにちは、このアイテムを交換希望です。'))
             
             # コミット
             connection.commit()

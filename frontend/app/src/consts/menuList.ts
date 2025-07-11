@@ -4,19 +4,19 @@ import { IoSettingsOutline } from "react-icons/io5";
 
 export const menuLists = [
   {
-    text: "Users",
+    text: "ユーザー",
     route: route.users,
   },
   {
-    text: "Items",
+    text: "アイテム",
     route: route.items,
   },
   {
-    text: "Favorite",
+    text: "お気に入り",
     route: route.favorite,
   },
   {
-    text: "Saved",
+    text: "交換",
     route: route.saved,
   },
 ];

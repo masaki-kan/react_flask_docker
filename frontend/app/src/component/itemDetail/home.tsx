@@ -1,24 +1,27 @@
-import { FC, useCallback, useEffect, useMemo, useState } from "react";
+import { FC, useCallback, useEffect, useState } from "react";
 import {
-  Heading,
   Text,
-  Card,
-  CardBody,
-  Stack,
-  StackDivider,
   Button,
   Box,
   HStack,
   VStack,
   Avatar,
+  useColorModeValue,
+  Badge,
+  Container,
+  Divider,
+  Flex,
+  Grid,
+  GridItem,
+  IconButton,
 } from "@chakra-ui/react";
 import { useNavigate } from "react-router-dom";
 import { route } from "../../route/routeConst";
 import useMyProfile from "../../hooks/useProfile";
 import useItems from "../../hooks/useItems";
-import KeyboardControlGallerySlider from "../common/slider/keyboardControlGallerySlider";
+import CustomImageSlider from "../common/slider/customImageSlider";
 import { viewDate } from "../common/date/format";
-import { FaHeart } from "react-icons/fa";
+import { FaArrowLeft, FaHeart, FaRegHeart } from "react-icons/fa";
 import { itemTypeViewHanlder } from "../common/type/itemTypeView";
 import { tradeStatusFlags } from "../../consts/profileConsts";
 import { tradeApi } from "../../api/tradeApi";
@@ -28,30 +31,145 @@ import { RootState } from "src/store";
 
 const Home: FC = () => {
   const { defaultToast } = useAlert();
-  const userItem = useSelector(
+  const targetDetailUser = useSelector(
     (state: RootState) => state.users.targetDetailUser
   );
-
   const navigate = useNavigate();
   const { memorizeuserProfile, memorizeProfile, favoriteUpdateHandler } =
     useMyProfile();
   const { memorizeItemList } = useItems();
+  const [itemDetailData, setItemDetailData] = useState<{
+    profImage: string;
+    uesrname: string;
+    userId: string;
+    itemUpdateTime: string;
+    itemId: string;
+    title: string;
+    description: string;
+    type: string;
+    brand: string;
+    like: boolean;
+    images: string[];
+    tradeStatusFlag: number;
+  }>({
+    profImage: "",
+    uesrname: "",
+    userId: "",
+    itemUpdateTime: "",
+    itemId: "",
+    title: "",
+    description: "",
+    type: "",
+    brand: "",
+    like: false,
+    images: [],
+    tradeStatusFlag: 0,
+  });
+  // カラーモードに対応した色
+  const bgColor = useColorModeValue("white", "gray.800");
+  // const borderColor = useColorModeValue("gray.200", "gray.700");
+  const textMuted = useColorModeValue("gray.600", "gray.400");
+  const hoverBg = useColorModeValue("gray.50", "gray.700");
 
-  const [like, setLike] = useState<boolean>(false);
+  const updateItemDetailData = useCallback(
+    (data: {
+      profImage: string;
+      uesrname: string;
+      userId: string;
+      itemUpdateTime: string;
+      itemId: string;
+      title: string;
+      description: string;
+      type: string;
+      brand: string;
+      like: boolean;
+      images: string[];
+      tradeStatusFlag: number;
+    }) => {
+      setItemDetailData({
+        profImage: data.profImage,
+        uesrname: data.uesrname,
+        userId: data.userId,
+        itemUpdateTime: data.itemUpdateTime,
+        itemId: data.itemId,
+        title: data.title,
+        description: data.description,
+        type: data.type,
+        brand: data.brand,
+        like: data.like,
+        images: data.images,
+        tradeStatusFlag: data.tradeStatusFlag,
+      });
+    },
+    []
+  );
 
-  const memorizeItem = useMemo(() => {
-    if (memorizeuserProfile.items.length === 0) {
-      return memorizeItemList.filter(
-        (item) => String(item.itemId) === String(userItem.itemId)
-      );
-    } else {
-      return memorizeuserProfile.items.filter(
-        (item) => String(item.itemId) === String(userItem.itemId)
-      );
+  useEffect(() => {
+    if (
+      memorizeuserProfile.profile.id.length === 0 &&
+      memorizeItemList.length === 0
+    ) {
+      navigate(route.home);
+      return;
     }
-  }, [memorizeItemList, memorizeuserProfile.items, userItem.itemId]);
 
-  console.log("memorizeItem", memorizeItem);
+    // いいね
+    const isLiked = memorizeProfile.profile.likes?.includes(
+      Number(targetDetailUser.itemId)
+    );
+    // アイテム一覧からの商品詳細 表示
+    if (memorizeuserProfile.items.length === 0) {
+      const filteredItems = memorizeItemList.filter(
+        (item) => item.itemId === targetDetailUser.itemId
+      );
+
+      const setDate = {
+        profImage: filteredItems[0].profile_image,
+        itemId: filteredItems[0].itemId,
+        uesrname: filteredItems[0].user_name,
+        userId: String(filteredItems[0].user_id),
+        itemUpdateTime: viewDate(filteredItems[0].uploaded_at),
+        title: filteredItems[0].title,
+        description: filteredItems[0].description,
+        type: itemTypeViewHanlder(filteredItems[0].type),
+        brand: filteredItems[0].brand.name,
+        like: isLiked,
+        images: filteredItems[0].images,
+        tradeStatusFlag: filteredItems[0].tradeStatusFlag,
+      };
+      updateItemDetailData(setDate);
+      return;
+    }
+
+    // ユーザー一覧からユーザープロフからの商品詳細 表示
+    const filteredItems = memorizeuserProfile.items.filter(
+      (item) => item.itemId === targetDetailUser.itemId
+    );
+
+    const setDate = {
+      profImage: memorizeuserProfile.profile.image,
+      itemId: filteredItems[0].itemId,
+      uesrname: memorizeuserProfile.profile.name,
+      userId: String(memorizeuserProfile.profile.id),
+      itemUpdateTime: viewDate(filteredItems[0].uploaded_at),
+      title: filteredItems[0].title,
+      description: filteredItems[0].description,
+      type: itemTypeViewHanlder(filteredItems[0].type),
+      brand: filteredItems[0].brand.name,
+      like: isLiked,
+      images: filteredItems[0].images,
+      tradeStatusFlag: filteredItems[0].tradeStatusFlag,
+    };
+
+    updateItemDetailData(setDate);
+  }, [
+    memorizeItemList,
+    memorizeProfile.profile.likes,
+    memorizeuserProfile,
+    navigate,
+    targetDetailUser.itemId,
+    updateItemDetailData,
+  ]);
 
   const toPrevPageHandler = useCallback(() => {
     if (memorizeuserProfile.items.length === 0) {
@@ -67,30 +185,31 @@ const Home: FC = () => {
   ]);
 
   useEffect(() => {
-    if (memorizeItem[0] !== undefined) {
-      const isLiked = memorizeProfile.profile.likes?.includes(
-        Number(userItem.itemId)
-      );
-      setLike(isLiked);
+    const isLiked = memorizeProfile.profile.likes?.includes(
+      Number(targetDetailUser.itemId)
+    );
+    setItemDetailData((prev) => {
+      return {
+        ...prev,
+        like: isLiked,
+      };
+    });
 
-      return;
-    }
+    return;
   }, [
-    memorizeItem,
+    memorizeItemList,
     memorizeProfile.profile,
     memorizeuserProfile.items.length,
     navigate,
-    userItem,
-    userItem.itemId,
-    userItem.userId,
+    targetDetailUser.itemId,
   ]);
 
   // 取引申請
   const tradeHandler = useCallback(async () => {
     const response = await tradeApi(
-      userItem.itemId, // 商品ID
+      itemDetailData.itemId, // 商品ID
       memorizeProfile.profile.id, // 商品購入ユーザーID
-      memorizeItem[0].user_id.toString() // 商品出品ユーザーID
+      itemDetailData.userId // 商品出品ユーザーID
     );
 
     if (response !== undefined) {
@@ -99,19 +218,29 @@ const Home: FC = () => {
     }
   }, [
     defaultToast,
-    memorizeItem,
+    itemDetailData.itemId,
+    itemDetailData.userId,
     memorizeProfile.profile.id,
     navigate,
-    userItem.itemId,
   ]);
 
   const favoriteClickHandler = useCallback(async () => {
-    setLike((prev) => !prev);
+    setItemDetailData((prev) => {
+      return {
+        ...prev,
+        like: !itemDetailData.like,
+      };
+    });
     await favoriteUpdateHandler(
-      memorizeItem[0].itemId,
+      itemDetailData.itemId,
       memorizeProfile.profile.id
     );
-  }, [favoriteUpdateHandler, memorizeItem, memorizeProfile.profile.id]);
+  }, [
+    favoriteUpdateHandler,
+    itemDetailData.itemId,
+    itemDetailData.like,
+    memorizeProfile.profile.id,
+  ]);
 
   const getTradeStatusFlag = useCallback((tradeStatusFlag: number) => {
     const tradeStatus = tradeStatusFlags.filter((flag) => {
@@ -120,155 +249,176 @@ const Home: FC = () => {
     return <>{tradeStatus[0].text}</>;
   }, []);
 
-  if (memorizeItem[0] === undefined) {
-    navigate(route.items);
-
-    return;
-  }
-
   return (
     <>
-      <Stack
-        direction={"column"}
-        justifyContent={"space-around"}
-        w={"full"}
-        mb={10}
-      >
-        <Box
-          h={"350px"}
-          mx={"auto"}
-          w={{ base: "100%", md: "50%" }}
-          p={4}
-          my={2}
-          position={"relative"}
-        >
-          <Box
-            position="absolute"
-            top="0"
-            right="0"
-            bg="red.400"
-            color="white"
-            fontWeight="bold"
-            fontSize="md"
-            px={3}
-            py={1}
-            borderRadius="md"
-            transform="rotate(5deg)"
-            zIndex={2}
-            hidden={memorizeItem[0].tradeStatusFlag === 0}
-          >
-            {getTradeStatusFlag(memorizeItem[0].tradeStatusFlag)}
-          </Box>
-          <KeyboardControlGallerySlider images={memorizeItem[0].images} />
-        </Box>
-
-        <Card
-          w={{ base: "full", md: "70%" }}
-          mx={"auto"}
-          borderWidth={1}
-          borderColor={"#edf2f7"}
-        >
-          <VStack align={"end"} m={2}>
-            {like ? (
-              <FaHeart
-                size={30}
-                color="#ff0000"
-                onClick={favoriteClickHandler}
-                cursor={"pointer"}
-              />
-            ) : (
-              <FaHeart
-                size={30}
-                onClick={favoriteClickHandler}
-                cursor={"pointer"}
-              />
-            )}
-          </VStack>
-
-          <CardBody>
-            <Stack divider={<StackDivider />} spacing="4">
-              <Box>
-                <Heading size="xs" textTransform="uppercase" mb={2}>
-                  投稿主
-                </Heading>
-                <HStack alignItems={"center"}>
-                  <Avatar
-                    size={"md"}
-                    name={"my name"}
-                    src={
-                      memorizeItem[0].profile_image.length > 0
-                        ? memorizeItem[0].profile_image
-                        : "https://bit.ly/broken-link"
-                    }
-                  />
-                  <Text pt="2" fontSize="sm">
-                    {memorizeItem[0].user_name}
-                  </Text>
-                </HStack>
-              </Box>
-              <Box>
-                <Heading size="xs" textTransform="uppercase">
-                  投稿日
-                </Heading>
-                <Text pt="2" fontSize="sm">
-                  {viewDate(memorizeItem[0].uploaded_at)}
-                </Text>
-              </Box>
-              <Box>
-                <Heading size="xs" textTransform="uppercase">
-                  商品名
-                </Heading>
-                <Text pt="2" fontSize="sm">
-                  {memorizeItem[0].title}
-                </Text>
-              </Box>
-              <Box>
-                <Heading size="xs" textTransform="uppercase">
-                  説明
-                </Heading>
-                <Text pt="2" fontSize="sm">
-                  {memorizeItem[0].description}
-                </Text>
-              </Box>
-              <Box>
-                <Heading size="xs" textTransform="uppercase">
-                  タイプ
-                </Heading>
-                <Text pt="2" fontSize="sm">
-                  {itemTypeViewHanlder(memorizeItem[0].type)}
-                </Text>
-              </Box>
-              <Box>
-                <Heading size="xs" textTransform="uppercase">
-                  ブランド
-                </Heading>
-                <Text pt="2" fontSize="sm">
-                  {memorizeItem[0].brand.name}
-                </Text>
-              </Box>
-            </Stack>
-
-            <HStack
-              align={"start"}
-              width={"100%"}
-              spacing={5}
-              mt={4}
-              justifyContent={"center"}
+      <Container maxW="container.xl" py={4} px={{ base: 0, md: 4 }}>
+        <VStack spacing={4} align="stretch">
+          {/* ヘッダーセクション */}
+          <HStack justify="space-between" px={{ base: 2, md: 0 }}>
+            <IconButton
+              aria-label="戻る"
+              icon={<FaArrowLeft />}
+              variant="ghost"
+              size="lg"
+              onClick={toPrevPageHandler}
+              _hover={{ bg: hoverBg }}
+            />
+            <Badge
+              fontSize="sm"
+              px={3}
+              py={1}
+              borderRadius="full"
+              colorScheme={
+                itemDetailData.tradeStatusFlag === 0 ? "green" : "orange"
+              }
+              display={itemDetailData.tradeStatusFlag === 0 ? "none" : "flex"}
             >
-              <Button onClick={toPrevPageHandler}>戻る</Button>
-              <Button
-                colorScheme="blue"
-                loadingText="登録..."
-                variant="outline"
-                spinnerPlacement="start"
-                onClick={tradeHandler}
+              {getTradeStatusFlag(itemDetailData.tradeStatusFlag)}
+            </Badge>
+          </HStack>
+
+          {/* メインコンテンツグリッド */}
+          <Grid
+            templateColumns={{ base: "1fr", lg: "1fr 1fr" }}
+            gap={{ base: 6, lg: 8 }}
+            px={{ base: 0, md: 0 }}
+          >
+            {/* 画像セクション */}
+            <GridItem>
+              <Box
+                position="relative"
+                h={{ base: "400px", md: "500px" }}
+                borderRadius={{ base: 0, md: "xl" }}
+                overflow="hidden"
+                bg={bgColor}
+                boxShadow={{ base: "none", md: "lg" }}
               >
-                {"取引する"}
-              </Button>
-            </HStack>
-          </CardBody>
-        </Card>
-      </Stack>
+                <CustomImageSlider images={itemDetailData.images} />
+              </Box>
+            </GridItem>
+
+            {/* 詳細情報セクション */}
+            <GridItem>
+              <VStack
+                align="stretch"
+                spacing={6}
+                bg={bgColor}
+                p={{ base: 4, md: 6 }}
+                borderRadius={{ base: 0, md: "xl" }}
+                boxShadow={{ base: "none", md: "lg" }}
+                h="full"
+              >
+                {/* タイトルといいねボタン */}
+                <Flex justify="space-between" align="start">
+                  <VStack align="start" spacing={2} flex={1}>
+                    <Text
+                      fontSize={{ base: "2xl", md: "3xl" }}
+                      fontWeight="bold"
+                      lineHeight="short"
+                    >
+                      {itemDetailData.title}
+                    </Text>
+                    <HStack spacing={3} flexWrap="wrap">
+                      <Badge colorScheme="purple" fontSize="sm" px={3} py={1}>
+                        {itemDetailData.type}
+                      </Badge>
+                      <Badge colorScheme="teal" fontSize="sm" px={3} py={1}>
+                        {itemDetailData.brand}
+                      </Badge>
+                    </HStack>
+                  </VStack>
+                  <IconButton
+                    aria-label="いいね"
+                    icon={itemDetailData.like ? <FaHeart /> : <FaRegHeart />}
+                    variant="ghost"
+                    size="lg"
+                    color={itemDetailData.like ? "red.500" : "gray.400"}
+                    onClick={favoriteClickHandler}
+                    _hover={{
+                      transform: "scale(1.1)",
+                      color: "red.500",
+                    }}
+                    transition="all 0.2s"
+                  />
+                </Flex>
+
+                <Divider />
+
+                {/* 投稿者情報 */}
+                <HStack
+                  p={4}
+                  bg={hoverBg}
+                  borderRadius="lg"
+                  spacing={4}
+                  cursor="pointer"
+                  transition="all 0.2s"
+                  _hover={{
+                    transform: "translateY(-2px)",
+                    boxShadow: "sm",
+                  }}
+                  onClick={() => {
+                    navigate(`${route.shopPage}?user=${itemDetailData.userId}`);
+                  }}
+                >
+                  <Avatar
+                    size="md"
+                    src={
+                      itemDetailData.profImage || "https://bit.ly/broken-link"
+                    }
+                    name={itemDetailData.uesrname}
+                  />
+                  <VStack align="start" spacing={0} flex={1}>
+                    <Text fontWeight="medium">{itemDetailData.uesrname}</Text>
+                    <Text fontSize="sm" color={textMuted}>
+                      {itemDetailData.itemUpdateTime}
+                    </Text>
+                  </VStack>
+                </HStack>
+
+                {/* 説明文 */}
+                <Box>
+                  <Text
+                    fontSize="sm"
+                    fontWeight="bold"
+                    color={textMuted}
+                    mb={2}
+                  >
+                    説明
+                  </Text>
+                  <Text lineHeight="tall">
+                    {itemDetailData.description || "説明はありません"}
+                  </Text>
+                </Box>
+
+                <Divider />
+
+                {/* アクションボタン */}
+                <VStack spacing={3} pt={4}>
+                  {itemDetailData.tradeStatusFlag === 0 ? (
+                    <Button
+                      w="full"
+                      size="lg"
+                      colorScheme="blue"
+                      onClick={tradeHandler}
+                      _hover={{
+                        transform: "translateY(-2px)",
+                        boxShadow: "lg",
+                      }}
+                      transition="all 0.2s"
+                    >
+                      取引を申請する
+                    </Button>
+                  ) : (
+                    <Button w="full" size="lg" isDisabled colorScheme="gray">
+                      取引中
+                    </Button>
+                  )}
+                </VStack>
+              </VStack>
+            </GridItem>
+          </Grid>
+        </VStack>
+      </Container>
     </>
   );
 };

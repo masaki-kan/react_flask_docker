@@ -5,10 +5,6 @@ import { errorSweetalert2 } from "../component/common/alert/sweetalert2";
 export const loginCheckApi = async (formdata: {
   email: string;
 }): Promise<undefined | { result: string }> => {
-  console.log(
-    "import.meta.env.VITE_API_URL :",
-    `${import.meta.env.VITE_API_URL}/api/loginCheck`
-  );
   try {
     const response = await axios.post(
       `${import.meta.env.VITE_API_URL}/api/loginCheck`,

@@ -14,7 +14,7 @@ import {
   Collapse,
   Button,
 } from "@chakra-ui/react";
-import KeyboardControlGallerySlider from "../common/slider/keyboardControlGallerySlider";
+import CustomImageSlider from "../common/slider/customImageSlider";
 import useChat from "../../hooks/useChat";
 import { itemTypeViewHanlder } from "../common/type/itemTypeView";
 import { FaChevronDown, FaChevronUp } from "react-icons/fa";
@@ -54,6 +54,7 @@ const ChatLeft: FC = () => {
         return;
       } else {
         await tradeStatusChangeHandler(memorizeChatItemData.trade_id, status);
+        return;
       }
     },
     [memorizeChatItemData.trade_id, navigate, tradeStatusChangeHandler]
@@ -94,10 +95,7 @@ const ChatLeft: FC = () => {
 
         <Stack spacing="2">
           {/* 常に表示される画像（スマホでも） */}
-          <KeyboardControlGallerySlider
-            images={memorizeChatItemData.images}
-            sm={true}
-          />
+          <CustomImageSlider images={memorizeChatItemData.images} />
 
           {/* スマホ: トグルボタン */}
           <Box display={{ base: "flex", md: "none" }} justifyContent="flex-end">

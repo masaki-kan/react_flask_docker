@@ -17,7 +17,6 @@ import profileReducer from "./profileSlice";
 import loadingReducer from "./loadingSlice";
 import navigationReducer from "./navigationSlice";
 import chatReducer from "./chatSlice";
-import approvalReducer from "./approvalSlice";
 
 const persistConfig = {
   key: "profile",
@@ -36,7 +35,6 @@ const store = configureStore({
     load: loadingReducer,
     navigation: navigationReducer,
     chat: chatReducer,
-    approval: approvalReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

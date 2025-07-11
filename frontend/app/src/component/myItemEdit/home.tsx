@@ -1,6 +1,6 @@
 import { useMemo, type FC } from "react";
 import { Heading } from "@chakra-ui/react";
-import ItemForm from "../common/form/itemForm";
+import ItemForm from "../form/itemForm";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import useMyProfile from "../../hooks/useProfile";
 import { route } from "../../route/routeConst";

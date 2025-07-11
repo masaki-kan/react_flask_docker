@@ -32,6 +32,8 @@ const useSaved = (): useSavedReturn => {
           user_name: trage.user_name,
           user_id: trage.user_id,
           last_message_time: trage.last_message_time,
+          type: trage.type,
+          brand: trage.brand,
         };
       });
 

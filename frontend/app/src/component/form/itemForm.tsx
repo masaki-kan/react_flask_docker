@@ -17,18 +17,18 @@ import {
 import { useNavigate, useLocation } from "react-router-dom";
 import { CiTrash } from "react-icons/ci";
 import { IoIosAdd } from "react-icons/io";
-import CustomBrandSelect from "../select/customBrandSelect";
-import { itemListType } from "../../../types/itemType";
-import { route } from "../../../route/routeConst";
+import CustomBrandSelect from "../common/select/customBrandSelect";
+import { itemListType } from "../../types/itemType";
+import { route } from "../../route/routeConst";
 import {
   postStoreProfileItemApi,
   deleteUserItemApi,
-} from "../../../api/profileApis";
-import { RootState } from "../../../store";
+} from "../../api/profileApis";
+import { RootState } from "../../store";
 import { useSelector } from "react-redux";
-import useAlert from "../../../hooks/useAlert";
-import useLoading from "../../../hooks/useLaoding";
-import CustomTypeSelect from "../select/customTypeSelect";
+import useAlert from "../../hooks/useAlert";
+import useLoading from "../../hooks/useLaoding";
+import CustomTypeSelect from "../common/select/customTypeSelect";
 
 type ItemFormProps = {
   profileItem?: itemListType;

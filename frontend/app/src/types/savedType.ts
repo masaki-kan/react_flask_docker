@@ -7,5 +7,7 @@ export interface savedListType {
   user_image_url: string;
   user_name: string;
   user_id: number;
+  type: string;
+  brand: { key: string; name: string };
   last_message_time: string;
 }

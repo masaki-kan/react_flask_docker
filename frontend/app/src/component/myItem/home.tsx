@@ -1,6 +1,6 @@
 import { type FC } from "react";
 import { Heading } from "@chakra-ui/react";
-import ItemForm from "../common/form/itemForm";
+import ItemForm from "../form/itemForm";
 
 const Home: FC = () => {
   return (

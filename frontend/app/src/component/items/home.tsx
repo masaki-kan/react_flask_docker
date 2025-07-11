@@ -1,6 +1,6 @@
 import { FC, useCallback } from "react";
-import { Heading, VStack, Text } from "@chakra-ui/react";
-import SearchForm from "../common/form/searchForm";
+import { VStack, Text } from "@chakra-ui/react";
+import SearchForm from "../form/searchForm";
 import RebderItem from "../common/render/renderItem";
 import useItems from "../../hooks/useItems";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -10,6 +10,8 @@ import { useEffectOnce } from "react-use";
 import FullScreenSpinner from "../common/spliner/FullScreenSpinner";
 import { useDispatch } from "react-redux";
 import { setTargetDetailUser } from "../../store/usersSlice";
+import ComponentItemsHeader from "../common/layout/componentItemsHeader";
+import { menuLists } from "../../consts/menuList";
 
 const Home: FC = () => {
   const navigate = useNavigate();
@@ -31,27 +33,22 @@ const Home: FC = () => {
     (index: string) => {
       dispath(
         setTargetDetailUser({
-          userName: memorizeItemList[0].user_name,
-          userId: "",
           itemId: index,
         })
       );
       navigate(`${route.itemDetail}`);
     },
-    [dispath, memorizeItemList, navigate]
+    [dispath, navigate]
   );
 
   return (
     <>
-      <Heading
-        pl={{ md: 4, base: 0 }}
-        mb={10}
-        textAlign={{ base: "justify", md: "justify" }}
-      >
-        Items
-      </Heading>
+      <ComponentItemsHeader
+        title={menuLists[1].text}
+        itemCount={memorizeItemList.length}
+      />
       {memorizeLoading && <FullScreenSpinner />}
-      <VStack align={"start"} mt={10}>
+      <VStack align={"start"}>
         <SearchForm
           tagList={memorizeTagList}
           hidden={false}
