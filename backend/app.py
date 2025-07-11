@@ -384,7 +384,7 @@ def getMyProfile():
         # ユーザー情報
         cursor.execute('''
             SELECT user_id, name, location, old, age, shop_name, shop_url, reasen ,plan
-            FROM users 
+            FROM users
             WHERE user_id = %s
         ''', (user_id,))
         user_data = cursor.fetchone()
@@ -517,17 +517,39 @@ def getMyProfile():
 
 @app.route('/api/postStoreProfileItem' ,methods=['POST'] )
 def postStoreProfileItem():
-    item_data = request.json.get('itemData', {})
-    item_id = item_data.get('itemId')
-    user_id = item_data.get('userId')
-    title = item_data.get('title')
-    description = item_data.get('description')
-    type = item_data.get('type',[])
+    # item_data = request.json.get('itemData', {})
+    # item_id = item_data.get('itemId')
+    # user_id = item_data.get('userId')
+    # title = item_data.get('title')
+    # description = item_data.get('description')
+    # type = item_data.get('type',[])
+    # type_json = json.dumps(type, ensure_ascii=False)
+    # brand = item_data.get('brand',[])
+    # brand_json = json.dumps(brand, ensure_ascii=False)
+    # image_urls = item_data.get("images", [])  # list型を想定
+    # mode = request.json.get('dateUpChange')
+    item_id = request.form.get("itemId")
+    user_id = request.form.get("userId")
+    title = request.form.get("title")
+    description = request.form.get("description")
+    type = json.loads(request.form.get("type", "[]"))
+    brand = json.loads(request.form.get("brand", "[]"))
+    mode = request.form.get("dateUpChange")
+
     type_json = json.dumps(type, ensure_ascii=False)
-    brand = item_data.get('brand',[])
     brand_json = json.dumps(brand, ensure_ascii=False)
-    image_urls = item_data.get("images", [])  # list型を想定
-    mode = request.json.get('dateUpChange')
+
+    # 画像ファイル取得（複数）
+    image_files = request.files.getlist("images")
+    print(f"✅ 受信した画像数: {len(image_files)}") 
+    image_urls = []
+    
+    for file in image_files:
+        binary = file.read()
+        base64_str = base64.b64encode(binary).decode("utf-8")
+        mime = file.mimetype
+        data_url = f"data:{mime};base64,{base64_str}"
+        image_urls.append(data_url)
 
     conn = get_db_connection()
     cursor = conn.cursor(buffered=True, dictionary=True)
@@ -582,13 +604,13 @@ def postStoreProfileItem():
                 ''', (item_id, user_id, url))
                 
         conn.commit()
-        return jsonify({"message": "登録成功",
+        return jsonify({"message": "アイテム登録成功",
                         "result" : True}), 200
 
     except mysql.connector.Error as err:
         conn.rollback()
         return jsonify({
-            "error": "プロフィール登録中にエラーが発生しました",
+            "error": "アイテム登録中にエラーが発生しました",
             "result": False
         }), 500
 
@@ -890,14 +912,12 @@ def getUserItems():
         conn.close()
         cursor.close()
 
-
 @app.route('/api/deleteUserItem', methods=['POST'])
 def deleteUserItem():
     item_id = request.json.get('item_id',None )
     my_user_id = request.json.get('my_user_id',None )
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)  # dict形式で取得できるようにする
-    print( 'my_user_id > ' ,my_user_id , flush=True )
         
     if not item_id or not my_user_id:
         return jsonify({"error": "item_id と my_user_id は必須です"}), 400
