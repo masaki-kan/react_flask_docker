@@ -10,7 +10,7 @@ import { useEffectOnce } from "react-use";
 import FullScreenSpinner from "../common/spliner/FullScreenSpinner";
 import { useDispatch } from "react-redux";
 import { setTargetDetailUser } from "../../store/usersSlice";
-import ComponentItemsHeader from "../common/layout/componentItemsHeader";
+import ComponentHeader from "../common/layout/componentHeader";
 import { menuLists } from "../../consts/menuList";
 
 const Home: FC = () => {
@@ -43,10 +43,7 @@ const Home: FC = () => {
 
   return (
     <>
-      <ComponentItemsHeader
-        title={menuLists[1].text}
-        itemCount={memorizeItemList.length}
-      />
+      <ComponentHeader title={menuLists[1].text} />
       {memorizeLoading && <FullScreenSpinner />}
       <VStack align={"start"}>
         <SearchForm

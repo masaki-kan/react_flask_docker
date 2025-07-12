@@ -3,21 +3,39 @@ import {
   VStack,
   Text,
   Avatar,
-  Stack,
   Tag,
   Wrap,
   Link,
   Button,
-  Card,
   HStack,
   Box,
+  Container,
+  Grid,
+  GridItem,
+  Heading,
+  Icon,
+  Divider,
+  useColorModeValue,
+  IconButton,
 } from "@chakra-ui/react";
+import { motion } from "framer-motion";
 import MyItems from "./myItems";
 import useMyProfile from "../../hooks/useProfile";
 import LogOut from "../common/layout/logOut";
 import { plans } from "../../consts/profileConsts";
 import Withdrawal from "../common/layout/withdrawal";
-import { FaUserCircle } from "react-icons/fa";
+import {
+  FaUserCircle,
+  FaEdit,
+  FaMapMarkerAlt,
+  FaCalendarAlt,
+  FaHeart,
+  FaStore,
+  FaLink,
+  FaComment,
+  FaCrown,
+} from "react-icons/fa";
+import { IconType } from "react-icons";
 
 type profileIndexType = {
   editFormSwitch: () => void;
@@ -25,167 +43,354 @@ type profileIndexType = {
 
 const ProfileIndex: FC<profileIndexType> = ({ editFormSwitch }) => {
   const { memorizeProfile } = useMyProfile();
+  const profile = useMemo(() => memorizeProfile, [memorizeProfile]);
 
-  const profile = useMemo(() => {
-    return memorizeProfile;
-  }, [memorizeProfile]);
+  // カラーモード対応
+  const bgColor = useColorModeValue("white", "gray.800");
+  const borderColor = useColorModeValue("gray.200", "gray.700");
+  const sectionBg = useColorModeValue("gray.50", "gray.900");
+  const textMuted = useColorModeValue("gray.600", "gray.400");
+  const accentColor = useColorModeValue("blue.500", "blue.400");
 
-  const noValueText = () => {
-    return (
-      <Text size={"xs"} color={"#887563"}>
-        未設定
-      </Text>
-    );
-  };
+  const MotionBox = motion(Box);
+
+  const InfoItem: FC<{
+    icon: IconType;
+    label: string;
+    value: React.ReactNode;
+    isEmpty?: boolean;
+  }> = ({ icon, label, value, isEmpty }) => (
+    <VStack align="start" spacing={1} w="full">
+      <HStack spacing={2} color={textMuted}>
+        <Icon as={icon} boxSize={4} />
+        <Text fontSize="sm" fontWeight="medium">
+          {label}
+        </Text>
+      </HStack>
+      <Box pl={6}>
+        {isEmpty ? (
+          <Text fontSize="sm" color={textMuted} fontStyle="italic">
+            未設定
+          </Text>
+        ) : (
+          <Box fontSize="md" fontWeight="medium">
+            {value}
+          </Box>
+        )}
+      </Box>
+    </VStack>
+  );
+
   const tagsViewRender = useCallback(() => {
     if (profile.profile.tag.length > 0) {
-      return profile.profile.tag.map((tag, index) => {
-        return <Tag key={index}>{tag.name}</Tag>;
-      });
+      return (
+        <Wrap spacing={2}>
+          {profile.profile.tag.map((tag, index) => (
+            <Tag
+              key={index}
+              size="md"
+              colorScheme="teal"
+              borderRadius="full"
+              px={3}
+              py={1}
+            >
+              {tag.name}
+            </Tag>
+          ))}
+        </Wrap>
+      );
     }
-
-    return noValueText();
+    return null;
   }, [profile]);
 
   const favoriteShopViewRender = useCallback(() => {
     if (profile.profile.favoriteShop.name) {
       return (
-        <>
-          <Text size={"sm"} color={"#887563"} ml={4}>
-            {profile.profile.favoriteShop.name}
-          </Text>
-          <Text size={"sm"} w={"50%"}>
-            URL
-          </Text>
-          <Text size={"sm"} color={"#887563"} ml={4}>
+        <VStack align="start" spacing={2}>
+          <Text fontWeight="medium">{profile.profile.favoriteShop.name}</Text>
+          {profile.profile.favoriteShop.url && (
             <Link
               href={profile.profile.favoriteShop.url}
               isExternal
-              display={"flex"}
-              alignItems={"center"}
-              wordBreak={"break-all"}
+              color={accentColor}
+              fontSize="sm"
+              _hover={{ textDecoration: "underline" }}
             >
-              {profile.profile.favoriteShop.url}
+              <HStack spacing={1}>
+                <Icon as={FaLink} boxSize={3} />
+                <Text>ショップを見る</Text>
+              </HStack>
             </Link>
-          </Text>
-        </>
+          )}
+        </VStack>
       );
     }
-
-    return noValueText();
-  }, [profile.profile.favoriteShop.name, profile.profile.favoriteShop.url]);
-
-  const reasenViewRender = useCallback(() => {
-    if (profile.profile.reasen) {
-      return (
-        <>
-          <Text size={"sm"} color={"#887563"} wordBreak={"break-all"} ml={4}>
-            {profile.profile.reasen}
-          </Text>
-        </>
-      );
-    }
-
-    return noValueText();
-  }, [profile.profile.reasen]);
+    return null;
+  }, [profile.profile.favoriteShop, accentColor]);
 
   const planView = () => {
     const plan = plans
-      .filter((plan) => plan.planKey === profile.profile.plan)
-      .map((plan) => {
-        return plan.planContents;
-      });
-
+      .filter((p) => p.planKey === profile.profile.plan)
+      .map((p) => p.planContents);
     return plan[0];
   };
 
   return (
-    <>
-      <Stack
-        alignItems={"start"}
-        direction={{ base: "column", md: "row" }}
-        spacing={4}
-        width={"100%"}
-        my={4}
-      >
-        <VStack align={"center"}>
-          {profile.profile.image.length > 0 ? (
-            <Avatar
-              size={"xl"}
-              ml={4}
-              name={"my name"}
-              src={profile.profile.image}
-            />
-          ) : (
-            <>
-              <Box mx={"auto"}>
-                <FaUserCircle size={"60px"} color="gray.500" />
+    <Container maxW="container.xl" py={8}>
+      <Grid templateColumns={{ base: "1fr", lg: "350px 1fr" }} gap={8}>
+        {/* 左サイドバー - プロフィール情報 */}
+        <GridItem>
+          <MotionBox
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+          >
+            <Box
+              bg={bgColor}
+              borderRadius="xl"
+              p={6}
+              boxShadow="lg"
+              border="1px solid"
+              borderColor={borderColor}
+              position="sticky"
+              top={4}
+            >
+              {/* アバターとメイン情報 */}
+              <VStack spacing={6}>
+                <Box position="relative">
+                  {profile.profile.image.length > 0 ? (
+                    <Avatar
+                      size="2xl"
+                      src={profile.profile.image}
+                      name={profile.profile.name}
+                      border="4px solid"
+                      borderColor={borderColor}
+                    />
+                  ) : (
+                    <Box
+                      p={8}
+                      bg={sectionBg}
+                      borderRadius="full"
+                      border="4px solid"
+                      borderColor={borderColor}
+                    >
+                      <Icon as={FaUserCircle} boxSize={20} color="gray.400" />
+                    </Box>
+                  )}
+                  <IconButton
+                    aria-label="Edit profile"
+                    icon={<FaEdit />}
+                    size="sm"
+                    colorScheme="blue"
+                    position="absolute"
+                    bottom={0}
+                    right={0}
+                    borderRadius="full"
+                    onClick={editFormSwitch}
+                    boxShadow="md"
+                  />
+                </Box>
+
+                <VStack spacing={1}>
+                  <Heading size="lg">{profile.profile.name}</Heading>
+                  <HStack>
+                    <Icon as={FaMapMarkerAlt} color={textMuted} boxSize={4} />
+                    <Text color={textMuted}>
+                      {profile.profile.location || "未設定"}
+                    </Text>
+                  </HStack>
+                </VStack>
+
+                <Divider />
+
+                {/* プラン情報 */}
+                <Box w="full">
+                  <HStack
+                    bg={sectionBg}
+                    p={4}
+                    borderRadius="lg"
+                    justify="space-between"
+                  >
+                    <HStack>
+                      <Icon as={FaCrown} color="yellow.500" boxSize={5} />
+                      <VStack align="start" spacing={0}>
+                        <Text fontSize="sm" fontWeight="bold">
+                          {planView().title}
+                        </Text>
+                        <Text fontSize="xs" color={textMuted}>
+                          {planView().text}
+                        </Text>
+                      </VStack>
+                    </HStack>
+                  </HStack>
+                </Box>
+
+                <Button
+                  w="full"
+                  colorScheme="blue"
+                  size="lg"
+                  onClick={editFormSwitch}
+                  leftIcon={<FaEdit />}
+                >
+                  プロフィールを編集
+                </Button>
+              </VStack>
+            </Box>
+          </MotionBox>
+        </GridItem>
+
+        {/* 右側 - 詳細情報 */}
+        <GridItem>
+          <VStack spacing={6} align="stretch">
+            {/* 基本情報セクション */}
+            <MotionBox
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: 0.1 }}
+            >
+              <Box
+                bg={bgColor}
+                borderRadius="xl"
+                p={6}
+                boxShadow="sm"
+                border="1px solid"
+                borderColor={borderColor}
+              >
+                <Heading size="md" mb={4}>
+                  基本情報
+                </Heading>
+                <Grid templateColumns={{ base: "1fr", md: "1fr 1fr" }} gap={6}>
+                  <InfoItem
+                    icon={FaCalendarAlt}
+                    label="年代"
+                    value={
+                      profile.profile.old ? `${profile.profile.old}代` : null
+                    }
+                    isEmpty={!profile.profile.old}
+                  />
+                  <InfoItem
+                    icon={FaHeart}
+                    label="古着歴"
+                    value={
+                      profile.profile.age ? `${profile.profile.age}年目` : null
+                    }
+                    isEmpty={!profile.profile.age}
+                  />
+                </Grid>
               </Box>
-            </>
-          )}
-          <Button variant="solid" onClick={editFormSwitch}>
-            プロフィール編集
-          </Button>
-        </VStack>
-        <Card px={2} py={4} w={{ base: "100%", md: "70%" }}>
-          <VStack gap={10}>
-            <VStack align={"start"} width={"100%"}>
-              <Text size={"sm"}>名前</Text>
-              <Wrap gap={2} color={"#887563"} ml={4}>
-                {profile.profile.name}
-              </Wrap>
-            </VStack>
-            <VStack align={"start"} width={"100%"}>
-              <Text size={"sm"}>Location</Text>
-              <Wrap gap={2} color={"#887563"} ml={4}>
-                {profile.profile.location ?? "未設定"}
-              </Wrap>
-            </VStack>
-            <VStack align={"start"} width={"100%"}>
-              <Text size={"sm"}>年代</Text>
-              <Wrap gap={2} color={"#887563"} ml={4}>
-                {profile.profile.old ? `${profile.profile.old} 代` : "未設定"}
-              </Wrap>
-            </VStack>
-            <VStack align={"start"} width={"100%"}>
-              <Text size={"sm"}>古着歴</Text>
-              <Wrap gap={2} color={"#887563"} ml={4}>
-                {profile.profile.age ? `${profile.profile.age} 年目` : "未設定"}
-              </Wrap>
-            </VStack>
-            <VStack align={"start"} width={"100%"}>
-              <Text size={"sm"}>好きなジャンル</Text>
-              <Wrap gap={2} ml={4}>
-                {tagsViewRender()}
-              </Wrap>
-            </VStack>
-            <VStack align={"start"} spacing={2} width={"100%"}>
-              <Text size={"sm"} w={"50%"}>
-                お気に入りお店
-              </Text>
-              {favoriteShopViewRender()}
-            </VStack>
-            <VStack align={"start"} width={"100%"}>
-              <Text size={"sm"}>古着にハマったきっかけ</Text>
-              {reasenViewRender()}
-            </VStack>
-            <VStack align="start" width="100%">
-              <Text size="sm">現在のプラン</Text>
-              <Text color={"#887563"}>
-                {`${planView().title}(${planView().text}) * ${planView().option}`}
-              </Text>
-            </VStack>
-            <MyItems />
-            <VStack align={"start"} width={"100%"}>
-              <HStack justifyContent={"space-between"} width={"full"}>
-                <LogOut />
-                <Withdrawal />
-              </HStack>
-            </VStack>
+            </MotionBox>
+
+            {/* 好きなジャンル */}
+            {profile.profile.tag.length > 0 && (
+              <MotionBox
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: 0.2 }}
+              >
+                <Box
+                  bg={bgColor}
+                  borderRadius="xl"
+                  p={6}
+                  boxShadow="sm"
+                  border="1px solid"
+                  borderColor={borderColor}
+                >
+                  <Heading size="md" mb={4}>
+                    好きなジャンル
+                  </Heading>
+                  {tagsViewRender()}
+                </Box>
+              </MotionBox>
+            )}
+
+            {/* お気に入りの店 */}
+            {profile.profile.favoriteShop.name && (
+              <MotionBox
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: 0.3 }}
+              >
+                <Box
+                  bg={bgColor}
+                  borderRadius="xl"
+                  p={6}
+                  boxShadow="sm"
+                  border="1px solid"
+                  borderColor={borderColor}
+                >
+                  <InfoItem
+                    icon={FaStore}
+                    label="お気に入りの店"
+                    value={favoriteShopViewRender()}
+                  />
+                </Box>
+              </MotionBox>
+            )}
+
+            {/* 古着にハマったきっかけ */}
+            {profile.profile.reasen && (
+              <MotionBox
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: 0.4 }}
+              >
+                <Box
+                  bg={bgColor}
+                  borderRadius="xl"
+                  p={6}
+                  boxShadow="sm"
+                  border="1px solid"
+                  borderColor={borderColor}
+                >
+                  <InfoItem
+                    icon={FaComment}
+                    label="古着にハマったきっかけ"
+                    value={
+                      <Text lineHeight="tall" color={textMuted}>
+                        {profile.profile.reasen}
+                      </Text>
+                    }
+                  />
+                </Box>
+              </MotionBox>
+            )}
+
+            {/* マイアイテム */}
+            <MotionBox
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: 0.5 }}
+            >
+              <MyItems />
+            </MotionBox>
+
+            {/* アカウント設定 */}
+            <MotionBox
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: 0.6 }}
+            >
+              <Box
+                bg={bgColor}
+                borderRadius="xl"
+                p={6}
+                boxShadow="sm"
+                border="1px solid"
+                borderColor={borderColor}
+              >
+                <Heading size="md" mb={4}>
+                  アカウント設定
+                </Heading>
+                <HStack justify="space-between">
+                  <LogOut />
+                  <Withdrawal />
+                </HStack>
+              </Box>
+            </MotionBox>
           </VStack>
-        </Card>
-      </Stack>
-    </>
+        </GridItem>
+      </Grid>
+    </Container>
   );
 };
 

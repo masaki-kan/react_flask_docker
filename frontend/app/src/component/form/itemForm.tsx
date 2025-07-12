@@ -6,17 +6,23 @@ import {
   FormLabel,
   Input,
   Textarea,
-  Tooltip,
   VStack,
-  Wrap,
   HStack,
   Text,
-  Card,
-  Image as ChakraImage,
+  Container,
+  Grid,
+  GridItem,
+  Image,
+  IconButton,
+  useColorModeValue,
+  AspectRatio,
+  Icon,
+  FormErrorMessage,
+  Badge,
 } from "@chakra-ui/react";
+import { motion } from "framer-motion";
 import { useNavigate, useLocation } from "react-router-dom";
-import { CiTrash } from "react-icons/ci";
-import { IoIosAdd } from "react-icons/io";
+import { FaTrash, FaCamera, FaArrowLeft, FaSave } from "react-icons/fa";
 import CustomBrandSelect from "../common/select/customBrandSelect";
 import { itemListType } from "../../types/itemType";
 import { route } from "../../route/routeConst";
@@ -39,9 +45,15 @@ const ItemForm: FC<ItemFormProps> = ({ profileItem, ItemNumver }) => {
   const { changeLoading } = useLoading();
   const { defaultToast } = useAlert();
   const profile = useSelector((state: RootState) => state.profile);
-  const [previewImages, setPreviewImages] = useState<string[]>([]);
   const navigate = useNavigate();
   const location = useLocation();
+
+  // カラーモード対応
+  const bgColor = useColorModeValue("white", "gray.800");
+  const borderColor = useColorModeValue("gray.200", "gray.700");
+  // const errorColor = useColorModeValue("red.500", "red.300");
+  const hoverBg = useColorModeValue("gray.50", "gray.700");
+
   const [formValues, setFormValues] = useState<{
     title: string;
     description: string;
@@ -70,113 +82,78 @@ const ItemForm: FC<ItemFormProps> = ({ profileItem, ItemNumver }) => {
     brand: false,
   });
 
+  const MotionBox = motion(Box);
+
   useEffect(() => {
     if (profileItem !== undefined) {
-      setFormValues((prev) => ({
-        ...prev,
+      setFormValues({
         title: profileItem.title,
         description: profileItem.description,
-        images: profileItem.images,
+        images: profileItem.images || [],
         type: profileItem.type,
         brand: profileItem.brand,
-      }));
+      });
     }
-  }, [navigate, profileItem]);
+  }, [profileItem]);
 
   const handleRemoveImageHandler = useCallback((index: number) => {
     setFormValues((prev) => ({
       ...prev,
       images: prev.images.filter((_, i) => i !== index),
     }));
-    setPreviewImages((prev) => prev.filter((_, i) => i !== index));
   }, []);
 
-  // 商品画像
+  // 改善された画像アップロード処理
   const imageChangeHandler = useCallback(
     (e: ChangeEvent<HTMLInputElement>) => {
       const files = e.target.files;
       if (!files) return;
 
-      const fileArray = Array.from(files).slice(
-        0,
-        5 - formValues.images.length
-      );
-      const acceptedTypes = ["image/jpeg", "image/png"];
-      const MAX_WIDTH = 800;
-      const MAX_HEIGHT = 800;
+      const remainingSlots = 4 - formValues.images.length;
+      if (remainingSlots <= 0) {
+        defaultToast("画像は最大5枚までです");
+        return;
+      }
 
-      const resizeImage = (file: File): Promise<string> => {
-        return new Promise((resolve, reject) => {
-          if (!acceptedTypes.includes(file.type)) {
-            return reject("JPEGまたはPNG形式のみ対応");
-          }
+      const fileArray = Array.from(files).slice(0, remainingSlots);
+      const acceptedTypes = ["image/jpeg", "image/png", "image/jpg"];
+      const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
-          const reader = new FileReader();
-          reader.onload = () => {
-            const img = new Image();
-            img.onload = () => {
-              let width = img.width;
-              let height = img.height;
+      // ファイルバリデーション
+      const validFiles = fileArray.filter((file) => {
+        if (!acceptedTypes.includes(file.type)) {
+          defaultToast(`${file.name}はJPEGまたはPNG形式ではありません`);
+          return false;
+        }
+        if (file.size > MAX_FILE_SIZE) {
+          defaultToast(`${file.name}は5MBを超えています`);
+          return false;
+        }
+        return true;
+      });
 
-              if (width > height && width > MAX_WIDTH) {
-                height *= MAX_WIDTH / width;
-                width = MAX_WIDTH;
-              } else if (height > MAX_HEIGHT) {
-                width *= MAX_HEIGHT / height;
-                height = MAX_HEIGHT;
-              }
+      if (validFiles.length === 0) return;
 
-              const canvas = document.createElement("canvas");
-              canvas.width = width;
-              canvas.height = height;
-              const ctx = canvas.getContext("2d");
-              if (!ctx) return reject("Canvasエラー");
-
-              ctx.drawImage(img, 0, 0, width, height);
-              const base64 = canvas.toDataURL(file.type, 0.8);
-              resolve(base64);
-            };
-
-            img.onerror = () => reject("画像読み込みエラー");
-            if (typeof reader.result === "string") {
-              img.src = reader.result;
-            }
-          };
-
-          reader.onerror = () => reject("ファイル読み込みエラー");
-          reader.readAsDataURL(file);
-        });
-      };
-
-      Promise.all(fileArray.map((file) => resizeImage(file)))
-        .then((base64Images) => {
-          // base64 → string[]
-          const newPreview = previewImages.concat(base64Images).slice(0, 5);
-          setPreviewImages(newPreview);
-
-          // 同時に元画像データ（File）も保持したい場合はこちら
-          setFormValues((prev) => ({
-            ...prev,
-            images: prev.images.concat(fileArray).slice(0, 5),
-          }));
-        })
-        .catch((err) => {
-          alert(`画像処理に失敗しました: ${err}`);
-        });
+      // 新しい画像を追加
+      setFormValues((prev) => ({
+        ...prev,
+        images: [...prev.images, ...validFiles],
+      }));
     },
-    [formValues.images, previewImages]
+    [formValues.images.length, defaultToast]
   );
 
   const formChangeHandler = useCallback(
-    (
-      e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
-    ) => {
-      const name = e.target.name;
-      const value = e.target.value;
-
+    (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+      const { name, value } = e.target;
       setFormValues((prev) => ({
         ...prev,
         [name]: value,
+      }));
+      // エラーをクリア
+      setFormError((prev) => ({
+        ...prev,
+        [name]: false,
       }));
     },
     []
@@ -187,12 +164,20 @@ const ItemForm: FC<ItemFormProps> = ({ profileItem, ItemNumver }) => {
       ...prev,
       type: key,
     }));
+    setFormError((prev) => ({
+      ...prev,
+      type: false,
+    }));
   }, []);
 
   const tagChange = useCallback((newTags: { key: string; name: string }) => {
     setFormValues((prev) => ({
       ...prev,
       brand: newTags,
+    }));
+    setFormError((prev) => ({
+      ...prev,
+      brand: false,
     }));
   }, []);
 
@@ -212,9 +197,11 @@ const ItemForm: FC<ItemFormProps> = ({ profileItem, ItemNumver }) => {
 
   const storeItemsHandler = useCallback(async () => {
     changeLoading(true);
+
+    // バリデーション
     const newErrors = {
       title: formValues.title.trim() === "",
-      images: formValues.images.length === 0 ? true : false,
+      images: formValues.images.length === 0,
       description: formValues.description.trim() === "",
       type: formValues.type === "",
       brand: formValues.brand.name.trim() === "",
@@ -222,11 +209,16 @@ const ItemForm: FC<ItemFormProps> = ({ profileItem, ItemNumver }) => {
 
     setFormError(newErrors);
 
-    const hasError = Object.values(newErrors).some((val) => val); // 一つでも true（＝エラー）なら実行しない
+    if (Object.values(newErrors).some((val) => val)) {
+      changeLoading(false);
+      defaultToast("必須項目を入力してください");
+      return;
+    }
 
-    if (!hasError) {
+    try {
       const dateUpChange = ItemNumver !== undefined ? "update" : "insert";
       const formData = new FormData();
+
       formData.append("itemId", ItemNumver || "");
       formData.append("userId", profile.profile.id);
       formData.append("title", formValues.title);
@@ -235,28 +227,44 @@ const ItemForm: FC<ItemFormProps> = ({ profileItem, ItemNumver }) => {
       formData.append("brand", JSON.stringify(formValues.brand));
       formData.append("dateUpChange", dateUpChange);
 
-      formValues.images.forEach((file) => {
-        formData.append("images", file);
-      });
+      // 画像の処理
+      for (let i = 0; i < formValues.images.length; i++) {
+        const image = formValues.images[i];
+        if (image instanceof File) {
+          formData.append("images", image);
+        } else if (typeof image === "string") {
+          // 既存の画像URLの場合、Blobに変換
+          try {
+            const response = await fetch(image);
+            const blob = await response.blob();
+            const file = new File([blob], `existing_image_${i}.jpg`, {
+              type: "image/jpeg",
+            });
+            formData.append("images", file);
+          } catch {
+            // URLから画像を取得できない場合は、そのままURLとして送信
+            formData.append("images", image);
+          }
+        }
+      }
 
       const response = await postStoreProfileItemApi(formData);
-      changeLoading(false);
+
       if (response?.status !== false) {
-        defaultToast(response?.message);
+        defaultToast(response?.message || "登録完了しました");
         navigate(route.profile);
       }
+    } catch (error) {
+      console.error("Error:", error);
+      defaultToast("登録中にエラーが発生しました");
+    } finally {
+      changeLoading(false);
     }
-
-    changeLoading(false);
   }, [
     ItemNumver,
     changeLoading,
     defaultToast,
-    formValues.brand,
-    formValues.description,
-    formValues.images,
-    formValues.title,
-    formValues.type,
+    formValues,
     navigate,
     profile.profile.id,
   ]);
@@ -266,174 +274,233 @@ const ItemForm: FC<ItemFormProps> = ({ profileItem, ItemNumver }) => {
   }, [navigate]);
 
   return (
-    <>
-      <Card
-        display={"row"}
-        mb={4}
-        w={"full"}
-        align={"start"}
-        bg={"white"}
-        p={4}
-      >
-        <VStack
-          align={"start"}
-          w={{ base: "full", md: "50%" }}
-          spacing={5}
-          mb={4}
-        >
-          <FormControl>
-            <FormLabel>商品名</FormLabel>
-            <Input
-              isInvalid={formError.title}
-              placeholder=""
-              name="title"
-              maxLength={20}
-              value={formValues.title}
-              onChange={formChangeHandler}
-            />
-            {formError.title && (
-              <Text fontSize="sm" style={{ color: "red" }}>
-                商品名は必須です。
-              </Text>
-            )}
-          </FormControl>
+    <Container maxW="container.xl" mb={10}>
+      {/* ヘッダー */}
+      <HStack justify="space-between" mb={6}>
+        <HStack spacing={4}>
+          <IconButton
+            aria-label="戻る"
+            icon={<FaArrowLeft />}
+            variant="ghost"
+            size="lg"
+            onClick={toProfile}
+          />
+          <VStack align="start" spacing={0}>
+            <Text fontSize="2xl" fontWeight="bold">
+              {ItemNumver ? "商品編集" : "商品登録"}
+            </Text>
+            <Text fontSize="sm" color="gray.500">
+              商品情報を入力してください
+            </Text>
+          </VStack>
+        </HStack>
+      </HStack>
 
-          <FormControl>
-            <FormLabel>商品説明</FormLabel>
-            <Textarea
-              isInvalid={formError.description}
-              placeholder=""
-              name="description"
-              maxLength={100}
-              value={formValues.description}
-              onChange={formChangeHandler}
-            />
-            {formError.description && (
-              <Text fontSize="sm" style={{ color: "red" }}>
-                商品説明は必須です。
-              </Text>
-            )}
-          </FormControl>
-        </VStack>
-        <VStack spacing={5} w={"full"} align={"start"}>
-          <FormControl>
-            <FormLabel>商品画像</FormLabel>
-            <Wrap w="full" spacing="20px" justify="start">
-              {formValues.images.map((img, index) => {
-                const src =
-                  typeof img === "string" ? img : URL.createObjectURL(img);
-                return (
-                  <Box key={index} w={{ base: "45%", md: "250px" }}>
-                    <VStack align="end" position="relative">
-                      <Tooltip label="削除" hasArrow>
-                        <CiTrash
-                          color="#000"
-                          cursor="pointer"
-                          style={{
-                            width: "25px",
-                            height: "25px",
-                            position: "absolute",
-                            top: "5px",
-                            right: "5px",
-                          }}
-                          onClick={() => handleRemoveImageHandler(index)}
-                        />
-                      </Tooltip>
-                      <Box
-                        width="100%"
-                        p={2}
-                        boxShadow="md"
-                        bg="white"
-                        borderRadius="md"
-                      >
-                        <ChakraImage
-                          src={src}
-                          alt={`Image ${index}`}
-                          h="200px"
-                          w="full"
-                          objectFit={"contain"}
-                          borderRadius="md"
-                        />
-                      </Box>
-                    </VStack>
-                  </Box>
-                );
-              })}
-            </Wrap>
-            {formError.images && (
-              <Text fontSize="sm" style={{ color: "red" }}>
-                商品画像は必須です。
-              </Text>
-            )}
-            {formValues.images.length < 5 && (
-              <Button
-                leftIcon={<IoIosAdd />}
-                colorScheme="gray"
-                mt={4}
-                size="lg"
-                gap={2}
-                pl={4}
-                as="label"
-              >
-                Add photos
-                <input
-                  type="file"
-                  multiple
-                  accept="image/*"
-                  onChange={imageChangeHandler}
-                  hidden
-                />
-              </Button>
-            )}
-          </FormControl>
-
-          <FormControl>
-            <FormLabel>タイプ</FormLabel>
-            <CustomTypeSelect
-              value={formValues.type}
-              onChange={typeChange}
-              isInvalid={formError.type}
-            />
-            {formError.type && (
-              <Text fontSize="sm" style={{ color: "red" }}>
-                商品タイプは必須です。
-              </Text>
-            )}
-          </FormControl>
-
-          <FormControl>
-            <FormLabel>ブランド</FormLabel>
-            <Box w={{ base: "100%", md: "50%" }}>
-              <CustomBrandSelect tags={formValues.brand} onChange={tagChange} />
-            </Box>
-            {formError.brand && (
-              <Text fontSize="sm" style={{ color: "red" }}>
-                ブランドは必須です。
-              </Text>
-            )}
-          </FormControl>
-          <HStack
-            align={"center"}
-            justifyContent={"space-between"}
-            width={"100%"}
-            spacing={5}
+      <Grid templateColumns={{ base: "1fr", lg: "1fr 1fr" }} gap={6}>
+        {/* 左側：基本情報 */}
+        <GridItem>
+          <Box
+            bg={bgColor}
+            p={6}
+            borderRadius="xl"
+            border="1px solid"
+            borderColor={borderColor}
+            boxShadow="sm"
           >
-            <Button
-              onClick={deleteUserItemHandler}
-              colorScheme={"red"}
-              color={"white"}
-              hidden={location.pathname === route.myItem}
-            >
-              削除
-            </Button>
-            <HStack>
-              <Button onClick={toProfile}>戻る</Button>
-              <Button onClick={storeItemsHandler}>登録</Button>
-            </HStack>
-          </HStack>
-        </VStack>
-      </Card>
-    </>
+            <VStack spacing={6} align="stretch">
+              <FormControl isInvalid={formError.title}>
+                <FormLabel fontWeight="bold">
+                  商品名 <Badge colorScheme="red">必須</Badge>
+                </FormLabel>
+                <Input
+                  placeholder="例: ヴィンテージデニムジャケット"
+                  name="title"
+                  maxLength={20}
+                  value={formValues.title}
+                  onChange={formChangeHandler}
+                  size="lg"
+                />
+                <FormErrorMessage>商品名は必須です</FormErrorMessage>
+              </FormControl>
+
+              <FormControl isInvalid={formError.description}>
+                <FormLabel fontWeight="bold">
+                  商品説明 <Badge colorScheme="red">必須</Badge>
+                </FormLabel>
+                <Textarea
+                  placeholder="商品の状態、特徴、サイズなどを詳しく記載してください"
+                  name="description"
+                  maxLength={100}
+                  value={formValues.description}
+                  onChange={formChangeHandler}
+                  minH="120px"
+                  size="lg"
+                />
+                <FormErrorMessage>商品説明は必須です</FormErrorMessage>
+              </FormControl>
+
+              <FormControl isInvalid={formError.type}>
+                <FormLabel fontWeight="bold">
+                  タイプ <Badge colorScheme="red">必須</Badge>
+                </FormLabel>
+                <CustomTypeSelect
+                  value={formValues.type}
+                  onChange={typeChange}
+                  isInvalid={formError.type}
+                />
+                <FormErrorMessage>商品タイプは必須です</FormErrorMessage>
+              </FormControl>
+
+              <FormControl isInvalid={formError.brand}>
+                <FormLabel fontWeight="bold">
+                  ブランド <Badge colorScheme="red">必須</Badge>
+                </FormLabel>
+                <CustomBrandSelect
+                  tags={formValues.brand}
+                  onChange={tagChange}
+                />
+                <FormErrorMessage>ブランドは必須です</FormErrorMessage>
+              </FormControl>
+            </VStack>
+          </Box>
+        </GridItem>
+
+        {/* 右側：画像アップロード */}
+        <GridItem>
+          <Box
+            bg={bgColor}
+            p={6}
+            borderRadius="xl"
+            border="1px solid"
+            borderColor={borderColor}
+            boxShadow="sm"
+          >
+            <FormControl isInvalid={formError.images}>
+              <FormLabel fontWeight="bold">
+                商品画像 <Badge colorScheme="red">必須</Badge>
+                <Text fontSize="sm" color="gray.500" mt={1}>
+                  最大4枚まで（JPEG/PNG、各5MB以下）
+                </Text>
+              </FormLabel>
+
+              <Grid templateColumns="repeat(3, 1fr)" gap={4}>
+                {/* 既存の画像 */}
+                {formValues.images.map((img, index) => {
+                  const src =
+                    img instanceof File ? URL.createObjectURL(img) : img;
+
+                  return (
+                    <MotionBox
+                      key={index}
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <AspectRatio ratio={1}>
+                        <Box
+                          position="relative"
+                          borderRadius="lg"
+                          overflow="hidden"
+                          border="2px solid"
+                          borderColor={borderColor}
+                          _hover={{ borderColor: "red.400" }}
+                          transition="all 0.2s"
+                        >
+                          <Image
+                            src={src}
+                            alt={`商品画像 ${index + 1}`}
+                            objectFit="cover"
+                            w="full"
+                            h="full"
+                          />
+                          <IconButton
+                            aria-label="削除"
+                            icon={<FaTrash />}
+                            size="sm"
+                            colorScheme="red"
+                            position="absolute"
+                            top={2}
+                            right={2}
+                            onClick={() => handleRemoveImageHandler(index)}
+                            opacity={0.8}
+                            _hover={{ opacity: 1 }}
+                          />
+                        </Box>
+                      </AspectRatio>
+                    </MotionBox>
+                  );
+                })}
+
+                {/* 追加ボタン */}
+                {formValues.images.length < 4 && (
+                  <AspectRatio ratio={1}>
+                    <Button
+                      as="label"
+                      variant="outline"
+                      borderStyle="dashed"
+                      borderWidth={2}
+                      borderColor={borderColor}
+                      _hover={{
+                        bg: hoverBg,
+                        borderColor: "blue.400",
+                      }}
+                      cursor="pointer"
+                      transition="all 0.2s"
+                    >
+                      <VStack spacing={2}>
+                        <Icon as={FaCamera} boxSize={8} color="gray.400" />
+                        <Text fontSize="sm" color="gray.500">
+                          画像を追加
+                        </Text>
+                        <Text fontSize="xs" color="gray.400">
+                          {5 - formValues.images.length}枚追加可能
+                        </Text>
+                      </VStack>
+                      <input
+                        type="file"
+                        multiple
+                        accept="image/jpeg,image/jpg,image/png"
+                        onChange={imageChangeHandler}
+                        hidden
+                      />
+                    </Button>
+                  </AspectRatio>
+                )}
+              </Grid>
+              <FormErrorMessage>画像を1枚以上追加してください</FormErrorMessage>
+            </FormControl>
+          </Box>
+        </GridItem>
+      </Grid>
+
+      {/* アクションボタン */}
+      <HStack justify="space-between" mt={8}>
+        <Button
+          leftIcon={<FaTrash />}
+          colorScheme="red"
+          size="lg"
+          onClick={deleteUserItemHandler}
+          display={location.pathname === route.myItem ? "none" : "flex"}
+        >
+          削除
+        </Button>
+
+        <HStack spacing={4}>
+          <Button size="lg" variant="outline" onClick={toProfile}>
+            キャンセル
+          </Button>
+          <Button
+            leftIcon={<FaSave />}
+            colorScheme="blue"
+            size="lg"
+            onClick={storeItemsHandler}
+            loadingText="登録中..."
+          >
+            {ItemNumver ? "更新" : "登録"}
+          </Button>
+        </HStack>
+      </HStack>
+    </Container>
   );
 };
 

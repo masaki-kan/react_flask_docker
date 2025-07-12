@@ -5,11 +5,11 @@ import { useEffectOnce } from "react-use";
 import FullScreenSpinner from "../common/spliner/FullScreenSpinner";
 import useLaoding from "../../hooks/useLaoding";
 import { menuLists } from "../../consts/menuList";
-import ComponentTradeHeader from "../common/layout/componentTradeHeader";
+import ComponentHeader from "../common/layout/componentHeader";
 
 const Home: FC = () => {
   const { memorizeLoading } = useLaoding();
-  const { getSavedListHandler, savedList } = useSaved();
+  const { getSavedListHandler } = useSaved();
 
   useEffectOnce(() => {
     getSavedListHandler();
@@ -17,10 +17,7 @@ const Home: FC = () => {
 
   return (
     <>
-      <ComponentTradeHeader
-        title={menuLists[3].text}
-        itemCount={savedList.length}
-      />
+      <ComponentHeader title={menuLists[3].text} />
       {memorizeLoading && <FullScreenSpinner />}
       <SavedIndex />
     </>

@@ -5,10 +5,10 @@ import useUsers from "../../hooks/useUsers";
 import useLaoding from "../../hooks/useLaoding";
 import FullScreenSpinner from "../common/spliner/FullScreenSpinner";
 import { menuLists } from "../../consts/menuList";
-import ComponentUsersHeader from "../common/layout/componentUsersHeader";
+import ComponentHeader from "../common/layout/componentHeader";
 
 const Home: FC = () => {
-  const { getUserListHandler, memorizeUserList } = useUsers();
+  const { getUserListHandler } = useUsers();
   const { memorizeLoading } = useLaoding();
 
   useEffectOnce(() => {
@@ -17,10 +17,7 @@ const Home: FC = () => {
 
   return (
     <>
-      <ComponentUsersHeader
-        title={menuLists[0].text}
-        userCount={memorizeUserList.length}
-      />
+      <ComponentHeader title={menuLists[0].text} />
       {memorizeLoading && <FullScreenSpinner />}
       <ListingsIndex />
     </>

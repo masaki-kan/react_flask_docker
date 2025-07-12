@@ -1,5 +1,4 @@
 import { useMemo, type FC } from "react";
-import { Heading } from "@chakra-ui/react";
 import ItemForm from "../form/itemForm";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import useMyProfile from "../../hooks/useProfile";
@@ -28,13 +27,6 @@ const Home: FC = () => {
   if (memorizeProfileItem !== undefined)
     return (
       <>
-        <Heading
-          pl={{ md: 4, base: 0 }}
-          mb={10}
-          textAlign={{ base: "center", md: "justify" }}
-        >
-          Item Eidt
-        </Heading>
         {memorizeLoading && <FullScreenSpinner />}
         <ItemForm
           profileItem={memorizeProfileItem[0]}

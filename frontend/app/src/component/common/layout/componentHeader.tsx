@@ -4,17 +4,15 @@ import {
   VStack,
   HStack,
   Heading,
-  Text,
   Flex,
 } from "@chakra-ui/react";
 import { FC } from "react";
 
 type MinimalHeaderType = {
   title: string;
-  userCount: number;
 };
 
-const ComponentUsersHeader: FC<MinimalHeaderType> = ({ title, userCount }) => {
+const ComponentHeader: FC<MinimalHeaderType> = ({ title }) => {
   const bgColor = useColorModeValue("white", "gray.800");
   const borderColor = useColorModeValue("gray.200", "gray.700");
   const shadowColor = useColorModeValue(
@@ -25,7 +23,7 @@ const ComponentUsersHeader: FC<MinimalHeaderType> = ({ title, userCount }) => {
   return (
     <Box
       bg={bgColor}
-      p={{ base: 6, md: 8 }}
+      p={{ base: 2, md: 6 }}
       borderRadius="xl"
       border="1px solid"
       borderColor={borderColor}
@@ -36,20 +34,15 @@ const ComponentUsersHeader: FC<MinimalHeaderType> = ({ title, userCount }) => {
       <Flex justify="space-between" align="center" wrap="wrap" gap={4}>
         <VStack align="start" spacing={3}>
           <HStack>
-            <Box w={1} h={10} bg="blue.500" borderRadius="full" />
-            <Heading size="xl" letterSpacing="tight">
+            <Box w={1} h={9} bg="blue.500" borderRadius="full" />
+            <Heading size="sm" letterSpacing="tight">
               {title}
             </Heading>
           </HStack>
-          <Text color="gray.600" fontSize="md">
-            {userCount > 0
-              ? `${userCount}人のユーザーが見つかりました`
-              : "ユーザーを探してみましょう"}
-          </Text>
         </VStack>
         <HStack spacing={4}>
           <Box
-            px={4}
+            px={2}
             py={2}
             bg="blue.50"
             color="blue.600"
@@ -64,4 +57,4 @@ const ComponentUsersHeader: FC<MinimalHeaderType> = ({ title, userCount }) => {
   );
 };
 
-export default ComponentUsersHeader;
+export default ComponentHeader;

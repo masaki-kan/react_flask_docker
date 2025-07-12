@@ -179,7 +179,7 @@ const RebderItem: FC<RebderItemProps> = React.memo(({ itemList, navigate }) => {
               flex="1"
             >
               <Text
-                fontSize={{ base: "2xs", sm: "xs", md: "sm" }}
+                fontSize={{ base: "sm", sm: "xs", md: "sm" }}
                 fontWeight="medium"
                 noOfLines={2}
                 lineHeight="short"
