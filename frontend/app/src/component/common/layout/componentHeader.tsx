@@ -40,7 +40,7 @@ const ComponentHeader: FC<MinimalHeaderType> = ({ title }) => {
             </Heading>
           </HStack>
         </VStack>
-        <HStack spacing={4}>
+        {/* <HStack spacing={4}>
           <Box
             px={2}
             py={2}
@@ -51,7 +51,7 @@ const ComponentHeader: FC<MinimalHeaderType> = ({ title }) => {
           >
             新着順
           </Box>
-        </HStack>
+        </HStack> */}
       </Flex>
     </Box>
   );

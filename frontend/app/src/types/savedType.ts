@@ -10,4 +10,6 @@ export interface savedListType {
   type: string;
   brand: { key: string; name: string };
   last_message_time: string;
+  buyer_id: string;
+  seller_id: string;
 }

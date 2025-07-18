@@ -1,5 +1,5 @@
 import { FC } from "react";
-import { Heading, VStack } from "@chakra-ui/react";
+import { VStack } from "@chakra-ui/react";
 import { route } from "../../route/routeConst";
 import ShopIndex from "./shopIndex";
 import useProfile from "../../hooks/useProfile";
@@ -31,14 +31,8 @@ const Home: FC = () => {
 
   return (
     <>
-      <Heading
-        pl={{ md: 4, base: 0 }}
-        textAlign={{ base: "center", md: "justify" }}
-      >
-        User Profile
-      </Heading>
       {memorizeLoading && <FullScreenSpinner />}
-      <VStack align={"start"} mt={10}>
+      <VStack align={"start"} gap={9} w={"100%"}>
         <ShopIndex />
       </VStack>
     </>

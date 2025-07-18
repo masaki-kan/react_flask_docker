@@ -20,7 +20,6 @@ import {
   FormErrorMessage,
   Badge,
 } from "@chakra-ui/react";
-import { motion } from "framer-motion";
 import { useNavigate, useLocation } from "react-router-dom";
 import { FaTrash, FaCamera, FaArrowLeft, FaSave } from "react-icons/fa";
 import CustomBrandSelect from "../common/select/customBrandSelect";
@@ -82,8 +81,6 @@ const ItemForm: FC<ItemFormProps> = ({ profileItem, ItemNumver }) => {
     brand: false,
   });
 
-  const MotionBox = motion(Box);
-
   useEffect(() => {
     if (profileItem !== undefined) {
       setFormValues({
@@ -109,7 +106,7 @@ const ItemForm: FC<ItemFormProps> = ({ profileItem, ItemNumver }) => {
       const files = e.target.files;
       if (!files) return;
 
-      const remainingSlots = 4 - formValues.images.length;
+      const remainingSlots = 5 - formValues.images.length;
       if (remainingSlots <= 0) {
         defaultToast("画像は最大5枚までです");
         return;
@@ -379,7 +376,7 @@ const ItemForm: FC<ItemFormProps> = ({ profileItem, ItemNumver }) => {
               <FormLabel fontWeight="bold">
                 商品画像 <Badge colorScheme="red">必須</Badge>
                 <Text fontSize="sm" color="gray.500" mt={1}>
-                  最大4枚まで（JPEG/PNG、各5MB以下）
+                  最大5枚まで（JPEG/PNG、各5MB以下）
                 </Text>
               </FormLabel>
 
@@ -390,44 +387,37 @@ const ItemForm: FC<ItemFormProps> = ({ profileItem, ItemNumver }) => {
                     img instanceof File ? URL.createObjectURL(img) : img;
 
                   return (
-                    <MotionBox
-                      key={index}
-                      initial={{ opacity: 0, scale: 0.9 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ duration: 0.2 }}
-                    >
-                      <AspectRatio ratio={1}>
-                        <Box
-                          position="relative"
-                          borderRadius="lg"
-                          overflow="hidden"
-                          border="2px solid"
-                          borderColor={borderColor}
-                          _hover={{ borderColor: "red.400" }}
-                          transition="all 0.2s"
-                        >
-                          <Image
-                            src={src}
-                            alt={`商品画像 ${index + 1}`}
-                            objectFit="cover"
-                            w="full"
-                            h="full"
-                          />
-                          <IconButton
-                            aria-label="削除"
-                            icon={<FaTrash />}
-                            size="sm"
-                            colorScheme="red"
-                            position="absolute"
-                            top={2}
-                            right={2}
-                            onClick={() => handleRemoveImageHandler(index)}
-                            opacity={0.8}
-                            _hover={{ opacity: 1 }}
-                          />
-                        </Box>
-                      </AspectRatio>
-                    </MotionBox>
+                    <AspectRatio ratio={1} key={index}>
+                      <Box
+                        position="relative"
+                        borderRadius="lg"
+                        overflow="hidden"
+                        border="2px solid"
+                        borderColor={borderColor}
+                        _hover={{ borderColor: "red.400" }}
+                        transition="all 0.2s"
+                      >
+                        <Image
+                          src={src}
+                          alt={`商品画像 ${index + 1}`}
+                          objectFit="cover"
+                          w="full"
+                          h="full"
+                        />
+                        <IconButton
+                          aria-label="削除"
+                          icon={<FaTrash />}
+                          size="sm"
+                          colorScheme="red"
+                          position="absolute"
+                          top={2}
+                          right={2}
+                          onClick={() => handleRemoveImageHandler(index)}
+                          opacity={0.8}
+                          _hover={{ opacity: 1 }}
+                        />
+                      </Box>
+                    </AspectRatio>
                   );
                 })}
 

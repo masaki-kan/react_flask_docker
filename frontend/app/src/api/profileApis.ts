@@ -75,7 +75,6 @@ export const getProfileApi = async (
     };
   } catch (error: unknown) {
     let errorMessage = "予期しないエラーが発生しました";
-
     if (axios.isAxiosError(error) && error.response?.data?.error) {
       errorMessage = error.response.data.error;
     }

@@ -10,9 +10,9 @@ const Withdrawal: FC = () => {
   const { logOutHandler } = useLog();
   const { cancellationProcess } = useMyProfile();
 
+  // 退会処理
   const pushCancellationProcess = useCallback(async () => {
     const response = await cancellationProcess();
-    console.log("response", response);
     tradeAlert(response).then((result) => {
       if (result.isConfirmed) {
         // OK 押下時の処理

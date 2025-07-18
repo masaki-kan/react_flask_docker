@@ -3,6 +3,7 @@ import MainHeader from "../common/layout/mainHeader";
 import Side from "../common/layout/side";
 import { Outlet } from "react-router-dom";
 import { Box, Container, Flex } from "@chakra-ui/react";
+import Footer from "../common/layout/footer";
 
 const SecureLayout: FC = () => {
   return (
@@ -16,6 +17,7 @@ const SecureLayout: FC = () => {
             <Outlet />
           </Box>
         </Container>
+        <Footer />
       </Flex>
     </>
   );

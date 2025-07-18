@@ -21,19 +21,21 @@ const useSaved = (): useSavedReturn => {
     changeLoading(true);
     const response = await getSavedList(profile.profile.id);
     if (response !== undefined) {
-      const savedData = response.trades.map((trage) => {
+      const savedData = response.trades.map((trade) => {
         return {
-          image_url: trage.image_url,
-          status: trage.status,
-          title: trage.title,
-          trade_created_at: trage.trade_created_at,
-          trade_id: trage.trade_id,
-          user_image_url: trage.user_image_url,
-          user_name: trage.user_name,
-          user_id: trage.user_id,
-          last_message_time: trage.last_message_time,
-          type: trage.type,
-          brand: trage.brand,
+          image_url: trade.image_url,
+          status: trade.status,
+          title: trade.title,
+          trade_created_at: trade.trade_created_at,
+          trade_id: trade.trade_id,
+          user_image_url: trade.user_image_url,
+          user_name: trade.user_name,
+          user_id: trade.user_id,
+          last_message_time: trade.last_message_time,
+          type: trade.type,
+          brand: trade.brand,
+          seller_id: trade.seller_id, //交換に出しているユーザー
+          buyer_id: trade.buyer_id, // 交換したいユーザー
         };
       });
 

@@ -127,12 +127,12 @@ def initialize_database():
 @app.route('/api/loginCheck', methods=['POST'])
 def loginCheck():
     email = request.json.get('email', None)
-    print( 'email' , email , flush=True )
-    # データベース接続とユーザー確認をここで実施
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    
+    # print( 'email' , email , flush=True )
+
     try:
+        # データベース接続とユーザー確認をここで実施
+        conn = get_db_connection()
+        cursor = conn.cursor()
         cursor.execute("SELECT user_id, name, password , email FROM users WHERE email = %s", (email,))
         user_data = cursor.fetchone()
 
@@ -156,11 +156,10 @@ def login():
     email = request.json.get('email', None)
     password = request.json.get('password', None)
 
-    # データベース接続とユーザー確認をここで実施
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    
     try:
+        # データベース接続とユーザー確認をここで実施
+        conn = get_db_connection()
+        cursor = conn.cursor()
         cursor.execute("SELECT user_id, name, password , email FROM users WHERE email = %s", (email,))
         user_data = cursor.fetchone()
 
@@ -202,12 +201,13 @@ def singUp():
         return jsonify({"error": "登録に失敗しました。"}), 400
 
     hashed_password = generate_password_hash(password)
-    conn = get_db_connection()
-    cursor = conn.cursor()
 
     try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
         cursor.execute("INSERT INTO users (name, email, password , plan , stripe_customer_id ) VALUES (%s, %s, %s, %s, %s)", (username, email, hashed_password ,plan ,stripe_customer_id))
         conn.commit()
+        cursor.close()
         send_welcome_email(username,plan,email)
         return jsonify({"message": "登録しました。ログイン画面に移ります",
                         "result" : True}), 201
@@ -309,10 +309,9 @@ def postStoreProfile():
     shop_url = user_data.get('favoriteShop', {}).get("url")
     reasen = user_data.get("reasen")
     
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    
     try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)  # dict形式で取得できるようにする
        # users テーブルを更新（INSERT or UPDATE）
         cursor.execute('''
             UPDATE users SET 
@@ -377,10 +376,9 @@ def getMyProfile():
     user_id = request.args.get('id')# ログイン中のユーザーID
     my_user_id = request.args.get('my_id')  
 
-    conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)  # dict型で結果を取得するため
-
     try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)  # dict形式で取得できるようにする
         # ユーザー情報
         cursor.execute('''
             SELECT user_id, name, location, old, age, shop_name, shop_url, reasen ,plan
@@ -388,6 +386,12 @@ def getMyProfile():
             WHERE user_id = %s
         ''', (user_id,))
         user_data = cursor.fetchone()
+        
+        if not user_data:
+            return jsonify({
+                "error": "指定されたユーザーが存在しません",
+                "result": False
+            }), 404
 
      # is_following の取得（my_user_id が存在する場合のみ）
         if my_user_id:
@@ -419,19 +423,13 @@ def getMyProfile():
         ''', (user_id,))
         tags = cursor.fetchone()
         
-        try:
-            user_data['tags'] = json.loads(tags['tag'])
-        except Exception:
+        if tags and tags.get('tag'):
+            try:
+                user_data['tags'] = json.loads(tags['tag'])
+            except Exception:
+                user_data['tags'] = []
+        else:
             user_data['tags'] = []
-
-        # プラン
-        cursor.execute('''
-            SELECT type, created_at 
-            FROM plans 
-            WHERE user_id = %s
-        ''', (user_id,))
-        plans = cursor.fetchall()
-        user_data['plans'] = plans
 
         # アイテム
         cursor.execute('''
@@ -495,6 +493,7 @@ def getMyProfile():
         FROM likes
         WHERE user_id = %s
         ''', (user_id,))
+        
         liked_items = cursor.fetchall()
         
         # item_id のみ抽出
@@ -506,6 +505,7 @@ def getMyProfile():
         }), 200
     
     except mysql.connector.Error as err:
+        print("MySQLエラー:", err , flush=True)
         return jsonify({
             "error": "プロフィール情報取得中にエラーが発生しました",
             "result": False
@@ -517,17 +517,6 @@ def getMyProfile():
 
 @app.route('/api/postStoreProfileItem' ,methods=['POST'] )
 def postStoreProfileItem():
-    # item_data = request.json.get('itemData', {})
-    # item_id = item_data.get('itemId')
-    # user_id = item_data.get('userId')
-    # title = item_data.get('title')
-    # description = item_data.get('description')
-    # type = item_data.get('type',[])
-    # type_json = json.dumps(type, ensure_ascii=False)
-    # brand = item_data.get('brand',[])
-    # brand_json = json.dumps(brand, ensure_ascii=False)
-    # image_urls = item_data.get("images", [])  # list型を想定
-    # mode = request.json.get('dateUpChange')
     item_id = request.form.get("itemId")
     user_id = request.form.get("userId")
     title = request.form.get("title")
@@ -551,10 +540,9 @@ def postStoreProfileItem():
         data_url = f"data:{mime};base64,{base64_str}"
         image_urls.append(data_url)
 
-    conn = get_db_connection()
-    cursor = conn.cursor(buffered=True, dictionary=True)
-
     try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)  # dict形式で取得できるようにする
         if mode == "update":
             # すでに登録されている item_id を検索
             cursor.execute('''
@@ -621,10 +609,10 @@ def postStoreProfileItem():
 @app.route('/api/getUsers' ,methods=['POST'] )
 def getUsers():
     user_id = request.json.get('user_id',None )
-    conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)  # dict形式で取得できるようにする
     
     try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)  # dict形式で取得できるようにする
         # 自分以外のユーザーとそのアイテムを取得（itemが新しい順）
         cursor.execute('''
             SELECT 
@@ -715,10 +703,10 @@ def getUsers():
 def userFollow():
     follow_user_id = request.json.get('follew_user_id',None )
     my_user_id = request.json.get('my_user_id',None )
-    conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)  # dict形式で取得できるようにする
     
     try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)  # dict形式で取得できるようにする
      # すでにフォローしているかチェック
         cursor.execute('''
             SELECT 1 FROM follows
@@ -797,11 +785,11 @@ def userFollow():
 @app.route('/api/getUserItems' ,methods=['POST'])
 def getUserItems():
     user_id = request.json.get('user_id',None )
-    conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)  # dict形式で取得できるようにする
 
     # 自分以外の商品情報を取得
     try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)  # dict形式で取得できるようにする
         cursor.execute('''
             SELECT 
                 items.item_id,
@@ -916,21 +904,19 @@ def getUserItems():
 def deleteUserItem():
     item_id = request.json.get('item_id',None )
     my_user_id = request.json.get('my_user_id',None )
-    conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)  # dict形式で取得できるようにする
         
     if not item_id or not my_user_id:
         return jsonify({"error": "item_id と my_user_id は必須です"}), 400
     
     try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
         # 1. まず、削除しようとしているアイテムが本当にそのユーザーのものか確認
         cursor.execute('''
             SELECT user_id FROM items 
             WHERE item_id = %s
         ''', (item_id,))
         item_owner = cursor.fetchone()
-        
-        print( 'item_owner > ' ,item_owner , flush=True )
         
         if not item_owner:
             return jsonify({"error": "指定されたアイテムが見つかりません"}), 404
@@ -1026,9 +1012,9 @@ def itemLike():
     if not item_id or not my_user_id:
         return jsonify({"result": False, "error": "Missing item_id or my_user_id"}), 400
 
-    conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)  # dict形式で取得できるようにする
     try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
         # 既に「いいね」されているか確認
         cursor.execute('''
             SELECT * FROM likes
@@ -1106,10 +1092,10 @@ def itemLike():
 @app.route('/api/getSavedList', methods=['POST'])
 def get_active_trades():
     user_id = request.json.get('user_id')
-    conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
     
     try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
         cursor.execute('''
             SELECT 
                 trades.trade_id,
@@ -1172,14 +1158,12 @@ def get_active_trades():
             # JSON型フィールドをパース
             if trade.get('type') and isinstance(trade['type'], str):
                 try:
-                    import json
                     trade['type'] = json.loads(trade['type'])
                 except json.JSONDecodeError:
                     trade['type'] = None
                     
             if trade.get('brand') and isinstance(trade['brand'], str):
                 try:
-                    import json
                     trade['brand'] = json.loads(trade['brand'])
                 except json.JSONDecodeError:
                     trade['brand'] = None
@@ -1194,35 +1178,52 @@ def get_active_trades():
     finally:
         conn.close()
         cursor.close()
-        
+
+# 交換申請した人の商品情報
 @app.route('/api/getChatItemDetail' ,methods=['POST'])
 def get_chat_item_detail():
-    item_id = request.json.get('item_id')
-    conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
+    trade_id = request.json.get('trade_id')
+    
     try:
-        # 商品の基本情報 + 出品者情報
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        # 取引情報と商品の基本情報を取得
         cursor.execute('''
             SELECT 
                 trades.trade_id,
                 trades.status,
+                trades.buyer_id,
+                trades.seller_id,
                 items.item_id,
                 items.title,
                 items.description,
                 items.type,
                 items.brand,
                 items.uploaded_at,
-                users.user_id,
-                users.name AS seller_name
+                items.user_id
             FROM trades
             JOIN items ON items.item_id = trades.item_id
-            JOIN users ON users.user_id = items.user_id
             WHERE trades.trade_id = %s
-        ''', (item_id,))
-        item_data = cursor.fetchone()
+        ''', (trade_id,))
+        trade_data = cursor.fetchone()
 
-        if not item_data:
-            return jsonify({"error": "Item not found"}), 404
+        if not trade_data:
+            return jsonify({"error": "データがありません。"}), 404
+
+        # 商品情報の構築
+        item_data = {
+            "trade_id": trade_data["trade_id"],
+            "status": trade_data["status"],
+            "buyer_id": trade_data["buyer_id"],
+            "seller_id": trade_data["seller_id"],
+            "item_id": trade_data["item_id"],
+            "title": trade_data["title"],
+            "description": trade_data["description"],
+            "type": trade_data["type"],
+            "brand": trade_data["brand"],
+            "uploaded_at": trade_data["uploaded_at"],
+            "user_id": trade_data["user_id"]
+        }
 
         # 商品の画像をすべて取得
         cursor.execute('''
@@ -1232,38 +1233,82 @@ def get_chat_item_detail():
             ORDER BY uploaded_at ASC
         ''', (item_data["item_id"],))
         item_images = cursor.fetchall()
+
         item_data["images"] = [img['image_url'] for img in item_images]
 
-        # 出品者の最新プロフィール画像（あれば）
+        # 商品投稿者（申請者）のユーザー情報を取得
+        cursor.execute('''
+            SELECT 
+                users.user_id,
+                users.name,
+                users.location,
+                users.old,
+                users.age,
+                users.shop_name,
+                users.shop_url,
+                users.reasen,
+                tags.tag
+            FROM users
+            LEFT JOIN tags ON tags.user_id = users.user_id
+            WHERE users.user_id = %s
+        ''', (item_data["buyer_id"],))
+        user_info = cursor.fetchone()
+        
+        if not user_info:
+            return jsonify({"error": "ユーザー情報が見つかりません", "buyer_id": item_data["buyer_id"]}), 404
+        
+        # ユーザーのプロフィール画像を取得
         cursor.execute('''
             SELECT image_url
             FROM profile_images
             WHERE user_id = %s
             ORDER BY uploaded_at DESC
             LIMIT 1
-        ''', (item_data["user_id"],))
+        ''', (item_data["buyer_id"],))
         profile_image = cursor.fetchone()
-        item_data["profile_image"] = profile_image['image_url'] if profile_image else ""
-
-        # brand/type を JSON に変換（必要なら）
-        import json
+        
+        # ユーザー情報の構築
+        user_data = {
+            "user_id": user_info["user_id"] if user_info else None,
+            "name": user_info["name"] if user_info else "",
+            "location": user_info["location"] if user_info else "",
+            "old": user_info["old"] if user_info else 0,
+            "age": user_info["age"] if user_info else 0,
+            "shop_name": user_info["shop_name"] if user_info else "",
+            "shop_url": user_info["shop_url"] if user_info else "",
+            "reasen": user_info["reasen"] if user_info else "",
+            "profile_image": profile_image['image_url'] if profile_image else "",
+            "tags" : json.loads(user_info['tag']) if user_info and user_info['tag'] else [],
+        }
+        print( 'user_data ' , user_data , flush=True)
+        
+        # brand/type を JSON に変換
         for key in ["brand", "type"]:
             try:
                 item_data[key] = json.loads(item_data[key]) if item_data[key] else []
             except:
                 item_data[key] = []
+        
 
-        return jsonify({"item": item_data, "result": True}), 200
+        # partner_profile_image['image_url'] if partner_profile_image else "",
+
+        return jsonify({
+            "item": item_data, 
+            "user": user_data,
+            "result": True
+        }), 200
+        
     except mysql.connector.Error as err:
+        print( 'err ' , err , flush=True)
         conn.rollback()
         return jsonify({
             "error": "商品データ取得中にエラーが発生しました",
             "result": False
         }), 500
-
     finally:
         conn.close()
         cursor.close()
+
         
 @app.route('/api/upload_image', methods=['POST'])
 def upload_image():
@@ -1283,6 +1328,7 @@ def upload_image():
 
     return jsonify({'image_url': image_url}), 200
 
+# チャットメッセージ　取得
 @app.route('/api/get_trade_messages', methods=['GET'])
 def get_trade_messages():
     trade_id = request.args.get('trade_id')
@@ -1331,10 +1377,8 @@ def get_trade_messages():
 def uploaded_file(filename):
     return send_from_directory(UPLOAD_FOLDER, filename)
 
-
 @app.route('/api/trade', methods=['POST'])
 def create_trade():
-    """新規取引を作成"""
     try:
         data = request.get_json()
         item_id = data.get('item_id')
@@ -1348,21 +1392,10 @@ def create_trade():
                 'message': '必須パラメータが不足しています',
                 'error': '必須パラメータが不足しています'
             }), 400
-        
-        connection = get_db_connection()
-        if not connection:
-            return jsonify({
-                'result': False,
-                'message': 'データベース接続エラー',
-                'error': 'データベース接続エラー'
-            }), 500
-        
-        cursor = connection.cursor(dictionary=True)
-        
         try:
-            # トランザクション開始
-            connection.start_transaction()
-            
+            conn = get_db_connection()
+            cursor = conn.cursor(dictionary=True)
+
             # アイテムの存在確認
             cursor.execute("""
                 SELECT item_id, user_id 
@@ -1442,7 +1475,7 @@ def create_trade():
             """, (trade_id, buyer_id, 'こんにちは、このアイテムを交換希望です。'))
             
             # コミット
-            connection.commit()
+            conn.commit()
             
             return jsonify({
                 'result': True,
@@ -1451,8 +1484,7 @@ def create_trade():
             }), 201
             
         except Exception as e:
-            connection.rollback()
-            print(f"取引作成エラー: {e}")
+            conn.rollback()
             return jsonify({
                 'result': False,
                 'message': '取引の作成に失敗しました',
@@ -1461,10 +1493,9 @@ def create_trade():
             
         finally:
             cursor.close()
-            connection.close()
+            conn.close()
             
     except Exception as e:
-        print(f"エラー: {e}")
         return jsonify({
             'result': False,
             'message': '予期しないエラーが発生しました',
@@ -1475,10 +1506,9 @@ def create_trade():
 def trage_status_change():
     trade_id = request.json.get('trade_id')
     trade_status = request.json.get('status')
-    conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
     try:
-        
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
         # 2. "cancelled" の場合、関連メッセージを削除
         if trade_status == "cancelled":
             cursor.execute('''
@@ -1501,6 +1531,327 @@ def trage_status_change():
         conn.rollback()
         return jsonify({
             "error": "進行中にエラーが発生しました",
+            "result": False
+        }), 500
+    finally:
+        conn.close()
+        cursor.close()
+
+# 発送情報を保存
+@app.route('/api/save_shipping_info', methods=['POST'])
+def save_shipping_info():
+    data = request.json
+    trade_id = data.get('trade_id')
+    sender_user_id = data.get('sender_user_id')
+    tracking_number = data.get('tracking_number')
+    shipping_company = data.get('shipping_company')
+    
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        
+        # 既存の発送情報があるかチェック
+        cursor.execute('''
+            SELECT shipping_id FROM shipping_info 
+            WHERE trade_id = %s AND sender_user_id = %s
+        ''', (trade_id, sender_user_id))
+        
+        existing = cursor.fetchone()
+        
+        if existing:
+            # 更新
+            cursor.execute('''
+                UPDATE shipping_info 
+                SET tracking_number = %s, shipping_company = %s
+                WHERE trade_id = %s AND sender_user_id = %s
+            ''', (tracking_number, shipping_company, trade_id, sender_user_id))
+        else:
+            # 新規作成
+            cursor.execute('''
+                INSERT INTO shipping_info (trade_id, sender_user_id, tracking_number, shipping_company)
+                VALUES (%s, %s, %s, %s)
+            ''', (trade_id, sender_user_id, tracking_number, shipping_company))
+            
+            # チャットに発送メッセージを自動送信
+            cursor.execute('''
+                INSERT INTO trade_messages (trade_id, sender_id, message)
+                VALUES (%s, %s, %s)
+            ''', (trade_id, sender_user_id, f"商品を発送しました。\n配送会社: {shipping_company}\n追跡番号: {tracking_number}"))
+        
+        # 両者が発送情報を入力したかチェック
+        cursor.execute('''
+            SELECT COUNT(DISTINCT sender_user_id) as count 
+            FROM shipping_info 
+            WHERE trade_id = %s
+        ''', (trade_id,))
+        
+        count_result = cursor.fetchone()
+        
+        # 両者が発送したらステータスを更新
+        if count_result['count'] == 2:
+            cursor.execute('''
+                UPDATE trades 
+                SET status = 'shipped' 
+                WHERE trade_id = %s
+            ''', (trade_id,))
+        
+        conn.commit()
+        cursor.close()
+        
+        return jsonify({'result': True, 'message': '発送情報を保存しました'})
+        
+    except Exception as e:
+        conn.rollback()
+        return jsonify({'result': False, 'error': str(e)}), 500
+    finally:
+        conn.close()
+
+# 発送情報を取得
+@app.route('/api/get_shipping_info', methods=['GET'])
+def get_shipping_info():
+    trade_id = request.args.get('trade_id')
+    
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        
+        # 両者の発送情報を取得
+        cursor.execute('''
+            SELECT si.*, u.name as sender_name, u.user_id
+            FROM shipping_info si
+            JOIN users u ON si.sender_user_id = u.user_id
+            WHERE si.trade_id = %s
+        ''', (trade_id,))
+        
+        shipping_info = cursor.fetchall()
+        
+        # 取引情報を取得して seller_id と buyer_id を特定
+        cursor.execute('''
+            SELECT seller_id, buyer_id
+            FROM trades
+            WHERE trade_id = %s
+        ''', (trade_id,))
+        
+        trade = cursor.fetchone()
+
+        # seller と buyer を判別して返す
+        result = {
+            'seller_shipping': None,
+            'buyer_shipping': None
+        }
+        
+        for info in shipping_info:
+            if info['user_id'] == trade['seller_id']:
+                result['seller_shipping'] = info
+            elif info['user_id'] == trade['buyer_id']:
+                result['buyer_shipping'] = info
+        cursor.close()
+        return jsonify({'result': True, 'shipping_info': shipping_info, **result})
+        
+    except Exception as e:
+        return jsonify({'result': False, 'error': str(e)}), 500
+    
+
+# 商品受取確認
+@app.route('/api/confirm_item_received', methods=['POST'])
+def confirm_item_received():
+    data = request.json
+    trade_id = data.get('trade_id')
+    user_id = data.get('user_id')
+    
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        
+        # 既存の確認があるかチェック
+        cursor.execute('''
+            SELECT confirmation_id FROM trade_confirmations 
+            WHERE trade_id = %s AND user_id = %s
+        ''', (trade_id, user_id))
+        
+        existing = cursor.fetchone()
+        
+        if not existing:
+            # 新規作成
+            cursor.execute('''
+                INSERT INTO trade_confirmations (trade_id, user_id, confirmation_type)
+                VALUES (%s, %s, 'item_received')
+            ''', (trade_id, user_id))
+        
+        # 両者が受取確認したかチェック
+        cursor.execute('''
+            SELECT COUNT(DISTINCT user_id) as count 
+            FROM trade_confirmations 
+            WHERE trade_id = %s
+        ''', (trade_id,))
+        
+        count_result = cursor.fetchone()
+        
+        conn.commit() 
+        cursor.close()
+        
+        return jsonify({
+            'result': True, 
+            'message': '受取確認を記録しました',
+            'both_confirmed': count_result['count'] == 2
+        })
+        
+    except Exception as e:
+        return jsonify({'result': False, 'error': str(e)}), 500
+    
+# 確認状況を取得
+@app.route('/api/get_confirmations', methods=['GET'])
+def get_confirmations():
+    trade_id = request.args.get('trade_id')
+    
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        
+        # 取引情報を取得
+        cursor.execute('''
+            SELECT seller_id, buyer_id
+            FROM trades
+            WHERE trade_id = %s
+        ''', (trade_id,))
+        
+        trade = cursor.fetchone()
+        
+        # 確認情報を取得
+        cursor.execute('''
+            SELECT user_id
+            FROM trade_confirmations
+            WHERE trade_id = %s
+        ''', (trade_id,))
+        
+        confirmations = cursor.fetchall()
+        confirmed_users = [c['user_id'] for c in confirmations]
+        
+        cursor.close()
+        
+        return jsonify({
+            'result': True,
+            'seller_confirmed': trade['seller_id'] in confirmed_users,
+            'buyer_confirmed': trade['buyer_id'] in confirmed_users,
+            'both_confirmed': len(confirmed_users) == 2
+        })
+        
+    except Exception as e:
+        return jsonify({'result': False, 'error': str(e)}), 500
+    
+# 交換受けた人の商品一覧を取得
+@app.route('/api/get_partner_items', methods=['POST'])
+def get_partner_items():
+    data = request.get_json()
+    trade_id = data.get('trade_id')
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+    
+        # まず取引情報を取得して、相手のuser_idを特定
+        cursor.execute('''
+            SELECT seller_id, buyer_id, status
+            FROM trades 
+            WHERE trade_id = %s
+        ''', (trade_id,))
+        trade_info = cursor.fetchone()
+        
+        if not trade_info:
+            return jsonify({"error": "取引が見つかりません"}), 404
+        
+        partner_id = trade_info['seller_id']
+        
+        # 相手のユーザー情報を取得
+        cursor.execute('''
+            SELECT 
+                users.user_id,
+                users.name,
+                users.location,
+                users.old,
+                users.age,
+                users.shop_name,
+                users.shop_url,
+                users.reasen,
+                tags.tag
+            FROM users
+            LEFT JOIN tags ON tags.user_id = users.user_id
+            WHERE users.user_id = %s
+        ''', (partner_id,))
+        partner_user_info = cursor.fetchone()
+
+        # 相手のプロフィール画像を取得
+        cursor.execute('''
+            SELECT image_url
+            FROM profile_images
+            WHERE user_id = %s
+            ORDER BY uploaded_at DESC
+            LIMIT 1
+        ''', (partner_id,))
+        partner_profile_image = cursor.fetchone()
+
+        # 相手のユーザー情報を構築
+        partner_user = {
+            "user_id": partner_user_info["user_id"] if partner_user_info else None,
+            "name": partner_user_info["name"] if partner_user_info else "",
+            "location": partner_user_info["location"] if partner_user_info else "",
+            "old": partner_user_info["old"] if partner_user_info else 0,
+            "age": partner_user_info["age"] if partner_user_info else 0,
+            "shop_name": partner_user_info["shop_name"] if partner_user_info else "",
+            "shop_url": partner_user_info["shop_url"] if partner_user_info else "",
+            "reasen": partner_user_info["reasen"] if partner_user_info else "",
+            "profile_image": partner_profile_image['image_url'] if partner_profile_image else "",
+            "tags": []
+        }
+
+        # タグの処理
+        partner_user['tags'] = json.loads(partner_user_info['tag']) if partner_user_info and partner_user_info['tag'] else []
+        
+        # 相手の商品一覧を取得
+        cursor.execute('''
+            SELECT 
+                items.item_id,
+                items.title,
+                items.description,
+                items.type,
+                items.brand,
+                items.uploaded_at,
+                items.user_id
+            FROM items
+            WHERE items.user_id = %s
+            ORDER BY items.uploaded_at DESC
+        ''', (partner_id,))
+        
+        partner_items = cursor.fetchall()
+        
+        # 各商品の画像を取得
+        for item in partner_items:
+            cursor.execute('''
+                SELECT image_url 
+                FROM item_images 
+                WHERE item_id = %s
+                ORDER BY uploaded_at ASC
+            ''', (item['item_id'],))
+            
+            images = cursor.fetchall()
+            item['images'] = [img['image_url'] for img in images]
+            
+            # JSON型フィールドをパース
+            try:
+                item['type'] = json.loads(item['type']) if item['type'] else []
+                item['brand'] = json.loads(item['brand']) if item['brand'] else []
+            except:
+                item['type'] = []
+                item['brand'] = []
+        
+        return jsonify({
+            "partner_items": partner_items, 
+            "partner_user": partner_user,
+            "result": True
+        }), 200
+        
+    except mysql.connector.Error as err:
+        return jsonify({
+            "error": "相手商品取得中にエラーが発生しました",
             "result": False
         }), 500
     finally:
@@ -1621,7 +1972,6 @@ def cancellationProcess():
         cursor.execute('DELETE FROM item_images WHERE user_id = %s', (user_id,))
         cursor.execute('DELETE FROM items WHERE user_id = %s', (user_id,))
         cursor.execute('DELETE FROM likes WHERE user_id = %s', (user_id,))
-        cursor.execute('DELETE FROM plans WHERE user_id = %s', (user_id,))
         cursor.execute('DELETE FROM tags WHERE user_id = %s', (user_id,))
         cursor.execute('DELETE FROM profile_images WHERE user_id = %s', (user_id,))
         cursor.execute('DELETE FROM follows WHERE follower_id = %s OR followed_id = %s', (user_id, user_id))

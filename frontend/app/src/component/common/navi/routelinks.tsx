@@ -1,23 +1,41 @@
 import { FC, useMemo, useCallback, useEffect, useState } from "react";
-import { Avatar, Box, HStack, Link, Text } from "@chakra-ui/react";
+import {
+  Box,
+  Container,
+  HStack,
+  Avatar,
+  Text,
+  useColorModeValue,
+  Icon,
+  Menu,
+  MenuButton,
+  MenuList,
+  MenuItem,
+  MenuDivider,
+  Link,
+} from "@chakra-ui/react";
 import { route } from "../../../route/routeConst";
 import { useNavigate } from "react-router-dom";
 import { menuLists } from "../../../consts/menuList";
 import useMyProfile from "../../../hooks/useProfile";
 import useSaved from "../../../hooks/useSaved";
-import { FaExclamation } from "react-icons/fa";
+import { FaUserCircle, FaUser, FaExclamation } from "react-icons/fa";
 import { useEffectOnce } from "react-use";
-import { FaUserCircle } from "react-icons/fa";
 
 const RenderRouteLinks: FC = () => {
   const { memorizeProfile } = useMyProfile();
-  const profile = useMemo(() => {
-    return memorizeProfile;
-  }, [memorizeProfile]);
+  const profile = useMemo(() => memorizeProfile, [memorizeProfile]);
   const navigate = useNavigate();
 
   const { savedList, getSavedListHandler } = useSaved();
   const [readSaveStatus, setReadSaveStatus] = useState<boolean>(false);
+
+  // カラーモード対応
+  const bgColor = useColorModeValue("white", "gray.800");
+  const borderColor = useColorModeValue("gray.200", "gray.700");
+  const hoverBg = useColorModeValue("gray.50", "gray.700");
+  const activeColor = useColorModeValue("blue.500", "blue.400");
+
   const readSaveTimestamps = useCallback(() => {
     const stored = localStorage.getItem("readSaveTimestamps");
     try {
@@ -31,14 +49,8 @@ const RenderRouteLinks: FC = () => {
   const unCompletedList = useMemo(() => {
     return savedList
       .filter((list) => list.status !== "completed")
-      .map((list) => {
-        return list;
-      });
+      .map((list) => list);
   }, [savedList]);
-
-  const toProfile = () => {
-    navigate(route.profile);
-  };
 
   useEffect(() => {
     const newArray: { tradeId: number; isNew: boolean }[] = [];
@@ -60,63 +72,124 @@ const RenderRouteLinks: FC = () => {
 
   return (
     <>
-      <HStack
-        justifyContent={{ md: "space-between", base: "end" }}
-        alignItems={"end"}
-        gap={{ base: 3, md: 9 }}
-        mr={0}
-      >
-        {menuLists.map((menu, index) => {
-          return (
-            <Link
-              key={index}
-              color="#181411"
-              fontSize="sm"
-              fontWeight="medium"
-              href={menu.route}
-              onClick={() => {}}
-              position={"relative"}
+      <Container maxW="container.xl">
+        <HStack justify="space-between" align="end">
+          {/* ロゴ */}
+          <HStack spacing={4}>
+            <HStack
+              onClick={() => navigate(route.home)}
+              cursor="pointer"
+              spacing={3}
+              _hover={{ opacity: 0.8 }}
+              transition="all 0.2s"
             >
-              <Text fontSize={"sm"}>{menu.text}</Text>
-              {menu.route === route.saved && (
-                <>
-                  <Box
-                    hidden={!readSaveStatus}
-                    position={"absolute"}
-                    top={-2}
-                    right={-2}
-                    borderRadius={"50%"}
-                    bgColor={"#b03a3a"}
-                    p={1}
-                  >
-                    <FaExclamation size={7} color="white" />
-                  </Box>
-                </>
-              )}
-            </Link>
-          );
-        })}
+              <Text
+                fontSize="lg"
+                fontWeight="bold"
+                display={{ base: "none", md: "block" }}
+              >
+                僕らのヴィンテージ
+              </Text>
+            </HStack>
+          </HStack>
 
-        {profile.profile.image.length > 0 ? (
-          <Avatar
-            size={"md"}
-            ml={4}
-            name={"my name"}
-            onClick={toProfile}
-            src={profile.profile.image}
-          />
-        ) : (
-          <>
-            <Box ml={4}>
-              <FaUserCircle
-                size={"45px"}
-                color="gray.500"
-                onClick={toProfile}
-              />
-            </Box>
-          </>
-        )}
-      </HStack>
+          {/* デスクトップナビゲーション */}
+          {menuLists.map((menu, index) => {
+            return (
+              <Link
+                key={index}
+                fontSize={"sm"}
+                color="#181411"
+                fontWeight="medium"
+                href={menu.route}
+                onClick={() => {}}
+                position={"relative"}
+              >
+                <Text fontSize={"sm"}>{menu.text}</Text>
+                {menu.route === route.saved && (
+                  <>
+                    <Box
+                      hidden={!readSaveStatus}
+                      position={"absolute"}
+                      top={-2}
+                      right={-2}
+                      borderRadius={"50%"}
+                      bgColor={"#b03a3a"}
+                      p={1}
+                    >
+                      <FaExclamation size={7} color="white" />
+                    </Box>
+                  </>
+                )}
+              </Link>
+            );
+          })}
+
+          {/* プロフィールメニュー */}
+          <HStack spacing={4}>
+            {/* アバターメニュー */}
+            <Menu>
+              <MenuButton
+                as={Box}
+                cursor="pointer"
+                borderRadius="full"
+                _hover={{
+                  transform: "scale(1.05)",
+                }}
+                transition="all 0.2s"
+              >
+                {profile.profile.image.length > 0 ? (
+                  <Avatar
+                    size="md"
+                    src={profile.profile.image}
+                    name={profile.profile.name}
+                    border="2px solid"
+                    borderColor="transparent"
+                    _hover={{
+                      borderColor: activeColor,
+                    }}
+                  />
+                ) : (
+                  <Box
+                    p={2}
+                    borderRadius="full"
+                    bg={hoverBg}
+                    _hover={{
+                      bg: activeColor,
+                      color: "white",
+                    }}
+                    transition="all 0.2s"
+                  >
+                    <Icon as={FaUserCircle} boxSize={7} />
+                  </Box>
+                )}
+              </MenuButton>
+              <MenuList
+                bg={bgColor}
+                borderColor={borderColor}
+                boxShadow="lg"
+                py={2}
+                minW="250px"
+              >
+                <Box px={4} py={3}>
+                  <Text fontWeight="bold" fontSize="md">
+                    {profile.profile.name}
+                  </Text>
+                </Box>
+                <MenuDivider />
+                <MenuItem
+                  icon={<FaUser />}
+                  onClick={() => navigate(route.profile)}
+                  _hover={{ bg: hoverBg }}
+                  py={3}
+                >
+                  マイプロフィール
+                </MenuItem>
+              </MenuList>
+            </Menu>
+          </HStack>
+        </HStack>
+      </Container>
     </>
   );
 };

@@ -8,13 +8,16 @@ import {
   Text,
   Box,
   HStack,
+  Divider,
+  Button,
+  Link,
 } from "@chakra-ui/react";
+import { keyframes } from "@emotion/react";
 import { route } from "../../route/routeConst";
 import { useNavigate } from "react-router-dom";
 import { loginApi } from "../../api/loginApis";
 import { useAuth } from "../../provider/authContext";
 import useAlert from "../../hooks/useAlert";
-import RenderButton from "../common/render/renderButton";
 
 interface ErrorState {
   emailError: string;
@@ -26,10 +29,23 @@ interface loginFormType {
   password: string;
 }
 
+const fadeIn = keyframes`
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+`;
+
 const InputForm: FC = () => {
   const { errorAlert } = useAlert();
   const { isLoggedIn, login } = useAuth();
   const navigate = useNavigate();
+
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<ErrorState>({
     emailError: "",
     passwordError: "",
@@ -47,6 +63,7 @@ const InputForm: FC = () => {
 
   const loginClick = useCallback(async () => {
     const { email, password } = form;
+    setIsLoading(true);
 
     // バリデーションチェック
     const emailValid = validateEmail(email);
@@ -54,29 +71,33 @@ const InputForm: FC = () => {
 
     // エラーがあれば表示して終了
     setError({
-      emailError: emailValid ? "" : "Please enter a valid email address.",
+      emailError: emailValid ? "" : "有効なメールアドレスを入力してください",
       passwordError: passwordValid
         ? ""
-        : "Password must contain only lowercase and digits.",
+        : "パスワードは半角英数字で入力してください",
     });
 
     if (!emailValid || !passwordValid) {
-      return; // エラーがあるため処理中断
-    }
-
-    // ログインAPI実行
-    const response = await loginApi(form);
-    if (response && response.token) {
-      login(response.username, response.token, response.userId);
-      navigate(route.home);
-
+      setIsLoading(false);
       return;
     }
-    errorAlert("ログインに失敗しました。");
+
+    try {
+      // ログインAPI実行
+      const response = await loginApi(form);
+      if (response && response.token) {
+        login(response.username, response.token, response.userId);
+        navigate(route.home);
+        return;
+      }
+    } catch (error) {
+      errorAlert("ログインに失敗しました。");
+    } finally {
+      setIsLoading(false);
+    }
   }, [errorAlert, form, login, navigate]);
 
   const validatePassword = (password: string): boolean => {
-    // 半角英数字かつ16文字以下
     return /^[a-zA-Z0-9]+$/.test(password) && password.length <= 16;
   };
 
@@ -89,13 +110,12 @@ const InputForm: FC = () => {
       if (!value) {
         setError((prev) => ({
           ...prev,
-          passwordError: "Password is required.",
+          passwordError: "パスワードは必須です",
         }));
       } else if (!validatePassword(value)) {
         setError((prev) => ({
           ...prev,
-          passwordError:
-            "Password must be alphanumeric and 10 characters or fewer.",
+          passwordError: "パスワードは半角英数字16文字以下で入力してください",
         }));
       } else {
         setError((prev) => ({ ...prev, passwordError: "" }));
@@ -104,12 +124,12 @@ const InputForm: FC = () => {
       if (!value) {
         setError((prev) => ({
           ...prev,
-          emailError: "Email is required.",
+          emailError: "メールアドレスは必須です",
         }));
       } else if (!validateEmail(value)) {
         setError((prev) => ({
           ...prev,
-          emailError: "Please enter a valid email address.",
+          emailError: "有効なメールアドレスを入力してください",
         }));
       } else {
         setError((prev) => ({ ...prev, emailError: "" }));
@@ -132,80 +152,193 @@ const InputForm: FC = () => {
     [formErrorCheckHanler]
   );
 
+  const handleKeyPress = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === "Enter" && form.email && form.password) {
+        loginClick();
+      }
+    },
+    [form.email, form.password, loginClick]
+  );
+
   return (
-    <>
-      <Heading
-        color="#181411"
-        fontSize="22px"
-        fontWeight="bold"
-        textAlign="center"
-        px="4"
-        pb="3"
-        pt="5"
-        mt={4}
-      >
-        Welcome back to Retro Threads
-      </Heading>
-      <Box w={{ md: "100%", base: "90%" }} py={2} px={3} margin={"auto"}>
-        <VStack py="3">
-          <FormControl id="email">
-            <FormLabel>Email</FormLabel>
-            <Input
-              isInvalid={!!error.emailError}
-              placeholder="example@gmail.com"
-              bg="#f4f2f0"
-              borderColor="transparent"
-              h="14"
-              p="4"
-              w={"full"}
-              type="email"
-              variant="filled"
-              value={form.email}
-              onChange={updateFormHandler}
-            />
-            {error.emailError && (
-              <Text fontSize="sm" style={{ color: "red" }}>
-                {error.emailError}
-              </Text>
-            )}
-          </FormControl>
-          <FormControl id="password">
-            <HStack alignItems={"center"} mb={3}>
-              <FormLabel mb={0}>Password</FormLabel>
-              <Text fontSize={"xs"} color={"gray.500"}>
-                半角英数字16文字以下
-              </Text>
-            </HStack>
+    <Box
+      animation={`${fadeIn} 0.3s ease-out`}
+      position="relative"
+      overflow="hidden"
+    >
+      {/* デコレーティブな背景要素 */}
+      <Box
+        position="absolute"
+        top="-50px"
+        right="-50px"
+        width="150px"
+        height="150px"
+        borderRadius="full"
+        bgGradient="linear(to-br, #f0e6d6, #e8d5c4)"
+        opacity="0.3"
+        filter="blur(40px)"
+      />
 
-            <Input
-              isInvalid={!!error.passwordError}
-              placeholder="Enter your password"
-              bg="#f4f2f0"
-              borderColor="transparent"
-              h="14"
-              p="4"
-              type="password"
-              variant="filled"
-              value={form.password}
-              onChange={updateFormHandler}
-            />
-            {error.passwordError && (
-              <Text fontSize="sm" style={{ color: "red" }}>
-                {error.passwordError}
-              </Text>
-            )}
-          </FormControl>
+      <VStack spacing={6} align="stretch" pt={8} pb={6}>
+        <VStack spacing={2}>
+          <Heading
+            color="#181411"
+            fontSize="28px"
+            fontWeight="bold"
+            textAlign="center"
+          >
+            おかえりなさい
+          </Heading>
+          <Text color="gray.600" fontSize="sm" textAlign="center">
+            僕らのヴィンテージへようこそ
+          </Text>
         </VStack>
-        <Box mx={"auto"} width={"80%"} mt={4}>
-          <RenderButton clickEvent={loginClick} title={"Log in"} />
-        </Box>
 
-        {/* <VStack marginTop={4}>
-          <Link color="#887563">Forgot your password?</Link>
-          <Link color="#887563">Don't have an account? Sign up</Link>
-        </VStack> */}
-      </Box>
-    </>
+        <Box w={{ md: "100%", base: "90%" }} px={6} margin="auto">
+          <VStack spacing={5}>
+            <FormControl id="email" isInvalid={!!error.emailError}>
+              <FormLabel
+                fontSize="sm"
+                fontWeight="medium"
+                color="gray.700"
+                mb={2}
+              >
+                メールアドレス
+              </FormLabel>
+              <Input
+                placeholder="example@gmail.com"
+                bg="white"
+                border="2px solid"
+                borderColor={error.emailError ? "red.300" : "gray.200"}
+                _hover={{
+                  borderColor: error.emailError ? "red.400" : "gray.300",
+                }}
+                _focus={{
+                  borderColor: error.emailError ? "red.500" : "#887563",
+                  boxShadow: error.emailError
+                    ? "0 0 0 1px rgba(239, 68, 68, 0.2)"
+                    : "0 0 0 1px rgba(136, 117, 99, 0.2)",
+                }}
+                _placeholder={{ color: "gray.400", fontSize: "sm" }}
+                type="email"
+                value={form.email}
+                onChange={updateFormHandler}
+                onKeyPress={handleKeyPress}
+                transition="all 0.2s"
+                size="lg"
+              />
+              {error.emailError && (
+                <Text fontSize="xs" color="red.500" mt={1} ml={1}>
+                  {error.emailError}
+                </Text>
+              )}
+            </FormControl>
+
+            <FormControl id="password" isInvalid={!!error.passwordError}>
+              <HStack justify="space-between" mb={2}>
+                <FormLabel
+                  fontSize="sm"
+                  fontWeight="medium"
+                  color="gray.700"
+                  mb={0}
+                >
+                  パスワード
+                </FormLabel>
+                <Text fontSize="xs" color="gray.500">
+                  半角英数字16文字以下
+                </Text>
+              </HStack>
+              <Input
+                placeholder="パスワードを入力"
+                bg="white"
+                border="2px solid"
+                borderColor={error.passwordError ? "red.300" : "gray.200"}
+                _hover={{
+                  borderColor: error.passwordError ? "red.400" : "gray.300",
+                }}
+                _focus={{
+                  borderColor: error.passwordError ? "red.500" : "#887563",
+                  boxShadow: error.passwordError
+                    ? "0 0 0 1px rgba(239, 68, 68, 0.2)"
+                    : "0 0 0 1px rgba(136, 117, 99, 0.2)",
+                }}
+                _placeholder={{ color: "gray.400", fontSize: "sm" }}
+                type="password"
+                value={form.password}
+                onChange={updateFormHandler}
+                onKeyPress={handleKeyPress}
+                transition="all 0.2s"
+                size="lg"
+              />
+              {error.passwordError && (
+                <Text fontSize="xs" color="red.500" mt={1} ml={1}>
+                  {error.passwordError}
+                </Text>
+              )}
+            </FormControl>
+
+            <Box width="100%" pt={2}>
+              <Button
+                width="100%"
+                size="lg"
+                bg="#887563"
+                color="white"
+                _hover={{
+                  bg: "#76654f",
+                  transform: "translateY(-1px)",
+                  boxShadow: "lg",
+                }}
+                _active={{
+                  bg: "#65544a",
+                  transform: "translateY(0)",
+                }}
+                onClick={loginClick}
+                isLoading={isLoading}
+                loadingText="ログイン中..."
+                transition="all 0.2s"
+                fontWeight="medium"
+                borderRadius="md"
+              >
+                ログイン
+              </Button>
+            </Box>
+
+            <VStack spacing={3} pt={2}>
+              <Link
+                color="#887563"
+                fontSize="sm"
+                _hover={{
+                  color: "#76654f",
+                  textDecoration: "underline",
+                }}
+                transition="color 0.2s"
+              >
+                パスワードをお忘れですか？
+              </Link>
+
+              <Divider borderColor="gray.200" />
+
+              <Text fontSize="sm" color="gray.600">
+                アカウントをお持ちでない方は
+                <Link
+                  color="#887563"
+                  fontWeight="medium"
+                  ml={1}
+                  _hover={{
+                    color: "#76654f",
+                    textDecoration: "underline",
+                  }}
+                  transition="color 0.2s"
+                >
+                  新規登録
+                </Link>
+              </Text>
+            </VStack>
+          </VStack>
+        </Box>
+      </VStack>
+    </Box>
   );
 };
 

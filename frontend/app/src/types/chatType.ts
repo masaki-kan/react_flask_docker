@@ -17,6 +17,36 @@ export interface chatItemDataType {
   images: string[];
   user_id: number;
   profile_image: string;
-  seller_name: string;
+  user_name: string;
   status: string;
+}
+
+export interface shippingInfoType {
+  user_id: number;
+  trade_id: number;
+  tracking_number: string;
+  shipping_id: number;
+  shipping_company: string;
+  sender_user_id: string;
+  sender_name: string;
+  created_at: string;
+}
+
+export interface confirmationType {
+  user_id: string;
+  confirmation_type: "item_received" | "partner_received";
+  created_at: string;
+}
+
+export interface userDataType {
+  age: number;
+  location: string;
+  name: string;
+  old: number;
+  profile_image: string;
+  reasen: string;
+  shop_name: string;
+  shop_url: string;
+  tags: { key: string; name: string }[];
+  user_id: number;
 }

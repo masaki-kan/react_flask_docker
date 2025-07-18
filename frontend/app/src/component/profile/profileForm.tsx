@@ -26,7 +26,6 @@ import {
   IconButton,
   Badge,
 } from "@chakra-ui/react";
-import { motion } from "framer-motion";
 import {
   FaUpload,
   FaUserCircle,
@@ -74,8 +73,6 @@ const ProfileForm: FC<ProfileFormProps> = ({
   const borderColor = useColorModeValue("gray.200", "gray.700");
   const sectionBg = useColorModeValue("gray.50", "gray.900");
   // const errorColor = useColorModeValue("red.500", "red.300");
-
-  const MotionBox = motion(Box);
 
   // 画像ファイルが選択されたときのハンドラー
   const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -196,25 +193,99 @@ const ProfileForm: FC<ProfileFormProps> = ({
 
   return (
     <Container maxW="container.xl" py={8}>
-      <MotionBox
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
-      >
-        {/* ヘッダー */}
-        <HStack justify="space-between" mb={6}>
-          <Heading size="lg">プロフィール編集</Heading>
-          <IconButton
-            aria-label="Close"
-            icon={<FaTimes />}
-            variant="ghost"
-            onClick={onClickFormSwitch}
-          />
-        </HStack>
+      {/* ヘッダー */}
+      <HStack justify="space-between" mb={6}>
+        <Heading size="lg">プロフィール編集</Heading>
+        <IconButton
+          aria-label="Close"
+          icon={<FaTimes />}
+          variant="ghost"
+          onClick={onClickFormSwitch}
+        />
+      </HStack>
 
-        <Grid templateColumns={{ base: "1fr", lg: "350px 1fr" }} gap={8}>
-          {/* 左側 - アバター編集 */}
-          <GridItem>
+      <Grid templateColumns={{ base: "1fr", lg: "350px 1fr" }} gap={8}>
+        {/* 左側 - アバター編集 */}
+        <GridItem>
+          <Box
+            bg={bgColor}
+            borderRadius="xl"
+            p={6}
+            boxShadow="sm"
+            border="1px solid"
+            borderColor={borderColor}
+            position="sticky"
+            top={4}
+          >
+            <VStack spacing={6}>
+              <Text fontWeight="bold" fontSize="lg">
+                プロフィール画像
+              </Text>
+
+              <Box position="relative">
+                {formData.image.length > 0 ? (
+                  <Avatar
+                    size="2xl"
+                    src={formData.image}
+                    name={formData.name}
+                    border="4px solid"
+                    borderColor={borderColor}
+                  />
+                ) : (
+                  <Box
+                    p={8}
+                    bg={sectionBg}
+                    borderRadius="full"
+                    border="4px solid"
+                    borderColor={borderColor}
+                  >
+                    <Icon as={FaUserCircle} boxSize={20} color="gray.400" />
+                  </Box>
+                )}
+                <IconButton
+                  aria-label="Upload photo"
+                  icon={<FaCamera />}
+                  size="sm"
+                  colorScheme="blue"
+                  position="absolute"
+                  bottom={0}
+                  right={0}
+                  borderRadius="full"
+                  onClick={() => imageInputRef.current?.click()}
+                  boxShadow="md"
+                />
+              </Box>
+
+              <Button
+                w="full"
+                variant="outline"
+                leftIcon={<FaUpload />}
+                onClick={() => imageInputRef.current?.click()}
+              >
+                画像を変更
+              </Button>
+
+              <Input
+                ref={imageInputRef}
+                type="file"
+                accept="image/png, image/jpeg"
+                onChange={handleImageChange}
+                hidden
+              />
+
+              <Text fontSize="xs" color="gray.500" textAlign="center">
+                推奨: 正方形の画像
+                <br />
+                最大サイズ: 800×800px
+              </Text>
+            </VStack>
+          </Box>
+        </GridItem>
+
+        {/* 右側 - フォーム */}
+        <GridItem>
+          <VStack spacing={6}>
+            {/* 基本情報 */}
             <Box
               bg={bgColor}
               borderRadius="xl"
@@ -222,314 +293,234 @@ const ProfileForm: FC<ProfileFormProps> = ({
               boxShadow="sm"
               border="1px solid"
               borderColor={borderColor}
-              position="sticky"
-              top={4}
+              w="full"
             >
-              <VStack spacing={6}>
-                <Text fontWeight="bold" fontSize="lg">
-                  プロフィール画像
-                </Text>
+              <Heading size="md" mb={4}>
+                基本情報
+              </Heading>
 
-                <Box position="relative">
-                  {formData.image.length > 0 ? (
-                    <Avatar
-                      size="2xl"
-                      src={formData.image}
-                      name={formData.name}
-                      border="4px solid"
-                      borderColor={borderColor}
-                    />
-                  ) : (
-                    <Box
-                      p={8}
-                      bg={sectionBg}
-                      borderRadius="full"
-                      border="4px solid"
-                      borderColor={borderColor}
-                    >
-                      <Icon as={FaUserCircle} boxSize={20} color="gray.400" />
-                    </Box>
-                  )}
-                  <IconButton
-                    aria-label="Upload photo"
-                    icon={<FaCamera />}
-                    size="sm"
-                    colorScheme="blue"
-                    position="absolute"
-                    bottom={0}
-                    right={0}
-                    borderRadius="full"
-                    onClick={() => imageInputRef.current?.click()}
-                    boxShadow="md"
+              <VStack spacing={4}>
+                <FormControl isInvalid={formError.name}>
+                  <FormLabel>
+                    <HStack spacing={2}>
+                      <Icon as={FaUser} boxSize={4} />
+                      <Text>名前</Text>
+                      <Badge colorScheme="red" fontSize="xs">
+                        必須
+                      </Badge>
+                    </HStack>
+                  </FormLabel>
+                  <Input
+                    placeholder="名前を入力"
+                    value={formData.name}
+                    name="name"
+                    onChange={formDateChangeHandler}
+                    size="lg"
                   />
-                </Box>
+                  <FormErrorMessage>名前は必須です</FormErrorMessage>
+                </FormControl>
 
-                <Button
+                <FormControl isInvalid={formError.location}>
+                  <FormLabel>
+                    <HStack spacing={2}>
+                      <Icon as={FaMapMarkerAlt} boxSize={4} />
+                      <Text>地域</Text>
+                      <Badge colorScheme="red" fontSize="xs">
+                        必須
+                      </Badge>
+                    </HStack>
+                  </FormLabel>
+                  <Input
+                    placeholder="例: 大阪"
+                    name="location"
+                    value={formData.location}
+                    onChange={formDateChangeHandler}
+                    size="lg"
+                  />
+                  <FormErrorMessage>地域は必須です</FormErrorMessage>
+                </FormControl>
+
+                <Grid
+                  templateColumns={{ base: "1fr", md: "1fr 1fr" }}
+                  gap={4}
                   w="full"
-                  variant="outline"
-                  leftIcon={<FaUpload />}
-                  onClick={() => imageInputRef.current?.click()}
                 >
-                  画像を変更
-                </Button>
+                  <FormControl isInvalid={formError.old}>
+                    <FormLabel>
+                      <HStack spacing={2}>
+                        <Icon as={FaCalendarAlt} boxSize={4} />
+                        <Text>年代</Text>
+                        <Badge colorScheme="red" fontSize="xs">
+                          必須
+                        </Badge>
+                      </HStack>
+                    </FormLabel>
+                    <Select
+                      name="old"
+                      value={formData.old || ""}
+                      onChange={formDateChangeHandler}
+                      size="lg"
+                    >
+                      <option value="0">年代を選択</option>
+                      <option value="10">10代</option>
+                      <option value="20">20代</option>
+                      <option value="30">30代</option>
+                      <option value="40">40代</option>
+                      <option value="50">50代</option>
+                      <option value="60">60代以上</option>
+                    </Select>
+                    <FormErrorMessage>年代は必須です</FormErrorMessage>
+                  </FormControl>
 
-                <Input
-                  ref={imageInputRef}
-                  type="file"
-                  accept="image/png, image/jpeg"
-                  onChange={handleImageChange}
-                  hidden
-                />
-
-                <Text fontSize="xs" color="gray.500" textAlign="center">
-                  推奨: 正方形の画像
-                  <br />
-                  最大サイズ: 800×800px
-                </Text>
+                  <FormControl>
+                    <FormLabel>
+                      <HStack spacing={2}>
+                        <Icon as={FaHeart} boxSize={4} />
+                        <Text>古着歴（年）</Text>
+                      </HStack>
+                    </FormLabel>
+                    <NumberInput
+                      min={1}
+                      value={Number(formData.age)}
+                      onChange={(valueString) => {
+                        setFormData((prev) => ({
+                          ...prev,
+                          age: Number(valueString),
+                        }));
+                      }}
+                      size="lg"
+                    >
+                      <NumberInputField />
+                      <NumberInputStepper>
+                        <NumberIncrementStepper />
+                        <NumberDecrementStepper />
+                      </NumberInputStepper>
+                    </NumberInput>
+                  </FormControl>
+                </Grid>
               </VStack>
             </Box>
-          </GridItem>
 
-          {/* 右側 - フォーム */}
-          <GridItem>
-            <VStack spacing={6}>
-              {/* 基本情報 */}
-              <Box
-                bg={bgColor}
-                borderRadius="xl"
-                p={6}
-                boxShadow="sm"
-                border="1px solid"
-                borderColor={borderColor}
-                w="full"
-              >
-                <Heading size="md" mb={4}>
-                  基本情報
-                </Heading>
+            {/* 好きなジャンル */}
+            <Box
+              bg={bgColor}
+              borderRadius="xl"
+              p={6}
+              boxShadow="sm"
+              border="1px solid"
+              borderColor={borderColor}
+              w="full"
+            >
+              <FormLabel mb={4}>
+                <Heading size="md">好きなジャンル</Heading>
+                <Text fontSize="sm" color="gray.500" mt={1}>
+                  最大5個まで選択可能
+                </Text>
+              </FormLabel>
+              <CustomBrandsSelect
+                tags={formData.tag}
+                onChange={handleTagChange}
+              />
+            </Box>
 
-                <VStack spacing={4}>
-                  <FormControl isInvalid={formError.name}>
-                    <FormLabel>
-                      <HStack spacing={2}>
-                        <Icon as={FaUser} boxSize={4} />
-                        <Text>名前</Text>
-                        <Badge colorScheme="red" fontSize="xs">
-                          必須
-                        </Badge>
-                      </HStack>
-                    </FormLabel>
-                    <Input
-                      placeholder="名前を入力"
-                      value={formData.name}
-                      name="name"
-                      onChange={formDateChangeHandler}
-                      size="lg"
-                    />
-                    <FormErrorMessage>名前は必須です</FormErrorMessage>
-                  </FormControl>
+            {/* お店情報 */}
+            <Box
+              bg={bgColor}
+              borderRadius="xl"
+              p={6}
+              boxShadow="sm"
+              border="1px solid"
+              borderColor={borderColor}
+              w="full"
+            >
+              <Heading size="md" mb={4}>
+                お気に入りの店
+              </Heading>
 
-                  <FormControl isInvalid={formError.location}>
-                    <FormLabel>
-                      <HStack spacing={2}>
-                        <Icon as={FaMapMarkerAlt} boxSize={4} />
-                        <Text>地域</Text>
-                        <Badge colorScheme="red" fontSize="xs">
-                          必須
-                        </Badge>
-                      </HStack>
-                    </FormLabel>
-                    <Input
-                      placeholder="例: 大阪"
-                      name="location"
-                      value={formData.location}
-                      onChange={formDateChangeHandler}
-                      size="lg"
-                    />
-                    <FormErrorMessage>地域は必須です</FormErrorMessage>
-                  </FormControl>
-
-                  <Grid
-                    templateColumns={{ base: "1fr", md: "1fr 1fr" }}
-                    gap={4}
-                    w="full"
-                  >
-                    <FormControl isInvalid={formError.old}>
-                      <FormLabel>
-                        <HStack spacing={2}>
-                          <Icon as={FaCalendarAlt} boxSize={4} />
-                          <Text>年代</Text>
-                          <Badge colorScheme="red" fontSize="xs">
-                            必須
-                          </Badge>
-                        </HStack>
-                      </FormLabel>
-                      <Select
-                        name="old"
-                        value={formData.old || ""}
-                        onChange={formDateChangeHandler}
-                        size="lg"
-                      >
-                        <option value="0">年代を選択</option>
-                        <option value="10">10代</option>
-                        <option value="20">20代</option>
-                        <option value="30">30代</option>
-                        <option value="40">40代</option>
-                        <option value="50">50代</option>
-                        <option value="60">60代以上</option>
-                      </Select>
-                      <FormErrorMessage>年代は必須です</FormErrorMessage>
-                    </FormControl>
-
-                    <FormControl>
-                      <FormLabel>
-                        <HStack spacing={2}>
-                          <Icon as={FaHeart} boxSize={4} />
-                          <Text>古着歴（年）</Text>
-                        </HStack>
-                      </FormLabel>
-                      <NumberInput
-                        min={1}
-                        value={Number(formData.age)}
-                        onChange={(valueString) => {
-                          setFormData((prev) => ({
-                            ...prev,
-                            age: Number(valueString),
-                          }));
-                        }}
-                        size="lg"
-                      >
-                        <NumberInputField />
-                        <NumberInputStepper>
-                          <NumberIncrementStepper />
-                          <NumberDecrementStepper />
-                        </NumberInputStepper>
-                      </NumberInput>
-                    </FormControl>
-                  </Grid>
-                </VStack>
-              </Box>
-
-              {/* 好きなジャンル */}
-              <Box
-                bg={bgColor}
-                borderRadius="xl"
-                p={6}
-                boxShadow="sm"
-                border="1px solid"
-                borderColor={borderColor}
-                w="full"
-              >
-                <FormLabel mb={4}>
-                  <Heading size="md">好きなジャンル</Heading>
-                  <Text fontSize="sm" color="gray.500" mt={1}>
-                    最大5個まで選択可能
-                  </Text>
-                </FormLabel>
-                <CustomBrandsSelect
-                  tags={formData.tag}
-                  onChange={handleTagChange}
-                />
-              </Box>
-
-              {/* お店情報 */}
-              <Box
-                bg={bgColor}
-                borderRadius="xl"
-                p={6}
-                boxShadow="sm"
-                border="1px solid"
-                borderColor={borderColor}
-                w="full"
-              >
-                <Heading size="md" mb={4}>
-                  お気に入りの店
-                </Heading>
-
-                <VStack spacing={4}>
-                  <FormControl>
-                    <FormLabel>
-                      <HStack spacing={2}>
-                        <Icon as={FaStore} boxSize={4} />
-                        <Text>店舗名</Text>
-                      </HStack>
-                    </FormLabel>
-                    <Input
-                      placeholder="店舗名を入力"
-                      name="favoriteShop_name"
-                      value={formData.favoriteShop.name || ""}
-                      onChange={formDateChangeHandler}
-                      size="lg"
-                    />
-                  </FormControl>
-
-                  <FormControl>
-                    <FormLabel>
-                      <HStack spacing={2}>
-                        <Icon as={FaLink} boxSize={4} />
-                        <Text>店舗URL</Text>
-                      </HStack>
-                    </FormLabel>
-                    <Input
-                      placeholder="https://example.com"
-                      name="favoriteShop_url"
-                      value={formData.favoriteShop.url || ""}
-                      onChange={formDateChangeHandler}
-                      size="lg"
-                    />
-                  </FormControl>
-                </VStack>
-              </Box>
-
-              {/* きっかけ */}
-              <Box
-                bg={bgColor}
-                borderRadius="xl"
-                p={6}
-                boxShadow="sm"
-                border="1px solid"
-                borderColor={borderColor}
-                w="full"
-              >
+              <VStack spacing={4}>
                 <FormControl>
                   <FormLabel>
                     <HStack spacing={2}>
-                      <Icon as={FaComment} boxSize={4} />
-                      <Heading size="md">古着にハマったきっかけ</Heading>
+                      <Icon as={FaStore} boxSize={4} />
+                      <Text>店舗名</Text>
                     </HStack>
                   </FormLabel>
-                  <Textarea
-                    name={"reasen"}
-                    placeholder=""
-                    value={formData.reasen}
-                    onChange={(e) => {
-                      formDateChangeHandler(e);
-                    }}
+                  <Input
+                    placeholder="店舗名を入力"
+                    name="favoriteShop_name"
+                    value={formData.favoriteShop.name || ""}
+                    onChange={formDateChangeHandler}
+                    size="lg"
                   />
                 </FormControl>
-              </Box>
 
-              <HStack justify="space-between" w="full" pt={4}>
-                <Button
-                  size="lg"
-                  variant="outline"
-                  onClick={onClickFormSwitch}
-                  leftIcon={<FaTimes />}
-                >
-                  キャンセル
-                </Button>
-                <Button
-                  size="lg"
-                  colorScheme="blue"
-                  onClick={storeFormDataHandler}
-                  leftIcon={<FaSave />}
-                >
-                  変更を保存
-                </Button>
-              </HStack>
-            </VStack>
-          </GridItem>
-        </Grid>
-      </MotionBox>
+                <FormControl>
+                  <FormLabel>
+                    <HStack spacing={2}>
+                      <Icon as={FaLink} boxSize={4} />
+                      <Text>店舗URL</Text>
+                    </HStack>
+                  </FormLabel>
+                  <Input
+                    placeholder="https://example.com"
+                    name="favoriteShop_url"
+                    value={formData.favoriteShop.url || ""}
+                    onChange={formDateChangeHandler}
+                    size="lg"
+                  />
+                </FormControl>
+              </VStack>
+            </Box>
+
+            {/* きっかけ */}
+            <Box
+              bg={bgColor}
+              borderRadius="xl"
+              p={6}
+              boxShadow="sm"
+              border="1px solid"
+              borderColor={borderColor}
+              w="full"
+            >
+              <FormControl>
+                <FormLabel>
+                  <HStack spacing={2}>
+                    <Icon as={FaComment} boxSize={4} />
+                    <Heading size="md">古着にハマったきっかけ</Heading>
+                  </HStack>
+                </FormLabel>
+                <Textarea
+                  name={"reasen"}
+                  placeholder=""
+                  value={formData.reasen}
+                  onChange={(e) => {
+                    formDateChangeHandler(e);
+                  }}
+                />
+              </FormControl>
+            </Box>
+
+            <HStack justify="space-between" w="full" pt={4}>
+              <Button
+                size="lg"
+                variant="outline"
+                onClick={onClickFormSwitch}
+                leftIcon={<FaTimes />}
+              >
+                キャンセル
+              </Button>
+              <Button
+                size="lg"
+                colorScheme="blue"
+                onClick={storeFormDataHandler}
+                leftIcon={<FaSave />}
+              >
+                変更を保存
+              </Button>
+            </HStack>
+          </VStack>
+        </GridItem>
+      </Grid>
     </Container>
   );
 };

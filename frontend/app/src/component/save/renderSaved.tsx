@@ -17,7 +17,7 @@ import { viewDate } from "../common/date/format";
 import { useNavigate } from "react-router-dom";
 import { route } from "../../route/routeConst";
 import useMyProfile from "../../hooks/useProfile";
-import { FaExclamation } from "react-icons/fa";
+import { FaExclamation, FaUserCircle } from "react-icons/fa";
 import { itemParts } from "../../consts/itemConsts";
 
 type RenderSavedType = {
@@ -202,17 +202,25 @@ const RenderSaved: FC<RenderSavedType> = ({ savedList }) => {
                   <Divider />
                   {/* 取引相手情報 */}
                   <HStack spacing={3} w="full">
-                    <Avatar
-                      src={save.user_image_url}
-                      size="sm"
-                      name={save.user_name}
-                    />
+                    {save.user_image_url !== null ? (
+                      <Avatar
+                        src={save.user_image_url}
+                        size="sm"
+                        name={save.user_name}
+                      />
+                    ) : (
+                      <Box ml={4} mx={"auto"}>
+                        <FaUserCircle size={"30px"} color="gray.500" />
+                      </Box>
+                    )}
                     <VStack align="start" spacing={0} flex={1}>
                       <Text fontSize="sm" fontWeight="medium" noOfLines={1}>
                         {save.user_name}
                       </Text>
                       <Text fontSize="xs" color="gray.500">
-                        {/* {save.seller_id === userId ? "購入者" : "出品者"} */}
+                        {save.seller_id === memorizeProfile.profile.id
+                          ? "購入者"
+                          : "出品者"}
                       </Text>
                     </VStack>
                   </HStack>

@@ -1,16 +1,21 @@
 import { FC, useCallback, useEffect, useState } from "react";
 import {
-  Stack,
   Avatar,
   VStack,
-  Wrap,
   Tag,
   Text,
   Link,
-  Button,
   Box,
+  Container,
+  Grid,
+  GridItem,
+  Heading,
+  HStack,
+  Icon,
+  useColorModeValue,
+  Button,
+  Wrap,
 } from "@chakra-ui/react";
-import RebderItem from "../common/render/renderItem";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { route } from "../../route/routeConst";
 import useMyProfile from "../../hooks/useProfile";
@@ -21,7 +26,17 @@ import { useDispatch } from "react-redux";
 import useAlert from "../../hooks/useAlert";
 import useLaoding from "../../hooks/useLaoding";
 import { setTargetDetailUser } from "../../store/usersSlice";
-import { FaUserCircle } from "react-icons/fa";
+import {
+  FaUserCircle,
+  FaMapMarkerAlt,
+  FaCalendarAlt,
+  FaHeart,
+  FaStore,
+  FaComment,
+  FaLink,
+} from "react-icons/fa";
+import { IconType } from "react-icons";
+import RebderItem from "../common/render/renderItem";
 
 const ShopIndex: FC = () => {
   const dispath = useDispatch();
@@ -31,9 +46,42 @@ const ShopIndex: FC = () => {
   const userNumver = searchParams.get("user");
   const { memorizeuserProfile } = useMyProfile();
   const { changeLoading } = useLaoding();
-
-  const myProfile = useSelector((state: RootState) => state.profile);
   const [followCheck, setFollowCheck] = useState<boolean>(false);
+  const myProfile = useSelector((state: RootState) => state.profile);
+
+  // カラーモード対応
+  const bgColor = useColorModeValue("white", "gray.800");
+  const borderColor = useColorModeValue("gray.200", "gray.700");
+  const sectionBg = useColorModeValue("gray.50", "gray.900");
+  const textMuted = useColorModeValue("gray.600", "gray.400");
+  const accentColor = useColorModeValue("blue.500", "blue.400");
+
+  const InfoItem: FC<{
+    icon: IconType;
+    label: string;
+    value: React.ReactNode;
+    isEmpty?: boolean;
+  }> = ({ icon, label, value, isEmpty }) => (
+    <VStack align="start" spacing={1} w="full">
+      <HStack spacing={2} color={textMuted}>
+        <Icon as={icon} boxSize={4} />
+        <Text fontSize="sm" fontWeight="medium">
+          {label}
+        </Text>
+      </HStack>
+      <Box pl={6}>
+        {isEmpty ? (
+          <Text fontSize="sm" color={textMuted} fontStyle="italic">
+            未設定
+          </Text>
+        ) : (
+          <Box fontSize="md" fontWeight="medium">
+            {value}
+          </Box>
+        )}
+      </Box>
+    </VStack>
+  );
 
   const itemDetailHanlder = useCallback(
     (index: string) => {
@@ -65,68 +113,58 @@ const ShopIndex: FC = () => {
     memorizeuserProfile.profile.is_following,
   ]);
 
-  const noValueText = () => {
-    return (
-      <Text size={"xs"} color={"#887563"}>
-        未設定
-      </Text>
-    );
-  };
-
   const tagsViewRender = useCallback(() => {
     if (memorizeuserProfile.profile.tag.length > 0) {
-      return memorizeuserProfile.profile.tag.map((tag, index) => {
-        return <Tag key={index}>{tag.name}</Tag>;
-      });
+      return (
+        <Wrap spacing={2}>
+          {memorizeuserProfile.profile.tag.map((tag, index) => (
+            <Tag
+              key={index}
+              size="md"
+              colorScheme="teal"
+              borderRadius="full"
+              px={3}
+              py={1}
+            >
+              {tag.name}
+            </Tag>
+          ))}
+        </Wrap>
+      );
     }
-
-    return noValueText();
-  }, [memorizeuserProfile.profile.tag]);
+    return null;
+  }, [memorizeuserProfile]);
 
   const favoriteShopViewRender = useCallback(() => {
     if (memorizeuserProfile.profile.favoriteShop.name) {
       return (
-        <>
-          <Text size={"sm"} color={"#887563"} ml={4}>
+        <VStack align="start" spacing={2}>
+          <Text fontWeight="medium">
             {memorizeuserProfile.profile.favoriteShop.name}
           </Text>
-          <Text size={"sm"} w={"50%"}>
-            URL
-          </Text>
-          <Text size={"sm"} color={"#887563"} ml={4}>
+          {memorizeuserProfile.profile.favoriteShop.url && (
             <Link
               href={memorizeuserProfile.profile.favoriteShop.url}
               isExternal
-              display={"flex"}
-              alignItems={"center"}
-              wordBreak={"break-all"}
+              color={accentColor}
+              fontSize="sm"
+              _hover={{ textDecoration: "underline" }}
             >
-              {memorizeuserProfile.profile.favoriteShop.url}
+              <HStack spacing={1}>
+                <Icon as={FaLink} boxSize={3} />
+                <Text>ショップを見る</Text>
+              </HStack>
             </Link>
-          </Text>
-        </>
+          )}
+        </VStack>
       );
     }
-
-    return noValueText();
+    return null;
   }, [
     memorizeuserProfile.profile.favoriteShop.name,
     memorizeuserProfile.profile.favoriteShop.url,
+    accentColor,
   ]);
-
-  const reasenViewRender = useCallback(() => {
-    if (memorizeuserProfile.profile.reasen) {
-      return (
-        <>
-          <Text size={"sm"} color={"#887563"} wordBreak={"break-all"} ml={4}>
-            {memorizeuserProfile.profile.reasen}
-          </Text>
-        </>
-      );
-    }
-
-    return noValueText();
-  }, [memorizeuserProfile.profile.reasen]);
 
   const followUpdataHandler = useCallback(async () => {
     const response = await userFollewApi(
@@ -142,99 +180,179 @@ const ShopIndex: FC = () => {
 
   return (
     <>
-      <Stack
-        alignItems={"start"}
-        direction={{ base: "column", md: "row" }}
-        spacing={4}
-        width={"100%"}
-        my={4}
-      >
-        <VStack align={"center"} mr={4}>
-          {memorizeuserProfile.profile.image.length > 0 ? (
-            <Avatar
-              size={"xl"}
-              mx={"auto"}
-              name={memorizeuserProfile.profile.name}
-              src={memorizeuserProfile.profile.image}
-            />
-          ) : (
-            <>
-              <Box mx={"auto"}>
-                <FaUserCircle size={"60px"} color="gray.500" />
+      <Container maxW="container.xl" py={8}>
+        <Grid templateColumns={{ base: "1fr", lg: "350px 1fr" }} gap={8}>
+          {/* 左サイドバー - プロフィール情報 */}
+          <GridItem>
+            <Box
+              bg={bgColor}
+              borderRadius="xl"
+              p={6}
+              boxShadow="lg"
+              border="1px solid"
+              borderColor={borderColor}
+              position="sticky"
+              top={4}
+            >
+              {/* アバターとメイン情報 */}
+              <VStack spacing={6}>
+                <Box position="relative">
+                  {memorizeuserProfile.profile.image.length > 0 ? (
+                    <Avatar
+                      size="2xl"
+                      src={memorizeuserProfile.profile.image}
+                      name={memorizeuserProfile.profile.name}
+                      border="4px solid"
+                      borderColor={borderColor}
+                    />
+                  ) : (
+                    <Box
+                      p={8}
+                      bg={sectionBg}
+                      borderRadius="full"
+                      border="4px solid"
+                      borderColor={borderColor}
+                    >
+                      <Icon as={FaUserCircle} boxSize={20} color="gray.400" />
+                    </Box>
+                  )}
+                </Box>
+                <Button
+                  variant="solid"
+                  size={"xs"}
+                  onClick={followUpdataHandler}
+                >
+                  {followCheck === false ? "フォローする" : "フォロー解除する"}
+                </Button>
+                <VStack spacing={1}>
+                  <Heading size="lg">
+                    {memorizeuserProfile.profile.name}
+                  </Heading>
+                  <HStack>
+                    <Icon as={FaMapMarkerAlt} color={textMuted} boxSize={4} />
+                    <Text color={textMuted}>
+                      {memorizeuserProfile.profile.location || "未設定"}
+                    </Text>
+                  </HStack>
+                </VStack>
+              </VStack>
+            </Box>
+          </GridItem>
+
+          {/* 右側 - 詳細情報 */}
+          <GridItem>
+            <VStack spacing={6} align="stretch">
+              {/* 基本情報セクション */}
+              <Box
+                bg={bgColor}
+                borderRadius="xl"
+                p={6}
+                boxShadow="sm"
+                border="1px solid"
+                borderColor={borderColor}
+              >
+                <Heading size="md" mb={4}>
+                  基本情報
+                </Heading>
+                <Grid templateColumns={{ base: "1fr", md: "1fr 1fr" }} gap={6}>
+                  <InfoItem
+                    icon={FaCalendarAlt}
+                    label="年代"
+                    value={
+                      memorizeuserProfile.profile.old
+                        ? `${memorizeuserProfile.profile.old}代`
+                        : null
+                    }
+                    isEmpty={!memorizeuserProfile.profile.old}
+                  />
+                  <InfoItem
+                    icon={FaHeart}
+                    label="古着歴"
+                    value={
+                      memorizeuserProfile.profile.age
+                        ? `${memorizeuserProfile.profile.age}年目`
+                        : null
+                    }
+                    isEmpty={!memorizeuserProfile.profile.age}
+                  />
+                </Grid>
               </Box>
-            </>
-          )}
 
-          <Button variant="solid" size={"xs"} onClick={followUpdataHandler}>
-            {followCheck === false ? "フォローする" : "フォロー解除する"}
-          </Button>
-        </VStack>
+              {/* 好きなジャンル */}
+              {memorizeuserProfile.profile.tag.length > 0 && (
+                <Box
+                  bg={bgColor}
+                  borderRadius="xl"
+                  p={6}
+                  boxShadow="sm"
+                  border="1px solid"
+                  borderColor={borderColor}
+                >
+                  <Heading size="md" mb={4}>
+                    好きなジャンル
+                  </Heading>
+                  {tagsViewRender()}
+                </Box>
+              )}
 
-        <VStack gap={10}>
-          <VStack align={"start"} width={"100%"}>
-            <Text size={"sm"}>名前</Text>
-            <Wrap gap={2} color={"#887563"} ml={4}>
-              {memorizeuserProfile.profile.name}
-            </Wrap>
-          </VStack>
-          <VStack align={"start"} width={"100%"}>
-            <Text size={"sm"}>Location</Text>
-            <Wrap gap={2} color={"#887563"} ml={4}>
-              {memorizeuserProfile.profile.location ?? "未設定"}
-            </Wrap>
-          </VStack>
-          <VStack align={"start"} width={"100%"}>
-            <Text size={"sm"}>年代</Text>
-            <Wrap gap={2} color={"#887563"} ml={4}>
-              {" "}
-              {memorizeuserProfile.profile.old
-                ? `${memorizeuserProfile.profile.old} 代`
-                : "未設定"}
-            </Wrap>
-          </VStack>
-          <VStack align={"start"} width={"100%"}>
-            <Text size={"sm"}>古着歴</Text>
-            <Wrap gap={2} color={"#887563"} ml={4}>
-              {" "}
-              {memorizeuserProfile.profile.age
-                ? `${memorizeuserProfile.profile.age} 年目`
-                : "未設定"}
-            </Wrap>
-          </VStack>
-          <VStack align={"start"} width={"100%"}>
-            <Text size={"sm"}>好きなジャンル</Text>
-            <Wrap gap={2} ml={4}>
-              {tagsViewRender()}
-            </Wrap>
-          </VStack>
+              {/* お気に入りの店 */}
+              {memorizeuserProfile.profile.favoriteShop.name && (
+                <Box
+                  bg={bgColor}
+                  borderRadius="xl"
+                  p={6}
+                  boxShadow="sm"
+                  border="1px solid"
+                  borderColor={borderColor}
+                >
+                  <InfoItem
+                    icon={FaStore}
+                    label="お気に入りの店"
+                    value={favoriteShopViewRender()}
+                  />
+                </Box>
+              )}
 
-          <VStack align={"start"} spacing={2} width={"100%"}>
-            <Text size={"sm"} w={"50%"}>
-              お気に入りお店
-            </Text>
-            {favoriteShopViewRender()}
-          </VStack>
+              {/* 古着にハマったきっかけ */}
+              {memorizeuserProfile.profile.reasen && (
+                <Box
+                  bg={bgColor}
+                  borderRadius="xl"
+                  p={6}
+                  boxShadow="sm"
+                  border="1px solid"
+                  borderColor={borderColor}
+                >
+                  <InfoItem
+                    icon={FaComment}
+                    label="古着にハマったきっかけ"
+                    value={
+                      <Text lineHeight="tall" color={textMuted}>
+                        {memorizeuserProfile.profile.reasen}
+                      </Text>
+                    }
+                  />
+                </Box>
+              )}
 
-          <VStack align={"start"} width={"100%"}>
-            <Text size={"sm"}>古着にハマったきっかけ</Text>
-            {reasenViewRender()}
-          </VStack>
-
-          <VStack align={"start"} width={"100%"}>
-            <Text size={"sm"}>登録商品</Text>
-            {memorizeuserProfile.items.length === 0 ? (
-              <Text size={"xs"} color={"#887563"}>
-                商品がありません。
-              </Text>
-            ) : (
-              <RebderItem
-                itemList={memorizeuserProfile.items}
-                navigate={itemDetailHanlder}
-              />
-            )}
-          </VStack>
-        </VStack>
-      </Stack>
+              {/* アイテム */}
+              <VStack align={"start"} w={"full"}>
+                <Text size={"sm"}>登録商品</Text>
+                {memorizeuserProfile.items.length === 0 ? (
+                  <Text size={"xs"} color={"#887563"}>
+                    商品がありません。
+                  </Text>
+                ) : (
+                  <RebderItem
+                    itemList={memorizeuserProfile.items}
+                    navigate={itemDetailHanlder}
+                  />
+                )}
+              </VStack>
+            </VStack>
+          </GridItem>
+        </Grid>
+      </Container>
     </>
   );
 };

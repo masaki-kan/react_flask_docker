@@ -1,5 +1,4 @@
 import React, { FC, useCallback, useState } from "react";
-import { motion } from "framer-motion";
 import {
   Grid,
   Image,
@@ -26,7 +25,6 @@ type RebderItemProps = {
 
 const RebderItem: FC<RebderItemProps> = React.memo(({ itemList, navigate }) => {
   const location = useLocation();
-  const MotionCard = motion.create(Card);
   const [isMatch, setIsMatch] = useState<boolean>(false);
   // カラーモード対応
   const bgColor = useColorModeValue("white", "gray.800");
@@ -62,13 +60,13 @@ const RebderItem: FC<RebderItemProps> = React.memo(({ itemList, navigate }) => {
       mb={10}
       mt={2}
       px={0}
-      height={isMatch ? "auto" : { base: "auto", md: "550px" }}
+      height={"min-content"}
       overflowY={isMatch ? "visible" : "scroll"}
     >
       {itemList.map((product, index) => {
         const statusInfo = getTradeStatusInfo(product.tradeStatusFlag);
         return (
-          <MotionCard
+          <Card
             key={index}
             position="relative"
             bg={bgColor}
@@ -79,9 +77,6 @@ const RebderItem: FC<RebderItemProps> = React.memo(({ itemList, navigate }) => {
             borderColor={borderColor}
             cursor="pointer"
             onClick={() => navigate(product.itemId)}
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.05, duration: 0.3 }}
             _hover={{
               transform: "translateY(-4px)",
               boxShadow: "lg",
@@ -190,6 +185,8 @@ const RebderItem: FC<RebderItemProps> = React.memo(({ itemList, navigate }) => {
 
               <VStack spacing={1} align="start">
                 <Badge
+                  display={{ base: "block", md: "flex" }}
+                  whiteSpace={"wrap"}
                   colorScheme="purple"
                   fontSize={{ base: "2xs", sm: "2xs", md: "2xs" }}
                   px={{ base: 1.5, sm: 2 }}
@@ -211,7 +208,7 @@ const RebderItem: FC<RebderItemProps> = React.memo(({ itemList, navigate }) => {
                 )}
               </VStack>
             </VStack>
-          </MotionCard>
+          </Card>
         );
       })}
     </Grid>

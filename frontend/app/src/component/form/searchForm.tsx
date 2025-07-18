@@ -112,11 +112,11 @@ const SearchForm: FC<SearchFormProps> = React.memo(
     );
 
     return (
-      <VStack hidden={hidden} align={"start"} mt={4} w={"full"} gap={3}>
+      <VStack hidden={hidden} align={"start"} w={"full"} gap={3}>
         <FormControl>
           <Input
             bg={"white"}
-            placeholder="ユーザー名検索"
+            placeholder="キーワードで検索"
             size="md"
             defaultValue={search}
             onChange={(e) => searchHandler(e)}

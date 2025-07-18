@@ -1,3 +1,4 @@
+# ユーザーテーブル
 def create_users_table(cursor):
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS users (
@@ -14,11 +15,13 @@ def create_users_table(cursor):
             reasen TEXT,
             stripe_customer_id VARCHAR(255) NOT NULL,
             plan  VARCHAR(1) DEFAULT '1',
+            type INT DEFAULT 1, -- 0 : 管理者, 1 : 利用者
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
     ''')
-    
+
+# ユーザーフォローテーブル
 def create_follows_table(cursor):
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS follows (
@@ -31,7 +34,8 @@ def create_follows_table(cursor):
         UNIQUE (follower_id, followed_id)  -- 重複フォローを防止
     );
 ''')
-    
+
+# プロフィール画像テーブル
 def create_profile_images_table(cursor):
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS profile_images (
@@ -43,7 +47,7 @@ def create_profile_images_table(cursor):
             FOREIGN KEY (user_id) REFERENCES users(user_id)
         );
     ''')
-    
+# プロフィール　タグテーブル
 def create_tags_table(cursor):
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS tags (
@@ -56,18 +60,7 @@ def create_tags_table(cursor):
         );
     ''')
     
-def create_plans_table(cursor):
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS plans (
-            plan_id INT AUTO_INCREMENT PRIMARY KEY,
-            user_id INT,
-            type VARCHAR(255),
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (user_id) REFERENCES users(user_id)
-        );
-    ''')  
-    
+# 商品テーブル
 def create_items_table(cursor):
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS items (
@@ -82,7 +75,7 @@ def create_items_table(cursor):
             FOREIGN KEY (user_id) REFERENCES users(user_id)
         );
     ''')
-    
+# 商品イメージテーブル
 def create_item_images_table(cursor):
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS item_images (
@@ -95,7 +88,8 @@ def create_item_images_table(cursor):
             FOREIGN KEY (item_id) REFERENCES items(item_id)
         );
     ''')
-    
+
+# 商品お気に入りテーブル
 def create_likes_table(cursor):
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS likes (
@@ -108,7 +102,8 @@ def create_likes_table(cursor):
             UNIQUE (user_id, item_id)
         );
     ''')
-    
+
+# 取引テーブル
 def create_trades_table(cursor):
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS trades (
@@ -127,7 +122,8 @@ def create_trades_table(cursor):
             UNIQUE (item_id, buyer_id)
         );
     ''')
-    
+
+# チャットテーブル
 def create_trade_messages_table(cursor):
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS trade_messages (
@@ -141,7 +137,39 @@ def create_trade_messages_table(cursor):
             FOREIGN KEY (sender_id) REFERENCES users(user_id) ON DELETE CASCADE
         );
     ''')
-    
+
+# 発送情報テーブル
+def create_shipping_info_table(cursor):
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS shipping_info (
+            shipping_id INT AUTO_INCREMENT PRIMARY KEY,
+            trade_id INT NOT NULL,
+            sender_user_id INT NOT NULL,
+            tracking_number VARCHAR(255),
+            shipping_company VARCHAR(255),
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (trade_id) REFERENCES trades(trade_id) ON DELETE CASCADE,
+            FOREIGN KEY (sender_user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+            UNIQUE (trade_id, sender_user_id) -- 同じ取引で同じユーザーが2回送信できない
+        );
+    ''')
+
+# 商品受け取り確認テーブル
+def create_trade_confirmations_table(cursor):
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS trade_confirmations (
+            confirmation_id INT AUTO_INCREMENT PRIMARY KEY,
+            trade_id INT NOT NULL,
+            user_id INT NOT NULL,  -- 確認したユーザー
+            confirmation_type ENUM('item_received') NOT NULL,  -- 自分が相手の商品を受け取った
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (trade_id) REFERENCES trades(trade_id) ON DELETE CASCADE,
+            FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+            UNIQUE (trade_id, user_id)  -- 同じ取引で同じユーザーは1回のみ確認
+        );
+    ''')
+
+# 取引評価テーブル
 def create_trade_reviews_table(cursor):
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS trade_reviews (
@@ -163,10 +191,11 @@ def create_table(cursor):
     create_follows_table(cursor)
     create_profile_images_table(cursor)
     create_tags_table(cursor)
-    create_plans_table(cursor)
     create_items_table(cursor)
     create_item_images_table(cursor)
     create_likes_table(cursor)
     create_trades_table(cursor)
     create_trade_messages_table(cursor)
     create_trade_reviews_table(cursor)
+    create_shipping_info_table(cursor) 
+    create_trade_confirmations_table(cursor)  

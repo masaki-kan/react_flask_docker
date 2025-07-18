@@ -101,17 +101,14 @@ const RenderPanel: FC<renderTabPanelType> = ({ data }) => {
                     <Box position="relative">
                       {list.image_url.length > 0 ? (
                         <Avatar
-                          size={{ base: "lg", md: "xl" }}
-                          ml={4}
+                          size={"xl"}
                           name={"my name"}
                           src={list.image_url}
                         />
                       ) : (
-                        <>
-                          <Box ml={4} mx={"auto"}>
-                            <FaUserCircle size={"60px"} color="gray.500" />
-                          </Box>
-                        </>
+                        <Box ml={4} mx={"auto"}>
+                          <FaUserCircle size={"60px"} color="gray.500" />
+                        </Box>
                       )}
 
                       {isNew && (

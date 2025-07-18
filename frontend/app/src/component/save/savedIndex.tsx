@@ -14,7 +14,7 @@ import {
   Badge,
   useColorModeValue,
 } from "@chakra-ui/react";
-import { motion, AnimatePresence } from "framer-motion";
+import { AnimatePresence } from "framer-motion";
 import { FaHandshake, FaCheckCircle } from "react-icons/fa";
 import useSaved from "../../hooks/useSaved";
 import RenderSaved from "./renderSaved";
@@ -58,8 +58,6 @@ const SavedIndex: FC = () => {
       data: completedList,
     },
   ];
-
-  const MotionBox = motion(Box);
 
   return (
     <Container maxW="container.xl" px={{ base: 2, md: 4 }}>
@@ -113,37 +111,30 @@ const SavedIndex: FC = () => {
             {tabs.map((tab, index) => (
               <TabPanel key={index} px={0}>
                 <AnimatePresence mode="wait">
-                  <MotionBox
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -20 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    {tab.data.length === 0 ? (
-                      <Box
-                        textAlign="center"
-                        py={20}
-                        bg={bgColor}
-                        borderRadius="xl"
-                        border="1px solid"
-                        borderColor={borderColor}
-                      >
-                        <Icon
-                          as={tab.icon}
-                          boxSize={12}
-                          color="gray.300"
-                          mb={4}
-                        />
-                        <Text color="gray.500" fontSize="lg">
-                          {index === 0
-                            ? "現在進行中の取引はありません"
-                            : "完了した取引はありません"}
-                        </Text>
-                      </Box>
-                    ) : (
-                      <RenderSaved savedList={tab.data} />
-                    )}
-                  </MotionBox>
+                  {tab.data.length === 0 ? (
+                    <Box
+                      textAlign="center"
+                      py={20}
+                      bg={bgColor}
+                      borderRadius="xl"
+                      border="1px solid"
+                      borderColor={borderColor}
+                    >
+                      <Icon
+                        as={tab.icon}
+                        boxSize={12}
+                        color="gray.300"
+                        mb={4}
+                      />
+                      <Text color="gray.500" fontSize="lg">
+                        {index === 0
+                          ? "現在進行中の取引はありません"
+                          : "完了した取引はありません"}
+                      </Text>
+                    </Box>
+                  ) : (
+                    <RenderSaved savedList={tab.data} />
+                  )}
                 </AnimatePresence>
               </TabPanel>
             ))}

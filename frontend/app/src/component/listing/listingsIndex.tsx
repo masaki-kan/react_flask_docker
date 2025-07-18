@@ -72,6 +72,7 @@ const ListingsIndex: FC = React.memo(() => {
           <Box
             bg={bgColor}
             p={1}
+            mb={2}
             borderRadius="xl"
             boxShadow="0 2px 10px rgba(0, 0, 0, 0.1)"
             border="1px solid"
@@ -112,19 +113,12 @@ const ListingsIndex: FC = React.memo(() => {
           {/* 検索フォーム */}
           <AnimatePresence mode="wait">
             {userSearchHidden && (
-              <MotionBox
-                initial={{ opacity: 0, y: -20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                transition={{ duration: 0.2 }}
-              >
-                <SearchForm
-                  hidden={false}
-                  tagList={memorizeTagList}
-                  selectedTag={memorizeSelectedTag}
-                  route={pathname}
-                />
-              </MotionBox>
+              <SearchForm
+                hidden={false}
+                tagList={memorizeTagList}
+                selectedTag={memorizeSelectedTag}
+                route={pathname}
+              />
             )}
           </AnimatePresence>
 

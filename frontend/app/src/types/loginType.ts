@@ -9,13 +9,26 @@ export interface sinupFormType {
 }
 
 export interface errorStateType {
-  usernameError: string;
-  emailError: string;
-  passwordError: string;
+  username: string;
+  email: string;
+  password: string;
 }
 
-export interface stepsStatueType {
-  form: boolean;
-  select: boolean;
-  credit: boolean;
+// export interface stepsStatueType {
+//   form: boolean;
+//   select: boolean;
+//   credit: boolean;
+// }
+
+export interface plansType {
+  id: string;
+  name: string;
+  price: string;
+  period: string;
+  description: string;
+  save?: string;
+  recommended?: boolean;
+  badge: string;
+  color: string;
+  features: string[];
 }

@@ -145,7 +145,7 @@ const ChatLayout: FC = () => {
           p={3}
           borderRadius="lg"
           bg="blue.50"
-          maxW="100%"
+          maxW="70%"
           whiteSpace="pre-wrap"
           boxShadow="sm"
         >
@@ -161,8 +161,8 @@ const ChatLayout: FC = () => {
       borderWidth={1}
       borderColor="#edf2f7"
       bg="white"
-      h={{ base: "calc(100vh - 350px)", md: "calc(100vh - 280px)" }}
-      minH={{ base: "400px", md: "500px" }}
+      h="calc(100vh - 280px)"
+      minH="500px"
       display="flex"
       flexDirection="column"
     >
@@ -201,7 +201,7 @@ const ChatLayout: FC = () => {
               <VStack
                 align={msg.position === "right" ? "flex-end" : "flex-start"}
                 spacing={1}
-                maxW="100%"
+                maxW="70%"
               >
                 {imageMatchHandler(msg.text)}
                 <Text fontSize="xs" color="gray.500">
