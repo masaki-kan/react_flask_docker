@@ -123,9 +123,7 @@ const RenderSaved: FC<RenderSavedType> = ({ savedList }) => {
               key={index}
               cursor={save.status !== "completed" ? "pointer" : "default"}
               onClick={() => {
-                if (save.status !== "completed") {
-                  saveTransition(save.trade_id, save.last_message_time);
-                }
+                saveTransition(save.trade_id, save.last_message_time);
               }}
               bg="white"
               borderRadius="lg"

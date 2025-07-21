@@ -234,7 +234,7 @@ const Home: FC = () => {
     };
 
     checkConfirmations();
-    const interval = setInterval(checkConfirmations, 5000); // 5秒ごとにチェック
+    const interval = setInterval(checkConfirmations, 1000); // 5秒ごとにチェック
 
     return () => clearInterval(interval);
   }, [tradeIdNumber, memorizeChatItemData.status, isCurrentUserSeller]);
@@ -243,7 +243,7 @@ const Home: FC = () => {
     if (tradeIdNumber) {
       try {
         const result = await fetchExchangeItemsApi(tradeIdNumber);
-        console.log("fetchExchangeItemsApi", result);
+
         if (result && result.exchange_items) {
           setHasSellerSelectedItem(
             !!result.exchange_items.seller_exchange_item
@@ -252,7 +252,6 @@ const Home: FC = () => {
             result.exchange_items.seller_exchange_item?.item_id || null
           );
 
-          console.log("fetchExchangeItemsApi", result);
           setBuyerSelectedItemId(
             result.exchange_items.buyer_exchange_item?.item_id || null
           );
@@ -351,7 +350,13 @@ const Home: FC = () => {
         console.error("交換完了エラー:", error);
       }
     }
-  }, [canCompleteTransaction, memorizeChatItemData.trade_id, navigate, toast]);
+  }, [
+    canCompleteTransaction,
+    memorizeChatItemData.trade_id,
+    memorizeSellerUserData.user_id,
+    navigate,
+    toast,
+  ]);
 
   // 取引キャンセル処理をメモ化
   const handleCancelTransaction = useCallback(async () => {
@@ -710,6 +715,7 @@ const Home: FC = () => {
             </HStack>
           </Box>
         )}
+
         {/* 交換商品表示 Sellerの交換商品 */}
         {hasSellerSelectedItem && (
           <Box mt={3} p={3} bg="blue.50" borderRadius="md" w="100%">

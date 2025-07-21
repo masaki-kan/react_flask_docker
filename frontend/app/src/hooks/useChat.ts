@@ -126,7 +126,7 @@ const useChat = (): useChatReturn => {
 
         // console.log("messagesResponse", messagesResponse);
         // console.log("itemDetailResponse", itemDetailResponse);
-        // console.log("partnerItemsResponse", partnerItemsResponse);
+        console.log("partnerItemsResponse", partnerItemsResponse);
         // console.log("shippingInfoResponse", shippingInfoResponse);
         // console.log("confirmationsResponse", confirmationsResponse);
 

@@ -105,12 +105,6 @@ const PartnerItemsModal: FC<PartnerItemsModalProps> = ({
       } catch (error) {
         console.error("商品選択エラー:", error);
         onClose();
-        // toast({
-        //   title: "エラー",
-        //   description: "商品選択に失敗しました",
-        //   status: "error",
-        //   duration: 3000,
-        // });
       } finally {
         setIsSelecting(false);
       }

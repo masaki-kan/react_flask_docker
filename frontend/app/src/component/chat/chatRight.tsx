@@ -63,10 +63,10 @@ const ChatLayout: FC = () => {
     socketRef.current = socket;
 
     if (socket.connected) {
-      console.log("✅ Already connected to Socket.IO server");
+      // console.log("✅ Already connected to Socket.IO server");
     } else {
       socket.on("connect", () => {
-        console.log("✅ Connected to Socket.IO server");
+        // console.log("✅ Connected to Socket.IO server");
       });
     }
 
