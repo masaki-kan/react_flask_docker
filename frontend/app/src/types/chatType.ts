@@ -19,6 +19,7 @@ export interface chatItemDataType {
   profile_image: string;
   user_name: string;
   status: string;
+  trade_status_flag: number;
 }
 
 export interface shippingInfoType {

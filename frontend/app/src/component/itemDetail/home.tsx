@@ -208,7 +208,7 @@ const Home: FC = () => {
   const tradeHandler = useCallback(async () => {
     const response = await tradeApi(
       itemDetailData.itemId, // 商品ID
-      memorizeProfile.profile.id, // 商品購入ユーザーID
+      memorizeProfile.profile.id, // 商品交換ユーザーID
       itemDetailData.userId // 商品出品ユーザーID
     );
 
@@ -416,7 +416,7 @@ const Home: FC = () => {
                     </Button>
                   ) : (
                     <Button w="full" size="lg" isDisabled colorScheme="gray">
-                      取引中
+                      取引中もしくは取引終了
                     </Button>
                   )}
                 </VStack>

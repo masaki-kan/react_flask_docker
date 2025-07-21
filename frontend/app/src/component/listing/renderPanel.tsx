@@ -107,7 +107,7 @@ const RenderPanel: FC<renderTabPanelType> = ({ data }) => {
                         />
                       ) : (
                         <Box ml={4} mx={"auto"}>
-                          <FaUserCircle size={"60px"} color="gray.500" />
+                          <FaUserCircle size={"96px"} color="gray.500" />
                         </Box>
                       )}
 

@@ -24,6 +24,7 @@ import {
   updateShippingInfo,
   updateConfirmations,
   updateChatPageData, // 新しいアクション
+  updateSelectsellerToBuyerItem,
 } from "../store/chatSlice";
 import { viewDate } from "../component/common/date/format";
 import useLoading from "./useLaoding";
@@ -39,6 +40,7 @@ type useChatReturn = {
   memorizeConfirmations: confirmationType[];
   memorizeBuyerUserData: userDataType;
   memorizeSellerUserData: userDataType;
+  memorizeSelectsellerToBuyerItem: chatItemDataType;
   getChatPageData: (trade_id: string) => Promise<void>;
   uploadImage: (FormData: File) => Promise<string | undefined>;
   tradeStatusChangeHandler: (trade_id: string, status: string) => Promise<void>;
@@ -50,6 +52,7 @@ type useChatReturn = {
     shippingCompany: string
   ) => Promise<void>;
   confirmItemReceived: (tradeId: string, userId: string) => Promise<void>;
+  updateSelectsellerToBuyerItemHandler: (item: chatItemDataType) => void;
 };
 
 const useChat = (): useChatReturn => {
@@ -93,6 +96,11 @@ const useChat = (): useChatReturn => {
     return chat.sellerUserData;
   }, [chat.sellerUserData]);
 
+  // 受信者が申請者の商品を選択したデータ
+  const memorizeSelectsellerToBuyerItem: chatItemDataType = useMemo(() => {
+    return chat.selectsellerToBuyerItem;
+  }, [chat.selectsellerToBuyerItem]);
+
   // 🔥 最適化: 全データを並列取得して一度にstateを更新
   const getChatPageData = useCallback(
     async (tradeIdNumber: string) => {
@@ -115,6 +123,12 @@ const useChat = (): useChatReturn => {
           fetchShippingInfoApi(tradeIdNumber),
           fetchConfirmationsApi(tradeIdNumber),
         ]);
+
+        // console.log("messagesResponse", messagesResponse);
+        // console.log("itemDetailResponse", itemDetailResponse);
+        // console.log("partnerItemsResponse", partnerItemsResponse);
+        // console.log("shippingInfoResponse", shippingInfoResponse);
+        // console.log("confirmationsResponse", confirmationsResponse);
 
         // レスポンスの処理
         let messages: messagesType[] = [];
@@ -185,6 +199,7 @@ const useChat = (): useChatReturn => {
             profile_image: item.profile_image,
             user_name: item.user_name,
             status: item.status,
+            trade_status_flag: item.trade_status_flag,
           };
         }
 
@@ -304,6 +319,13 @@ const useChat = (): useChatReturn => {
     [dispatch]
   );
 
+  const updateSelectsellerToBuyerItemHandler = useCallback(
+    (item: chatItemDataType) => {
+      dispatch(updateSelectsellerToBuyerItem(item));
+    },
+    [dispatch]
+  );
+
   return {
     memorizeChatItemData,
     memorizeChatMessages,
@@ -313,12 +335,14 @@ const useChat = (): useChatReturn => {
     memorizeConfirmations,
     memorizeBuyerUserData,
     memorizeSellerUserData,
+    memorizeSelectsellerToBuyerItem,
     getChatPageData,
     uploadImage,
     upDateChatHight,
     tradeStatusChangeHandler,
     saveShippingInfo,
     confirmItemReceived,
+    updateSelectsellerToBuyerItemHandler,
   };
 };
 

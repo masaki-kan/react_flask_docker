@@ -10,7 +10,6 @@ import {
   VStack,
   HStack,
   Text,
-  Avatar,
   Heading,
   Stack,
   StackDivider,
@@ -23,7 +22,7 @@ import { chatItemDataType } from "../../types/chatType";
 interface ItemDetailModalProps {
   isOpen: boolean;
   onClose: () => void;
-  itemData: chatItemDataType; // 実際の型に置き換えてください
+  itemData?: chatItemDataType; // 実際の型に置き換えてください
 }
 
 const ItemDetailModal: FC<ItemDetailModalProps> = ({
@@ -31,11 +30,13 @@ const ItemDetailModal: FC<ItemDetailModalProps> = ({
   onClose,
   itemData,
 }) => {
+  if (!itemData) return null;
+
   return (
     <Modal isOpen={isOpen} onClose={onClose} size="xl">
       <ModalOverlay />
       <ModalContent>
-        <ModalHeader>商品詳細</ModalHeader>
+        <ModalHeader>交換申請の対象商品</ModalHeader>
         <ModalCloseButton />
         <ModalBody pb={6}>
           <VStack spacing={4} align="stretch">
@@ -52,27 +53,6 @@ const ItemDetailModal: FC<ItemDetailModalProps> = ({
             </Box>
 
             <Stack divider={<StackDivider />} spacing={4}>
-              {/* 投稿主情報 */}
-              <Box>
-                <Heading size="xs" textTransform="uppercase" mb={3}>
-                  投稿主
-                </Heading>
-                <HStack alignItems="center">
-                  <Avatar
-                    size="md"
-                    name={itemData.user_name}
-                    src={
-                      itemData.profile_image?.length > 0
-                        ? itemData.profile_image
-                        : "https://bit.ly/broken-link"
-                    }
-                  />
-                  <Text fontSize="sm" color="gray.600">
-                    {itemData.user_name}
-                  </Text>
-                </HStack>
-              </Box>
-
               {/* 商品名 */}
               <Box>
                 <Heading size="xs" textTransform="uppercase" mb={2}>

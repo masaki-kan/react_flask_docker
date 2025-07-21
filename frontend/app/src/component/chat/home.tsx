@@ -38,7 +38,12 @@ import ComponentHeader from "../common/layout/componentHeader";
 import PartnerItemsModal from "./partnerItemsModal";
 import ItemDetailModal from "./itemDetailModal";
 import { statusView } from "../common/saved/saveStatusView.ts";
-import { fetchConfirmationsApi } from "../../api/chatApi";
+import {
+  fetchConfirmationsApi,
+  saveShippingInfoWithItemApi,
+  fetchExchangeItemsApi,
+  completeExchangeApi,
+} from "../../api/chatApi";
 import ShippingInfoDisplay from "./shippingInfoDisplay";
 import { shippingInfoType } from "../../types/chatType";
 
@@ -56,15 +61,12 @@ const Home: FC = () => {
     memorizeBuyerUserData,
     memorizeSellerUserData,
     memorizeShippingInfo,
+    memorizeSelectsellerToBuyerItem,
     tradeStatusChangeHandler,
-    saveShippingInfo,
     confirmItemReceived,
     getChatPageData,
   } = useChat();
   const { memorizeLoading } = useLoading();
-
-  console.log("memorizeShippingInfo", memorizeShippingInfo);
-
   // URLパラメータの取得をメモ化
   const { tradeIdNumber, userIdNumber } = useMemo(() => {
     const searchParams = new URLSearchParams(location.search);
@@ -79,6 +81,12 @@ const Home: FC = () => {
     isOpen: isItemOpen,
     onOpen: onItemOpen,
     onClose: onItemClose,
+  } = useDisclosure();
+
+  const {
+    isOpen: isSellerItemOpen,
+    onOpen: onSellerItemOpen,
+    onClose: onSellerItemClose,
   } = useDisclosure();
 
   const {
@@ -138,10 +146,18 @@ const Home: FC = () => {
   const [hasPartnerConfirmed, setHasPartnerConfirmed] = useState(false);
   const [canCompleteTransaction, setCanCompleteTransaction] = useState(false);
 
+  const [hasSellerSelectedItem, setHasSellerSelectedItem] = useState(false);
+  const [sellerSelectedItemId, setSellerSelectedItemId] = useState<
+    string | null
+  >(null);
+  const [buyerSelectedItemId, setBuyerSelectedItemId] = useState<string | null>(
+    null
+  );
+
   // 現在のユーザーがsellerかbuyerかを判定
   const isCurrentUserSeller = useMemo(() => {
-    return memorizeChatItemData.user_id?.toString() === userIdNumber;
-  }, [memorizeChatItemData.user_id, userIdNumber]);
+    return memorizeSellerUserData.user_id?.toString() === userIdNumber;
+  }, [memorizeSellerUserData.user_id, userIdNumber]);
 
   // 🔥 データ取得を一度だけ実行
   useEffectOnce(() => {
@@ -195,8 +211,6 @@ const Home: FC = () => {
     memorizeBuyerUserData.user_id,
   ]);
 
-  console.log(hasUserShipped);
-
   // 確認状況を定期的にチェック
   useEffect(() => {
     const checkConfirmations = async () => {
@@ -225,6 +239,35 @@ const Home: FC = () => {
     return () => clearInterval(interval);
   }, [tradeIdNumber, memorizeChatItemData.status, isCurrentUserSeller]);
 
+  const checkExchangeItems = useCallback(async () => {
+    if (tradeIdNumber) {
+      try {
+        const result = await fetchExchangeItemsApi(tradeIdNumber);
+        console.log("fetchExchangeItemsApi", result);
+        if (result && result.exchange_items) {
+          setHasSellerSelectedItem(
+            !!result.exchange_items.seller_exchange_item
+          );
+          setSellerSelectedItemId(
+            result.exchange_items.seller_exchange_item?.item_id || null
+          );
+
+          console.log("fetchExchangeItemsApi", result);
+          setBuyerSelectedItemId(
+            result.exchange_items.buyer_exchange_item?.item_id || null
+          );
+        }
+      } catch (error) {
+        console.error("交換商品情報取得エラー:", error);
+      }
+    }
+  }, [tradeIdNumber]);
+
+  // 交換商品の選択状態を監視
+  useEffect(() => {
+    checkExchangeItems();
+  }, [tradeIdNumber, memorizeChatItemData.status, checkExchangeItems]);
+
   // 相手の名前を取得する関数をメモ化
   const getPartnerName = useCallback(() => {
     if (!memorizeChatItemData.user_id || !memorizePartnerItems.length)
@@ -251,54 +294,6 @@ const Home: FC = () => {
     },
     [onUserOpen]
   );
-
-  // 発送処理をメモ化
-  const handleShipping = useCallback(async () => {
-    if (!shippingInfo.trackingNumber || !shippingInfo.shippingCompany) {
-      toast({
-        title: "入力エラー",
-        description: "追跡番号と配送会社を入力してください",
-        status: "error",
-        duration: 3000,
-        isClosable: true,
-      });
-      return;
-    }
-
-    try {
-      // 発送情報を保存
-      await saveShippingInfo(
-        memorizeChatItemData.trade_id,
-        userIdNumber!,
-        shippingInfo.trackingNumber,
-        shippingInfo.shippingCompany
-      );
-
-      onShippingClose();
-      setShippingInfo({ trackingNumber: "", shippingCompany: "" });
-
-      toast({
-        title: "発送完了",
-        description: "商品を発送済みに登録しました",
-        status: "success",
-        duration: 3000,
-        isClosable: true,
-      });
-
-      // データを再取得
-      await getChatPageData(memorizeChatItemData.trade_id);
-    } catch (error) {
-      console.error("発送処理エラー:", error);
-    }
-  }, [
-    shippingInfo,
-    memorizeChatItemData.trade_id,
-    userIdNumber,
-    saveShippingInfo,
-    onShippingClose,
-    toast,
-    getChatPageData,
-  ]);
 
   // 受取確認処理
   const handleItemReceivedChange = useCallback(
@@ -332,21 +327,31 @@ const Home: FC = () => {
       return;
     }
 
-    const confirm = window.confirm("取引を完了してもよろしいですか？");
+    const confirm = window.confirm(
+      "取引を完了してもよろしいですか？\n商品の所有権が交換されます。"
+    );
     if (confirm) {
-      await tradeStatusChangeHandler(
-        memorizeChatItemData.trade_id,
-        "completed"
-      );
-      navigate(route.home);
+      try {
+        // 交換完了処理を実行
+        await completeExchangeApi(
+          memorizeChatItemData.trade_id,
+          String(memorizeSellerUserData.user_id)
+        );
+
+        toast({
+          title: "交換完了",
+          description: "商品の交換が完了しました",
+          status: "success",
+          duration: 5000,
+          isClosable: true,
+        });
+
+        navigate(route.home);
+      } catch (error) {
+        console.error("交換完了エラー:", error);
+      }
     }
-  }, [
-    canCompleteTransaction,
-    memorizeChatItemData.trade_id,
-    tradeStatusChangeHandler,
-    navigate,
-    toast,
-  ]);
+  }, [canCompleteTransaction, memorizeChatItemData.trade_id, navigate, toast]);
 
   // 取引キャンセル処理をメモ化
   const handleCancelTransaction = useCallback(async () => {
@@ -359,6 +364,62 @@ const Home: FC = () => {
       navigate(route.home);
     }
   }, [memorizeChatItemData.trade_id, tradeStatusChangeHandler, navigate]);
+
+  // 発送処理を更新
+  const handleShipping = useCallback(async () => {
+    if (isCurrentUserSeller && sellerSelectedItemId === null) return;
+    try {
+      await saveShippingInfoWithItemApi(
+        memorizeChatItemData.trade_id,
+        userIdNumber!,
+        shippingInfo.trackingNumber,
+        shippingInfo.shippingCompany
+      );
+
+      onShippingClose();
+
+      // // 発送情報をクリア
+      setShippingInfo({
+        trackingNumber: "",
+        shippingCompany: "",
+      });
+
+      toast({
+        title: "発送完了",
+        description: "商品を発送済みに登録しました",
+        status: "success",
+        duration: 3000,
+        isClosable: true,
+      });
+
+      // // データを再取得
+      await getChatPageData(memorizeChatItemData.trade_id);
+    } catch (error) {
+      console.error("発送処理エラー:", error);
+      toast({
+        title: "エラー",
+        description: "発送情報の登録に失敗しました",
+        status: "error",
+        duration: 3000,
+        isClosable: true,
+      });
+    }
+  }, [
+    memorizeChatItemData.trade_id,
+    userIdNumber,
+    shippingInfo,
+    onShippingClose,
+    toast,
+    getChatPageData,
+    isCurrentUserSeller,
+    sellerSelectedItemId,
+  ]);
+
+  const selectedSellerItem = useCallback(() => {
+    return memorizePartnerItems.find(
+      (item) => item.item_id === Number(sellerSelectedItemId)
+    );
+  }, [memorizePartnerItems, sellerSelectedItemId]);
 
   // 🔥 リダイレクト処理をHooks呼び出し後に移動
   if (tradeIdNumber === undefined || userIdNumber === undefined) {
@@ -387,71 +448,71 @@ const Home: FC = () => {
         >
           {/* ユーザーアバター */}
           <HStack spacing={4} justify={{ base: "center", md: "flex-start" }}>
-            <Tooltip label="交換したい人">
-              {memorizeBuyerUserData.profile_image.length > 0 ? (
-                <Avatar
-                  size={"md"}
-                  src={memorizeBuyerUserData.profile_image}
-                  name={memorizeBuyerUserData.name}
-                  onClick={() => handleUserClick("buyer")}
-                  borderColor="blue.300"
-                  cursor="pointer"
-                />
-              ) : (
-                <Icon
-                  as={FaUserCircle}
-                  boxSize={10}
-                  color="gray.400"
-                  onClick={() => handleUserClick("buyer")}
-                  cursor="pointer"
-                />
-              )}
-            </Tooltip>
-            <Tooltip label="交換したい人商品">
-              <IconButton
-                icon={<FaBox />}
-                aria-label="交換したい人商品"
-                onClick={onItemOpen}
-                colorScheme="blue"
-                variant="outline"
-                size={{ base: "sm", md: "md" }}
-              />
-            </Tooltip>
-
+            <HStack spacing={2}>
+              <Tooltip label="交換したい人">
+                {memorizeBuyerUserData.profile_image?.length > 0 ? (
+                  <Avatar
+                    size={"md"}
+                    src={memorizeBuyerUserData.profile_image}
+                    name={memorizeBuyerUserData.name}
+                    onClick={() => handleUserClick("buyer")}
+                    borderColor="blue.300"
+                    cursor="pointer"
+                  />
+                ) : (
+                  <Icon
+                    as={FaUserCircle}
+                    boxSize={10}
+                    color="gray.400"
+                    onClick={() => handleUserClick("buyer")}
+                    cursor="pointer"
+                  />
+                )}
+              </Tooltip>
+            </HStack>
             <Text fontSize={{ base: "md", md: "lg" }} fontWeight="bold">
               ⇄
             </Text>
-
-            <Tooltip label="交換を受ける人">
-              {memorizeSellerUserData.profile_image ? (
-                <Avatar
-                  size={"md"}
-                  src={memorizeSellerUserData.profile_image}
-                  name={memorizeSellerUserData.name}
-                  onClick={() => handleUserClick("seller")}
-                  borderColor="blue.300"
-                  cursor="pointer"
-                />
-              ) : (
-                <Icon
-                  as={FaUserCircle}
-                  boxSize={10}
-                  color="gray.400"
-                  onClick={() => handleUserClick("seller")}
-                  cursor="pointer"
-                />
+            <HStack spacing={2}>
+              <Tooltip label="交換を受ける人">
+                {memorizeSellerUserData.profile_image ? (
+                  <Avatar
+                    size={"md"}
+                    src={memorizeSellerUserData.profile_image}
+                    name={memorizeSellerUserData.name}
+                    onClick={() => handleUserClick("seller")}
+                    borderColor="blue.300"
+                    cursor="pointer"
+                  />
+                ) : (
+                  <Icon
+                    as={FaUserCircle}
+                    boxSize={10}
+                    color="gray.400"
+                    onClick={() => handleUserClick("seller")}
+                    cursor="pointer"
+                  />
+                )}
+              </Tooltip>
+              {memorizeSelectsellerToBuyerItem.item_id !== 0 && (
+                <Tooltip
+                  label={
+                    isCurrentUserSeller
+                      ? "交換商品を選択"
+                      : "交換を受ける人商品一覧"
+                  }
+                >
+                  <IconButton
+                    icon={<FaBox />}
+                    aria-label="交換受信者が選択した商品"
+                    onClick={onSellerItemOpen}
+                    colorScheme="blue"
+                    variant="outline"
+                    size={{ base: "sm", md: "md" }}
+                  />
+                </Tooltip>
               )}
-            </Tooltip>
-            <Tooltip label="交換を受ける人商品一覧">
-              <IconButton
-                icon={<FaBox />}
-                aria-label="交換を受ける人商品一覧"
-                onClick={onPartnerItemsOpen}
-                colorScheme="blue"
-                variant="outline"
-                size={{ base: "sm", md: "md" }}
-              />
-            </Tooltip>
+            </HStack>
           </HStack>
 
           {/* ステータスとアクションボタン */}
@@ -474,39 +535,76 @@ const Home: FC = () => {
             {(memorizeChatItemData.status === "pending" ||
               memorizeChatItemData.status === "shipped") && (
               <VStack align="stretch" spacing={2}>
-                <HStack>
-                  <Icon
-                    as={FaTruck}
-                    color={hasUserShipped ? "green.500" : "gray.400"}
-                  />
-                  <Text fontSize="sm">
-                    あなた: {hasUserShipped ? "発送済み" : "未発送"}
-                  </Text>
-                </HStack>
-                <HStack>
-                  <Icon
-                    as={FaTruck}
-                    color={hasPartnerShipped ? "green.500" : "gray.400"}
-                  />
-                  <Text fontSize="sm">
-                    相手: {hasPartnerShipped ? "発送済み" : "未発送"}
-                  </Text>
-                </HStack>
+                {/* sellerの交換商品選択状態 */}
+                {isCurrentUserSeller &&
+                  memorizeChatItemData.status === "pending" && (
+                    <HStack>
+                      <Icon
+                        as={FaCheckCircle}
+                        color={hasSellerSelectedItem ? "green.500" : "gray.400"}
+                      />
+                      <Text fontSize="sm">
+                        交換商品:{" "}
+                        {hasSellerSelectedItem ? "選択済み" : "未選択"}
+                      </Text>
+                    </HStack>
+                  )}
+
+                {/* 発送状態（交換商品選択後のみ表示） */}
+                {(!isCurrentUserSeller || hasSellerSelectedItem) && (
+                  <>
+                    <HStack>
+                      <Icon
+                        as={FaTruck}
+                        color={hasUserShipped ? "green.500" : "gray.400"}
+                      />
+                      <Text fontSize="sm">
+                        あなた: {hasUserShipped ? "発送済み" : "未発送"}
+                      </Text>
+                    </HStack>
+                    <HStack>
+                      <Icon
+                        as={FaTruck}
+                        color={hasPartnerShipped ? "green.500" : "gray.400"}
+                      />
+                      <Text fontSize="sm">
+                        相手: {hasPartnerShipped ? "発送済み" : "未発送"}
+                      </Text>
+                    </HStack>
+                  </>
+                )}
               </VStack>
             )}
 
             {/* ステータスに応じたアクションボタン */}
-            {memorizeChatItemData.status === "pending" && !hasUserShipped && (
-              <Button
-                leftIcon={<FaTruck />}
-                colorScheme="green"
-                size={{ base: "sm", md: "sm" }}
-                onClick={onShippingOpen}
-                w={{ base: "100%", md: "auto" }}
-              >
-                発送する
-              </Button>
-            )}
+            {memorizeChatItemData.status === "pending" &&
+              isCurrentUserSeller &&
+              !hasSellerSelectedItem && (
+                <Button
+                  colorScheme="blue"
+                  size={{ base: "sm", md: "sm" }}
+                  onClick={onPartnerItemsOpen}
+                  leftIcon={<FaBox />}
+                  w={{ base: "100%", md: "auto" }}
+                >
+                  交換商品を選択する
+                </Button>
+              )}
+
+            {memorizeChatItemData.status === "pending" &&
+              !hasUserShipped &&
+              (!isCurrentUserSeller || hasSellerSelectedItem) && (
+                <Button
+                  leftIcon={<FaTruck />}
+                  colorScheme="green"
+                  size={{ base: "sm", md: "sm" }}
+                  onClick={onShippingOpen}
+                  w={{ base: "100%", md: "auto" }}
+                  isDisabled={isCurrentUserSeller && !hasSellerSelectedItem}
+                >
+                  発送する
+                </Button>
+              )}
 
             {memorizeChatItemData.status === "shipped" && (
               <VStack align="stretch" spacing={2} w="100%">
@@ -538,15 +636,38 @@ const Home: FC = () => {
                   </Text>
                 </HStack>
 
-                <Button
-                  colorScheme="blue"
-                  size={{ base: "sm", md: "sm" }}
-                  onClick={handleCompleteTransaction}
-                  isDisabled={!canCompleteTransaction}
-                  w={{ base: "100%", md: "auto" }}
-                >
-                  取引を完了する
-                </Button>
+                {/* 交換受理者（seller）のみ取引完了ボタンを表示 */}
+                {isCurrentUserSeller ? (
+                  <Button
+                    colorScheme="blue"
+                    size={{ base: "sm", md: "sm" }}
+                    onClick={handleCompleteTransaction}
+                    isDisabled={!canCompleteTransaction}
+                    w={{ base: "100%", md: "auto" }}
+                  >
+                    取引を完了する
+                  </Button>
+                ) : (
+                  // 交換申請者（buyer）には待機メッセージを表示
+                  canCompleteTransaction && (
+                    <Box
+                      p={3}
+                      bg="blue.50"
+                      borderRadius="md"
+                      borderLeft="4px solid"
+                      borderColor="blue.400"
+                    >
+                      <HStack spacing={2}>
+                        <Icon as={FaCheckCircle} color="blue.500" />
+                        <Text fontSize="sm" color="blue.700">
+                          両者の受取確認が完了しました。
+                          <br />
+                          交換受理者が取引を完了するまでお待ちください。
+                        </Text>
+                      </HStack>
+                    </Box>
+                  )
+                )}
               </VStack>
             )}
 
@@ -563,6 +684,61 @@ const Home: FC = () => {
             )}
           </VStack>
         </Flex>
+
+        {/* 交換商品表示 Buyerの交換商品 */}
+        {buyerSelectedItemId && (
+          <Box mt={3} p={3} bg="blue.50" borderRadius="md" w="100%">
+            <Text fontSize="sm" fontWeight="bold" mb={2} color="blue.700">
+              申請者が選択した商品
+            </Text>
+            <HStack>
+              <Icon as={FaBox} color="blue.500" />
+              <Text fontSize="xs" color="gray.600">
+                {memorizeBuyerUserData.name}:
+              </Text>
+              <Button
+                fontSize="sm"
+                fontWeight="medium"
+                onClick={onItemOpen}
+                colorScheme="blue"
+                variant="outline"
+                bgColor={"white"}
+                size={{ base: "sm", md: "sm" }}
+              >
+                {memorizeChatItemData.title}
+              </Button>
+            </HStack>
+          </Box>
+        )}
+        {/* 交換商品表示 Sellerの交換商品 */}
+        {hasSellerSelectedItem && (
+          <Box mt={3} p={3} bg="blue.50" borderRadius="md" w="100%">
+            <Text fontSize="sm" fontWeight="bold" mb={2} color="blue.700">
+              承認者が選択された商品
+            </Text>
+            <VStack align="start" spacing={2}>
+              {sellerSelectedItemId && (
+                <HStack>
+                  <Icon as={FaBox} color="blue.500" />
+                  <Text fontSize="xs" color="gray.600">
+                    {memorizeSellerUserData.name}:
+                  </Text>
+                  <Button
+                    fontSize="sm"
+                    fontWeight="medium"
+                    onClick={onSellerItemOpen}
+                    colorScheme="blue"
+                    variant="outline"
+                    bgColor={"white"}
+                    size={{ base: "sm", md: "sm" }}
+                  >
+                    {selectedSellerItem()?.title}
+                  </Button>
+                </HStack>
+              )}
+            </VStack>
+          </Box>
+        )}
       </Box>
 
       <Box
@@ -592,12 +768,25 @@ const Home: FC = () => {
         itemData={memorizeChatItemData}
       />
 
+      {/* 受信者の選択した商品詳細モーダル */}
+      <ItemDetailModal
+        isOpen={isSellerItemOpen}
+        onClose={onSellerItemClose}
+        itemData={selectedSellerItem()}
+      />
+
       {/* 相手商品一覧モーダル */}
       <PartnerItemsModal
         isOpen={isPartnerItemsOpen}
         onClose={onPartnerItemsClose}
         tradeId={memorizeChatItemData.trade_id}
         partnerName={getPartnerName()}
+        isCurrentUserSeller={isCurrentUserSeller}
+        userId={userIdNumber || ""}
+        onItemSelected={() => {
+          getChatPageData(memorizeChatItemData.trade_id);
+          setHasSellerSelectedItem(true);
+        }}
       />
 
       {/* ユーザー情報モーダル */}
@@ -605,7 +794,7 @@ const Home: FC = () => {
         <ModalOverlay />
         <ModalContent>
           <ModalHeader>
-            {selectedUser === "seller" ? "交換を受ける人" : "交換したい人"}
+            {selectedUser === "seller" ? "交換受理者" : "交換申請者"}
           </ModalHeader>
           <ModalCloseButton />
           <ModalBody pb={6}>

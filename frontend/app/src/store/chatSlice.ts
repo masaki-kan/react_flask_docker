@@ -16,6 +16,7 @@ type initialStateType = {
   confirmations: confirmationType[];
   sellerUserData: userDataType;
   buyerUserData: userDataType;
+  selectsellerToBuyerItem: chatItemDataType;
 };
 
 const initialStateUserData = {
@@ -45,6 +46,7 @@ const initialState: initialStateType = {
     profile_image: "",
     user_name: "",
     status: "",
+    trade_status_flag: 0,
   },
   chatHight: "",
   partnerItems: [],
@@ -52,6 +54,20 @@ const initialState: initialStateType = {
   confirmations: [],
   sellerUserData: initialStateUserData,
   buyerUserData: initialStateUserData,
+  selectsellerToBuyerItem: {
+    trade_id: "",
+    item_id: 0,
+    title: "",
+    description: "",
+    type: "",
+    brand: { key: "", name: "" },
+    images: [],
+    user_id: 0,
+    profile_image: "",
+    user_name: "",
+    status: "",
+    trade_status_flag: 0,
+  },
 };
 
 // 一度にページデータを更新するための型
@@ -80,6 +96,12 @@ export const chatSlice = createSlice({
     },
     updateConfirmations: (state, action: PayloadAction<confirmationType[]>) => {
       state.confirmations = action.payload;
+    },
+    updateSelectsellerToBuyerItem: (
+      state,
+      action: PayloadAction<chatItemDataType>
+    ) => {
+      state.selectsellerToBuyerItem = action.payload;
     },
     // 🔥 新しいアクション: 一度にすべてのページデータを更新
     updateChatPageData: (state, action: PayloadAction<ChatPageDataPayload>) => {
@@ -125,6 +147,7 @@ export const {
   updateConfirmations,
   updateChatPageData, // 🔥 新しいアクションをエクスポート
   resetChatData,
+  updateSelectsellerToBuyerItem,
 } = chatSlice.actions;
 
 export default chatSlice.reducer;

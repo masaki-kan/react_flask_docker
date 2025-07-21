@@ -237,14 +237,26 @@ const RenderSaved: FC<RenderSavedType> = ({ savedList }) => {
 
                   {/* ブランド・タイプ情報（あれば表示） */}
                   {(save.brand || save.type) && (
-                    <HStack spacing={2} flexWrap="wrap">
+                    <VStack spacing={2} w={"full"}>
                       {save.brand && (
-                        <Badge colorScheme="purple" fontSize="xs">
+                        <Badge
+                          display={{ base: "block", md: "flex" }}
+                          whiteSpace={"wrap"}
+                          colorScheme="purple"
+                          fontSize="xs"
+                          noOfLines={1}
+                        >
                           {save.brand.name}
                         </Badge>
                       )}
                       {save.type && (
-                        <Badge colorScheme="teal" fontSize="xs">
+                        <Badge
+                          display={{ base: "block", md: "flex" }}
+                          whiteSpace={"wrap"}
+                          colorScheme="teal"
+                          fontSize="xs"
+                          noOfLines={1}
+                        >
                           {itemParts
                             .filter((type) => type.key === Number(save.type))
                             .map((type) => {
@@ -252,7 +264,7 @@ const RenderSaved: FC<RenderSavedType> = ({ savedList }) => {
                             })}
                         </Badge>
                       )}
-                    </HStack>
+                    </VStack>
                   )}
                 </VStack>
               </VStack>
