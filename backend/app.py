@@ -39,8 +39,6 @@ from database import create_table
 # === Flask App Init ===
 app = Flask(__name__)
 env = os.getenv("FLASK_ENV", "development")
-
-print( 'env >' ,env , flush=True )
     
 if env == "production":
     origins = ["https://35.78.248.43"]
@@ -287,11 +285,8 @@ def send_welcome_email(user_name ,plan_type ,to_email):
         send_message = service.users().messages().send(userId="me", body={
             'raw': encoded_message
         }).execute()
-
-        print(f"✅ メール送信成功: {send_message['id']}")
         return True  # 成功時
     except Exception as e:
-        print("🔥 エラー発生　Exception:", str(e), flush=True)
         return jsonify({"error": str(e)}), 500
 
 @app.route('/api/postStoreProfile' , methods=['POST'])
@@ -433,7 +428,7 @@ def getMyProfile():
 
         # アイテム
         cursor.execute('''
-            SELECT item_id, title, description, type, brand,uploaded_at
+            SELECT item_id, title, description, type, brand,uploaded_at, status
             FROM items 
             WHERE user_id = %s
             ORDER BY uploaded_at DESC
@@ -465,25 +460,12 @@ def getMyProfile():
             item_images = cursor.fetchall()
             item['images'] = [r['image_url'] for r in item_images]
 
-            # ✅ トレードステータスを確認（completed最優先）
-            cursor.execute('''
-                SELECT status 
-                FROM trades
-                WHERE item_id = %s AND seller_id = %s
-                ORDER BY FIELD(status, 'completed', 'pending', 'purchased', 'shipped') DESC
-                LIMIT 1
-            ''', (item['item_id'], user_id))
-            trade_status_row = cursor.fetchone()
-
-            if trade_status_row:
-                status = trade_status_row['status']
-                if status == 'completed':
-                    item['trade_status_flag'] = 2
-                elif status in ('pending', 'purchased', 'shipped'):
-                    item['trade_status_flag'] = 1
-                else:
-                    item['trade_status_flag'] = 0
-            else:
+            status = item['status']
+            if status == 'exchanged':
+                item['trade_status_flag'] = 2
+            elif status == 'trading':
+                item['trade_status_flag'] = 1
+            elif status == 'available':
                 item['trade_status_flag'] = 0
 
             items.append(item)
@@ -505,7 +487,6 @@ def getMyProfile():
         }), 200
     
     except mysql.connector.Error as err:
-        print("MySQLエラー:", err , flush=True)
         return jsonify({
             "error": "プロフィール情報取得中にエラーが発生しました",
             "result": False
@@ -530,7 +511,6 @@ def postStoreProfileItem():
 
     # 画像ファイル取得（複数）
     image_files = request.files.getlist("images")
-    print(f"✅ 受信した画像数: {len(image_files)}") 
     image_urls = []
     
     for file in image_files:
@@ -665,8 +645,6 @@ def getUsers():
                 
             created = user.get("created_at")
             uploaded = user.get("uploaded_at")
-            print("created:", created, flush=True)
-            print("uploaded:", uploaded, flush=True)
                 
         cursor.execute('''
             SELECT tag FROM tags
@@ -799,9 +777,9 @@ def getUserItems():
                 items.type,
                 items.brand,
                 items.uploaded_at,
+                items.status,
                 users.name AS seller_name
             FROM items
-            LEFT JOIN trades ON items.item_id = trades.item_id
             LEFT JOIN users ON items.user_id = users.user_id
             WHERE items.user_id != %s
             ORDER BY items.uploaded_at ASC
@@ -857,26 +835,13 @@ def getUserItems():
             ''', (item['user_id'],))
             profile_img = cursor.fetchone()
             item['profile_image'] = profile_img['image_url'] if profile_img else ""
-
-            # ✅ トレードステータスを確認（completed最優先）
-            cursor.execute('''
-                SELECT status 
-                FROM trades
-                WHERE item_id = %s AND (seller_id = %s OR buyer_id = %s)
-                ORDER BY FIELD(status, 'completed', 'pending', 'purchased', 'shipped') DESC
-                LIMIT 1
-            ''', (item['item_id'],user_id,user_id))
-            trade_status_row = cursor.fetchone()
-
-            if trade_status_row:
-                status = trade_status_row['status']
-                if status == 'completed':
-                    item['trade_status_flag'] = 2
-                elif status in ('pending', 'purchased', 'shipped'):
-                    item['trade_status_flag'] = 1
-                else:
-                    item['trade_status_flag'] = 0
-            else:
+            
+            status = item['status']
+            if status == 'exchanged':
+                item['trade_status_flag'] = 2
+            elif status == 'trading':
+                item['trade_status_flag'] = 1
+            elif status == 'available':
                 item['trade_status_flag'] = 0
 
             items.append(item)
@@ -1280,7 +1245,6 @@ def get_chat_item_detail():
             "profile_image": profile_image['image_url'] if profile_image else "",
             "tags" : json.loads(user_info['tag']) if user_info and user_info['tag'] else [],
         }
-        print( 'user_data ' , user_data , flush=True)
         
         # brand/type を JSON に変換
         for key in ["brand", "type"]:
@@ -1308,7 +1272,6 @@ def get_chat_item_detail():
     finally:
         conn.close()
         cursor.close()
-
         
 @app.route('/api/upload_image', methods=['POST'])
 def upload_image():
@@ -1462,9 +1425,9 @@ def create_trade():
             
             # 新規取引を作成
             cursor.execute("""
-                INSERT INTO trades (item_id, seller_id, buyer_id, status)
-                VALUES (%s, %s, %s, 'pending')
-            """, (item_id, seller_id, buyer_id))
+                INSERT INTO trades (item_id, seller_id, buyer_id, status ,buyer_exchange_item_id )
+                VALUES (%s, %s, %s, 'pending', %s)
+            """, (item_id, seller_id, buyer_id ,item_id))
             
             trade_id = cursor.lastrowid
             
@@ -1473,6 +1436,13 @@ def create_trade():
                 INSERT INTO trade_messages (trade_id, sender_id, message)
                 VALUES (%s, %s, %s)
             """, (trade_id, buyer_id, 'こんにちは、このアイテムを交換希望です。'))
+            
+            # 対象の商品をフラグを変更する
+            cursor.execute('''
+                UPDATE items 
+                SET status = 'trading'  
+                WHERE item_id = %s AND user_id = %s
+            ''', (item_id,seller_id))
             
             # コミット
             conn.commit()
@@ -1509,8 +1479,39 @@ def trage_status_change():
     try:
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
-        # 2. "cancelled" の場合、関連メッセージを削除
+        
+        # 取引情報を取得（商品IDも含めて）
+        cursor.execute('''
+            SELECT item_id, seller_exchange_item_id, buyer_exchange_item_id 
+            FROM trades 
+            WHERE trade_id = %s
+        ''', (trade_id,))
+        trade = cursor.fetchone()
+        
+        # 2. "cancelled" の場合、関連メッセージを削除し、商品ステータスを戻す
         if trade_status == "cancelled":
+            # 関連する商品のステータスを利用可能に戻す
+            if trade:
+                # メインの商品
+                cursor.execute('''
+                    UPDATE items SET status = 'available' 
+                    WHERE item_id = %s AND status = 'trading'
+                ''', (trade['item_id'],))
+                
+                # sellerの交換商品
+                if trade['seller_exchange_item_id']:
+                    cursor.execute('''
+                        UPDATE items SET status = 'available' 
+                        WHERE item_id = %s AND status = 'trading'
+                    ''', (trade['seller_exchange_item_id'],))
+                
+                # buyerの交換商品
+                if trade['buyer_exchange_item_id']:
+                    cursor.execute('''
+                        UPDATE items SET status = 'available' 
+                        WHERE item_id = %s AND status = 'trading'
+                    ''', (trade['buyer_exchange_item_id'],))
+            
             cursor.execute('''
                 DELETE FROM trade_messages WHERE trade_id = %s
             ''', (trade_id,))
@@ -1536,7 +1537,7 @@ def trage_status_change():
     finally:
         conn.close()
         cursor.close()
-
+        
 # 発送情報を保存
 @app.route('/api/save_shipping_info', methods=['POST'])
 def save_shipping_info():
@@ -1650,7 +1651,6 @@ def get_shipping_info():
         
     except Exception as e:
         return jsonify({'result': False, 'error': str(e)}), 500
-    
 
 # 商品受取確認
 @app.route('/api/confirm_item_received', methods=['POST'])
@@ -1739,7 +1739,7 @@ def get_confirmations():
     except Exception as e:
         return jsonify({'result': False, 'error': str(e)}), 500
     
-# 交換受けた人の商品一覧を取得
+# 交換申請を受けた人が相手の商品一覧を取得
 @app.route('/api/get_partner_items', methods=['POST'])
 def get_partner_items():
     data = request.get_json()
@@ -1760,6 +1760,7 @@ def get_partner_items():
             return jsonify({"error": "取引が見つかりません"}), 404
         
         partner_id = trade_info['seller_id']
+        buyer_id = trade_info['buyer_id']
         
         # 相手のユーザー情報を取得
         cursor.execute('''
@@ -1815,11 +1816,12 @@ def get_partner_items():
                 items.type,
                 items.brand,
                 items.uploaded_at,
-                items.user_id
+                items.user_id,
+                items.status
             FROM items
             WHERE items.user_id = %s
             ORDER BY items.uploaded_at DESC
-        ''', (partner_id,))
+        ''', (buyer_id,))
         
         partner_items = cursor.fetchall()
         
@@ -1834,6 +1836,14 @@ def get_partner_items():
             
             images = cursor.fetchall()
             item['images'] = [img['image_url'] for img in images]
+                
+            status = item['status']
+            if status == 'exchanged':
+                item['trade_status_flag'] = 2
+            elif status == 'trading':
+                item['trade_status_flag'] = 1
+            elif status == 'available':
+                item['trade_status_flag'] = 0
             
             # JSON型フィールドをパース
             try:
@@ -1858,6 +1868,361 @@ def get_partner_items():
         conn.close()
         cursor.close()
 
+# 交換商品選択エンドポイント
+@app.route('/api/select_exchange_item', methods=['POST'])
+def select_exchange_item():
+    data = request.json
+    trade_id = data.get('trade_id')
+    selected_item_id = data.get('selected_item_id')
+    user_id = data.get('user_id')
+    
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        
+        # 取引情報を取得
+        cursor.execute('''
+            SELECT * FROM trades WHERE trade_id = %s
+        ''', (trade_id,))
+        trade = cursor.fetchone()
+        
+        if not trade:
+            return jsonify({"error": "取引が見つかりません"}), 404
+        
+        # 選択した商品の所有者確認
+        cursor.execute('''
+            SELECT user_id, status FROM items WHERE item_id = %s
+        ''', (selected_item_id,))
+        item_owner = cursor.fetchone()
+        
+        if not item_owner:
+            return jsonify({"error": "商品が見つかりません"}), 404
+            
+        # 自分自身の商品を選ぼうとしたら拒否する（相手の商品を選ばせたいので）
+        if item_owner['user_id'] == int(user_id):
+            return jsonify({"error": "自分の商品は選択できません"}), 403
+            
+        # 既に取引中でないか確認
+        if item_owner['status'] == 'trading':
+            return jsonify({"error": "この商品は既に取引中です"}), 400
+        
+        # 交換商品として記録
+        cursor.execute('''
+            UPDATE trades 
+            SET seller_exchange_item_id = %s 
+            WHERE trade_id = %s
+        ''', (selected_item_id, trade_id))
+        
+        # 選択した商品のステータスを更新
+        cursor.execute('''
+            UPDATE items 
+            SET status = 'trading' 
+            WHERE item_id = %s
+        ''', (selected_item_id,))
+        
+        # チャットに自動メッセージ
+        cursor.execute('''
+            INSERT INTO trade_messages (trade_id, sender_id, message)
+            VALUES (%s, %s, %s)
+        ''', (trade_id, user_id, f"交換商品を選択しました"))
+        
+        conn.commit()
+        return jsonify({"result": True, "message": "交換商品を選択しました"})
+        
+    except Exception as e:
+        conn.rollback()
+        return jsonify({"error": str(e)}), 500
+    finally:
+        conn.close()
+        cursor.close()
+
+# 発送情報保存（シンプル版）
+@app.route('/api/save_shipping_info_with_item', methods=['POST'])
+def save_shipping_info_with_item():
+    data = request.json
+    trade_id = data.get('trade_id')
+    sender_user_id = data.get('sender_user_id')
+    tracking_number = data.get('tracking_number')
+    shipping_company = data.get('shipping_company')
+    
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        
+        # 取引情報を取得
+        cursor.execute('''
+            SELECT * FROM trades WHERE trade_id = %s
+        ''', (trade_id,))
+        trade = cursor.fetchone()
+        
+        if not trade:
+            return jsonify({"error": "取引が見つかりません"}), 404
+        
+        # 既存の発送情報があるかチェック
+        cursor.execute('''
+            SELECT shipping_id FROM shipping_info 
+            WHERE trade_id = %s AND sender_user_id = %s
+        ''', (trade_id, sender_user_id))
+        
+        existing = cursor.fetchone()
+        
+        if existing:
+            # 更新
+            cursor.execute('''
+                UPDATE shipping_info 
+                SET tracking_number = %s, shipping_company = %s
+                WHERE trade_id = %s AND sender_user_id = %s
+            ''', (tracking_number, shipping_company, trade_id, sender_user_id))
+        else:
+            # 新規作成
+            cursor.execute('''
+                INSERT INTO shipping_info (trade_id, sender_user_id, tracking_number, shipping_company)
+                VALUES (%s, %s, %s, %s)
+            ''', (trade_id, sender_user_id, tracking_number, shipping_company))
+            
+            # チャットに発送メッセージを自動送信
+            cursor.execute('''
+                INSERT INTO trade_messages (trade_id, sender_id, message)
+                VALUES (%s, %s, %s)
+            ''', (trade_id, sender_user_id, f"商品を発送しました。\n配送会社: {shipping_company}\n追跡番号: {tracking_number}"))
+        
+        # 両者が発送情報を入力したかチェック
+        cursor.execute('''
+            SELECT COUNT(DISTINCT sender_user_id) as count 
+            FROM shipping_info 
+            WHERE trade_id = %s
+        ''', (trade_id,))
+        
+        count_result = cursor.fetchone()
+        
+        # 両者が発送したらステータスを更新
+        if count_result['count'] == 2:
+            cursor.execute('''
+                UPDATE trades 
+                SET status = 'shipped' 
+                WHERE trade_id = %s
+            ''', (trade_id,))
+        
+        conn.commit()
+        
+        # 交換商品情報を含めて返す
+        cursor.execute('''
+            SELECT seller_exchange_item_id, buyer_exchange_item_id
+            FROM trades
+            WHERE trade_id = %s
+        ''', (trade_id,))
+        exchange_info = cursor.fetchone()
+        
+        return jsonify({
+            'result': True, 
+            'message': '発送情報を保存しました',
+            'exchange_info': exchange_info
+        })
+        
+    except Exception as e:
+        conn.rollback()
+        return jsonify({'result': False, 'error': str(e)}), 500
+    finally:
+        conn.close()
+        cursor.close()
+        
+
+# 取引完了時の処理（商品の所有権交換）
+@app.route('/api/complete_exchange', methods=['POST'])
+def complete_exchange():
+    """両者が商品を受け取り、交換を完了"""
+    data = request.json
+    trade_id = data.get('trade_id')
+    user_id = data.get('user_id')  # 実行者のuser_id
+    
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        
+        # 取引情報を取得
+        cursor.execute('''
+            SELECT * FROM trades WHERE trade_id = %s
+        ''', (trade_id,))
+        trade = cursor.fetchone()
+        
+        if not trade:
+            return jsonify({"error": "取引が見つかりません"}), 404
+        
+        # 実行者が交換受理者（seller）であることを確認
+        if int(user_id) != trade['seller_id']:
+            return jsonify({"error": "取引を完了できるのは交換受理者のみです"}), 403
+        
+        # 両者が商品を選択しているか確認
+        if not trade.get('seller_exchange_item_id') or not trade.get('buyer_exchange_item_id'):
+            return jsonify({"error": "両者が交換商品を選択していません"}), 400
+        
+        # 両者が受取確認済みか確認
+        cursor.execute('''
+            SELECT COUNT(DISTINCT user_id) as count 
+            FROM trade_confirmations 
+            WHERE trade_id = %s
+        ''', (trade_id,))
+        
+        count_result = cursor.fetchone()
+        if count_result['count'] < 2:
+            return jsonify({"error": "両者の受取確認が必要です"}), 400
+        
+        # 交換履歴を記録
+        # 売り手の記録
+        cursor.execute('''
+            INSERT INTO trade_exchanges (trade_id, offered_item_id, received_item_id, user_id)
+            VALUES (%s, %s, %s, %s)
+        ''', (trade_id, trade['seller_exchange_item_id'], trade['buyer_exchange_item_id'], trade['seller_id']))
+        
+        # 買い手の記録
+        cursor.execute('''
+            INSERT INTO trade_exchanges (trade_id, offered_item_id, received_item_id, user_id)
+            VALUES (%s, %s, %s, %s)
+        ''', (trade_id, trade['buyer_exchange_item_id'], trade['seller_exchange_item_id'], trade['buyer_id']))
+        
+        # 商品の所有者を交換
+        # 売り手の商品を買い手に
+        cursor.execute('''
+            UPDATE items 
+            SET user_id = %s, 
+                status = 'available',
+                original_owner_id = %s,
+                exchanged_at = CURRENT_TIMESTAMP
+            WHERE item_id = %s
+        ''', (trade['buyer_id'], trade['seller_id'], trade['seller_exchange_item_id']))
+        
+        # 買い手の商品を売り手に
+        cursor.execute('''
+            UPDATE items 
+            SET user_id = %s, 
+                status = 'available',
+                original_owner_id = %s,
+                exchanged_at = CURRENT_TIMESTAMP
+            WHERE item_id = %s
+        ''', (trade['seller_id'], trade['buyer_id'], trade['buyer_exchange_item_id']))
+        
+        # 最初の取引商品のステータスも更新（重要な修正）
+        # buyer_exchange_item_idは実際には最初の取引商品のIDなので、これをexchangedにする
+        cursor.execute('''
+            UPDATE items 
+            SET status = 'exchanged'
+            WHERE item_id = %s
+        ''', (trade['item_id'],))
+        
+        # 🔥 重要な追加: seller_exchange_item_idも交換済みにする
+        # これは申請者が最初に指定した相手の商品
+        cursor.execute('''
+            UPDATE items 
+            SET status = 'exchanged'
+            WHERE item_id = %s
+        ''', (trade['seller_exchange_item_id'],))
+        
+        # buyer_exchange_item_idも交換済みにする
+        # これは受理者が選択した申請者の商品
+        cursor.execute('''
+            UPDATE items 
+            SET status = 'exchanged'
+            WHERE item_id = %s
+        ''', (trade['buyer_exchange_item_id'],))
+        
+        # 取引ステータスを完了に
+        cursor.execute('''
+            UPDATE trades 
+            SET status = 'completed' 
+            WHERE trade_id = %s
+        ''', (trade_id,))
+        
+        # 完了メッセージをチャットに追加
+        cursor.execute('''
+            INSERT INTO trade_messages (trade_id, sender_id, message)
+            VALUES (%s, %s, %s)
+        ''', (trade_id, user_id, "取引が完了しました。商品の交換が成功しました！"))
+        
+        conn.commit()
+        return jsonify({"result": True, "message": "交換が完了しました"})
+        
+    except Exception as e:
+        conn.rollback()
+        return jsonify({"error": str(e)}), 500
+    finally:
+        conn.close()
+        cursor.close()
+
+# 選択された交換商品の情報を取得
+@app.route('/api/get_exchange_items', methods=['GET'])
+def get_exchange_items():
+    trade_id = request.args.get('trade_id')
+    
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        
+        # 取引情報と交換商品情報を取得
+        cursor.execute('''
+            SELECT 
+                t.*,
+                si1.title as seller_item_title,
+                si1.brand as seller_item_brand,
+                bi1.title as buyer_item_title,
+                bi1.brand as buyer_item_brand
+            FROM trades t
+            LEFT JOIN items si1 ON t.seller_exchange_item_id = si1.item_id
+            LEFT JOIN items bi1 ON t.buyer_exchange_item_id = bi1.item_id
+            WHERE t.trade_id = %s
+        ''', (trade_id,))
+        
+        trade_info = cursor.fetchone()
+        
+        if not trade_info:
+            return jsonify({"error": "取引が見つかりません"}), 404
+        
+        # 交換商品の画像も取得
+        result = {
+            'seller_exchange_item': None,
+            'buyer_exchange_item': None
+        }
+        
+        if trade_info['seller_exchange_item_id'] is not None:
+            cursor.execute('''
+                SELECT image_url FROM item_images 
+                WHERE item_id = %s 
+                ORDER BY uploaded_at ASC LIMIT 1
+            ''', (trade_info['seller_exchange_item_id'],))
+            seller_img = cursor.fetchone()
+            
+            result['seller_exchange_item'] = {
+                'item_id': trade_info['seller_exchange_item_id'],
+                'title': trade_info['seller_item_title'],
+                'brand': json.loads(trade_info['seller_item_brand']) if trade_info['seller_item_brand'] else [],
+                'image': seller_img['image_url'] if seller_img else None
+            }
+
+        if trade_info['buyer_exchange_item_id'] is not None:
+            cursor.execute('''
+                SELECT image_url FROM item_images 
+                WHERE item_id = %s 
+                ORDER BY uploaded_at ASC LIMIT 1
+            ''', (trade_info['buyer_exchange_item_id'],))
+            buyer_img = cursor.fetchone()
+
+            result['buyer_exchange_item'] = {
+                'item_id': trade_info['buyer_exchange_item_id'],
+                'title': trade_info['buyer_item_title'],
+                'brand': json.loads(trade_info['buyer_item_brand']) if trade_info['buyer_item_brand'] else [],
+                'image': buyer_img['image_url'] if buyer_img else None
+            }
+        
+        return jsonify({
+            'result': True,
+            'exchange_items': result
+        })
+        
+    except Exception as e:
+        return jsonify({'result': False, 'error': str(e)}), 500
+    finally:
+        conn.close()
+        cursor.close()
+        
 # Chat server 
 # クライアントが接続
 @socketio.on('connect')

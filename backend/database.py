@@ -24,16 +24,16 @@ def create_users_table(cursor):
 # ユーザーフォローテーブル
 def create_follows_table(cursor):
     cursor.execute('''
-    CREATE TABLE IF NOT EXISTS follows (
-        follow_id INT AUTO_INCREMENT PRIMARY KEY,
-        follower_id INT NOT NULL,  -- フォローする側（自分）
-        followed_id INT NOT NULL,  -- フォローされる側（相手）
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (follower_id) REFERENCES users(user_id) ON DELETE CASCADE,
-        FOREIGN KEY (followed_id) REFERENCES users(user_id) ON DELETE CASCADE,
-        UNIQUE (follower_id, followed_id)  -- 重複フォローを防止
-    );
-''')
+        CREATE TABLE IF NOT EXISTS follows (
+            follow_id INT AUTO_INCREMENT PRIMARY KEY,
+            follower_id INT NOT NULL,  -- フォローする側（自分）
+            followed_id INT NOT NULL,  -- フォローされる側（相手）
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (follower_id) REFERENCES users(user_id) ON DELETE CASCADE,
+            FOREIGN KEY (followed_id) REFERENCES users(user_id) ON DELETE CASCADE,
+            UNIQUE (follower_id, followed_id)  -- 重複フォローを防止
+        );
+    ''')
 
 # プロフィール画像テーブル
 def create_profile_images_table(cursor):
@@ -47,6 +47,7 @@ def create_profile_images_table(cursor):
             FOREIGN KEY (user_id) REFERENCES users(user_id)
         );
     ''')
+
 # プロフィール　タグテーブル
 def create_tags_table(cursor):
     cursor.execute('''
@@ -70,11 +71,19 @@ def create_items_table(cursor):
             description TEXT,
             type JSON,
             brand JSON,
+            status ENUM('available', 'trading', 'exchanged', 'deleted') DEFAULT 'available',
+            original_owner_id INT DEFAULT NULL,
+            exchanged_at TIMESTAMP NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (user_id) REFERENCES users(user_id)
+            FOREIGN KEY (user_id) REFERENCES users(user_id),
+            FOREIGN KEY (original_owner_id) REFERENCES users(user_id),
+            # 🔥 追加: パフォーマンス向上のためのインデックス
+            INDEX idx_status (status),
+            INDEX idx_user_status (user_id, status)
         );
     ''')
+
 # 商品イメージテーブル
 def create_item_images_table(cursor):
     cursor.execute('''
@@ -103,7 +112,7 @@ def create_likes_table(cursor):
         );
     ''')
 
-# 取引テーブル
+# 取引テーブル（seller_exchange_item_id、buyer_exchange_item_id を含む）
 def create_trades_table(cursor):
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS trades (
@@ -111,6 +120,10 @@ def create_trades_table(cursor):
             item_id INT NOT NULL,
             seller_id INT NOT NULL,
             buyer_id INT NOT NULL,
+            seller_exchange_item_id INT DEFAULT NULL,
+            buyer_exchange_item_id INT DEFAULT NULL,
+            # 🔥 オプション変更: 'approved'を追加する場合はコメントアウトを解除
+            # status ENUM('pending', 'approved', 'purchased','shipped','completed','cancelled') DEFAULT 'pending',
             status ENUM('pending', 'purchased','shipped','completed','cancelled') DEFAULT 'pending',
             is_buyer_confirmed BOOLEAN DEFAULT FALSE,
             is_seller_confirmed BOOLEAN DEFAULT FALSE,
@@ -119,7 +132,12 @@ def create_trades_table(cursor):
             FOREIGN KEY (item_id) REFERENCES items(item_id) ON DELETE CASCADE,
             FOREIGN KEY (seller_id) REFERENCES users(user_id) ON DELETE CASCADE,
             FOREIGN KEY (buyer_id) REFERENCES users(user_id) ON DELETE CASCADE,
-            UNIQUE (item_id, buyer_id)
+            FOREIGN KEY (seller_exchange_item_id) REFERENCES items(item_id),
+            FOREIGN KEY (buyer_exchange_item_id) REFERENCES items(item_id),
+            UNIQUE (item_id, buyer_id),
+            # 🔥 追加: パフォーマンス向上のためのインデックス
+            INDEX idx_trade_status (trade_id, status),
+            INDEX idx_exchange_items (seller_exchange_item_id, buyer_exchange_item_id)
         );
     ''')
 
@@ -186,6 +204,24 @@ def create_trade_reviews_table(cursor):
         );
     ''')
 
+# 交換履歴テーブル
+def create_trade_exchanges_table(cursor):
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS trade_exchanges (
+            exchange_id INT AUTO_INCREMENT PRIMARY KEY,
+            trade_id INT NOT NULL,
+            offered_item_id INT NOT NULL,  -- 提供した商品
+            received_item_id INT NOT NULL,  -- 受け取った商品
+            user_id INT NOT NULL,           -- このレコードの所有者
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (trade_id) REFERENCES trades(trade_id) ON DELETE CASCADE,
+            FOREIGN KEY (offered_item_id) REFERENCES items(item_id),
+            FOREIGN KEY (received_item_id) REFERENCES items(item_id),
+            FOREIGN KEY (user_id) REFERENCES users(user_id),
+            UNIQUE KEY unique_exchange (trade_id, user_id)
+        );
+    ''')
+
 def create_table(cursor):
     create_users_table(cursor)
     create_follows_table(cursor)
@@ -198,4 +234,5 @@ def create_table(cursor):
     create_trade_messages_table(cursor)
     create_trade_reviews_table(cursor)
     create_shipping_info_table(cursor) 
-    create_trade_confirmations_table(cursor)  
+    create_trade_confirmations_table(cursor)
+    create_trade_exchanges_table(cursor)

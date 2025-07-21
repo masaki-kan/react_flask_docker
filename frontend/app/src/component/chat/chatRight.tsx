@@ -27,7 +27,7 @@ const ChatLayout: FC = () => {
   const [message, setMessage] = useState("");
   const socketRef = useRef<Socket | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const { memorizeChatMessages } = useChat();
+  const { memorizeChatMessages, memorizeChatItemData } = useChat();
   const searchParams = new URLSearchParams(location.search);
   const tradeIdNumber = searchParams.get("item_id");
   const userIdNumber = searchParams.get("user_id");
@@ -218,7 +218,13 @@ const ChatLayout: FC = () => {
       </Box>
 
       {/* 入力エリア */}
-      <Box p={4} borderTop="1px" borderColor="gray.200" bg="white">
+      <Box
+        p={4}
+        borderTop="1px"
+        borderColor="gray.200"
+        bg="white"
+        hidden={memorizeChatItemData.status === "completed"}
+      >
         <HStack>
           <Input
             placeholder="メッセージを入力..."
