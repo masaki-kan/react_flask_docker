@@ -140,7 +140,7 @@ const ProfileIndex: FC<profileIndexType> = ({ editFormSwitch }) => {
           <Box
             bg={bgColor}
             borderRadius="xl"
-            p={2}
+            p={4}
             boxShadow="lg"
             border="1px solid"
             borderColor={borderColor}
@@ -148,11 +148,11 @@ const ProfileIndex: FC<profileIndexType> = ({ editFormSwitch }) => {
             top={4}
           >
             {/* アバターとメイン情報 */}
-            <VStack spacing={6}>
+            <VStack spacing={4}>
               <Box position="relative">
                 {profile.profile.image.length > 0 ? (
                   <Avatar
-                    size="2xl"
+                    size="xl"
                     src={profile.profile.image}
                     name={profile.profile.name}
                     border="4px solid"
@@ -166,7 +166,7 @@ const ProfileIndex: FC<profileIndexType> = ({ editFormSwitch }) => {
                     border="4px solid"
                     borderColor={borderColor}
                   >
-                    <Icon as={FaUserCircle} boxSize={20} color="gray.400" />
+                    <Icon as={FaUserCircle} boxSize={16} color="gray.400" />
                   </Box>
                 )}
                 <IconButton
@@ -198,7 +198,8 @@ const ProfileIndex: FC<profileIndexType> = ({ editFormSwitch }) => {
               <Box w="full">
                 <HStack
                   bg={sectionBg}
-                  p={4}
+                  px={4}
+                  py={2}
                   borderRadius="lg"
                   justify="space-between"
                 >
@@ -219,7 +220,7 @@ const ProfileIndex: FC<profileIndexType> = ({ editFormSwitch }) => {
               <Button
                 w="full"
                 colorScheme="blue"
-                size="lg"
+                size="md"
                 onClick={editFormSwitch}
                 leftIcon={<FaEdit />}
               >
