@@ -84,7 +84,7 @@ const ShippingInfoDisplay: FC<ShippingInfoDisplayProps> = ({
               追跡番号:
             </Text>
             <Text
-              fontSize="xssm"
+              fontSize="xs"
               fontWeight="medium"
               color="blue.600"
               wordBreak={"break-all"}
