@@ -72,13 +72,13 @@ const ItemForm: FC<ItemFormProps> = ({ profileItem, ItemNumver }) => {
     description: boolean;
     images: boolean;
     type: boolean;
-    brand: boolean;
+    // brand: boolean;
   }>({
     title: false,
     description: false,
     images: false,
     type: false,
-    brand: false,
+    // brand: false,
   });
 
   useEffect(() => {
@@ -201,7 +201,7 @@ const ItemForm: FC<ItemFormProps> = ({ profileItem, ItemNumver }) => {
       images: formValues.images.length === 0,
       description: formValues.description.trim() === "",
       type: formValues.type === "",
-      brand: formValues.brand.name.trim() === "",
+      // brand: formValues.brand.name.trim() === "",
     };
 
     setFormError(newErrors);
@@ -348,10 +348,9 @@ const ItemForm: FC<ItemFormProps> = ({ profileItem, ItemNumver }) => {
                 <FormErrorMessage>商品タイプは必須です</FormErrorMessage>
               </FormControl>
 
-              <FormControl isInvalid={formError.brand}>
-                <FormLabel fontWeight="bold">
-                  ブランド <Badge colorScheme="red">必須</Badge>
-                </FormLabel>
+              {/* <FormControl isInvalid={formError.brand}> */}
+              <FormControl>
+                <FormLabel fontWeight="bold">ブランド</FormLabel>
                 <CustomBrandSelect
                   tags={formValues.brand}
                   onChange={tagChange}
