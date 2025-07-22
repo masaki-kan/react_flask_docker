@@ -185,6 +185,7 @@ const RebderItem: FC<RebderItemProps> = React.memo(({ itemList, navigate }) => {
 
               <VStack spacing={1} align="start">
                 <Badge
+                  hidden={product.brand.name.length === 0}
                   display={{ base: "block", md: "flex" }}
                   whiteSpace={"wrap"}
                   colorScheme="purple"
