@@ -140,7 +140,7 @@ const ProfileIndex: FC<profileIndexType> = ({ editFormSwitch }) => {
           <Box
             bg={bgColor}
             borderRadius="xl"
-            p={6}
+            p={2}
             boxShadow="lg"
             border="1px solid"
             borderColor={borderColor}
@@ -183,15 +183,15 @@ const ProfileIndex: FC<profileIndexType> = ({ editFormSwitch }) => {
                 />
               </Box>
 
-              <VStack spacing={1}>
-                <Heading size="lg">{profile.profile.name}</Heading>
+              <HStack spacing={1}>
+                <Heading size="sm">{profile.profile.name}</Heading>
                 <HStack>
                   <Icon as={FaMapMarkerAlt} color={textMuted} boxSize={4} />
-                  <Text color={textMuted}>
+                  <Text color={textMuted} fontSize={"sm"}>
                     {profile.profile.location || "未設定"}
                   </Text>
                 </HStack>
-              </VStack>
+              </HStack>
 
               <Divider />
               {/* プラン情報 */}

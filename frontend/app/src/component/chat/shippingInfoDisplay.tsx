@@ -38,11 +38,11 @@ const ShippingInfoDisplay: FC<ShippingInfoDisplayProps> = ({
         >
           <HStack mb={2}>
             <Icon as={FaBox} color="gray.400" />
-            <Text fontWeight="bold" fontSize="sm">
+            <Text fontWeight="bold" fontSize="xs">
               {label}
             </Text>
           </HStack>
-          <Text fontSize="sm" color="gray.500">
+          <Text fontSize="xs" color="gray.500">
             まだ発送情報が登録されていません
           </Text>
         </Box>
@@ -61,7 +61,7 @@ const ShippingInfoDisplay: FC<ShippingInfoDisplayProps> = ({
       >
         <HStack mb={2}>
           <Icon as={FaTruck} color="green.500" />
-          <Text fontWeight="bold" fontSize="sm">
+          <Text fontWeight="bold" fontSize="xs">
             {label}
           </Text>
           <Badge colorScheme="green" ml="auto">
@@ -74,7 +74,7 @@ const ShippingInfoDisplay: FC<ShippingInfoDisplayProps> = ({
             <Text fontSize="xs" color="gray.600">
               配送会社:
             </Text>
-            <Text fontSize="sm" fontWeight="medium">
+            <Text fontSize="xs" fontWeight="medium">
               {shipping.shipping_company}
             </Text>
           </HStack>
@@ -84,7 +84,7 @@ const ShippingInfoDisplay: FC<ShippingInfoDisplayProps> = ({
               追跡番号:
             </Text>
             <Text
-              fontSize="sm"
+              fontSize="xssm"
               fontWeight="medium"
               color="blue.600"
               wordBreak={"break-all"}
