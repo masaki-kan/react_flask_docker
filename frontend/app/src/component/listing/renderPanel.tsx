@@ -14,7 +14,6 @@ import {
   Grid,
   GridItem,
 } from "@chakra-ui/react";
-import { FaExclamation } from "react-icons/fa";
 import { FaUserCircle } from "react-icons/fa";
 
 const RenderPanel: FC<renderTabPanelType> = ({ data }) => {
@@ -114,14 +113,12 @@ const RenderPanel: FC<renderTabPanelType> = ({ data }) => {
                       {isNew && (
                         <Box
                           position="absolute"
-                          top={-2}
-                          right={-2}
+                          top={0}
+                          right={0}
                           borderRadius="50%"
                           bgColor="#b03a3a"
                           p={{ base: 1, md: 1.5 }}
-                        >
-                          <FaExclamation size={12} color="white" />
-                        </Box>
+                        ></Box>
                       )}
                     </Box>
                   </HStack>

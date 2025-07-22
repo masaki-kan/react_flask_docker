@@ -19,7 +19,7 @@ import { useNavigate } from "react-router-dom";
 import { menuLists } from "../../../consts/menuList";
 import useMyProfile from "../../../hooks/useProfile";
 import useSaved from "../../../hooks/useSaved";
-import { FaUserCircle, FaUser, FaExclamation } from "react-icons/fa";
+import { FaUserCircle, FaUser } from "react-icons/fa";
 import { useEffectOnce } from "react-use";
 
 const RenderRouteLinks: FC = () => {
@@ -111,14 +111,12 @@ const RenderRouteLinks: FC = () => {
                     <Box
                       hidden={!readSaveStatus}
                       position={"absolute"}
-                      top={-2}
+                      top={-1}
                       right={-2}
                       borderRadius={"50%"}
                       bgColor={"#b03a3a"}
                       p={1}
-                    >
-                      <FaExclamation size={7} color="white" />
-                    </Box>
+                    ></Box>
                   </>
                 )}
               </Link>

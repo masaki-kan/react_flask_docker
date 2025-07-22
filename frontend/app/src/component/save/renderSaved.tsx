@@ -17,7 +17,7 @@ import { viewDate } from "../common/date/format";
 import { useNavigate } from "react-router-dom";
 import { route } from "../../route/routeConst";
 import useMyProfile from "../../hooks/useProfile";
-import { FaExclamation, FaUserCircle } from "react-icons/fa";
+import { FaUserCircle } from "react-icons/fa";
 import { itemParts } from "../../consts/itemConsts";
 
 type RenderSavedType = {
@@ -153,9 +153,7 @@ const RenderSaved: FC<RenderSavedType> = ({ savedList }) => {
                   bgColor="#b03a3a"
                   p={1.5}
                   zIndex={2}
-                >
-                  <FaExclamation size={12} color="white" />
-                </Box>
+                ></Box>
               )}
 
               {/* ステータスバッジ */}

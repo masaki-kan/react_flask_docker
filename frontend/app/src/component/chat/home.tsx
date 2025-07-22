@@ -285,16 +285,24 @@ const Home: FC = () => {
   const handleItemReceivedChange = useCallback(
     async (checked: boolean) => {
       if (checked && userIdNumber) {
-        await confirmItemReceived(memorizeChatItemData.trade_id, userIdNumber);
-        setHasUserConfirmed(true);
+        const confirm = window.confirm(
+          "商品受け取り完了してもよろしいですか？"
+        );
+        if (confirm) {
+          await confirmItemReceived(
+            memorizeChatItemData.trade_id,
+            userIdNumber
+          );
+          setHasUserConfirmed(true);
 
-        toast({
-          title: "受取確認完了",
-          description: "商品の受取を確認しました",
-          status: "success",
-          duration: 3000,
-          isClosable: true,
-        });
+          toast({
+            title: "受取確認完了",
+            description: "商品の受取を確認しました",
+            status: "success",
+            duration: 3000,
+            isClosable: true,
+          });
+        }
       }
     },
     [memorizeChatItemData.trade_id, userIdNumber, confirmItemReceived, toast]
