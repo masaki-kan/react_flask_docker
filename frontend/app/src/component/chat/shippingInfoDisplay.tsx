@@ -98,11 +98,7 @@ const ShippingInfoDisplay: FC<ShippingInfoDisplayProps> = ({
   };
 
   return (
-    <Box w="100%">
-      <Text fontSize="sm" fontWeight="bold" mb={3} color="gray.700">
-        発送情報
-      </Text>
-
+    <Box w="100%" mt={4}>
       <VStack spacing={3}>
         <HStack w="100%" spacing={3} align="stretch">
           {renderShippingInfo(sellerShipping, sellerName || "交換を受ける人")}

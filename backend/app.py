@@ -2025,7 +2025,6 @@ def save_shipping_info_with_item():
     finally:
         conn.close()
         cursor.close()
-        
 
 # 取引完了時の処理（商品の所有権交換）
 @app.route('/api/complete_exchange', methods=['POST'])
@@ -2222,7 +2221,125 @@ def get_exchange_items():
     finally:
         conn.close()
         cursor.close()
+
+# 交換履歴を取得
+@app.route('/api/getExchangeArchive', methods=['POST'])
+def get_exchange_archive():
+    data = request.get_json()
+    user_id = data.get('user_id')
+    
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
         
+        # ユーザーが関わった完了済みの取引を取得
+        cursor.execute('''
+            SELECT 
+                t.trade_id,
+                t.item_id,
+                t.seller_id,
+                t.buyer_id,
+                t.seller_exchange_item_id,
+                t.buyer_exchange_item_id,
+                t.created_at as trade_date,
+                t.updated_at as completed_date,
+                -- 売り手情報
+                seller.name as seller_name,
+                seller_pi.image_url as seller_image,
+                -- 買い手情報
+                buyer.name as buyer_name,
+                buyer_pi.image_url as buyer_image,
+                -- 最初の取引商品（buyer → seller）
+                main_item.title as main_item_title,
+                main_item.brand as main_item_brand,
+                -- seller_exchange_item（seller → buyer）
+                seller_item.title as seller_item_title,
+                seller_item.brand as seller_item_brand,
+                -- buyer_exchange_item（buyer → seller）
+                buyer_item.title as buyer_item_title,
+                buyer_item.brand as buyer_item_brand
+            FROM trades t
+            JOIN users seller ON t.seller_id = seller.user_id
+            JOIN users buyer ON t.buyer_id = buyer.user_id
+            LEFT JOIN profile_images seller_pi ON seller.user_id = seller_pi.user_id
+            LEFT JOIN profile_images buyer_pi ON buyer.user_id = buyer_pi.user_id
+            LEFT JOIN items main_item ON t.item_id = main_item.item_id
+            LEFT JOIN items seller_item ON t.seller_exchange_item_id = seller_item.item_id
+            LEFT JOIN items buyer_item ON t.buyer_exchange_item_id = buyer_item.item_id
+            WHERE t.status = 'completed' 
+            AND (t.seller_id = %s OR t.buyer_id = %s)
+            ORDER BY t.updated_at DESC
+        ''', (user_id, user_id))
+        
+        trades = cursor.fetchall()
+        
+        # 各取引の詳細情報を構築
+        for trade in trades:
+            # 最初の商品画像
+            cursor.execute('''
+                SELECT image_url FROM item_images 
+                WHERE item_id = %s 
+                ORDER BY uploaded_at ASC
+            ''', (trade['item_id'],))
+            main_images = cursor.fetchall()
+            trade['main_item_images'] = [img['image_url'] for img in main_images]
+            
+            # seller交換商品の画像
+            if trade['seller_exchange_item_id']:
+                cursor.execute('''
+                    SELECT image_url FROM item_images 
+                    WHERE item_id = %s 
+                    ORDER BY uploaded_at ASC
+                ''', (trade['seller_exchange_item_id'],))
+                seller_images = cursor.fetchall()
+                trade['seller_item_images'] = [img['image_url'] for img in seller_images]
+            else:
+                trade['seller_item_images'] = []
+            
+            # buyer交換商品の画像
+            if trade['buyer_exchange_item_id']:
+                cursor.execute('''
+                    SELECT image_url FROM item_images 
+                    WHERE item_id = %s 
+                    ORDER BY uploaded_at ASC
+                ''', (trade['buyer_exchange_item_id'],))
+                buyer_images = cursor.fetchall()
+                trade['buyer_item_images'] = [img['image_url'] for img in buyer_images]
+            else:
+                trade['buyer_item_images'] = []
+            
+            # 現在のユーザーの立場を判定
+            trade['user_role'] = 'seller' if trade['seller_id'] == user_id else 'buyer'
+            
+            # JSONフィールドをパース
+            for field in ['main_item_brand', 'seller_item_brand', 'buyer_item_brand']:
+                if trade.get(field):
+                    try:
+                        trade[field] = json.loads(trade[field])
+                    except:
+                        trade[field] = []
+            
+            # 日付をISO形式に変換
+            if trade.get('trade_date'):
+                trade['trade_date'] = trade['trade_date'].isoformat()
+            if trade.get('completed_date'):
+                trade['completed_date'] = trade['completed_date'].isoformat()
+        
+        return jsonify({
+            "archives": trades,
+            "total": len(trades),
+            "result": True
+        }), 200
+        
+    except mysql.connector.Error as err:
+        return jsonify({
+            "error": "交換履歴取得中にエラーが発生しました",
+            "result": False
+        }), 500
+    finally:
+        conn.close()
+        cursor.close()
+
 # Chat server 
 # クライアントが接続
 @socketio.on('connect')

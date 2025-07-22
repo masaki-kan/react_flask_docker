@@ -107,7 +107,6 @@ const useChat = (): useChatReturn => {
       if (!tradeIdNumber) return;
 
       changeLoading(true);
-
       try {
         // 並列実行で全てのAPIを呼び出し
         const [
@@ -123,12 +122,6 @@ const useChat = (): useChatReturn => {
           fetchShippingInfoApi(tradeIdNumber),
           fetchConfirmationsApi(tradeIdNumber),
         ]);
-
-        // console.log("messagesResponse", messagesResponse);
-        // console.log("itemDetailResponse", itemDetailResponse);
-        console.log("partnerItemsResponse", partnerItemsResponse);
-        // console.log("shippingInfoResponse", shippingInfoResponse);
-        // console.log("confirmationsResponse", confirmationsResponse);
 
         // レスポンスの処理
         let messages: messagesType[] = [];
@@ -240,6 +233,8 @@ const useChat = (): useChatReturn => {
             buyerUserData,
           })
         );
+
+        changeLoading(false);
       } catch (error) {
         console.error("Chat page data fetch error:", error);
         errorSweetalert2("データの取得に失敗しました");

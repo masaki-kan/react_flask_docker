@@ -7,23 +7,12 @@ import {
   Text,
   IconButton,
   useDisclosure,
-  Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalCloseButton,
   VStack,
   Button,
-  FormControl,
-  FormLabel,
-  Input,
-  Select,
   Checkbox,
   useToast,
   Tooltip,
   Badge,
-  Divider,
   Icon,
 } from "@chakra-ui/react";
 import { FaBox, FaTruck, FaUserCircle, FaCheckCircle } from "react-icons/fa";
@@ -45,12 +34,10 @@ import {
   completeExchangeApi,
 } from "../../api/chatApi";
 import ShippingInfoDisplay from "./shippingInfoDisplay";
-import { shippingInfoType } from "../../types/chatType";
-
-interface ShippingInfo {
-  trackingNumber: string;
-  shippingCompany: string;
-}
+import { shippingInfoType, ShippingInfo } from "../../types/chatType";
+import UserDataModal from "./userDataModal";
+import ShippingModal from "./shippingModal";
+import SelectItems from "./selectItems";
 
 const Home: FC = () => {
   const navigate = useNavigate();
@@ -563,7 +550,7 @@ const Home: FC = () => {
                         as={FaTruck}
                         color={hasUserShipped ? "green.500" : "gray.400"}
                       />
-                      <Text fontSize="sm">
+                      <Text fontSize="lg">
                         あなた: {hasUserShipped ? "発送済み" : "未発送"}
                       </Text>
                     </HStack>
@@ -572,7 +559,7 @@ const Home: FC = () => {
                         as={FaTruck}
                         color={hasPartnerShipped ? "green.500" : "gray.400"}
                       />
-                      <Text fontSize="sm">
+                      <Text fontSize="lg">
                         相手: {hasPartnerShipped ? "発送済み" : "未発送"}
                       </Text>
                     </HStack>
@@ -690,70 +677,17 @@ const Home: FC = () => {
           </VStack>
         </Flex>
 
-        {/* 交換商品表示 Buyerの交換商品 */}
-        {buyerSelectedItemId && (
-          <Box mt={3} p={3} bg="blue.50" borderRadius="md" w="100%">
-            <Text fontSize="sm" fontWeight="bold" mb={2} color="blue.700">
-              申請者が選択した商品
-            </Text>
-            <HStack>
-              <Icon as={FaBox} color="blue.500" />
-              <Text fontSize="xs" color="gray.600">
-                {memorizeBuyerUserData.name}:
-              </Text>
-              <Button
-                fontSize="sm"
-                fontWeight="medium"
-                onClick={onItemOpen}
-                colorScheme="blue"
-                variant="outline"
-                bgColor={"white"}
-                size={{ base: "sm", md: "sm" }}
-              >
-                {memorizeChatItemData.title}
-              </Button>
-            </HStack>
-          </Box>
-        )}
+        {/* 交換商品表示 Buyerの交換商品  交換商品表示 Sellerの交換商品  */}
+        <SelectItems
+          buyerSelectedItemId={buyerSelectedItemId}
+          hasSellerSelectedItem={hasSellerSelectedItem}
+          memorizeBuyerUserData={memorizeBuyerUserData}
+          memorizeChatItemData={memorizeChatItemData}
+          onItemOpen={onItemOpen}
+          onSellerItemOpen={onSellerItemOpen}
+          selectedSellerItem={selectedSellerItem}
+        />
 
-        {/* 交換商品表示 Sellerの交換商品 */}
-        {hasSellerSelectedItem && (
-          <Box mt={3} p={3} bg="blue.50" borderRadius="md" w="100%">
-            <Text fontSize="sm" fontWeight="bold" mb={2} color="blue.700">
-              承認者が選択された商品
-            </Text>
-            <VStack align="start" spacing={2}>
-              {sellerSelectedItemId && (
-                <HStack>
-                  <Icon as={FaBox} color="blue.500" />
-                  <Text fontSize="xs" color="gray.600">
-                    {memorizeSellerUserData.name}:
-                  </Text>
-                  <Button
-                    fontSize="sm"
-                    fontWeight="medium"
-                    onClick={onSellerItemOpen}
-                    colorScheme="blue"
-                    variant="outline"
-                    bgColor={"white"}
-                    size={{ base: "sm", md: "sm" }}
-                  >
-                    {selectedSellerItem()?.title}
-                  </Button>
-                </HStack>
-              )}
-            </VStack>
-          </Box>
-        )}
-      </Box>
-
-      <Box
-        bg="white"
-        p={{ base: 3, md: 4 }}
-        borderRadius="lg"
-        boxShadow="sm"
-        mb={4}
-      >
         <ShippingInfoDisplay
           sellerShipping={sellerShippingData}
           buyerShipping={buyerShippingData}
@@ -796,206 +730,22 @@ const Home: FC = () => {
       />
 
       {/* ユーザー情報モーダル */}
-      <Modal isOpen={isUserOpen} onClose={onUserClose} size="md">
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>
-            {selectedUser === "seller" ? "交換受理者" : "交換申請者"}
-          </ModalHeader>
-          <ModalCloseButton />
-          <ModalBody pb={6}>
-            <VStack spacing={4} align="start">
-              <HStack spacing={4}>
-                {/* プロフィール画像の表示 */}
-                {selectedUser === "seller" ? (
-                  // 売り手（交換を受ける人）の場合
-                  memorizeSellerUserData.profile_image?.length > 0 ? (
-                    <Avatar
-                      size="xl"
-                      src={memorizeSellerUserData.profile_image}
-                      name={memorizeSellerUserData.name}
-                    />
-                  ) : (
-                    <Icon as={FaUserCircle} boxSize={16} color="gray.400" />
-                  )
-                ) : // 買い手（交換したい人）の場合
-                memorizeBuyerUserData.profile_image?.length > 0 ? (
-                  <Avatar
-                    size="xl"
-                    src={memorizeBuyerUserData.profile_image}
-                    name={memorizeBuyerUserData.name}
-                  />
-                ) : (
-                  <Icon as={FaUserCircle} boxSize={16} color="gray.400" />
-                )}
-
-                <VStack align="start">
-                  <Text fontSize="lg" fontWeight="bold">
-                    {selectedUser === "seller"
-                      ? memorizeSellerUserData.name || "名前未設定"
-                      : memorizeBuyerUserData.name || "名前未設定"}
-                  </Text>
-                  <Text fontSize="sm" color="gray.500">
-                    {selectedUser === "seller"
-                      ? memorizeSellerUserData.location || "場所未設定"
-                      : memorizeBuyerUserData.location || "場所未設定"}
-                  </Text>
-                </VStack>
-              </HStack>
-              <Divider />
-
-              {/* お気に入りショップ */}
-              <Box>
-                <Text fontSize="sm" fontWeight="bold" mb={2}>
-                  お気に入りショップ
-                </Text>
-                <Text fontSize="sm" color="gray.600" wordBreak={"break-all"}>
-                  {selectedUser === "seller"
-                    ? memorizeSellerUserData.shop_name !== null
-                      ? memorizeSellerUserData.shop_name
-                      : "未設定"
-                    : memorizeBuyerUserData.shop_name !== null
-                      ? memorizeBuyerUserData.shop_name
-                      : "未設定"}
-                </Text>
-
-                <Text
-                  fontSize="sm"
-                  color="blue.500"
-                  as="a"
-                  href={
-                    selectedUser === "seller"
-                      ? memorizeSellerUserData.shop_url
-                      : memorizeBuyerUserData.shop_url
-                  }
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  wordBreak={"break-all"}
-                >
-                  {selectedUser === "seller"
-                    ? memorizeSellerUserData.shop_url
-                    : memorizeBuyerUserData.shop_url}
-                </Text>
-              </Box>
-
-              {/* タグ情報 */}
-              <Box>
-                <Text fontSize="sm" fontWeight="bold" mb={2}>
-                  好きなジャンル
-                </Text>
-                <HStack wrap="wrap" spacing={2}>
-                  {selectedUser === "seller" ? (
-                    memorizeSellerUserData.tags.length > 0 ? (
-                      memorizeSellerUserData.tags.map((tag, index) => {
-                        return (
-                          <Badge colorScheme="blue" size="sm" key={index}>
-                            {tag.name}
-                          </Badge>
-                        );
-                      })
-                    ) : (
-                      <Text fontSize="sm" color="gray.600">
-                        未設定
-                      </Text>
-                    )
-                  ) : memorizeBuyerUserData.tags.length > 0 ? (
-                    memorizeBuyerUserData.tags.map((tag, index) => {
-                      return (
-                        <Badge colorScheme="blue" size="sm" key={index}>
-                          {tag.name}
-                        </Badge>
-                      );
-                    })
-                  ) : (
-                    <Text fontSize="sm" color="gray.600">
-                      未設定
-                    </Text>
-                  )}
-                </HStack>
-              </Box>
-
-              {/* 年齢情報 */}
-              <Box>
-                <Text fontSize="sm" fontWeight="bold" mb={2}>
-                  古着歴
-                </Text>
-                <Text fontSize="sm" color="gray.600">
-                  {selectedUser === "seller"
-                    ? `${memorizeSellerUserData.age !== 0 ? memorizeSellerUserData.age + "年" : "未設定"}`
-                    : `${memorizeBuyerUserData.age !== 0 ? memorizeBuyerUserData.age + "年" : "未設定"}`}
-                </Text>
-              </Box>
-
-              <Box>
-                <Text fontSize="sm" fontWeight="bold" mb={2}>
-                  古着にハマったキッカケ
-                </Text>
-                <Text fontSize="sm" color="gray.600">
-                  {selectedUser === "seller"
-                    ? `${memorizeSellerUserData.reasen || "未設定"}`
-                    : `${memorizeBuyerUserData.reasen || "未設定"}`}
-                </Text>
-              </Box>
-            </VStack>
-          </ModalBody>
-        </ModalContent>
-      </Modal>
+      <UserDataModal
+        isUserOpen={isUserOpen}
+        onUserClose={onUserClose}
+        selectedUser={selectedUser}
+        memorizeSellerUserData={memorizeSellerUserData}
+        memorizeBuyerUserData={memorizeBuyerUserData}
+      />
 
       {/* 発送情報入力モーダル */}
-      <Modal isOpen={isShippingOpen} onClose={onShippingClose} size="md">
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>発送情報を入力</ModalHeader>
-          <ModalCloseButton />
-          <ModalBody pb={6}>
-            <VStack spacing={4}>
-              <FormControl isRequired>
-                <FormLabel>配送会社</FormLabel>
-                <Select
-                  placeholder="配送会社を選択"
-                  value={shippingInfo.shippingCompany}
-                  onChange={(e) =>
-                    setShippingInfo({
-                      ...shippingInfo,
-                      shippingCompany: e.target.value,
-                    })
-                  }
-                >
-                  <option value="ヤマト運輸">ヤマト運輸</option>
-                  <option value="佐川急便">佐川急便</option>
-                  <option value="日本郵便">日本郵便</option>
-                  <option value="その他">その他</option>
-                </Select>
-              </FormControl>
-
-              <FormControl isRequired>
-                <FormLabel>追跡番号</FormLabel>
-                <Input
-                  placeholder="追跡番号を入力"
-                  value={shippingInfo.trackingNumber}
-                  onChange={(e) =>
-                    setShippingInfo({
-                      ...shippingInfo,
-                      trackingNumber: e.target.value,
-                    })
-                  }
-                />
-              </FormControl>
-
-              <Button
-                colorScheme="green"
-                width="full"
-                onClick={handleShipping}
-                isDisabled={
-                  !shippingInfo.trackingNumber || !shippingInfo.shippingCompany
-                }
-              >
-                発送完了
-              </Button>
-            </VStack>
-          </ModalBody>
-        </ModalContent>
-      </Modal>
+      <ShippingModal
+        isShippingOpen={isShippingOpen}
+        onShippingClose={onShippingClose}
+        shippingInfo={shippingInfo}
+        setShippingInfo={setShippingInfo}
+        handleShipping={handleShipping}
+      />
     </>
   );
 };

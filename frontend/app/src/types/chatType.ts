@@ -51,3 +51,8 @@ export interface userDataType {
   tags: { key: string; name: string }[];
   user_id: number;
 }
+
+export interface ShippingInfo {
+  trackingNumber: string;
+  shippingCompany: string;
+}
