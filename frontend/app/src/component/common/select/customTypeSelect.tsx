@@ -113,6 +113,8 @@ const CustomTypeSelect: FC<CustomTypeSelectProps> = ({
 
   return (
     <Select
+      menuPortalTarget={document.body} // これを追加
+      menuPosition="fixed" // これも追加
       isMulti={false}
       components={animatedComponents}
       options={options}
