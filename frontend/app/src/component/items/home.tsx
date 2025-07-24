@@ -87,7 +87,7 @@ const Home: FC = () => {
     <>
       {memorizeLoading && <FullScreenSpinner />}
       <Box
-        zIndex={1000}
+        zIndex={999}
         position={"sticky"}
         top={-1}
         width="100%"
