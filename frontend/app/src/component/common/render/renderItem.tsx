@@ -57,8 +57,6 @@ const RebderItem: FC<RebderItemProps> = React.memo(({ itemList, navigate }) => {
         lg: "repeat(5, 1fr)",
       }}
       gap={{ base: 2, sm: 3, md: 4 }}
-      mb={10}
-      mt={2}
       px={0}
       height={"min-content"}
       overflowY={isMatch ? "visible" : "scroll"}

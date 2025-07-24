@@ -271,7 +271,7 @@ const ItemForm: FC<ItemFormProps> = ({ profileItem, ItemNumver }) => {
   }, [navigate]);
 
   return (
-    <Container maxW="container.xl" mb={10}>
+    <Container maxW="container.xl" mb={10} mt={{ base: "8em", md: "6em" }}>
       {/* ヘッダー */}
       <HStack justify="space-between" mb={6}>
         <HStack spacing={4}>

@@ -4,8 +4,6 @@ import ListingsIndex from "./listingsIndex";
 import useUsers from "../../hooks/useUsers";
 import useLaoding from "../../hooks/useLaoding";
 import FullScreenSpinner from "../common/spliner/FullScreenSpinner";
-import { menuLists } from "../../consts/menuList";
-import ComponentHeader from "../common/layout/componentHeader";
 
 const Home: FC = () => {
   const { getUserListHandler } = useUsers();
@@ -17,7 +15,6 @@ const Home: FC = () => {
 
   return (
     <>
-      <ComponentHeader title={menuLists[0].text} />
       {memorizeLoading && <FullScreenSpinner />}
       <ListingsIndex />
     </>

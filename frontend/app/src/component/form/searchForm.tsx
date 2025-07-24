@@ -112,7 +112,7 @@ const SearchForm: FC<SearchFormProps> = React.memo(
     );
 
     return (
-      <VStack hidden={hidden} align={"start"} w={"full"} gap={3}>
+      <VStack hidden={hidden} align={"start"} w={"full"} gap={0}>
         <FormControl>
           <Input
             bg={"white"}

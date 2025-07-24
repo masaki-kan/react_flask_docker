@@ -1,4 +1,4 @@
-import { Box, HStack, Icon, Button, Text } from "@chakra-ui/react";
+import { Box, HStack, Icon, Text } from "@chakra-ui/react";
 import { FC } from "react";
 import { FaBox } from "react-icons/fa";
 import { userDataType, chatItemDataType } from "../../types/chatType";
@@ -7,6 +7,7 @@ type SelectItemsType = {
   buyerSelectedItemId: string | null;
   hasSellerSelectedItem: boolean;
   memorizeBuyerUserData: userDataType;
+  memorizeSellerUserData: userDataType;
   memorizeChatItemData: chatItemDataType;
   onItemOpen: () => void;
   onSellerItemOpen: () => void;
@@ -18,6 +19,7 @@ const SelectItems: FC<SelectItemsType> = ({
   hasSellerSelectedItem,
   memorizeBuyerUserData,
   memorizeChatItemData,
+  memorizeSellerUserData,
   onItemOpen,
   onSellerItemOpen,
   selectedSellerItem,
@@ -27,7 +29,7 @@ const SelectItems: FC<SelectItemsType> = ({
       <HStack>
         {/* 交換商品表示 Buyerの交換商品 */}
         {buyerSelectedItemId && (
-          <Box mt={3} p={3} bg="blue.50" borderRadius="md" w="100%">
+          <Box mt={3} p={3} bg="blue.50" borderRadius="md" w="50%">
             <Text fontSize="xs" fontWeight="bold" mb={2} color="blue.700">
               申請者が選択した商品
             </Text>
@@ -37,23 +39,24 @@ const SelectItems: FC<SelectItemsType> = ({
                 {memorizeBuyerUserData.name}
               </Text>
             </HStack>
-            <Button
-              mt={2}
+
+            <Text
               fontSize="xs"
+              mt={2}
+              color="gray"
               fontWeight="medium"
-              onClick={onItemOpen}
-              colorScheme="blue"
               variant="outline"
-              bgColor={"white"}
-              size={{ base: "xs", md: "sm" }}
+              whiteSpace={"wrap"}
+              noOfLines={1}
+              onClick={onItemOpen}
             >
               {memorizeChatItemData.title}
-            </Button>
+            </Text>
           </Box>
         )}
         {/* 交換商品表示 Sellerの交換商品 */}
         {hasSellerSelectedItem && (
-          <Box mt={3} p={3} bg="blue.50" borderRadius="md" w="100%">
+          <Box mt={3} p={3} bg="blue.50" borderRadius="md" w="50%">
             <Text fontSize="xs" fontWeight="bold" mb={2} color="blue.700">
               承認者が選択された商品
             </Text>
@@ -62,22 +65,22 @@ const SelectItems: FC<SelectItemsType> = ({
               <HStack>
                 <Icon as={FaBox} color="blue.500" />
                 <Text fontSize="xs" color="gray.600">
-                  {memorizeBuyerUserData.name}
+                  {memorizeSellerUserData.name}
                 </Text>
               </HStack>
             )}
-            <Button
-              mt={2}
+            <Text
               fontSize="xs"
+              mt={2}
+              color="gray"
               fontWeight="medium"
-              onClick={onSellerItemOpen}
-              colorScheme="blue"
               variant="outline"
-              bgColor={"white"}
-              size={{ base: "xs", md: "sm" }}
+              whiteSpace={"wrap"}
+              noOfLines={1}
+              onClick={onSellerItemOpen}
             >
               {selectedSellerItem()?.title}
-            </Button>
+            </Text>
           </Box>
         )}
       </HStack>

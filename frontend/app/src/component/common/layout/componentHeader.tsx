@@ -28,7 +28,6 @@ const ComponentHeader: FC<MinimalHeaderType> = ({ title }) => {
       border="1px solid"
       borderColor={borderColor}
       boxShadow={shadowColor}
-      mb={6}
       position="relative"
     >
       <Flex justify="space-between" align="center" wrap="wrap" gap={4}>

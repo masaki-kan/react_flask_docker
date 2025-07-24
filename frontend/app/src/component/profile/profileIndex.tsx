@@ -148,11 +148,11 @@ const ProfileIndex: FC<profileIndexType> = ({ editFormSwitch }) => {
             top={4}
           >
             {/* アバターとメイン情報 */}
-            <VStack spacing={4}>
+            <VStack spacing={2}>
               <Box position="relative">
                 {profile.profile.image.length > 0 ? (
                   <Avatar
-                    size="xl"
+                    size="2xl"
                     src={profile.profile.image}
                     name={profile.profile.name}
                     border="4px solid"
@@ -183,7 +183,7 @@ const ProfileIndex: FC<profileIndexType> = ({ editFormSwitch }) => {
                 />
               </Box>
 
-              <HStack spacing={1}>
+              <VStack spacing={1}>
                 <Heading size="sm">{profile.profile.name}</Heading>
                 <HStack>
                   <Icon as={FaMapMarkerAlt} color={textMuted} boxSize={4} />
@@ -191,7 +191,7 @@ const ProfileIndex: FC<profileIndexType> = ({ editFormSwitch }) => {
                     {profile.profile.location || "未設定"}
                   </Text>
                 </HStack>
-              </HStack>
+              </VStack>
 
               <Divider />
               {/* プラン情報 */}

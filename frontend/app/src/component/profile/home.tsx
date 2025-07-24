@@ -40,7 +40,7 @@ const Profile: FC = () => {
   }, [editSwitch, getMyProfile]);
 
   return (
-    <VStack align={"start"} gap={9} w={"100%"}>
+    <VStack align={"start"} gap={9} w={"100%"} mt={{ base: "8em", md: "6em" }}>
       {memorizeLoading && <FullScreenSpinner />}
       {editSwitch ? (
         <ProfileForm

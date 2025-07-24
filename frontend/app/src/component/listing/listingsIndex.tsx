@@ -72,11 +72,13 @@ const ListingsIndex: FC = React.memo(() => {
           <Box
             bg={bgColor}
             p={1}
-            mb={2}
             borderRadius="xl"
             boxShadow="0 2px 10px rgba(0, 0, 0, 0.1)"
             border="1px solid"
             borderColor={borderColor}
+            position={"sticky"}
+            top={0}
+            zIndex={100}
           >
             <TabList>
               {tabs.map((tab, index) => (
@@ -108,19 +110,20 @@ const ListingsIndex: FC = React.memo(() => {
                 </Tab>
               ))}
             </TabList>
+            {/* 検索フォーム */}
+            <AnimatePresence mode="wait">
+              <Box my={2}>
+                {userSearchHidden && (
+                  <SearchForm
+                    hidden={false}
+                    tagList={memorizeTagList}
+                    selectedTag={memorizeSelectedTag}
+                    route={pathname}
+                  />
+                )}
+              </Box>
+            </AnimatePresence>
           </Box>
-
-          {/* 検索フォーム */}
-          <AnimatePresence mode="wait">
-            {userSearchHidden && (
-              <SearchForm
-                hidden={false}
-                tagList={memorizeTagList}
-                selectedTag={memorizeSelectedTag}
-                route={pathname}
-              />
-            )}
-          </AnimatePresence>
 
           <TabPanels>
             <TabPanel p={0} mb={10}>

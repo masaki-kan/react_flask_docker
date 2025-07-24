@@ -71,6 +71,9 @@ const SavedIndex: FC = () => {
             boxShadow="0 2px 10px rgba(0, 0, 0, 0.1)"
             border="1px solid"
             borderColor={borderColor}
+            position={"sticky"}
+            top={-1}
+            zIndex={100}
           >
             <TabList>
               {tabs.map((tab, index) => (

@@ -79,7 +79,7 @@ const ShippingInfoDisplay: FC<ShippingInfoDisplayProps> = ({
             </Text>
           </HStack>
 
-          <HStack>
+          <VStack gap={0} align={"start"}>
             <Text fontSize="xs" color="gray.600">
               追跡番号:
             </Text>
@@ -91,7 +91,7 @@ const ShippingInfoDisplay: FC<ShippingInfoDisplayProps> = ({
             >
               {shipping.tracking_number}
             </Text>
-          </HStack>
+          </VStack>
         </VStack>
       </Box>
     );
@@ -101,8 +101,8 @@ const ShippingInfoDisplay: FC<ShippingInfoDisplayProps> = ({
     <Box w="100%" mt={4}>
       <VStack spacing={3}>
         <HStack w="100%" spacing={3} align="stretch">
-          {renderShippingInfo(sellerShipping, sellerName || "交換を受ける人")}
           {renderShippingInfo(buyerShipping, buyerName || "交換申請した人")}
+          {renderShippingInfo(sellerShipping, sellerName || "交換を受ける人")}
         </HStack>
 
         {sellerShipping && buyerShipping && (

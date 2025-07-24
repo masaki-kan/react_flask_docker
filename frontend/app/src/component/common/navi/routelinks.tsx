@@ -74,25 +74,6 @@ const RenderRouteLinks: FC = () => {
     <>
       <Container maxW="container.xl">
         <HStack justify="space-between" align="end">
-          {/* ロゴ */}
-          <HStack spacing={4}>
-            <HStack
-              onClick={() => navigate(route.home)}
-              cursor="pointer"
-              spacing={3}
-              _hover={{ opacity: 0.8 }}
-              transition="all 0.2s"
-            >
-              <Text
-                fontSize="lg"
-                fontWeight="bold"
-                display={{ base: "none", md: "block" }}
-              >
-                僕らのヴィンテージ
-              </Text>
-            </HStack>
-          </HStack>
-
           {/* デスクトップナビゲーション */}
           {menuLists.map((menu, index) => {
             return (

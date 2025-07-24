@@ -1,31 +1,48 @@
-import { FC, useCallback } from "react";
-import { VStack, Box } from "@chakra-ui/react";
-import SearchForm from "../form/searchForm";
+import { ChangeEvent, FC, useCallback, useState } from "react";
+import {
+  VStack,
+  Box,
+  useColorModeValue,
+  FormControl,
+  Input,
+  Button,
+  HStack,
+} from "@chakra-ui/react";
 import RebderItem from "../common/render/renderItem";
 import useItems from "../../hooks/useItems";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { route } from "../../route/routeConst";
 import useLoading from "../../hooks/useLaoding";
 import { useEffectOnce } from "react-use";
 import FullScreenSpinner from "../common/spliner/FullScreenSpinner";
 import { useDispatch } from "react-redux";
 import { setTargetDetailUser } from "../../store/usersSlice";
-import ComponentHeader from "../common/layout/componentHeader";
-import { menuLists } from "../../consts/menuList";
 import { AnimatePresence, motion } from "framer-motion";
+import CustomTypeSelect from "../common/select/customTypeSelect";
+import CustomBrandSelect from "../common/select/customBrandSelect";
+import { MdClear } from "react-icons/md";
 
 const Home: FC = () => {
   const navigate = useNavigate();
   const dispath = useDispatch();
-  const pathname = useLocation().pathname;
   const { memorizeLoading } = useLoading();
   const MotionBox = motion.create(Box);
   const {
     getItemListHandler,
+    typeChangeHandler,
+    brandChangeHandler,
+    itemFilterHandler,
+    itemsFilterClearHandler,
     memorizeItemList,
-    memorizeTagList,
-    memorizeSelectedTag,
+    memorizeItemsSearchTypeSelect,
+    memorizeItemsSearchBrandsSelect,
   } = useItems();
+  const [search, setSearch] = useState<string>("");
+  const borderColor = useColorModeValue("gray.200", "gray.700");
+  const shadowColor = useColorModeValue(
+    "0 4px 12px rgba(0, 0, 0, 0.08)",
+    "0 4px 12px rgba(0, 0, 0, 0.3)"
+  );
 
   useEffectOnce(() => {
     getItemListHandler();
@@ -43,27 +60,71 @@ const Home: FC = () => {
     [dispath, navigate]
   );
 
-  const hight = (): string => {
-    if (location.pathname === route.favorite) {
-      return "650px";
-    }
-    if (location.pathname === route.items) {
-      return "500px";
-    }
-    return "full";
-  };
+  const filterHandler = useCallback(
+    (e: ChangeEvent<HTMLInputElement>) => {
+      const value = e.target.value;
+      setSearch(value);
+
+      itemFilterHandler(value);
+    },
+    [itemFilterHandler]
+  );
+
+  const filterClearHandler = useCallback(() => {
+    setSearch("");
+    itemsFilterClearHandler();
+  }, [itemsFilterClearHandler]);
 
   return (
     <>
-      <ComponentHeader title={menuLists[1].text} />
       {memorizeLoading && <FullScreenSpinner />}
-      <VStack align={"start"}>
-        <SearchForm
-          tagList={memorizeTagList}
-          hidden={false}
-          route={pathname}
-          selectedTag={memorizeSelectedTag}
-        />
+      <VStack
+        zIndex={1000}
+        position={"sticky"}
+        top={-1}
+        px={2}
+        py={4}
+        bgColor={"white"}
+        spacing={4}
+        border="1px solid"
+        borderColor={borderColor}
+        boxShadow={shadowColor}
+      >
+        <FormControl>
+          <Input
+            bg={"white"}
+            placeholder="キーワードで検索"
+            size="md"
+            value={search}
+            onChange={(e) => {
+              filterHandler(e);
+            }}
+          />
+        </FormControl>
+        <Box width={"100%"}>
+          <CustomTypeSelect
+            value={memorizeItemsSearchTypeSelect}
+            onChange={typeChangeHandler}
+          />
+        </Box>
+        <Box width={"100%"}>
+          <CustomBrandSelect
+            tags={memorizeItemsSearchBrandsSelect}
+            onChange={brandChangeHandler}
+          />
+        </Box>
+        <HStack justifyContent={"end"} width={"full"}>
+          <Button
+            size={"sm"}
+            leftIcon={<MdClear />}
+            onClick={filterClearHandler}
+          >
+            クリア
+          </Button>
+        </HStack>
+      </VStack>
+
+      <VStack align={"start"} spacing={4} mt={4}>
         <AnimatePresence mode="wait">
           <MotionBox
             initial={{ opacity: 0, y: 20 }}
@@ -72,12 +133,10 @@ const Home: FC = () => {
             transition={{ duration: 0.2 }}
             w={"full"}
           >
-            <Box overflowY={"scroll"} height={hight()} width={"full"}>
-              <RebderItem
-                itemList={memorizeItemList}
-                navigate={itemDetailHanlder}
-              />
-            </Box>
+            <RebderItem
+              itemList={memorizeItemList}
+              navigate={itemDetailHanlder}
+            />
           </MotionBox>
         </AnimatePresence>
       </VStack>

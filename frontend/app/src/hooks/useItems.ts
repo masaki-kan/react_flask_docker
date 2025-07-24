@@ -5,6 +5,8 @@ import {
   setItemsList,
   setSelectedTag,
   setOriginalItemsList,
+  setItemsSearchTypeSelect,
+  setItemsSearchBrandsSelect,
 } from "../store/itemsSlice";
 import { RootState } from "../store";
 import { itemListType } from "../types/itemType";
@@ -17,6 +19,11 @@ type userItemsReturn = {
   memorizeItemList: itemListType[];
   memorizeTagList: tagType[];
   memorizeSelectedTag: tagType[];
+  memorizeItemsSearchTypeSelect: string;
+  memorizeItemsSearchBrandsSelect: {
+    key: string;
+    name: string;
+  };
   getItemListHandler: () => void;
   tagsUpdateHandler: (index: number, type: string) => void;
   selectedTagUpdateHandler: (
@@ -26,6 +33,10 @@ type userItemsReturn = {
     }>
   ) => void;
   memorizeSliceSearchHandler: (value: string) => void;
+  typeChangeHandler: (key: string) => void;
+  brandChangeHandler: (brand: { key: string; name: string }) => void;
+  itemFilterHandler: (keyword: string) => void;
+  itemsFilterClearHandler: () => void;
 };
 
 const useItems = (): userItemsReturn => {
@@ -56,10 +67,28 @@ const useItems = (): userItemsReturn => {
   const selectedTag = useSelector(
     (state: RootState) => state.items.selectedTag
   );
+
+  const itemsSearchTypeSelect = useSelector(
+    (state: RootState) => state.items.itemsSearchTypeSelect
+  );
+
+  const itemsSearchBrandsSelect = useSelector(
+    (state: RootState) => state.items.itemsSearchBrandsSelect
+  );
+
+  const memorizeItemsSearchTypeSelect = useMemo(() => {
+    return itemsSearchTypeSelect;
+  }, [itemsSearchTypeSelect]);
+
+  const memorizeItemsSearchBrandsSelect = useMemo(() => {
+    return itemsSearchBrandsSelect;
+  }, [itemsSearchBrandsSelect]);
+
   const memorizeSelectedTag = useMemo(() => {
     return selectedTag;
   }, [selectedTag]);
 
+  // 自分以外の商品一覧取得
   const getItemListHandler = useCallback(async () => {
     changeLoading(true);
     const response = await getUserItemsApi(profile.profile.id);
@@ -110,10 +139,14 @@ const useItems = (): userItemsReturn => {
       dispatch(setOriginalItemsList(itemList));
       dispatch(setItemsList(itemList));
       dispatch(setItemsTagList(itemBrandList));
+      changeLoading(false);
+
+      return;
     }
     changeLoading(false);
   }, [changeLoading, dispatch, profile.profile.id]);
 
+  // タグ検索(使用しない)
   const tagsUpdateHandler = useCallback(
     (index: number, type: string) => {
       if (type !== "add") {
@@ -192,15 +225,100 @@ const useItems = (): userItemsReturn => {
     [filterUsers]
   );
 
+  const itemFilterHandler = useCallback(
+    (keyword: string) => {
+      // オリジナルのリストから絞り込みを開始
+      let filteredItems = [...originalItemsList];
+
+      // タイプによる絞り込み
+      if (itemsSearchTypeSelect) {
+        filteredItems = filteredItems.filter(
+          (item) => item.type === itemsSearchTypeSelect
+        );
+      }
+
+      // ブランドによる絞り込み
+      if (itemsSearchBrandsSelect.key) {
+        filteredItems = filteredItems.filter(
+          (item) => item.brand?.key === itemsSearchBrandsSelect.key
+        );
+      }
+
+      // キーワードによる絞り込み
+      if (keyword) {
+        const lowerKeyword = keyword.toLowerCase();
+        filteredItems = filteredItems.filter(
+          (item) =>
+            item.title?.toLowerCase().includes(lowerKeyword) ||
+            item.description?.toLowerCase().includes(lowerKeyword) ||
+            item.brand?.name?.toLowerCase().includes(lowerKeyword)
+        );
+      }
+
+      // 絞り込み結果をストアに反映
+      dispatch(setItemsList(filteredItems));
+      return;
+    },
+    [
+      originalItemsList,
+      itemsSearchTypeSelect,
+      itemsSearchBrandsSelect,
+      dispatch,
+    ]
+  );
+
+  const typeChangeHandler = useCallback(
+    (key: string) => {
+      // オリジナルのリストから絞り込みを開始
+      let filteredItems = [...originalItemsList];
+      filteredItems = filteredItems.filter((item) => item.type === key);
+      // 絞り込み結果をストアに反映
+      dispatch(setItemsList(filteredItems));
+      dispatch(setItemsSearchTypeSelect(key));
+      return;
+    },
+    [dispatch, originalItemsList]
+  );
+
+  const brandChangeHandler = useCallback(
+    (brand: { key: string; name: string }) => {
+      let filteredItems = [...originalItemsList];
+      filteredItems = filteredItems.filter(
+        (item) => item.brand?.key === itemsSearchBrandsSelect.key
+      );
+      dispatch(setItemsSearchBrandsSelect(brand));
+      dispatch(setItemsList(filteredItems));
+      return;
+    },
+    [dispatch, itemsSearchBrandsSelect.key, originalItemsList]
+  );
+
+  const itemsFilterClearHandler = useCallback(() => {
+    dispatch(
+      setItemsSearchBrandsSelect({
+        key: "",
+        name: "",
+      })
+    );
+    dispatch(setItemsSearchTypeSelect(""));
+    dispatch(setItemsList(originalItemsList));
+  }, [dispatch, originalItemsList]);
+
   return {
     selectedTagUpdateHandler,
     getItemListHandler,
     tagsUpdateHandler,
     memorizeSliceSearchHandler,
+    typeChangeHandler,
+    brandChangeHandler,
+    itemFilterHandler,
+    itemsFilterClearHandler,
     memorizeOriginalItemsList,
     memorizeItemList,
     memorizeTagList,
     memorizeSelectedTag,
+    memorizeItemsSearchTypeSelect,
+    memorizeItemsSearchBrandsSelect,
   };
 };
 

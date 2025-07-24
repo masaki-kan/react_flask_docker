@@ -507,7 +507,7 @@ const ProfileForm: FC<ProfileFormProps> = ({
                 onClick={onClickFormSwitch}
                 leftIcon={<FaTimes />}
               >
-                キャンセル
+                戻る
               </Button>
               <Button
                 size="lg"

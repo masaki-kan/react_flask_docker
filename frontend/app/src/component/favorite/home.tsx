@@ -10,8 +10,6 @@ import { useNavigate } from "react-router-dom";
 import useMyProfile from "../../hooks/useProfile";
 import { useDispatch } from "react-redux";
 import { setTargetDetailUser } from "../../store/usersSlice";
-import { menuLists } from "../../consts/menuList";
-import ComponentHeader from "../common/layout/componentHeader";
 
 const Home: FC = () => {
   const navigate = useNavigate();
@@ -46,7 +44,6 @@ const Home: FC = () => {
 
   return (
     <>
-      <ComponentHeader title={menuLists[2].text} />
       {memorizeLoading && <FullScreenSpinner />}
       <VStack align={"start"}>
         <RebderItem

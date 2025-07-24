@@ -23,7 +23,6 @@ import { useEffectOnce } from "react-use";
 import FullScreenSpinner from "../common/spliner/FullScreenSpinner";
 import useChat from "../../hooks/useChat";
 import ChatRight from "./chatRight";
-import ComponentHeader from "../common/layout/componentHeader";
 import PartnerItemsModal from "./partnerItemsModal";
 import ItemDetailModal from "./itemDetailModal";
 import { statusView } from "../common/saved/saveStatusView.ts";
@@ -429,7 +428,6 @@ const Home: FC = () => {
 
   return (
     <>
-      <ComponentHeader title={"交換やりとり"} />
       {memorizeLoading && <FullScreenSpinner />}
 
       {/* ヘッダー部分：ユーザーアバターとステータス */}
@@ -690,6 +688,7 @@ const Home: FC = () => {
           buyerSelectedItemId={buyerSelectedItemId}
           hasSellerSelectedItem={hasSellerSelectedItem}
           memorizeBuyerUserData={memorizeBuyerUserData}
+          memorizeSellerUserData={memorizeSellerUserData}
           memorizeChatItemData={memorizeChatItemData}
           onItemOpen={onItemOpen}
           onSellerItemOpen={onSellerItemOpen}
