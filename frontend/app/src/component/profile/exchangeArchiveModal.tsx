@@ -13,17 +13,16 @@ import {
   Image,
   Avatar,
   Badge,
-  Divider,
-  SimpleGrid,
   Icon,
   useColorModeValue,
   Spinner,
   Center,
   Flex,
 } from "@chakra-ui/react";
-import { FaExchangeAlt, FaCalendarAlt, FaUserCircle } from "react-icons/fa";
+import { FaCalendarAlt, FaUserCircle } from "react-icons/fa";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
+import { exchangeArchiveApi } from "../../api/profileApis";
 
 interface ExchangeArchive {
   trade_id: number;
@@ -63,27 +62,18 @@ const ExchangeArchiveModal: FC<ExchangeArchiveModalProps> = ({
   // カラーモード対応
   const bgColor = useColorModeValue("white", "gray.800");
   const borderColor = useColorModeValue("gray.200", "gray.700");
-  const sectionBg = useColorModeValue("gray.50", "gray.900");
 
   const fetchArchives = useCallback(async () => {
     setLoading(true);
-    try {
-      const response = await fetch("/api/getExchangeArchive", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ user_id: userId }),
-      });
-      const data = await response.json();
-      if (data.result) {
-        setArchives(data.archives);
-      }
-    } catch (error) {
-      console.error("アーカイブ取得エラー:", error);
-    } finally {
+
+    const response = await exchangeArchiveApi(userId);
+
+    if (response?.status === true) {
+      setArchives(response.archives);
       setLoading(false);
+      return;
     }
+    setLoading(false);
   }, [userId]);
 
   useEffect(() => {
@@ -101,7 +91,7 @@ const ExchangeArchiveModal: FC<ExchangeArchiveModalProps> = ({
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="6xl">
+    <Modal isOpen={isOpen} onClose={onClose} size="3xl">
       <ModalOverlay />
       <ModalContent maxH="90vh">
         <ModalHeader>交換履歴</ModalHeader>
@@ -116,37 +106,29 @@ const ExchangeArchiveModal: FC<ExchangeArchiveModalProps> = ({
               <Text color="gray.500">交換履歴がありません</Text>
             </Center>
           ) : (
-            <VStack spacing={6} align="stretch">
+            <VStack spacing={3} align="stretch">
               {archives.map((archive) => (
                 <Box
                   key={archive.trade_id}
                   bg={bgColor}
-                  borderRadius="lg"
+                  borderRadius="md"
                   border="1px solid"
                   borderColor={borderColor}
-                  p={6}
-                  boxShadow="sm"
+                  p={3}
                 >
-                  {/* ヘッダー：日付と役割 */}
-                  <HStack justify="space-between" mb={4}>
-                    <HStack spacing={4}>
-                      <Icon as={FaCalendarAlt} color="gray.500" />
-                      <VStack align="start" spacing={0}>
-                        <Text fontSize="sm" color="gray.600">
-                          交換完了日
-                        </Text>
-                        <Text fontWeight="bold">
-                          {formatDate(archive.completed_date)}
-                        </Text>
-                      </VStack>
+                  {/* 日付とバッジ */}
+                  <HStack justify="space-between" mb={2}>
+                    <HStack spacing={1}>
+                      <Icon as={FaCalendarAlt} color="gray.500" boxSize={3} />
+                      <Text fontSize="xs" color="gray.600">
+                        交換完了日: {formatDate(archive.completed_date)}
+                      </Text>
                     </HStack>
                     <Badge
                       colorScheme={
                         archive.user_role === "seller" ? "blue" : "green"
                       }
-                      fontSize="sm"
-                      px={3}
-                      py={1}
+                      fontSize="xs"
                     >
                       {archive.user_role === "seller"
                         ? "交換受理者"
@@ -154,137 +136,114 @@ const ExchangeArchiveModal: FC<ExchangeArchiveModalProps> = ({
                     </Badge>
                   </HStack>
 
-                  <Divider mb={4} />
-
-                  {/* ユーザー情報と交換内容 */}
-                  <SimpleGrid columns={{ base: 1, md: 3 }} spacing={4}>
-                    {/* 交換申請者（Buyer） */}
-                    <VStack>
-                      <Text fontSize="sm" fontWeight="bold" color="gray.600">
+                  {/* 交換内容（超コンパクト） */}
+                  <Flex align="start" justify="center" gap={2}>
+                    {/* 申請者 */}
+                    <VStack spacing={1} align="center" flex={1} w={"50%"}>
+                      <Text
+                        fontSize="xs"
+                        color="gray.500"
+                        textAlign={"start"}
+                        width={"100%"}
+                      >
                         交換申請者
                       </Text>
-                      <HStack>
+                      <HStack
+                        spacing={1}
+                        justifyContent={"start"}
+                        width={"100%"}
+                      >
                         {archive.buyer_image ? (
                           <Avatar
-                            size="md"
+                            size="xs"
                             src={archive.buyer_image}
                             name={archive.buyer_name}
                           />
                         ) : (
                           <Icon
                             as={FaUserCircle}
-                            boxSize={10}
+                            boxSize={6}
                             color="gray.400"
                           />
                         )}
-                        <Text fontWeight="medium">{archive.buyer_name}</Text>
+                        <Text fontSize="xs" fontWeight="medium">
+                          {archive.buyer_name}
+                        </Text>
                       </HStack>
 
-                      {/* Buyerが提供した商品 */}
-                      <Box
-                        w="full"
-                        bg={sectionBg}
-                        p={3}
-                        borderRadius="md"
-                        mt={2}
-                      >
-                        <Text fontSize="xs" color="gray.600" mb={2}>
-                          提供商品
-                        </Text>
-                        <VStack spacing={2}>
-                          {archive.buyer_item_images[0] && (
-                            <Image
-                              src={archive.buyer_item_images[0]}
-                              alt={archive.buyer_item_title}
-                              h="100px"
-                              objectFit="cover"
-                              borderRadius="md"
-                            />
-                          )}
-                          <Text fontSize="sm" fontWeight="medium" noOfLines={2}>
-                            {archive.buyer_item_title}
-                          </Text>
-                          {archive.buyer_item_images.length > 1 && (
-                            <Text fontSize="xs" color="gray.500">
-                              他{archive.buyer_item_images.length - 1}枚
-                            </Text>
-                          )}
-                        </VStack>
-                      </Box>
+                      <VStack spacing={1} width={"100%"} align={"start"}>
+                        {archive.buyer_item_images[0] && (
+                          <Image
+                            src={archive.buyer_item_images[0]}
+                            alt={archive.buyer_item_title}
+                            h="40px"
+                            w="40px"
+                            objectFit="cover"
+                            borderRadius="sm"
+                          />
+                        )}
+                        <Text fontSize="xs">{archive.buyer_item_title}</Text>
+                      </VStack>
                     </VStack>
 
-                    {/* 矢印 */}
-                    <Flex align="center" justify="center">
-                      <Icon as={FaExchangeAlt} boxSize={8} color="gray.400" />
-                    </Flex>
-
-                    {/* 交換受理者（Seller） */}
-                    <VStack>
-                      <Text fontSize="sm" fontWeight="bold" color="gray.600">
+                    {/* 受理者 */}
+                    <VStack spacing={1} align="center" flex={1} w={"50%"}>
+                      <Text
+                        fontSize="xs"
+                        color="gray.500"
+                        textAlign={"start"}
+                        width={"100%"}
+                      >
                         交換受理者
                       </Text>
-                      <HStack>
+                      <HStack
+                        spacing={1}
+                        justifyContent={"start"}
+                        width={"100%"}
+                      >
                         {archive.seller_image ? (
                           <Avatar
-                            size="md"
+                            size="xs"
                             src={archive.seller_image}
                             name={archive.seller_name}
                           />
                         ) : (
                           <Icon
                             as={FaUserCircle}
-                            boxSize={10}
+                            boxSize={6}
                             color="gray.400"
                           />
                         )}
-                        <Text fontWeight="medium">{archive.seller_name}</Text>
+                        <Text fontSize="xs" fontWeight="medium">
+                          {archive.seller_name}
+                        </Text>
                       </HStack>
 
-                      {/* Sellerが提供した商品 */}
-                      <Box
-                        w="full"
-                        bg={sectionBg}
-                        p={3}
-                        borderRadius="md"
-                        mt={2}
-                      >
-                        <Text fontSize="xs" color="gray.600" mb={2}>
-                          提供商品
-                        </Text>
-                        <VStack spacing={2}>
-                          {archive.seller_item_images[0] && (
-                            <Image
-                              src={archive.seller_item_images[0]}
-                              alt={archive.seller_item_title}
-                              h="100px"
-                              objectFit="cover"
-                              borderRadius="md"
-                            />
-                          )}
-                          <Text fontSize="sm" fontWeight="medium" noOfLines={2}>
-                            {archive.seller_item_title}
-                          </Text>
-                          {archive.seller_item_images.length > 1 && (
-                            <Text fontSize="xs" color="gray.500">
-                              他{archive.seller_item_images.length - 1}枚
-                            </Text>
-                          )}
-                        </VStack>
-                      </Box>
+                      <VStack spacing={1} width={"100%"} align={"start"}>
+                        {archive.seller_item_images[0] && (
+                          <Image
+                            src={archive.seller_item_images[0]}
+                            alt={archive.seller_item_title}
+                            h="40px"
+                            w="40px"
+                            objectFit="cover"
+                            borderRadius="sm"
+                          />
+                        )}
+                        <Text fontSize="xs">{archive.seller_item_title}</Text>
+                      </VStack>
                     </VStack>
-                  </SimpleGrid>
+                  </Flex>
 
                   {/* 取引開始日 */}
-                  <HStack
-                    mt={4}
-                    pt={4}
-                    borderTop="1px solid"
-                    borderColor={borderColor}
+                  <Text
+                    fontSize="xs"
+                    color="gray.400"
+                    textAlign="center"
+                    mt={2}
                   >
-                    <Text fontSize="sm" color="gray.500">
-                      取引開始日: {formatDate(archive.trade_date)}
-                    </Text>
-                  </HStack>
+                    取引開始: {formatDate(archive.trade_date)}
+                  </Text>
                 </Box>
               ))}
             </VStack>

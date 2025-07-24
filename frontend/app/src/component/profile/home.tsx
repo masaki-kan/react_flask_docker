@@ -34,9 +34,9 @@ const Profile: FC = () => {
   );
 
   useEffect(() => {
-    if (editSwitch !== true) {
-      getMyProfile();
-    }
+    // if (editSwitch !== true) {
+    getMyProfile();
+    // }
   }, [editSwitch, getMyProfile]);
 
   return (

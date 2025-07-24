@@ -44,13 +44,16 @@ const useMyProfile = (): useMyProfileReturn => {
   const getMyProfile = useCallback(async () => {
     if (Number(profile.profile.id) === 0) return;
     changeLoading(true);
-    const response = await getProfileApi(Number(profile.profile.id));
-
-    if (response !== undefined) {
+    const responseProfile = await getProfileApi(Number(profile.profile.id));
+    if (responseProfile !== undefined) {
       dispatch(
-        setProfile({ profile: response.profile, items: response.items })
+        setProfile({
+          profile: responseProfile.profile,
+          items: responseProfile.items,
+        })
       );
     }
+
     changeLoading(false);
   }, [changeLoading, dispatch, profile.profile.id]);
 

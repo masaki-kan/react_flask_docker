@@ -192,3 +192,31 @@ export const deleteUserItemApi = async (
     return;
   }
 };
+
+// 交換履歴
+export const exchangeArchiveApi = async (user_id: number) => {
+  try {
+    const response = await axios.post(
+      `${import.meta.env.VITE_API_URL}/api/getExchangeArchive`,
+      {
+        user_id,
+      }
+    );
+
+    console.log(response.data);
+    return {
+      status: response.data.result,
+      archives: response.data.archives,
+      total: response.data.total,
+    };
+  } catch (error: unknown) {
+    let errorMessage = "予期しないエラーが発生しました";
+
+    if (axios.isAxiosError(error) && error.response?.data?.error) {
+      errorMessage = error.response.data.error;
+    }
+
+    errorSweetalert2(errorMessage);
+    return;
+  }
+};

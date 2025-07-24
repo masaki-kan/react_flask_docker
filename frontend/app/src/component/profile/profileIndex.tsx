@@ -1,4 +1,4 @@
-import { FC, useCallback, useMemo } from "react";
+import { FC, useCallback, useMemo, useState } from "react";
 import {
   VStack,
   Text,
@@ -33,8 +33,10 @@ import {
   FaLink,
   FaComment,
   FaCrown,
+  FaHistory,
 } from "react-icons/fa";
 import { IconType } from "react-icons";
+import ExchangeArchiveModal from "./exchangeArchiveModal";
 
 type profileIndexType = {
   editFormSwitch: () => void;
@@ -43,7 +45,8 @@ type profileIndexType = {
 const ProfileIndex: FC<profileIndexType> = ({ editFormSwitch }) => {
   const { memorizeProfile } = useMyProfile();
   const profile = useMemo(() => memorizeProfile, [memorizeProfile]);
-
+  // コンポーネント内に追加（useColorModeValue の後）
+  const [isArchiveOpen, setIsArchiveOpen] = useState(false);
   // カラーモード対応
   const bgColor = useColorModeValue("white", "gray.800");
   const borderColor = useColorModeValue("gray.200", "gray.700");
@@ -134,7 +137,7 @@ const ProfileIndex: FC<profileIndexType> = ({ editFormSwitch }) => {
 
   return (
     <Container maxW="container.xl" py={8}>
-      <Grid templateColumns={{ base: "1fr", lg: "350px 1fr" }} gap={8}>
+      <Grid templateColumns={{ base: "1fr", lg: "350px 1fr" }} gap={4}>
         {/* 左サイドバー - プロフィール情報 */}
         <GridItem>
           <Box
@@ -232,7 +235,7 @@ const ProfileIndex: FC<profileIndexType> = ({ editFormSwitch }) => {
 
         {/* 右側 - 詳細情報 */}
         <GridItem>
-          <VStack spacing={6} align="stretch">
+          <VStack spacing={4} align="stretch">
             {/* 基本情報セクション */}
             <Box
               bg={bgColor}
@@ -264,7 +267,6 @@ const ProfileIndex: FC<profileIndexType> = ({ editFormSwitch }) => {
                 />
               </Grid>
             </Box>
-
             {/* 好きなジャンル */}
             {profile.profile.tag.length > 0 && (
               <Box
@@ -281,7 +283,6 @@ const ProfileIndex: FC<profileIndexType> = ({ editFormSwitch }) => {
                 {tagsViewRender()}
               </Box>
             )}
-
             {/* お気に入りの店 */}
             {profile.profile.favoriteShop.name && (
               <Box
@@ -299,7 +300,6 @@ const ProfileIndex: FC<profileIndexType> = ({ editFormSwitch }) => {
                 />
               </Box>
             )}
-
             {/* 古着にハマったきっかけ */}
             {profile.profile.reasen && (
               <Box
@@ -321,10 +321,21 @@ const ProfileIndex: FC<profileIndexType> = ({ editFormSwitch }) => {
                 />
               </Box>
             )}
+            {/* プロフィール編集ボタンの後に追加（プラン情報の下） */}
+            <Button
+              w="full"
+              colorScheme="gray"
+              bg={"white"}
+              variant="outline"
+              size="lg"
+              onClick={() => setIsArchiveOpen(true)}
+              leftIcon={<FaHistory />}
+            >
+              交換履歴を見る
+            </Button>
 
             {/* マイアイテム */}
             <MyItems />
-
             {/* アカウント設定 */}
             <Box
               bg={bgColor}
@@ -342,6 +353,13 @@ const ProfileIndex: FC<profileIndexType> = ({ editFormSwitch }) => {
                 <Withdrawal />
               </HStack>
             </Box>
+
+            {/* 交換履歴モーダル */}
+            <ExchangeArchiveModal
+              isOpen={isArchiveOpen}
+              onClose={() => setIsArchiveOpen(false)}
+              userId={Number(profile.profile.id)}
+            />
           </VStack>
         </GridItem>
       </Grid>

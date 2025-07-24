@@ -152,7 +152,7 @@ const Home: FC = () => {
         </VStack>
       </Box>
 
-      <VStack align={"start"} spacing={4} mt={4}>
+      <VStack align={"start"} spacing={4} mt={4} pb={4}>
         <AnimatePresence mode="wait">
           <MotionBox
             initial={{ opacity: 0, y: 20 }}
