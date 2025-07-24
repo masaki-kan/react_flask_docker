@@ -1,4 +1,4 @@
-import { FC, useEffect, useState } from "react";
+import { FC, useCallback, useEffect, useState } from "react";
 import {
   Modal,
   ModalOverlay,
@@ -65,13 +65,7 @@ const ExchangeArchiveModal: FC<ExchangeArchiveModalProps> = ({
   const borderColor = useColorModeValue("gray.200", "gray.700");
   const sectionBg = useColorModeValue("gray.50", "gray.900");
 
-  useEffect(() => {
-    if (isOpen && userId) {
-      fetchArchives();
-    }
-  }, [isOpen, userId]);
-
-  const fetchArchives = async () => {
+  const fetchArchives = useCallback(async () => {
     setLoading(true);
     try {
       const response = await fetch("/api/getExchangeArchive", {
@@ -90,7 +84,13 @@ const ExchangeArchiveModal: FC<ExchangeArchiveModalProps> = ({
     } finally {
       setLoading(false);
     }
-  };
+  }, [userId]);
+
+  useEffect(() => {
+    if (isOpen && userId) {
+      fetchArchives();
+    }
+  }, [fetchArchives, isOpen, userId]);
 
   const formatDate = (dateString: string) => {
     try {

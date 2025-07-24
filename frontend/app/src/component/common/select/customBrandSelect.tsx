@@ -19,7 +19,7 @@ const CustomBrandSelect: FC<CustomBrandSelectProps> = ({
     value: brand.key.toString(),
     label: brand.name,
   }));
-  const value = { value: tags.key, label: tags.name };
+  const value = tags.key ? { value: tags.key, label: tags.name } : null;
 
   const handleInputChange = (
     newValue: SingleValue<{ value: string; label: string }>
@@ -27,6 +27,9 @@ const CustomBrandSelect: FC<CustomBrandSelectProps> = ({
     if (newValue) {
       const newTag = { key: newValue.value, name: newValue.label };
       onChange(newTag);
+    } else {
+      // 選択解除時の処理
+      onChange({ key: "", name: "" });
     }
   };
 
@@ -35,12 +38,14 @@ const CustomBrandSelect: FC<CustomBrandSelectProps> = ({
       isMulti={false}
       components={animatedComponents}
       options={options}
+      menuPosition="fixed" // これも追加
       className="basic-multi-select"
       classNamePrefix="select"
       onChange={handleInputChange}
-      placeholder="ブランドを選択してください"
+      placeholder="ブランド名を選択してください"
       value={value}
       menuPlacement="auto"
+      isClearable
       noOptionsMessage={() => "選択肢がありません"}
     />
   );

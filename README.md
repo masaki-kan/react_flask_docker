@@ -25,3 +25,9 @@ $ docker exec -it flask_app /bin/bash
 # react_app コンテ内　インストール
 
 $docker exec -it react_app /bin/sh
+
+ローカル環境（React 開発サーバー使用）
+docker-compose up --build
+
+本番環境（Nginx + RDS 接続 + React ビルド）
+docker-compose -f docker-compose.yml -f docker-compose.prod.yml --env-file ./backend/.env.production up --build -d
