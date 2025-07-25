@@ -15,7 +15,7 @@ import {
   useColorModeValue,
 } from "@chakra-ui/react";
 import { AnimatePresence } from "framer-motion";
-import { FaHandshake, FaCheckCircle } from "react-icons/fa";
+import { FaHandshake } from "react-icons/fa";
 import useSaved from "../../hooks/useSaved";
 import RenderSaved from "./renderSaved";
 
@@ -36,13 +36,13 @@ const SavedIndex: FC = () => {
       });
   }, [savedList]);
 
-  const completedList = useMemo(() => {
-    return savedList
-      .filter((list) => list.status === "completed")
-      .map((list) => {
-        return list;
-      });
-  }, [savedList]);
+  // const completedList = useMemo(() => {
+  //   return savedList
+  //     .filter((list) => list.status === "completed")
+  //     .map((list) => {
+  //       return list;
+  //     });
+  // }, [savedList]);
 
   const tabs = [
     {
@@ -50,12 +50,6 @@ const SavedIndex: FC = () => {
       icon: FaHandshake,
       count: unCompletedList.length,
       data: unCompletedList,
-    },
-    {
-      label: "取引終了",
-      icon: FaCheckCircle,
-      count: completedList.length,
-      data: completedList,
     },
   ];
 

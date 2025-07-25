@@ -1,4 +1,4 @@
-import { FC, useCallback, useEffect, useState } from "react";
+import { FC, useEffect, useState } from "react";
 import {
   Modal,
   ModalOverlay,
@@ -22,65 +22,32 @@ import {
 import { FaCalendarAlt, FaUserCircle } from "react-icons/fa";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
-import { exchangeArchiveApi } from "../../api/profileApis";
-
-interface ExchangeArchive {
-  trade_id: number;
-  trade_date: string;
-  completed_date: string;
-  user_role: "seller" | "buyer";
-  // ユーザー情報
-  seller_id: number;
-  seller_name: string;
-  seller_image: string;
-  buyer_id: number;
-  buyer_name: string;
-  buyer_image: string;
-  // 商品情報
-  main_item_title: string;
-  main_item_images: string[];
-  seller_item_title: string;
-  seller_item_images: string[];
-  buyer_item_title: string;
-  buyer_item_images: string[];
-}
+import useMyProfile from "../../hooks/useProfile";
 
 interface ExchangeArchiveModalProps {
   isOpen: boolean;
   onClose: () => void;
-  userId: number;
 }
 
 const ExchangeArchiveModal: FC<ExchangeArchiveModalProps> = ({
   isOpen,
   onClose,
-  userId,
 }) => {
-  const [archives, setArchives] = useState<ExchangeArchive[]>([]);
+  const { memorizeuserProfileArchives } = useMyProfile();
   const [loading, setLoading] = useState(false);
 
   // カラーモード対応
   const bgColor = useColorModeValue("white", "gray.800");
   const borderColor = useColorModeValue("gray.200", "gray.700");
 
-  const fetchArchives = useCallback(async () => {
-    setLoading(true);
-
-    const response = await exchangeArchiveApi(userId);
-
-    if (response?.status === true) {
-      setArchives(response.archives);
-      setLoading(false);
-      return;
-    }
-    setLoading(false);
-  }, [userId]);
-
   useEffect(() => {
-    if (isOpen && userId) {
-      fetchArchives();
+    if (isOpen) {
+      setLoading(true);
+      if (memorizeuserProfileArchives.length > 0) {
+        setLoading(false);
+      }
     }
-  }, [fetchArchives, isOpen, userId]);
+  }, [isOpen, memorizeuserProfileArchives.length]);
 
   const formatDate = (dateString: string) => {
     try {
@@ -101,13 +68,13 @@ const ExchangeArchiveModal: FC<ExchangeArchiveModalProps> = ({
             <Center h="200px">
               <Spinner size="xl" />
             </Center>
-          ) : archives.length === 0 ? (
+          ) : memorizeuserProfileArchives.length === 0 ? (
             <Center h="200px">
               <Text color="gray.500">交換履歴がありません</Text>
             </Center>
           ) : (
             <VStack spacing={3} align="stretch">
-              {archives.map((archive) => (
+              {memorizeuserProfileArchives.map((archive) => (
                 <Box
                   key={archive.trade_id}
                   bg={bgColor}

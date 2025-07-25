@@ -321,7 +321,7 @@ const Home: FC = () => {
     }
 
     const confirm = window.confirm(
-      "取引を完了してもよろしいですか？\n商品の所有権が交換されます。"
+      "取引を完了してもよろしいですか？取引内容はアーカイブに保存されます。"
     );
     if (confirm) {
       try {

@@ -35,6 +35,9 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 
 from database import create_table
 
+from tradeArchiver import TradeArchiver
+from archiveRetriever import ArchiveRetriever
+
 
 # === Flask App Init ===
 app = Flask(__name__)
@@ -865,6 +868,7 @@ def getUserItems():
         conn.close()
         cursor.close()
 
+# 商品削除
 @app.route('/api/deleteUserItem', methods=['POST'])
 def deleteUserItem():
     item_id = request.json.get('item_id',None )
@@ -891,7 +895,7 @@ def deleteUserItem():
         
         # 2. アクティブな取引（pending, purchased, shipped）があるか確認
         cursor.execute('''
-            SELECT trade_id, status FROM trades 
+            SELECT trade_id ,status FROM trades 
             WHERE item_id = %s AND status IN ('pending', 'purchased', 'shipped')
         ''', (item_id,))
         active_trades = cursor.fetchall()
@@ -903,40 +907,44 @@ def deleteUserItem():
             }), 400
             
         # 3. 関連データの削除（順序重要：外部キー制約を考慮）
-        
-        # 3-1. trade_reviews の削除（trades に依存）
-        cursor.execute('''
-            DELETE tr FROM trade_reviews tr
-            INNER JOIN trades t ON tr.trade_id = t.trade_id
-            WHERE t.item_id = %s
-        ''', (item_id,))
-        
-        # 3-2. trade_messages の削除（trades に依存）
+        # trade_messages の削除（trades に依存）
         cursor.execute('''
             DELETE tm FROM trade_messages tm
             INNER JOIN trades t ON tm.trade_id = t.trade_id
             WHERE t.item_id = %s
         ''', (item_id,))
         
-        # 3-3. trades の削除
+        # trade_confirmationsの削除
+        cursor.execute('''
+            DELETE FROM trade_confirmations 
+            WHERE trade_id = %s
+        ''', (active_trades["trade_id"],))
+        
+        # shipping_infoの削除
+        cursor.execute('''
+            DELETE FROM shipping_info 
+            WHERE trade_id = %s
+        ''', (active_trades["trade_id"],))
+                
+        # trades の削除
         cursor.execute('''
             DELETE FROM trades 
             WHERE item_id = %s
         ''', (item_id,))
         
-        # 3-4. likes の削除
+        # likes の削除
         cursor.execute('''
             DELETE FROM likes 
             WHERE item_id = %s
         ''', (item_id,))
         
-        # 3-5. item_images の削除
+        # item_images の削除
         cursor.execute('''
             DELETE FROM item_images 
             WHERE item_id = %s
         ''', (item_id,))
         
-        # 3-6. 最後に items 本体を削除
+        # 最後に items 本体を削除
         cursor.execute('''
             DELETE FROM items 
             WHERE item_id = %s
@@ -949,8 +957,7 @@ def deleteUserItem():
         }
         
         conn.commit()
-        
-              
+
         return jsonify({
             "result": True,
             "message": "アイテムと関連データを削除しました",
@@ -2026,7 +2033,8 @@ def save_shipping_info_with_item():
         conn.close()
         cursor.close()
 
-# 取引完了時の処理（商品の所有権交換）
+# 取引完了時の処理（削除＋アーカイブ方式）
+# 取引完了時の処理（削除＋アーカイブ方式）
 @app.route('/api/complete_exchange', methods=['POST'])
 def complete_exchange():
     """両者が商品を受け取り、交換を完了"""
@@ -2066,79 +2074,93 @@ def complete_exchange():
         if count_result['count'] < 2:
             return jsonify({"error": "両者の受取確認が必要です"}), 400
         
-        # 交換履歴を記録
-        # 売り手の記録
-        cursor.execute('''
-            INSERT INTO trade_exchanges (trade_id, offered_item_id, received_item_id, user_id)
-            VALUES (%s, %s, %s, %s)
-        ''', (trade_id, trade['seller_exchange_item_id'], trade['buyer_exchange_item_id'], trade['seller_id']))
-        
-        # 買い手の記録
-        cursor.execute('''
-            INSERT INTO trade_exchanges (trade_id, offered_item_id, received_item_id, user_id)
-            VALUES (%s, %s, %s, %s)
-        ''', (trade_id, trade['buyer_exchange_item_id'], trade['seller_exchange_item_id'], trade['buyer_id']))
-        
-        # 商品の所有者を交換
-        # 売り手の商品を買い手に
-        cursor.execute('''
-            UPDATE items 
-            SET user_id = %s, 
-                status = 'available',
-                original_owner_id = %s,
-                exchanged_at = CURRENT_TIMESTAMP
-            WHERE item_id = %s
-        ''', (trade['buyer_id'], trade['seller_id'], trade['seller_exchange_item_id']))
-        
-        # 買い手の商品を売り手に
-        cursor.execute('''
-            UPDATE items 
-            SET user_id = %s, 
-                status = 'available',
-                original_owner_id = %s,
-                exchanged_at = CURRENT_TIMESTAMP
-            WHERE item_id = %s
-        ''', (trade['seller_id'], trade['buyer_id'], trade['buyer_exchange_item_id']))
-        
-        # 最初の取引商品のステータスも更新（重要な修正）
-        # buyer_exchange_item_idは実際には最初の取引商品のIDなので、これをexchangedにする
-        cursor.execute('''
-            UPDATE items 
-            SET status = 'exchanged'
-            WHERE item_id = %s
-        ''', (trade['item_id'],))
-        
-        # 🔥 重要な追加: seller_exchange_item_idも交換済みにする
-        # これは申請者が最初に指定した相手の商品
-        cursor.execute('''
-            UPDATE items 
-            SET status = 'exchanged'
-            WHERE item_id = %s
-        ''', (trade['seller_exchange_item_id'],))
-        
-        # buyer_exchange_item_idも交換済みにする
-        # これは受理者が選択した申請者の商品
-        cursor.execute('''
-            UPDATE items 
-            SET status = 'exchanged'
-            WHERE item_id = %s
-        ''', (trade['buyer_exchange_item_id'],))
-        
-        # 取引ステータスを完了に
+        # ステータスを完了に更新（アーカイブ処理のため）
         cursor.execute('''
             UPDATE trades 
             SET status = 'completed' 
             WHERE trade_id = %s
         ''', (trade_id,))
         
-        # 完了メッセージをチャットに追加
-        cursor.execute('''
-            INSERT INTO trade_messages (trade_id, sender_id, message)
-            VALUES (%s, %s, %s)
-        ''', (trade_id, user_id, "取引が完了しました。商品の交換が成功しました！"))
+        # アーカイブ処理の呼び出し
+        archiver = TradeArchiver(conn)
+        archive_trade_id = archiver.archive_trade(trade_id)
         
+        # 交換履歴を記録（アーカイブ前に）
+        # 売り手の記録
+        cursor.execute('''
+            INSERT INTO trade_exchanges (trade_id, offered_item_id, received_item_id, user_id)
+            VALUES (%s, %s, %s, %s)
+        ''', (trade_id, trade['seller_exchange_item_id'], trade['buyer_exchange_item_id'], trade['seller_id']))
+        
+        # 買り手の記録
+        cursor.execute('''
+            INSERT INTO trade_exchanges (trade_id, offered_item_id, received_item_id, user_id)
+            VALUES (%s, %s, %s, %s)
+        ''', (trade_id, trade['buyer_exchange_item_id'], trade['seller_exchange_item_id'], trade['buyer_id']))
+        
+        # ===== ここから削除処理 =====
+        
+        # 1. 関連する全データの削除（順序重要：外部キー制約を考慮）
+        
+        # trade_messages の削除
+        cursor.execute('''
+            DELETE FROM trade_messages WHERE trade_id = %s
+        ''', (trade_id,))
+        
+        # trade_confirmations の削除
+        cursor.execute('''
+            DELETE FROM trade_confirmations WHERE trade_id = %s
+        ''', (trade_id,))
+        
+        # shipping_info の削除
+        cursor.execute('''
+            DELETE FROM shipping_info WHERE trade_id = %s
+        ''', (trade_id,))
+        
+        # 🔥 重要: trade_exchanges の削除を追加（商品削除前に必須）
+        cursor.execute('''
+            DELETE FROM trade_exchanges WHERE trade_id = %s
+        ''', (trade_id,))
+        
+        # 2. 交換に使用された商品の削除
+        items_to_delete = [trade['item_id']]
+        if trade['seller_exchange_item_id']:
+            items_to_delete.append(trade['seller_exchange_item_id'])
+        if trade['buyer_exchange_item_id']:
+            items_to_delete.append(trade['buyer_exchange_item_id'])
+        
+        # 重複を排除
+        items_to_delete = list(set(items_to_delete))
+        
+        for item_id in items_to_delete:
+            # likes の削除
+            cursor.execute('''
+                DELETE FROM likes WHERE item_id = %s
+            ''', (item_id,))
+            
+            # item_images の削除
+            cursor.execute('''
+                DELETE FROM item_images WHERE item_id = %s
+            ''', (item_id,))
+            
+            # items の削除
+            cursor.execute('''
+                DELETE FROM items WHERE item_id = %s
+            ''', (item_id,))
+        
+        # 3. trades の削除
+        cursor.execute('''
+            DELETE FROM trades WHERE trade_id = %s
+        ''', (trade_id,))
+        
+        # 完了メッセージ（削除前にアーカイブに保存済み）
         conn.commit()
-        return jsonify({"result": True, "message": "交換が完了しました"})
+        
+        return jsonify({
+            "result": True, 
+            "message": "交換が完了しました。取引データはアーカイブに保存されました。", 
+            "archive_trade_id": archive_trade_id
+        })
         
     except Exception as e:
         conn.rollback()
@@ -2146,7 +2168,7 @@ def complete_exchange():
     finally:
         conn.close()
         cursor.close()
-
+        
 # 選択された交換商品の情報を取得
 @app.route('/api/get_exchange_items', methods=['GET'])
 def get_exchange_items():
@@ -2232,79 +2254,139 @@ def get_exchange_archive():
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
         
-        # ユーザーが関わった完了済みの取引を取得
+        # アーカイブテーブルから取得
         cursor.execute('''
             SELECT 
-                t.trade_id,
-                t.item_id,
-                t.seller_id,
-                t.buyer_id,
-                t.seller_exchange_item_id,
-                t.buyer_exchange_item_id,
-                t.created_at as trade_date,
-                t.updated_at as completed_date,
-                -- 売り手情報
-                seller.name as seller_name,
-                seller_pi.image_url as seller_image,
-                -- 買い手情報
-                buyer.name as buyer_name,
-                buyer_pi.image_url as buyer_image,
-                -- 最初の取引商品（buyer → seller）
+                at.archive_trade_id,
+                at.original_trade_id,
+                at.seller_id,
+                at.buyer_id,
+                at.trade_created_at as trade_date,
+                at.trade_completed_at as completed_date,
+                at.seller_name,
+                at.buyer_name,
+                -- メイン商品
                 main_item.title as main_item_title,
+                main_item.description as main_item_description,
                 main_item.brand as main_item_brand,
-                -- seller_exchange_item（seller → buyer）
-                seller_item.title as seller_item_title,
-                seller_item.brand as seller_item_brand,
-                -- buyer_exchange_item（buyer → seller）
-                buyer_item.title as buyer_item_title,
-                buyer_item.brand as buyer_item_brand
-            FROM trades t
-            JOIN users seller ON t.seller_id = seller.user_id
-            JOIN users buyer ON t.buyer_id = buyer.user_id
-            LEFT JOIN profile_images seller_pi ON seller.user_id = seller_pi.user_id
-            LEFT JOIN profile_images buyer_pi ON buyer.user_id = buyer_pi.user_id
-            LEFT JOIN items main_item ON t.item_id = main_item.item_id
-            LEFT JOIN items seller_item ON t.seller_exchange_item_id = seller_item.item_id
-            LEFT JOIN items buyer_item ON t.buyer_exchange_item_id = buyer_item.item_id
-            WHERE t.status = 'completed' 
-            AND (t.seller_id = %s OR t.buyer_id = %s)
-            ORDER BY t.updated_at DESC
+                -- seller交換商品
+                CASE 
+                    WHEN at.seller_exchange_item_archive_id IS NOT NULL 
+                    THEN seller_item.title 
+                    ELSE NULL 
+                END as seller_item_title,
+                CASE 
+                    WHEN at.seller_exchange_item_archive_id IS NOT NULL 
+                    THEN seller_item.brand 
+                    ELSE NULL 
+                END as seller_item_brand,
+                -- buyer交換商品  
+                CASE 
+                    WHEN at.buyer_exchange_item_archive_id IS NOT NULL 
+                    THEN buyer_item.title 
+                    ELSE NULL 
+                END as buyer_item_title,
+                CASE 
+                    WHEN at.buyer_exchange_item_archive_id IS NOT NULL 
+                    THEN buyer_item.brand 
+                    ELSE NULL 
+                END as buyer_item_brand
+            FROM archived_trades at
+            JOIN archived_items main_item ON at.item_archive_id = main_item.archive_id
+            LEFT JOIN archived_items seller_item ON at.seller_exchange_item_archive_id = seller_item.archive_id
+            LEFT JOIN archived_items buyer_item ON at.buyer_exchange_item_archive_id = buyer_item.archive_id
+            WHERE at.seller_id = %s OR at.buyer_id = %s
+            ORDER BY at.trade_completed_at DESC
         ''', (user_id, user_id))
-        
+
         trades = cursor.fetchall()
         
         # 各取引の詳細情報を構築
         for trade in trades:
-            # 最初の商品画像
+            # プロフィール画像を取得（現在のユーザーテーブルから）
+            # Seller画像
             cursor.execute('''
-                SELECT image_url FROM item_images 
-                WHERE item_id = %s 
-                ORDER BY uploaded_at ASC
-            ''', (trade['item_id'],))
-            main_images = cursor.fetchall()
-            trade['main_item_images'] = [img['image_url'] for img in main_images]
+                SELECT image_url FROM profile_images 
+                WHERE user_id = %s 
+                ORDER BY uploaded_at DESC
+                LIMIT 1
+            ''', (trade['seller_id'],))
+            seller_img = cursor.fetchone()
+            trade['seller_image'] = seller_img['image_url'] if seller_img else ""
             
-            # seller交換商品の画像
-            if trade['seller_exchange_item_id']:
+            # Buyer画像
+            cursor.execute('''
+                SELECT image_url FROM profile_images 
+                WHERE user_id = %s 
+                ORDER BY uploaded_at DESC
+                LIMIT 1
+            ''', (trade['buyer_id'],))
+            buyer_img = cursor.fetchone()
+            trade['buyer_image'] = buyer_img['image_url'] if buyer_img else ""
+            
+            # メイン商品の画像（アーカイブから）
+            cursor.execute('''
+                SELECT ai.archive_id
+                FROM archived_trades at
+                JOIN archived_items ai ON at.item_archive_id = ai.archive_id
+                WHERE at.archive_trade_id = %s
+            ''', (trade['archive_trade_id'],))
+            main_archive = cursor.fetchone()
+            
+            if main_archive:
                 cursor.execute('''
-                    SELECT image_url FROM item_images 
-                    WHERE item_id = %s 
-                    ORDER BY uploaded_at ASC
-                ''', (trade['seller_exchange_item_id'],))
-                seller_images = cursor.fetchall()
-                trade['seller_item_images'] = [img['image_url'] for img in seller_images]
+                    SELECT image_url FROM archived_item_images 
+                    WHERE archive_id = %s 
+                    ORDER BY archive_image_id ASC
+                ''', (main_archive['archive_id'],))
+                main_images = cursor.fetchall()
+                trade['main_item_images'] = [img['image_url'] for img in main_images]
+            else:
+                trade['main_item_images'] = []
+            
+            # seller交換商品の画像（アーカイブから）
+            if trade['seller_item_title']:
+                cursor.execute('''
+                    SELECT ai.archive_id
+                    FROM archived_trades at
+                    JOIN archived_items ai ON at.seller_exchange_item_archive_id = ai.archive_id
+                    WHERE at.archive_trade_id = %s
+                ''', (trade['archive_trade_id'],))
+                seller_archive = cursor.fetchone()
+                
+                if seller_archive:
+                    cursor.execute('''
+                        SELECT image_url FROM archived_item_images 
+                        WHERE archive_id = %s 
+                        ORDER BY archive_image_id ASC
+                    ''', (seller_archive['archive_id'],))
+                    seller_images = cursor.fetchall()
+                    trade['seller_item_images'] = [img['image_url'] for img in seller_images]
+                else:
+                    trade['seller_item_images'] = []
             else:
                 trade['seller_item_images'] = []
             
-            # buyer交換商品の画像
-            if trade['buyer_exchange_item_id']:
+            # buyer交換商品の画像（アーカイブから）
+            if trade['buyer_item_title']:
                 cursor.execute('''
-                    SELECT image_url FROM item_images 
-                    WHERE item_id = %s 
-                    ORDER BY uploaded_at ASC
-                ''', (trade['buyer_exchange_item_id'],))
-                buyer_images = cursor.fetchall()
-                trade['buyer_item_images'] = [img['image_url'] for img in buyer_images]
+                    SELECT ai.archive_id
+                    FROM archived_trades at
+                    JOIN archived_items ai ON at.buyer_exchange_item_archive_id = ai.archive_id
+                    WHERE at.archive_trade_id = %s
+                ''', (trade['archive_trade_id'],))
+                buyer_archive = cursor.fetchone()
+                
+                if buyer_archive:
+                    cursor.execute('''
+                        SELECT image_url FROM archived_item_images 
+                        WHERE archive_id = %s 
+                        ORDER BY archive_image_id ASC
+                    ''', (buyer_archive['archive_id'],))
+                    buyer_images = cursor.fetchall()
+                    trade['buyer_item_images'] = [img['image_url'] for img in buyer_images]
+                else:
+                    trade['buyer_item_images'] = []
             else:
                 trade['buyer_item_images'] = []
             
@@ -2339,7 +2421,7 @@ def get_exchange_archive():
     finally:
         conn.close()
         cursor.close()
-
+        
 # Chat server 
 # クライアントが接続
 @socketio.on('connect')

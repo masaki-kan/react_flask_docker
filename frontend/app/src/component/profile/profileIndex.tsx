@@ -21,6 +21,7 @@ import {
 import MyItems from "./myItems";
 import useMyProfile from "../../hooks/useProfile";
 import LogOut from "../common/layout/logOut";
+import { useNavigate } from "react-router-dom";
 import { plans } from "../../consts/profileConsts";
 import Withdrawal from "../common/layout/withdrawal";
 import {
@@ -37,12 +38,15 @@ import {
 } from "react-icons/fa";
 import { IconType } from "react-icons";
 import ExchangeArchiveModal from "./exchangeArchiveModal";
+import { MdOutlineShoppingBag } from "react-icons/md";
+import { route } from "../../route/routeConst";
 
 type profileIndexType = {
   editFormSwitch: () => void;
 };
 
 const ProfileIndex: FC<profileIndexType> = ({ editFormSwitch }) => {
+  const navigate = useNavigate();
   const { memorizeProfile } = useMyProfile();
   const profile = useMemo(() => memorizeProfile, [memorizeProfile]);
   // コンポーネント内に追加（useColorModeValue の後）
@@ -135,9 +139,13 @@ const ProfileIndex: FC<profileIndexType> = ({ editFormSwitch }) => {
     return plan[0];
   };
 
+  const toItemPushHandler = useCallback(() => {
+    navigate(route.myItem);
+  }, [navigate]);
+
   return (
     <Container maxW="container.xl" py={8}>
-      <Grid templateColumns={{ base: "1fr", lg: "350px 1fr" }} gap={4}>
+      <Grid templateColumns={{ base: "1fr", lg: "350px 1fr" }} gap={4} pb={30}>
         {/* 左サイドバー - プロフィール情報 */}
         <GridItem>
           <Box
@@ -335,7 +343,32 @@ const ProfileIndex: FC<profileIndexType> = ({ editFormSwitch }) => {
             </Button>
 
             {/* マイアイテム */}
-            <MyItems />
+            <Box
+              bg={bgColor}
+              borderRadius="xl"
+              p={6}
+              boxShadow="sm"
+              border="1px solid"
+              borderColor={borderColor}
+            >
+              <HStack
+                justifyContent={{ base: "space-between", md: "start" }}
+                w={"full"}
+                alignItems={"center"}
+                mb={4}
+              >
+                <Heading size="md">登録商品</Heading>
+                <Button
+                  size={"sm"}
+                  leftIcon={<MdOutlineShoppingBag />}
+                  onClick={toItemPushHandler}
+                >
+                  登録ページ
+                </Button>
+              </HStack>
+              <MyItems />
+            </Box>
+
             {/* アカウント設定 */}
             <Box
               bg={bgColor}
@@ -358,7 +391,6 @@ const ProfileIndex: FC<profileIndexType> = ({ editFormSwitch }) => {
             <ExchangeArchiveModal
               isOpen={isArchiveOpen}
               onClose={() => setIsArchiveOpen(false)}
-              userId={Number(profile.profile.id)}
             />
           </VStack>
         </GridItem>

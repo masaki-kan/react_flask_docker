@@ -29,6 +29,12 @@ const SecureLayout: FC = () => {
 
       case route.transactionChat:
         return "交換やりとり";
+
+      case route.myItem:
+        return "商品登録";
+
+      case route.myItemEdit:
+        return "商品編集";
     }
 
     return "";
@@ -52,6 +58,7 @@ const SecureLayout: FC = () => {
         <Box
           hidden={
             location.pathname === route.home ||
+            location.pathname === route.myItem ||
             location.pathname === route.myItemEdit
           }
           mt={{ base: "8em", md: "6em" }} // ヘッダーの高さ分のマージン

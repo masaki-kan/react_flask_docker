@@ -1,10 +1,14 @@
 import { useCallback, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { profileType } from "../types/profileType";
+import { exchangeArchive, profileType } from "../types/profileType";
 import { type RootState } from "../store";
 import { itemListType } from "../types/itemType";
-import { getProfileApi, cancellationProcessApi } from "../api/profileApis";
-import { setProfile } from "../store/profileSlice";
+import {
+  getProfileApi,
+  cancellationProcessApi,
+  exchangeArchiveApi,
+} from "../api/profileApis";
+import { setProfile, setProfileArchives } from "../store/profileSlice";
 import { setProfile as setSliceProfile } from "../store/usersSlice";
 import { itemLikeApi } from "../api/likeApi";
 import useAlert from "./useAlert";
@@ -19,6 +23,7 @@ type useMyProfileReturn = {
     profile: profileType;
     items: itemListType[];
   };
+  memorizeuserProfileArchives: exchangeArchive[];
   getMyProfile: () => Promise<void>;
   getProfile: (userNumver: number, myUserNumber: number) => Promise<void>;
   favoriteUpdateHandler: (itemId: string, userId: string) => Promise<void>;
@@ -41,10 +46,15 @@ const useMyProfile = (): useMyProfileReturn => {
     return userProfile;
   }, [userProfile]);
 
+  const memorizeuserProfileArchives = useMemo(() => {
+    return profile.archive;
+  }, [profile]);
+
   const getMyProfile = useCallback(async () => {
     if (Number(profile.profile.id) === 0) return;
     changeLoading(true);
     const responseProfile = await getProfileApi(Number(profile.profile.id));
+    const responseActive = await exchangeArchiveApi(Number(profile.profile.id));
     if (responseProfile !== undefined) {
       dispatch(
         setProfile({
@@ -52,6 +62,9 @@ const useMyProfile = (): useMyProfileReturn => {
           items: responseProfile.items,
         })
       );
+    }
+    if (responseActive !== undefined) {
+      dispatch(setProfileArchives(responseActive.archives));
     }
 
     changeLoading(false);
@@ -108,6 +121,7 @@ const useMyProfile = (): useMyProfileReturn => {
   }, [memorizeProfile.profile.id]);
 
   return {
+    memorizeuserProfileArchives,
     memorizeuserProfile,
     memorizeProfile,
     getMyProfile,

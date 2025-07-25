@@ -180,21 +180,21 @@ const ItemForm: FC<ItemFormProps> = ({ profileItem, ItemNumver }) => {
 
   const deleteUserItemHandler = useCallback(async () => {
     if (profileItem !== undefined) {
-      const response = await deleteUserItemApi(
-        profileItem?.itemId,
-        Number(profile.profile.id)
-      );
-
-      if (response?.message) {
-        defaultToast(response?.message);
-        navigate(route.profile);
+      const confirm = window.confirm("商品削除してもよろしいですか？");
+      if (confirm) {
+        const response = await deleteUserItemApi(
+          profileItem?.itemId,
+          Number(profile.profile.id)
+        );
+        if (response?.message) {
+          defaultToast(response?.message);
+          navigate(route.profile);
+        }
       }
     }
   }, [defaultToast, navigate, profile.profile.id, profileItem]);
 
   const storeItemsHandler = useCallback(async () => {
-    changeLoading(true);
-
     // バリデーション
     const newErrors = {
       title: formValues.title.trim() === "",
@@ -244,13 +244,15 @@ const ItemForm: FC<ItemFormProps> = ({ profileItem, ItemNumver }) => {
           }
         }
       }
-
+      changeLoading(true);
       const response = await postStoreProfileItemApi(formData);
 
       if (response?.status !== false) {
         defaultToast(response?.message || "登録完了しました");
         navigate(route.profile);
       }
+      changeLoading(false);
+      return;
     } catch (error) {
       console.error("Error:", error);
       defaultToast("登録中にエラーが発生しました");
@@ -271,7 +273,7 @@ const ItemForm: FC<ItemFormProps> = ({ profileItem, ItemNumver }) => {
   }, [navigate]);
 
   return (
-    <Container maxW="container.xl" mb={10} mt={{ base: "8em", md: "6em" }}>
+    <Container maxW="container.xl" mb={20} mt={{ base: "8em", md: "6em" }}>
       {/* ヘッダー */}
       <HStack justify="space-between" mb={6}>
         <HStack spacing={4}>
@@ -467,7 +469,7 @@ const ItemForm: FC<ItemFormProps> = ({ profileItem, ItemNumver }) => {
         <Button
           leftIcon={<FaTrash />}
           colorScheme="red"
-          size="lg"
+          size="md"
           onClick={deleteUserItemHandler}
           display={location.pathname === route.myItem ? "none" : "flex"}
         >
@@ -475,13 +477,19 @@ const ItemForm: FC<ItemFormProps> = ({ profileItem, ItemNumver }) => {
         </Button>
 
         <HStack spacing={4}>
-          <Button size="lg" variant="outline" onClick={toProfile}>
-            キャンセル
+          <Button
+            leftIcon={<FaArrowLeft />}
+            size="md"
+            variant="outline"
+            onClick={toProfile}
+            bg={"white"}
+          >
+            戻る
           </Button>
           <Button
             leftIcon={<FaSave />}
             colorScheme="blue"
-            size="lg"
+            size="md"
             onClick={storeItemsHandler}
             loadingText="登録中..."
           >

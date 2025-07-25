@@ -78,9 +78,12 @@ def create_items_table(cursor):
             uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (user_id) REFERENCES users(user_id),
             FOREIGN KEY (original_owner_id) REFERENCES users(user_id),
-            # 🔥 追加: パフォーマンス向上のためのインデックス
+            -- 既存のインデックス
             INDEX idx_status (status),
-            INDEX idx_user_status (user_id, status)
+            INDEX idx_user_status (user_id, status),
+            INDEX idx_uploaded_at (uploaded_at DESC),
+            INDEX idx_user_uploaded (user_id, uploaded_at DESC),
+            FULLTEXT INDEX idx_fulltext (title, description)
         );
     ''')
 
@@ -187,23 +190,6 @@ def create_trade_confirmations_table(cursor):
         );
     ''')
 
-# 取引評価テーブル
-def create_trade_reviews_table(cursor):
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS trade_reviews (
-            review_id INT AUTO_INCREMENT PRIMARY KEY,
-            trade_id INT NOT NULL,
-            reviewer_id INT NOT NULL,
-            reviewee_id INT NOT NULL,
-            rating INT CHECK (rating >= 1 AND rating <= 5),
-            comment TEXT,
-            reviewed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (trade_id) REFERENCES trades(trade_id) ON DELETE CASCADE,
-            FOREIGN KEY (reviewer_id) REFERENCES users(user_id) ON DELETE CASCADE,
-            FOREIGN KEY (reviewee_id) REFERENCES users(user_id) ON DELETE CASCADE
-        );
-    ''')
-
 # 交換履歴テーブル
 def create_trade_exchanges_table(cursor):
     cursor.execute('''
@@ -221,6 +207,170 @@ def create_trade_exchanges_table(cursor):
             UNIQUE KEY unique_exchange (trade_id, user_id)
         );
     ''')
+    
+
+# アーカイブ用テーブル定義
+
+# アーカイブ商品テーブル（商品の完全なスナップショット）
+def create_archived_items_table(cursor):
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS archived_items (
+            archive_id INT AUTO_INCREMENT PRIMARY KEY,
+            original_item_id INT NOT NULL,  -- 元の商品ID（参照用）
+            user_id INT NOT NULL,
+            title VARCHAR(255),
+            description TEXT,
+            type JSON,
+            brand JSON,
+            status VARCHAR(50),  -- 取引完了時のステータス
+            original_owner_id INT,
+            exchanged_at TIMESTAMP,
+            item_created_at TIMESTAMP,  -- 元の商品作成日時
+            item_uploaded_at TIMESTAMP,  -- 元の商品アップロード日時
+            owner_name_at_archive VARCHAR(100) COMMENT '商品所有者名（アーカイブ時点）',
+            archived_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,  -- アーカイブ作成日時
+            
+            -- 削除されたユーザーでも履歴は残る
+            INDEX idx_user_id (user_id),
+            INDEX idx_original_item_id (original_item_id),
+            INDEX idx_archived_at (archived_at DESC)
+        );
+    ''')
+
+    
+# アーカイブ商品画像テーブル
+def create_archived_item_images_table(cursor):
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS archived_item_images (
+            archive_image_id INT AUTO_INCREMENT PRIMARY KEY,
+            archive_id INT NOT NULL,  -- archived_itemsのarchive_idを参照
+            original_item_image_id INT,
+            image_url LONGTEXT,
+            image_order INT DEFAULT 0 COMMENT '画像の表示順序',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (archive_id) REFERENCES archived_items(archive_id) ON DELETE CASCADE,
+            INDEX idx_archive_order (archive_id, image_order)
+        );
+    ''')
+
+# アーカイブ取引テーブル（取引の完全な記録）
+def create_archived_trades_table(cursor):
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS archived_trades (
+            archive_trade_id INT AUTO_INCREMENT PRIMARY KEY,
+            original_trade_id INT NOT NULL,  -- 元の取引ID
+            item_archive_id INT NOT NULL,  -- archived_itemsのarchive_id
+            seller_id INT NOT NULL,
+            buyer_id INT NOT NULL,
+            seller_exchange_item_archive_id INT,  -- 交換商品のアーカイブID
+            buyer_exchange_item_archive_id INT,  -- 交換商品のアーカイブID
+            final_status VARCHAR(50),  -- 完了時のステータス
+            trade_created_at TIMESTAMP,  -- 元の取引作成日時
+            trade_completed_at TIMESTAMP,  -- 取引完了日時
+            
+            -- ユーザー情報のスナップショット（削除されても保持）
+            seller_name VARCHAR(255),
+            seller_email VARCHAR(255),
+            buyer_name VARCHAR(255),
+            buyer_email VARCHAR(255),
+            seller_location VARCHAR(100) COMMENT '売り手の地域（アーカイブ時点）',
+            buyer_location VARCHAR(100) COMMENT '買い手の地域（アーカイブ時点）',
+            seller_profile_image_at_archive LONGTEXT COMMENT '売り手のプロフィール画像（アーカイブ時点）',
+            buyer_profile_image_at_archive LONGTEXT COMMENT '買い手のプロフィール画像（アーカイブ時点）',
+            
+            archived_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            
+            FOREIGN KEY (item_archive_id) REFERENCES archived_items(archive_id),
+            FOREIGN KEY (seller_exchange_item_archive_id) REFERENCES archived_items(archive_id),
+            FOREIGN KEY (buyer_exchange_item_archive_id) REFERENCES archived_items(archive_id),
+            INDEX idx_seller_id (seller_id),
+            INDEX idx_buyer_id (buyer_id),
+            INDEX idx_original_trade_id (original_trade_id),
+            INDEX idx_completed_at (trade_completed_at DESC)
+        );
+    ''')
+
+# アーカイブ取引メッセージテーブル
+def create_archived_trade_messages_table(cursor):
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS archived_trade_messages (
+            archive_message_id INT AUTO_INCREMENT PRIMARY KEY,
+            archive_trade_id INT NOT NULL,
+            sender_id INT NOT NULL,
+            sender_name VARCHAR(255),  -- 送信者名のスナップショット
+            message TEXT NOT NULL,
+            sent_at TIMESTAMP,
+            sender_profile_image_at_archive LONGTEXT COMMENT '送信者のプロフィール画像（アーカイブ時点）',
+            archived_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (archive_trade_id) REFERENCES archived_trades(archive_trade_id) ON DELETE CASCADE,
+            INDEX idx_archive_trade_sent (archive_trade_id, sent_at)
+        );
+    ''')
+
+# アーカイブ配送情報テーブル
+def create_archived_shipping_info_table(cursor):
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS archived_shipping_info (
+            archive_shipping_id INT AUTO_INCREMENT PRIMARY KEY,
+            archive_trade_id INT NOT NULL,
+            sender_user_id INT NOT NULL,
+            sender_name VARCHAR(255),
+            tracking_number VARCHAR(255),
+            shipping_company VARCHAR(255),
+            created_at TIMESTAMP,
+            archived_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (archive_trade_id) REFERENCES archived_trades(archive_trade_id) ON DELETE CASCADE,
+            INDEX idx_archive_trade (archive_trade_id)
+        );
+    ''')
+
+# アーカイブ取引確認情報テーブル（新規追加）
+def create_archived_trade_confirmations_table(cursor):
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS archived_trade_confirmations (
+            archive_confirmation_id INT AUTO_INCREMENT PRIMARY KEY,
+            archive_trade_id INT NOT NULL,
+            user_id INT NOT NULL,
+            user_name VARCHAR(100),
+            confirmation_type VARCHAR(50),
+            confirmed_at TIMESTAMP,
+            archived_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (archive_trade_id) REFERENCES archived_trades(archive_trade_id) ON DELETE CASCADE,
+            INDEX idx_archive_trade (archive_trade_id),
+            INDEX idx_user (user_id)
+        ) COMMENT='アーカイブされた取引確認情報';
+    ''')
+    
+# アーカイブ取引評価テーブル
+def create_archived_trade_reviews_table(cursor):
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS archived_trade_reviews (
+            archive_review_id INT AUTO_INCREMENT PRIMARY KEY,
+            archive_trade_id INT NOT NULL,
+            reviewer_id INT NOT NULL,
+            reviewer_name VARCHAR(255),
+            reviewee_id INT NOT NULL,
+            reviewee_name VARCHAR(255),
+            rating INT CHECK (rating >= 1 AND rating <= 5),
+            reviewer_comment TEXT,
+            reviewee_comment TEXT,
+            reviewed_at TIMESTAMP,
+            archived_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (archive_trade_id) REFERENCES archived_trades(archive_trade_id) ON DELETE CASCADE,
+            INDEX idx_archive_trade (archive_trade_id)
+        );
+    ''')
+
+    
+# アーカイブテーブル作成関数
+def create_archive_tables(cursor):
+    create_archived_items_table(cursor)
+    create_archived_item_images_table(cursor)
+    create_archived_trades_table(cursor)
+    create_archived_trade_messages_table(cursor)
+    create_archived_shipping_info_table(cursor)
+    create_archived_trade_confirmations_table(cursor)  # 新規追加
+    create_archived_trade_reviews_table(cursor)
 
 def create_table(cursor):
     create_users_table(cursor)
@@ -232,7 +382,7 @@ def create_table(cursor):
     create_likes_table(cursor)
     create_trades_table(cursor)
     create_trade_messages_table(cursor)
-    create_trade_reviews_table(cursor)
     create_shipping_info_table(cursor) 
     create_trade_confirmations_table(cursor)
     create_trade_exchanges_table(cursor)
+    create_archive_tables(cursor)

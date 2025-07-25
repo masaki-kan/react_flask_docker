@@ -1,4 +1,4 @@
-import { FC, useCallback, useEffect, useState } from "react";
+import { FC, useCallback, useState } from "react";
 import ProfileIndex from "./profileIndex";
 import ProfileForm from "./profileForm";
 import { VStack } from "@chakra-ui/react";
@@ -9,6 +9,7 @@ import { profileType } from "../../types/profileType";
 import useAlert from "../../hooks/useAlert";
 import useLoading from "../../hooks/useLaoding";
 import FullScreenSpinner from "../common/spliner/FullScreenSpinner";
+import { useEffectOnce } from "react-use";
 
 const Profile: FC = () => {
   const { getMyProfile } = useMyProfile();
@@ -33,11 +34,9 @@ const Profile: FC = () => {
     [changeLoading, defaultToast]
   );
 
-  useEffect(() => {
-    // if (editSwitch !== true) {
+  useEffectOnce(() => {
     getMyProfile();
-    // }
-  }, [editSwitch, getMyProfile]);
+  });
 
   return (
     <VStack align={"start"} gap={9} w={"100%"} mt={{ base: "8em", md: "6em" }}>

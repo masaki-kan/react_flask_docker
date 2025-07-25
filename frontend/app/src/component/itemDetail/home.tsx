@@ -171,19 +171,6 @@ const Home: FC = () => {
     updateItemDetailData,
   ]);
 
-  // const toPrevPageHandler = useCallback(() => {
-  //   if (memorizeuserProfile.items.length === 0) {
-  //     navigate(`${route.items}`);
-  //     return;
-  //   }
-  //   navigate(`${route.shopPage}?userItem=${memorizeuserProfile.profile.id}`);
-  //   return;
-  // }, [
-  //   memorizeuserProfile.items.length,
-  //   memorizeuserProfile.profile.id,
-  //   navigate,
-  // ]);
-
   useEffect(() => {
     const isLiked = memorizeProfile.profile.likes?.includes(
       Number(targetDetailUser.itemId)
@@ -255,14 +242,6 @@ const Home: FC = () => {
         <VStack spacing={4} align="stretch">
           {/* ヘッダーセクション */}
           <HStack justify="end" px={{ base: 2, md: 0 }}>
-            {/* <IconButton
-              aria-label="戻る"
-              icon={<FaArrowLeft />}
-              variant="ghost"
-              size="lg"
-              onClick={toPrevPageHandler}
-              _hover={{ bg: hoverBg }}
-            /> */}
             <Badge
               fontSize="sm"
               px={3}
@@ -322,7 +301,13 @@ const Home: FC = () => {
                       <Badge colorScheme="purple" fontSize="sm" px={3} py={1}>
                         {itemDetailData.type}
                       </Badge>
-                      <Badge colorScheme="teal" fontSize="sm" px={3} py={1}>
+                      <Badge
+                        colorScheme="teal"
+                        fontSize="sm"
+                        px={3}
+                        py={1}
+                        hidden={itemDetailData.brand.length === 0}
+                      >
                         {itemDetailData.brand}
                       </Badge>
                     </HStack>
