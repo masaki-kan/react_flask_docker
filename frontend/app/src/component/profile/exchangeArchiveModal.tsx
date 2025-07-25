@@ -74,9 +74,9 @@ const ExchangeArchiveModal: FC<ExchangeArchiveModalProps> = ({
             </Center>
           ) : (
             <VStack spacing={3} align="stretch">
-              {memorizeuserProfileArchives.map((archive) => (
+              {memorizeuserProfileArchives.map((archive, index) => (
                 <Box
-                  key={archive.trade_id}
+                  key={index}
                   bg={bgColor}
                   borderRadius="md"
                   border="1px solid"
