@@ -200,7 +200,11 @@ const Home: FC = () => {
   // 確認状況を定期的にチェック
   useEffect(() => {
     const checkConfirmations = async () => {
-      if (tradeIdNumber && memorizeChatItemData.status === "shipped") {
+      // 取引が完了している場合はチェックしない
+      if (
+        tradeIdNumber &&
+        memorizeChatItemData.status === "shipped" // 完了済みは除外
+      ) {
         try {
           const result = await fetchConfirmationsApi(tradeIdNumber);
           if (result) {
@@ -220,9 +224,19 @@ const Home: FC = () => {
     };
 
     checkConfirmations();
-    const interval = setInterval(checkConfirmations, 1000); // 5秒ごとにチェック
 
-    return () => clearInterval(interval);
+    // intervalの設定前にstatusをチェック
+    let interval: NodeJS.Timeout | undefined;
+
+    if (memorizeChatItemData.status === "shipped") {
+      interval = setInterval(checkConfirmations, 5000); // 5秒ごとにチェック
+    }
+
+    return () => {
+      if (interval) {
+        clearInterval(interval);
+      }
+    };
   }, [tradeIdNumber, memorizeChatItemData.status, isCurrentUserSeller]);
 
   const checkExchangeItems = useCallback(async () => {

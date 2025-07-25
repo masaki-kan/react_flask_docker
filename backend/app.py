@@ -1724,6 +1724,16 @@ def get_confirmations():
         
         trade = cursor.fetchone()
         
+        # 取引が存在しない場合は、デフォルト値を返す
+        if not trade:
+            return jsonify({
+                'result': True,
+                'seller_confirmed': False,
+                'buyer_confirmed': False,
+                'both_confirmed': False,
+                'trade_exists': False  # 取引が存在しないことを示すフラグ
+            })
+        
         # 確認情報を取得
         cursor.execute('''
             SELECT user_id
@@ -1740,12 +1750,15 @@ def get_confirmations():
             'result': True,
             'seller_confirmed': trade['seller_id'] in confirmed_users,
             'buyer_confirmed': trade['buyer_id'] in confirmed_users,
-            'both_confirmed': len(confirmed_users) == 2
+            'both_confirmed': len(confirmed_users) == 2,
+            'trade_exists': True
         })
         
     except Exception as e:
         return jsonify({'result': False, 'error': str(e)}), 500
-    
+    finally:
+        if 'conn' in locals():
+            conn.close()
 # 交換申請を受けた人が相手の商品一覧を取得
 @app.route('/api/get_partner_items', methods=['POST'])
 def get_partner_items():
