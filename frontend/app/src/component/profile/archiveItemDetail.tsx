@@ -34,7 +34,6 @@ const ArchiveItemDetail: FC<ArchiveItemDetailProps> = ({
   itemType,
   itemBrand,
 }) => {
-  console.log(itemType, itemBrand);
   const { isOpen, onOpen, onClose } = useDisclosure();
 
   return (
@@ -139,7 +138,11 @@ const ArchiveItemDetail: FC<ArchiveItemDetailProps> = ({
                   ブランド
                 </Text>
                 <Text fontSize="sm" whiteSpace="pre-wrap">
-                  {itemBrand?.name}
+                  {itemBrand
+                    ? itemBrand.name.length > 0
+                      ? itemBrand.name
+                      : itemBrand.name
+                    : "未設定"}
                 </Text>
               </Box>
             </VStack>
