@@ -5,6 +5,7 @@ import {
   // profileItemType,
 } from "../types/profileType";
 import { errorSweetalert2 } from "../component/common/alert/sweetalert2";
+import { archiveDetailResponse } from "./../types/archiveTradeType";
 
 // プロフ取得
 export const getProfileApi = async (
@@ -194,17 +195,40 @@ export const deleteUserItemApi = async (
   }
 };
 
+// アーカイブ詳細を取得
+export const fetchArchiveDetailApi = async (
+  archiveTradeId: string
+): Promise<archiveDetailResponse | undefined> => {
+  try {
+    const response = await axios.get(
+      `${import.meta.env.VITE_API_URL}/api/getArchiveDetail?archive_trade_id=${archiveTradeId}`
+    );
+
+    if (response.data.result) {
+      return response.data;
+    }
+  } catch (error: unknown) {
+    let errorMessage = "予期しないエラーが発生しました";
+
+    if (axios.isAxiosError(error) && error.response?.data?.error) {
+      errorMessage = error.response.data.error;
+    }
+
+    errorSweetalert2(errorMessage);
+    return;
+  }
+};
+
 // 交換履歴
 export const exchangeArchiveApi = async (user_id: number) => {
   try {
     const response = await axios.post(
-      `${import.meta.env.VITE_API_URL}/api/getExchangeArchive`,
+      `${import.meta.env.VITE_API_URL}/api/getexchangeArchive`,
       {
         user_id,
       }
     );
 
-    console.log(response.data);
     return {
       status: response.data.result,
       archives: response.data.archives,

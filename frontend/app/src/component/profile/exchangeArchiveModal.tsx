@@ -10,7 +10,6 @@ import {
   HStack,
   Box,
   Text,
-  Image,
   Avatar,
   Badge,
   Icon,
@@ -18,12 +17,22 @@ import {
   Spinner,
   Center,
   Flex,
+  Button,
 } from "@chakra-ui/react";
-import { FaCalendarAlt, FaUserCircle } from "react-icons/fa";
+import {
+  FaCalendarAlt,
+  FaExchangeAlt,
+  FaHandshake,
+  FaUserCircle,
+} from "react-icons/fa";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
 import useMyProfile from "../../hooks/useProfile";
+import { useNavigate } from "react-router-dom";
+import { route } from "../../route/routeConst";
+import { exchangeArchive } from "../../types/archiveTradeType";
 
+// インターフェース名を PascalCase に修正
 interface ExchangeArchiveModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -33,8 +42,10 @@ const ExchangeArchiveModal: FC<ExchangeArchiveModalProps> = ({
   isOpen,
   onClose,
 }) => {
+  const navigate = useNavigate();
   const { memorizeuserProfileArchives } = useMyProfile();
   const [loading, setLoading] = useState(false);
+  const [archives, setArchives] = useState<exchangeArchive[]>([]);
 
   // カラーモード対応
   const bgColor = useColorModeValue("white", "gray.800");
@@ -43,11 +54,18 @@ const ExchangeArchiveModal: FC<ExchangeArchiveModalProps> = ({
   useEffect(() => {
     if (isOpen) {
       setLoading(true);
-      if (memorizeuserProfileArchives.length > 0) {
+      if (
+        memorizeuserProfileArchives &&
+        memorizeuserProfileArchives.length > 0
+      ) {
+        // 型アサーションを使用して型を明示的に指定
+        setArchives(memorizeuserProfileArchives);
+        setLoading(false);
+      } else {
         setLoading(false);
       }
     }
-  }, [isOpen, memorizeuserProfileArchives.length]);
+  }, [isOpen, memorizeuserProfileArchives]);
 
   const formatDate = (dateString: string) => {
     try {
@@ -55,6 +73,12 @@ const ExchangeArchiveModal: FC<ExchangeArchiveModalProps> = ({
     } catch {
       return "日付不明";
     }
+  };
+
+  // 取引画面へ遷移する関数
+  const handleNavigateToArchive = (archiveTradeId: number) => {
+    navigate(`${route.archiveDetail}?archive_id=${archiveTradeId}`);
+    onClose(); // モーダルを閉じる
   };
 
   return (
@@ -68,13 +92,13 @@ const ExchangeArchiveModal: FC<ExchangeArchiveModalProps> = ({
             <Center h="200px">
               <Spinner size="xl" />
             </Center>
-          ) : memorizeuserProfileArchives.length === 0 ? (
+          ) : archives.length === 0 ? (
             <Center h="200px">
               <Text color="gray.500">交換履歴がありません</Text>
             </Center>
           ) : (
             <VStack spacing={3} align="stretch">
-              {memorizeuserProfileArchives.map((archive, index) => (
+              {archives.map((archive, index) => (
                 <Box
                   key={index}
                   bg={bgColor}
@@ -104,20 +128,20 @@ const ExchangeArchiveModal: FC<ExchangeArchiveModalProps> = ({
                   </HStack>
 
                   {/* 交換内容（超コンパクト） */}
-                  <Flex align="start" justify="center" gap={2}>
+                  <Flex align="center" justify="space-around" gap={2}>
                     {/* 申請者 */}
                     <VStack spacing={1} align="center" flex={1} w={"50%"}>
                       <Text
                         fontSize="xs"
                         color="gray.500"
-                        textAlign={"start"}
+                        textAlign={"center"}
                         width={"100%"}
                       >
                         交換申請者
                       </Text>
                       <HStack
                         spacing={1}
-                        justifyContent={"start"}
+                        justifyContent={"center"}
                         width={"100%"}
                       >
                         {archive.buyer_image ? (
@@ -137,35 +161,21 @@ const ExchangeArchiveModal: FC<ExchangeArchiveModalProps> = ({
                           {archive.buyer_name}
                         </Text>
                       </HStack>
-
-                      <VStack spacing={1} width={"100%"} align={"start"}>
-                        {archive.buyer_item_images[0] && (
-                          <Image
-                            src={archive.buyer_item_images[0]}
-                            alt={archive.buyer_item_title}
-                            h="40px"
-                            w="40px"
-                            objectFit="cover"
-                            borderRadius="sm"
-                          />
-                        )}
-                        <Text fontSize="xs">{archive.buyer_item_title}</Text>
-                      </VStack>
                     </VStack>
-
+                    <FaExchangeAlt size={14} />
                     {/* 受理者 */}
                     <VStack spacing={1} align="center" flex={1} w={"50%"}>
                       <Text
                         fontSize="xs"
                         color="gray.500"
-                        textAlign={"start"}
+                        textAlign={"center"}
                         width={"100%"}
                       >
                         交換受理者
                       </Text>
                       <HStack
                         spacing={1}
-                        justifyContent={"start"}
+                        justifyContent={"center"}
                         width={"100%"}
                       >
                         {archive.seller_image ? (
@@ -185,32 +195,21 @@ const ExchangeArchiveModal: FC<ExchangeArchiveModalProps> = ({
                           {archive.seller_name}
                         </Text>
                       </HStack>
-
-                      <VStack spacing={1} width={"100%"} align={"start"}>
-                        {archive.seller_item_images[0] && (
-                          <Image
-                            src={archive.seller_item_images[0]}
-                            alt={archive.seller_item_title}
-                            h="40px"
-                            w="40px"
-                            objectFit="cover"
-                            borderRadius="sm"
-                          />
-                        )}
-                        <Text fontSize="xs">{archive.seller_item_title}</Text>
-                      </VStack>
                     </VStack>
                   </Flex>
 
                   {/* 取引開始日 */}
-                  <Text
-                    fontSize="xs"
-                    color="gray.400"
-                    textAlign="center"
-                    mt={2}
-                  >
-                    取引開始: {formatDate(archive.trade_date)}
-                  </Text>
+                  <HStack justifyContent={"end"} mt={2}>
+                    <Button
+                      size={"xs"}
+                      leftIcon={<FaHandshake />}
+                      onClick={() =>
+                        handleNavigateToArchive(archive.archive_trade_id)
+                      }
+                    >
+                      取引画面へ
+                    </Button>
+                  </HStack>
                 </Box>
               ))}
             </VStack>

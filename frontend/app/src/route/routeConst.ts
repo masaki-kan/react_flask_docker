@@ -14,4 +14,5 @@ export const route = {
   approvals: "/approvals",
   profile: "/",
   launch: "/launch",
+  archiveDetail: "/archive-detail",
 };

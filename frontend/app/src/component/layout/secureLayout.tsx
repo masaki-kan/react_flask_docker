@@ -59,7 +59,8 @@ const SecureLayout: FC = () => {
           hidden={
             location.pathname === route.home ||
             location.pathname === route.myItem ||
-            location.pathname === route.myItemEdit
+            location.pathname === route.myItemEdit ||
+            location.pathname === route.archiveDetail
           }
           mt={{ base: "8em", md: "6em" }} // ヘッダーの高さ分のマージン
         >

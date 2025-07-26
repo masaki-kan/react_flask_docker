@@ -29,24 +29,3 @@ export interface profileItemType {
   type: string;
   brand: { key: string; name: string };
 }
-
-export interface exchangeArchive {
-  trade_id: number;
-  trade_date: string;
-  completed_date: string;
-  user_role: "seller" | "buyer";
-  // ユーザー情報
-  seller_id: number;
-  seller_name: string;
-  seller_image: string;
-  buyer_id: number;
-  buyer_name: string;
-  buyer_image: string;
-  // 商品情報
-  main_item_title: string;
-  main_item_images: string[];
-  seller_item_title: string;
-  seller_item_images: string[];
-  buyer_item_title: string;
-  buyer_item_images: string[];
-}

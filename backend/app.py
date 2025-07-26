@@ -2047,7 +2047,6 @@ def save_shipping_info_with_item():
         cursor.close()
 
 # 取引完了時の処理（削除＋アーカイブ方式）
-# 取引完了時の処理（削除＋アーカイブ方式）
 @app.route('/api/complete_exchange', methods=['POST'])
 def complete_exchange():
     """両者が商品を受け取り、交換を完了"""
@@ -2097,23 +2096,15 @@ def complete_exchange():
         # アーカイブ処理の呼び出し
         archiver = TradeArchiver(conn)
         archive_trade_id = archiver.archive_trade(trade_id)
-        
-        # 交換履歴を記録（アーカイブ前に）
-        # 売り手の記録
-        cursor.execute('''
-            INSERT INTO trade_exchanges (trade_id, offered_item_id, received_item_id, user_id)
-            VALUES (%s, %s, %s, %s)
-        ''', (trade_id, trade['seller_exchange_item_id'], trade['buyer_exchange_item_id'], trade['seller_id']))
-        
-        # 買り手の記録
-        cursor.execute('''
-            INSERT INTO trade_exchanges (trade_id, offered_item_id, received_item_id, user_id)
-            VALUES (%s, %s, %s, %s)
-        ''', (trade_id, trade['buyer_exchange_item_id'], trade['seller_exchange_item_id'], trade['buyer_id']))
-        
+
         # ===== ここから削除処理 =====
         
         # 1. 関連する全データの削除（順序重要：外部キー制約を考慮）
+        
+        # trade_exchanges の削除を追加（商品削除前に必須）
+        cursor.execute('''
+            DELETE FROM trade_exchanges WHERE trade_id = %s
+        ''', (trade_id,))
         
         # trade_messages の削除
         cursor.execute('''
@@ -2130,11 +2121,10 @@ def complete_exchange():
             DELETE FROM shipping_info WHERE trade_id = %s
         ''', (trade_id,))
         
-        # 🔥 重要: trade_exchanges の削除を追加（商品削除前に必須）
         cursor.execute('''
-            DELETE FROM trade_exchanges WHERE trade_id = %s
+            DELETE FROM trades WHERE trade_id = %s
         ''', (trade_id,))
-        
+
         # 2. 交換に使用された商品の削除
         items_to_delete = [trade['item_id']]
         if trade['seller_exchange_item_id']:
@@ -2160,11 +2150,6 @@ def complete_exchange():
             cursor.execute('''
                 DELETE FROM items WHERE item_id = %s
             ''', (item_id,))
-        
-        # 3. trades の削除
-        cursor.execute('''
-            DELETE FROM trades WHERE trade_id = %s
-        ''', (trade_id,))
         
         # 完了メッセージ（削除前にアーカイブに保存済み）
         conn.commit()
@@ -2258,7 +2243,7 @@ def get_exchange_items():
         cursor.close()
 
 # 交換履歴を取得
-@app.route('/api/getExchangeArchive', methods=['POST'])
+@app.route('/api/getexchangeArchive', methods=['POST'])
 def get_exchange_archive():
     data = request.get_json()
     user_id = data.get('user_id')
@@ -2431,6 +2416,131 @@ def get_exchange_archive():
             "error": "交換履歴取得中にエラーが発生しました",
             "result": False
         }), 500
+    finally:
+        conn.close()
+        cursor.close()
+        
+# アーカイブ取引詳細を取得
+@app.route('/api/getArchiveDetail', methods=['GET'])
+def get_archive_detail():
+    archive_trade_id = request.args.get('archive_trade_id')
+    
+    if not archive_trade_id:
+        return jsonify({"error": "archive_trade_id is required"}), 400
+    
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        
+        # 1. アーカイブ取引情報を取得
+        cursor.execute('''
+            SELECT 
+                at.*,
+                seller_item.title as seller_exchange_title,
+                seller_item.description as seller_exchange_description,
+                seller_item.type as seller_exchange_type,
+                seller_item.brand as seller_exchange_brand,
+                buyer_item.title as buyer_exchange_title,
+                buyer_item.description as buyer_exchange_description,
+                buyer_item.type as buyer_exchange_type,
+                buyer_item.brand as buyer_exchange_brand
+            FROM archived_trades at
+            LEFT JOIN archived_items seller_item ON at.seller_exchange_item_archive_id = seller_item.archive_id
+            LEFT JOIN archived_items buyer_item ON at.buyer_exchange_item_archive_id = buyer_item.archive_id
+            WHERE at.archive_trade_id = %s
+        ''', (archive_trade_id,))
+        
+        trade_data = cursor.fetchone()
+        
+        if not trade_data:
+            return jsonify({"error": "Archive not found"}), 404
+        
+        # 3. 交換商品の画像を取得（seller）
+        if trade_data['seller_exchange_item_archive_id']:
+            cursor.execute('''
+                SELECT image_url FROM archived_item_images
+                WHERE archive_id = %s
+                ORDER BY image_order ASC
+            ''', (trade_data['seller_exchange_item_archive_id'],))
+            seller_images = cursor.fetchall()
+            trade_data['seller_exchange_images'] = [img['image_url'] for img in seller_images]
+        else:
+            trade_data['seller_exchange_images'] = []
+            
+        # 4. 交換商品の画像を取得（buyer）
+        if trade_data['buyer_exchange_item_archive_id']:
+            cursor.execute('''
+                SELECT image_url FROM archived_item_images
+                WHERE archive_id = %s
+                ORDER BY image_order ASC
+            ''', (trade_data['buyer_exchange_item_archive_id'],))
+            buyer_images = cursor.fetchall()
+            trade_data['buyer_exchange_images'] = [img['image_url'] for img in buyer_images]
+        else:
+            trade_data['buyer_exchange_images'] = []
+        
+        # 5. メッセージを取得
+        cursor.execute('''
+            SELECT * FROM archived_trade_messages
+            WHERE archive_trade_id = %s
+            ORDER BY sent_at ASC
+        ''', (archive_trade_id,))
+        messages = cursor.fetchall()
+        
+        # 6. 配送情報を取得
+        cursor.execute('''
+            SELECT * FROM archived_shipping_info
+            WHERE archive_trade_id = %s
+        ''', (archive_trade_id,))
+        shipping_info = cursor.fetchall()
+        
+        # 7. 確認情報を取得
+        cursor.execute('''
+            SELECT * FROM archived_trade_confirmations
+            WHERE archive_trade_id = %s
+        ''', (archive_trade_id,))
+        confirmations = cursor.fetchall()
+        
+        # 8. レビュー情報を取得
+        cursor.execute('''
+            SELECT * FROM archived_trade_reviews
+            WHERE archive_trade_id = %s
+        ''', (archive_trade_id,))
+        reviews = cursor.fetchall()
+        
+        # JSONフィールドをパース
+        for field in [ 'seller_exchange_type', 
+                      'seller_exchange_brand', 'buyer_exchange_type', 'buyer_exchange_brand']:
+            if trade_data.get(field):
+                try:
+                    trade_data[field] = json.loads(trade_data[field])
+                except:
+                    trade_data[field] = []
+        
+        # 日付をISO形式に変換
+        date_fields = ['trade_created_at', 'trade_completed_at', 'archived_at']
+        for field in date_fields:
+            if trade_data.get(field):
+                trade_data[field] = trade_data[field].isoformat()
+                
+        # メッセージの日付変換
+        for msg in messages:
+            if msg.get('sent_at'):
+                msg['sent_at'] = msg['sent_at'].isoformat()
+            if msg.get('archived_at'):
+                msg['archived_at'] = msg['archived_at'].isoformat()
+        
+        return jsonify({
+            'result': True,
+            'trade': trade_data,
+            'messages': messages,
+            'shipping_info': shipping_info,
+            'confirmations': confirmations,
+            'reviews': reviews
+        })
+        
+    except Exception as e:
+        return jsonify({'result': False, 'error': str(e)}), 500
     finally:
         conn.close()
         cursor.close()

@@ -1,18 +1,25 @@
 import { useCallback, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { exchangeArchive, profileType } from "../types/profileType";
+import { profileType } from "../types/profileType";
 import { type RootState } from "../store";
 import { itemListType } from "../types/itemType";
 import {
   getProfileApi,
   cancellationProcessApi,
   exchangeArchiveApi,
+  fetchArchiveDetailApi,
 } from "../api/profileApis";
 import { setProfile, setProfileArchives } from "../store/profileSlice";
 import { setProfile as setSliceProfile } from "../store/usersSlice";
 import { itemLikeApi } from "../api/likeApi";
 import useAlert from "./useAlert";
 import useLoading from "./useLaoding";
+import {
+  exchangeArchive,
+  archiveMessage,
+  archiveShippingInfo,
+  archiveTradeType,
+} from "../types/archiveTradeType";
 
 type useMyProfileReturn = {
   memorizeProfile: {
@@ -28,6 +35,14 @@ type useMyProfileReturn = {
   getProfile: (userNumver: number, myUserNumber: number) => Promise<void>;
   favoriteUpdateHandler: (itemId: string, userId: string) => Promise<void>;
   cancellationProcess: () => Promise<string>;
+  getArchiveDetailHandler: (archiveId: string) => Promise<
+    | {
+        archiveData: archiveTradeType;
+        messages: archiveMessage[];
+        shippingInfo: archiveShippingInfo[];
+      }
+    | undefined
+  >;
 };
 
 const useMyProfile = (): useMyProfileReturn => {
@@ -55,6 +70,7 @@ const useMyProfile = (): useMyProfileReturn => {
     changeLoading(true);
     const responseProfile = await getProfileApi(Number(profile.profile.id));
     const responseActive = await exchangeArchiveApi(Number(profile.profile.id));
+    console.log(responseActive);
     if (responseProfile !== undefined) {
       dispatch(
         setProfile({
@@ -111,6 +127,30 @@ const useMyProfile = (): useMyProfileReturn => {
     [dispatch, favoriteAlert, memorizeProfile.items, memorizeProfile.profile]
   );
 
+  const getArchiveDetailHandler = useCallback(
+    async (
+      archiveId: string
+    ): Promise<
+      | {
+          archiveData: archiveTradeType;
+          messages: archiveMessage[];
+          shippingInfo: archiveShippingInfo[];
+        }
+      | undefined
+    > => {
+      const response = await fetchArchiveDetailApi(archiveId!);
+
+      if (response !== undefined) {
+        return {
+          archiveData: response.trade,
+          messages: response.messages,
+          shippingInfo: response.shipping_info,
+        };
+      }
+    },
+    []
+  );
+
   // 退会処理
   const cancellationProcess = useCallback(async () => {
     const userId = memorizeProfile.profile.id;
@@ -128,6 +168,7 @@ const useMyProfile = (): useMyProfileReturn => {
     getProfile,
     favoriteUpdateHandler,
     cancellationProcess,
+    getArchiveDetailHandler,
   };
 };
 
