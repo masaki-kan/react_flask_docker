@@ -61,6 +61,7 @@ const useMyProfile = (): useMyProfileReturn => {
     return userProfile;
   }, [userProfile]);
 
+  // 他のユーザーの交換履歴
   const memorizeuserProfileArchives = useMemo(() => {
     return profile.archive;
   }, [profile]);
@@ -70,7 +71,6 @@ const useMyProfile = (): useMyProfileReturn => {
     changeLoading(true);
     const responseProfile = await getProfileApi(Number(profile.profile.id));
     const responseActive = await exchangeArchiveApi(Number(profile.profile.id));
-    console.log(responseActive);
     if (responseProfile !== undefined) {
       dispatch(
         setProfile({
@@ -89,10 +89,14 @@ const useMyProfile = (): useMyProfileReturn => {
   const getProfile = useCallback(
     async (userNumver: number, myUserNumber: number) => {
       const response = await getProfileApi(userNumver, myUserNumber);
+      const responseActive = await exchangeArchiveApi(userNumver);
       if (response !== undefined) {
         dispatch(
           setSliceProfile({ profile: response.profile, items: response.items })
         );
+      }
+      if (responseActive !== undefined) {
+        dispatch(setProfileArchives(responseActive.archives));
       }
     },
     [dispatch]

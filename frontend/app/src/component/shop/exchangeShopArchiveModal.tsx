@@ -38,7 +38,7 @@ interface ExchangeArchiveModalProps {
   onClose: () => void;
 }
 
-const ExchangeArchiveModal: FC<ExchangeArchiveModalProps> = ({
+const ExchangeShopArchiveModal: FC<ExchangeArchiveModalProps> = ({
   isOpen,
   onClose,
 }) => {
@@ -220,4 +220,4 @@ const ExchangeArchiveModal: FC<ExchangeArchiveModalProps> = ({
   );
 };
 
-export default ExchangeArchiveModal;
+export default ExchangeShopArchiveModal;

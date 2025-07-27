@@ -2544,6 +2544,183 @@ def get_archive_detail():
     finally:
         conn.close()
         cursor.close()
+
+# スレッドメッセージ一覧取得（フィルタリング付き）
+@app.route('/api/thread/messages', methods=['GET'])
+def get_thread_messages():
+    page = request.args.get('page', 1, type=int)
+    limit = request.args.get('limit', 20, type=int)
+    filter_type = request.args.get('filter', 'all')  # all, following, followers
+    current_user_id = request.args.get('user_id', type=int)
+    offset = (page - 1) * limit
+    
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        
+        # フィルタ条件を構築
+        filter_condition = ""
+        params = [limit, offset]
+        
+        if filter_type == 'following' and current_user_id:
+            filter_condition = '''
+                AND tm.user_id IN (
+                    SELECT followed_id FROM follows WHERE follower_id = %s
+                )
+            '''
+            params = [current_user_id] + params
+        elif filter_type == 'followers' and current_user_id:
+            filter_condition = '''
+                AND tm.user_id IN (
+                    SELECT follower_id FROM follows WHERE followed_id = %s
+                )
+            '''
+            params = [current_user_id] + params
+        
+        # メッセージとユーザー情報を取得
+        query = f'''
+            SELECT 
+                tm.thread_message_id,
+                tm.user_id,
+                tm.message,
+                tm.created_at,
+                u.name as user_name,
+                u.location as user_location,
+                pi.image_url as user_image
+            FROM thread_messages tm
+            JOIN users u ON tm.user_id = u.user_id
+            LEFT JOIN (
+                SELECT user_id, image_url
+                FROM profile_images
+                WHERE (user_id, uploaded_at) IN (
+                    SELECT user_id, MAX(uploaded_at)
+                    FROM profile_images
+                    GROUP BY user_id
+                )
+            ) pi ON u.user_id = pi.user_id
+            WHERE tm.is_deleted = FALSE
+            {filter_condition}
+            ORDER BY tm.created_at DESC
+            LIMIT %s OFFSET %s
+        '''
+        
+        cursor.execute(query, params)
+        messages = cursor.fetchall()
+        
+        # 総件数を取得
+        count_query = f'''
+            SELECT COUNT(*) as total 
+            FROM thread_messages tm
+            WHERE tm.is_deleted = FALSE
+            {filter_condition}
+        '''
+        count_params = [current_user_id] if filter_type in ['following', 'followers'] else []
+        cursor.execute(count_query, count_params)
+        total = cursor.fetchone()['total']
+        
+        # 日付をISO形式に変換
+        for msg in messages:
+            if msg.get('created_at'):
+                msg['created_at'] = msg['created_at'].isoformat()
+        
+        return jsonify({
+            "result": True,
+            "messages": messages,
+            "total": total,
+            "page": page,
+            "limit": limit,
+            "has_more": offset + limit < total
+        }), 200
+        
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        conn.close()
+        cursor.close()
+        
+
+# スレッドメッセージ投稿
+@app.route('/api/thread/post', methods=['POST'])
+def post_thread_message():
+    data = request.get_json()
+    user_id = data.get('user_id')
+    message = data.get('message')
+    
+    if not message or not message.strip():
+        return jsonify({"error": "メッセージは必須です"}), 400
+    
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        
+        cursor.execute('''
+            INSERT INTO thread_messages (user_id, message)
+            VALUES (%s, %s)
+        ''', (user_id, message))
+        
+        thread_message_id = cursor.lastrowid
+        conn.commit()
+        
+        # WebSocketで通知
+        socketio.emit('new_thread_message', {
+            'thread_message_id': thread_message_id,
+            'user_id': user_id
+        }, to='thread_room')
+        
+        return jsonify({
+            "result": True,
+            "message": "投稿しました",
+            "thread_message_id": thread_message_id
+        }), 201
+        
+    except Exception as e:
+        conn.rollback()
+        return jsonify({"error": str(e)}), 500
+    finally:
+        conn.close()
+        cursor.close()
+
+# メッセージ削除（論理削除）
+@app.route('/api/thread/delete', methods=['POST'])
+def delete_thread_message():
+    data = request.get_json()
+    thread_message_id = data.get('thread_message_id')
+    user_id = data.get('user_id')
+    
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        
+        # 所有者確認
+        cursor.execute('''
+            SELECT user_id FROM thread_messages 
+            WHERE thread_message_id = %s
+        ''', (thread_message_id,))
+        
+        message = cursor.fetchone()
+        if not message:
+            return jsonify({"error": "メッセージが見つかりません"}), 404
+            
+        if message['user_id'] != user_id:
+            return jsonify({"error": "削除権限がありません"}), 403
+        
+        # 論理削除
+        cursor.execute('''
+            UPDATE thread_messages 
+            SET is_deleted = TRUE 
+            WHERE thread_message_id = %s
+        ''', (thread_message_id,))
+        
+        conn.commit()
+        
+        return jsonify({"result": True, "message": "削除しました"}), 200
+        
+    except Exception as e:
+        conn.rollback()
+        return jsonify({"error": str(e)}), 500
+    finally:
+        conn.close()
+        cursor.close()
         
 # Chat server 
 # クライアントが接続
@@ -2600,6 +2777,11 @@ def handle_send_message(data):
 def handle_disconnect():
     print('Client disconnected:', request.sid)
 
+# リアルタイム更新用WebSocket
+@socketio.on('join_thread')
+def handle_join_thread():
+    join_room('thread_room')
+    
 # stripe intent作成
 @app.route('/api/create-payment-intent', methods=['POST'])
 def create_payment():

@@ -138,3 +138,44 @@ export interface exchangeArchive {
   buyer_item_brand?: brandType[] | brandType;
   buyer_item_images?: string[];
 }
+
+export interface ArchiveItemDetailType {
+  title?: string;
+  itemTitle?: string;
+  itemDescription?: string;
+  itemImages?: string[];
+  itemType?: string;
+  itemBrand?: brandType;
+}
+
+// 取引履歴 商品詳細
+export interface archiveTradeItemDetailType {
+  archive_trade_id: number;
+  buyer_id: number;
+  buyer_image: string;
+  buyer_name: string;
+  buyer_item_title: string;
+  buyer_item_description?: string;
+  buyer_item_type?: string;
+  buyer_item_brand?: brandType;
+  buyer_item_images: string[];
+
+  seller_id: number;
+  seller_image: string;
+  seller_name: string;
+  seller_item_title: string;
+  seller_item_description?: string;
+  seller_item_type?: string;
+  seller_item_brand?: brandType;
+  seller_item_images: string[];
+
+  main_item_title: string;
+  main_item_description?: string;
+  main_item_brand?: brandType;
+  main_item_images: string[];
+
+  completed_date: string;
+  trade_date: string;
+  original_trade_id: number;
+  user_role: "buyer" | "seller";
+}

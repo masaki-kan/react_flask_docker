@@ -151,7 +151,7 @@ const RenderSaved: FC<RenderSavedType> = ({ savedList }) => {
                   right={2}
                   borderRadius="50%"
                   bgColor="#b03a3a"
-                  p={1.5}
+                  p={2}
                   zIndex={2}
                 ></Box>
               )}

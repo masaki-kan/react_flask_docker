@@ -32,7 +32,12 @@ const Home: FC = () => {
   return (
     <>
       {memorizeLoading && <FullScreenSpinner />}
-      <VStack align={"start"} gap={9} w={"100%"}>
+      <VStack
+        align={"start"}
+        gap={9}
+        w={"100%"}
+        mt={{ base: "8em", md: "6em" }}
+      >
         <ShopIndex />
       </VStack>
     </>

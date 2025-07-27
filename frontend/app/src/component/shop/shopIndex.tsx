@@ -335,20 +335,29 @@ const ShopIndex: FC = () => {
                 </Box>
               )}
 
-              {/* アイテム */}
-              <VStack align={"start"} w={"full"}>
-                <Text size={"sm"}>登録商品</Text>
-                {memorizeuserProfile.items.length === 0 ? (
-                  <Text size={"xs"} color={"#887563"}>
-                    商品がありません。
-                  </Text>
-                ) : (
-                  <RebderItem
-                    itemList={memorizeuserProfile.items}
-                    navigate={itemDetailHanlder}
-                  />
-                )}
-              </VStack>
+              <Box
+                bg={bgColor}
+                borderRadius="xl"
+                p={6}
+                boxShadow="sm"
+                border="1px solid"
+                borderColor={borderColor}
+              >
+                {/* アイテム */}
+                <VStack align={"start"} w={"full"}>
+                  <Heading size="md">登録商品</Heading>
+                  {memorizeuserProfile.items.length === 0 ? (
+                    <Text size={"xs"} color={"#887563"}>
+                      商品がありません。
+                    </Text>
+                  ) : (
+                    <RebderItem
+                      itemList={memorizeuserProfile.items}
+                      navigate={itemDetailHanlder}
+                    />
+                  )}
+                </VStack>
+              </Box>
             </VStack>
           </GridItem>
         </Grid>

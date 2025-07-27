@@ -18,7 +18,8 @@ import ProfileHome from "../component/profile/home";
 import FavoriteHome from "../component/favorite/home";
 import { useDispatch } from "react-redux";
 import { setPreviousUrl } from "../store/navigationSlice";
-import ArchiveHome from "../component/profile/archiveDetail";
+import ArchiveHome from "../component/archive/archiveDetail";
+import ThreadPage from "../component/thread/home";
 
 const AppRoutes: FC = () => {
   const location = useLocation();
@@ -51,6 +52,7 @@ const AppRoutes: FC = () => {
             <Route path={route.favorite} element={<FavoriteHome />} />
             <Route path={route.transactionChat} element={<ChatHome />} />
             <Route path={route.archiveDetail} element={<ArchiveHome />} />
+            <Route path={route.thread} element={<ThreadPage />} />
           </Route>
           <Route path="*" element={<h1>Not Found Page</h1>} />
         </Routes>

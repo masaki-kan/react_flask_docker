@@ -29,7 +29,14 @@ const SelectItems: FC<SelectItemsType> = ({
       <HStack>
         {/* 交換商品表示 Buyerの交換商品 */}
         {buyerSelectedItemId && (
-          <Box mt={3} p={3} bg="blue.50" borderRadius="md" w="50%">
+          <Box
+            mt={3}
+            p={3}
+            bg="blue.50"
+            borderRadius="md"
+            w="50%"
+            onClick={onItemOpen}
+          >
             <Text fontSize="xs" fontWeight="bold" mb={2} color="blue.700">
               申請者が選択した商品
             </Text>
@@ -48,7 +55,6 @@ const SelectItems: FC<SelectItemsType> = ({
               variant="outline"
               whiteSpace={"wrap"}
               noOfLines={1}
-              onClick={onItemOpen}
             >
               {memorizeChatItemData.title}
             </Text>
@@ -56,7 +62,14 @@ const SelectItems: FC<SelectItemsType> = ({
         )}
         {/* 交換商品表示 Sellerの交換商品 */}
         {hasSellerSelectedItem && (
-          <Box mt={3} p={3} bg="blue.50" borderRadius="md" w="50%">
+          <Box
+            mt={3}
+            p={3}
+            bg="blue.50"
+            borderRadius="md"
+            w="50%"
+            onClick={onSellerItemOpen}
+          >
             <Text fontSize="xs" fontWeight="bold" mb={2} color="blue.700">
               承認者が選択された商品
             </Text>
@@ -77,7 +90,6 @@ const SelectItems: FC<SelectItemsType> = ({
               variant="outline"
               whiteSpace={"wrap"}
               noOfLines={1}
-              onClick={onSellerItemOpen}
             >
               {selectedSellerItem()?.title}
             </Text>

@@ -37,7 +37,7 @@ import {
   FaHistory,
 } from "react-icons/fa";
 import { IconType } from "react-icons";
-import ExchangeArchiveModal from "./exchangeArchiveModal";
+import ExchangeArchiveModal from "../archive/exchangeArchiveModal";
 import { MdOutlineShoppingBag } from "react-icons/md";
 import { route } from "../../route/routeConst";
 
@@ -329,7 +329,6 @@ const ProfileIndex: FC<profileIndexType> = ({ editFormSwitch }) => {
                 />
               </Box>
             )}
-            {/* プロフィール編集ボタンの後に追加（プラン情報の下） */}
             <Button
               w="full"
               colorScheme="gray"

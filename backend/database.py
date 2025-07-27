@@ -360,6 +360,21 @@ def create_archived_trade_reviews_table(cursor):
             INDEX idx_archive_trade (archive_trade_id)
         );
     ''')
+    
+# スレッドメッセージテーブル
+def create_thread_messages_table(cursor):
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS thread_messages (
+            thread_message_id INT AUTO_INCREMENT PRIMARY KEY,
+            user_id INT NOT NULL,
+            message TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            is_deleted BOOLEAN DEFAULT FALSE,
+            FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+            INDEX idx_created_at (created_at DESC),
+            INDEX idx_user_id (user_id)
+        );
+    ''')
 
     
 # アーカイブテーブル作成関数
@@ -386,3 +401,4 @@ def create_table(cursor):
     create_trade_confirmations_table(cursor)
     create_trade_exchanges_table(cursor)
     create_archive_tables(cursor)
+    create_thread_messages_table(cursor)

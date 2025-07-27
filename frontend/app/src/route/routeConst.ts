@@ -15,4 +15,5 @@ export const route = {
   profile: "/",
   launch: "/launch",
   archiveDetail: "/archive-detail",
+  thread: "/thread",
 };

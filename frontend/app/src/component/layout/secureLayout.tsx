@@ -60,7 +60,9 @@ const SecureLayout: FC = () => {
             location.pathname === route.home ||
             location.pathname === route.myItem ||
             location.pathname === route.myItemEdit ||
-            location.pathname === route.archiveDetail
+            location.pathname === route.archiveDetail ||
+            location.pathname === route.shopPage ||
+            location.pathname === route.thread
           }
           mt={{ base: "8em", md: "6em" }} // ヘッダーの高さ分のマージン
         >

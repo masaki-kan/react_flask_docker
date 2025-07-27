@@ -7,11 +7,11 @@ import {
   Text,
   useColorModeValue,
   Icon,
-  Menu,
-  MenuButton,
-  MenuList,
-  MenuItem,
-  MenuDivider,
+  // Menu,
+  // MenuButton,
+  // MenuList,
+  // MenuItem,
+  // MenuDivider,
   Link,
 } from "@chakra-ui/react";
 import { route } from "../../../route/routeConst";
@@ -19,7 +19,7 @@ import { useNavigate } from "react-router-dom";
 import { menuLists } from "../../../consts/menuList";
 import useMyProfile from "../../../hooks/useProfile";
 import useSaved from "../../../hooks/useSaved";
-import { FaUserCircle, FaUser } from "react-icons/fa";
+import { FaUserCircle } from "react-icons/fa";
 import { useEffectOnce } from "react-use";
 
 const RenderRouteLinks: FC = () => {
@@ -31,8 +31,8 @@ const RenderRouteLinks: FC = () => {
   const [readSaveStatus, setReadSaveStatus] = useState<boolean>(false);
 
   // カラーモード対応
-  const bgColor = useColorModeValue("white", "gray.800");
-  const borderColor = useColorModeValue("gray.200", "gray.700");
+  // const bgColor = useColorModeValue("white", "gray.800");
+  // const borderColor = useColorModeValue("gray.200", "gray.700");
   const hoverBg = useColorModeValue("gray.50", "gray.700");
   const activeColor = useColorModeValue("blue.500", "blue.400");
 
@@ -92,11 +92,11 @@ const RenderRouteLinks: FC = () => {
                     <Box
                       hidden={!readSaveStatus}
                       position={"absolute"}
-                      top={-1}
-                      right={-2}
+                      top={-2.5}
+                      right={-2.5}
                       borderRadius={"50%"}
                       bgColor={"#b03a3a"}
-                      p={1}
+                      p={2}
                     ></Box>
                   </>
                 )}
@@ -105,9 +105,34 @@ const RenderRouteLinks: FC = () => {
           })}
 
           {/* プロフィールメニュー */}
-          <HStack spacing={4}>
+          <HStack spacing={4} onClick={() => navigate(route.profile)}>
             {/* アバターメニュー */}
-            <Menu>
+            {profile.profile.image.length > 0 ? (
+              <Avatar
+                size="md"
+                src={profile.profile.image}
+                name={profile.profile.name}
+                border="2px solid"
+                borderColor="transparent"
+                _hover={{
+                  borderColor: activeColor,
+                }}
+              />
+            ) : (
+              <Box
+                p={2}
+                borderRadius="full"
+                bg={hoverBg}
+                _hover={{
+                  bg: activeColor,
+                  color: "white",
+                }}
+                transition="all 0.2s"
+              >
+                <Icon as={FaUserCircle} boxSize={7} />
+              </Box>
+            )}
+            {/* <Menu>
               <MenuButton
                 as={Box}
                 cursor="pointer"
@@ -165,7 +190,7 @@ const RenderRouteLinks: FC = () => {
                   マイプロフィール
                 </MenuItem>
               </MenuList>
-            </Menu>
+            </Menu> */}
           </HStack>
         </HStack>
       </Container>

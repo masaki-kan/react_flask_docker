@@ -5,7 +5,6 @@ import {
   HStack,
   Avatar,
   Text,
-  IconButton,
   useDisclosure,
   VStack,
   Button,
@@ -47,7 +46,6 @@ const Home: FC = () => {
     memorizeBuyerUserData,
     memorizeSellerUserData,
     memorizeShippingInfo,
-    memorizeSelectsellerToBuyerItem,
     tradeStatusChangeHandler,
     confirmItemReceived,
     getChatPageData,
@@ -506,24 +504,6 @@ const Home: FC = () => {
                   />
                 )}
               </Tooltip>
-              {memorizeSelectsellerToBuyerItem.item_id !== 0 && (
-                <Tooltip
-                  label={
-                    isCurrentUserSeller
-                      ? "交換商品を選択"
-                      : "交換を受ける人商品一覧"
-                  }
-                >
-                  <IconButton
-                    icon={<FaBox />}
-                    aria-label="交換受信者が選択した商品"
-                    onClick={onSellerItemOpen}
-                    colorScheme="blue"
-                    variant="outline"
-                    size={{ base: "sm", md: "md" }}
-                  />
-                </Tooltip>
-              )}
             </HStack>
           </HStack>
 
