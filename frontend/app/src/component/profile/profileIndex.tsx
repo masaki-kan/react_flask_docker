@@ -52,7 +52,6 @@ const ProfileIndex: FC<profileIndexType> = ({ editFormSwitch }) => {
   const { memorizeProfile } = useMyProfile();
   // プロフィール情報は即座に表示
   const profile = useMemo(() => memorizeProfile, [memorizeProfile]);
-  // コンポーネント内に追加（useColorModeValue の後）
   const [isArchiveOpen, setIsArchiveOpen] = useState<boolean>(false);
 
   // カラーモード対応
@@ -61,9 +60,8 @@ const ProfileIndex: FC<profileIndexType> = ({ editFormSwitch }) => {
   const sectionBg = useColorModeValue("gray.50", "gray.900");
   const textMuted = useColorModeValue("gray.600", "gray.400");
   const accentColor = useColorModeValue("blue.500", "blue.400");
-
   const itemsLoading = useMemo(() => {
-    return profile.items === undefined || profile.items === null;
+    return profile.items.length === 0;
   }, [profile.items]);
 
   const InfoItem: FC<{

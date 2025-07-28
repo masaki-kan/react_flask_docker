@@ -142,7 +142,6 @@ export const postStoreProfileApi = async (formData: profileType) => {
 // 自分のプロフ 商品登録
 export const postStoreProfileItemApi = async (formData: FormData) => {
   try {
-    console.log("formData", formData);
     const response = await axios.post(
       `${import.meta.env.VITE_API_URL}/api/postStoreProfileItem`,
       formData,
