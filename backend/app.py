@@ -369,91 +369,87 @@ def postStoreProfile():
         conn.close()
         cursor.close()
 
-@app.route('/api/getProfile' , methods=['GET'])
+@app.route('/api/getProfile', methods=['GET'])
 def getMyProfile():
-    user_id = request.args.get('id')# ログイン中のユーザーID
-    my_user_id = request.args.get('my_id')  
-
+    user_id = request.args.get('id')
+    my_user_id = request.args.get('my_id')
+    
     try:
         conn = get_db_connection()
-        cursor = conn.cursor(dictionary=True)  # dict形式で取得できるようにする
-        # ユーザー情報
+        cursor = conn.cursor(dictionary=True)
+        
+        # 1. 基本的なユーザー情報を最初に返す
         cursor.execute('''
-            SELECT user_id, name, location, old, age, shop_name, shop_url, reasen ,plan
-            FROM users
-            WHERE user_id = %s
+            SELECT 
+                u.user_id, u.name, u.location, u.old, u.age, 
+                u.shop_name, u.shop_url, u.reasen, u.plan,
+                pi.image_url as image,
+                t.tag as tags
+            FROM users u
+            LEFT JOIN profile_images pi ON u.user_id = pi.user_id 
+                AND pi.uploaded_at = (
+                    SELECT MAX(uploaded_at) 
+                    FROM profile_images 
+                    WHERE user_id = u.user_id
+                )
+            LEFT JOIN tags t ON u.user_id = t.user_id
+            WHERE u.user_id = %s
         ''', (user_id,))
+        
         user_data = cursor.fetchone()
         
         if not user_data:
-            return jsonify({
-                "error": "指定されたユーザーが存在しません",
-                "result": False
-            }), 404
-
-     # is_following の取得（my_user_id が存在する場合のみ）
-        if my_user_id:
-            cursor.execute('''
-                SELECT 1 FROM follows 
-                WHERE follower_id = %s AND followed_id = %s
-            ''', (my_user_id, user_id))
-            user_data['is_following'] = cursor.fetchone() is not None
-        else:
-            user_data['is_following'] = False
-        
-        # プロフィール画像
-        cursor.execute('''
-            SELECT image_url 
-            FROM profile_images 
-            WHERE user_id = %s
-            ORDER BY uploaded_at DESC
-            LIMIT 1
-        ''', (user_id,))
-        profile_image = cursor.fetchone()
-        user_data = user_data or {}
-        user_data['image'] = profile_image['image_url'] if profile_image else ""
-
-        # タグ
-        cursor.execute('''
-            SELECT tag 
-            FROM tags 
-            WHERE user_id = %s
-        ''', (user_id,))
-        tags = cursor.fetchone()
-        
-        if tags and tags.get('tag'):
+            return jsonify({"error": "ユーザーが存在しません"}), 404
+            
+        # タグの処理
+        if user_data['tags']:
             try:
-                user_data['tags'] = json.loads(tags['tag'])
-            except Exception:
+                user_data['tags'] = json.loads(user_data['tags'])
+            except:
                 user_data['tags'] = []
         else:
             user_data['tags'] = []
+            
+        # いいねを別クエリで取得
+        cursor.execute('''
+            SELECT item_id FROM likes WHERE user_id = %s
+        ''', (user_id,))
+        user_data['likes'] = [like['item_id'] for like in cursor.fetchall()]
+        
+        # 基本情報だけ先に返す
+        return jsonify({
+            "profile": user_data,
+            "items": []  # 商品は別APIで取得
+        }), 200
+        
+    except mysql.connector.Error as err:
+        return jsonify({"error": "エラーが発生しました"}), 500
+    finally:
+        conn.close()
+        cursor.close()
 
-        # アイテム
+# 商品取得用のエンドポイント
+@app.route('/api/getProfileItems', methods=['GET'])
+def getProfileItems():
+    user_id = request.args.get('id')
+    
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        
+        # バッチで商品と画像を取得
         cursor.execute('''
             SELECT item_id, title, description, type, brand,uploaded_at, status
             FROM items 
             WHERE user_id = %s
             ORDER BY uploaded_at DESC
         ''', (user_id,))
-
-        item_rows = cursor.fetchall()
-        items = []
-
-        for item in item_rows:
-            # type
-            try:
-                item['type'] = json.loads(item['type']) if item['type'] else []
-            except:
-                item['type'] = []
-
-            # brand
-            try:
-                item['brand'] = json.loads(item['brand']) if item['brand'] else []
-            except:
-                item['brand'] = []
-
-            # 画像取得（昇順）
+        
+        items = cursor.fetchall()
+        
+        # データ処理
+        for item in items:
+             # 画像取得（昇順）
             cursor.execute('''
                 SELECT image_url 
                 FROM item_images 
@@ -462,43 +458,31 @@ def getMyProfile():
             ''', (item['item_id'],))
             item_images = cursor.fetchall()
             item['images'] = [r['image_url'] for r in item_images]
-
+                
+            # JSON型の処理
+            for field in ['type', 'brand']:
+                try:
+                    item[field] = json.loads(item[field]) if item[field] else []
+                except:
+                    item[field] = []
+                    
+            # ステータスフラグ
             status = item['status']
             if status == 'exchanged':
                 item['trade_status_flag'] = 2
             elif status == 'trading':
                 item['trade_status_flag'] = 1
-            elif status == 'available':
+            else:
                 item['trade_status_flag'] = 0
-
-            items.append(item)
+                
+        return jsonify({"items": items}), 200
         
-        cursor.execute('''
-        SELECT item_id
-        FROM likes
-        WHERE user_id = %s
-        ''', (user_id,))
-        
-        liked_items = cursor.fetchall()
-        
-        # item_id のみ抽出
-        user_data['likes'] = [like['item_id'] for like in liked_items]
-            
-        return jsonify({
-            "profile": user_data,
-            "items": items
-        }), 200
-    
-    except mysql.connector.Error as err:
-        return jsonify({
-            "error": "プロフィール情報取得中にエラーが発生しました",
-            "result": False
-        }), 500
-
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
     finally:
         conn.close()
         cursor.close()
-
+        
 @app.route('/api/postStoreProfileItem' ,methods=['POST'] )
 def postStoreProfileItem():
     item_id = request.form.get("itemId")

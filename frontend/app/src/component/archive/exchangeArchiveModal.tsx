@@ -140,14 +140,7 @@ const ExchangeArchiveModal: FC<ExchangeArchiveModalProps> = ({
             ) : (
               <VStack spacing={3} align="stretch">
                 {archives.map((archive, index) => (
-                  <Box
-                    key={index}
-                    bg={bgColor}
-                    borderRadius="md"
-                    border="1px solid"
-                    borderColor={borderColor}
-                    p={3}
-                  >
+                  <Box key={index} bg={bgColor} p={3}>
                     {/* 日付とバッジ */}
                     <HStack justify="space-between" mb={2}>
                       <HStack spacing={1}>

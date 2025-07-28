@@ -165,6 +165,7 @@ const ChatLayout: FC = () => {
       minH={{ base: "400px", md: "500px" }}
       display="flex"
       flexDirection="column"
+      mb={8}
     >
       {/* メッセージ表示部分 */}
       <Box

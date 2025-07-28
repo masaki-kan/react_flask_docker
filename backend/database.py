@@ -44,7 +44,8 @@ def create_profile_images_table(cursor):
             image_url LONGTEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (user_id) REFERENCES users(user_id)
+            FOREIGN KEY (user_id) REFERENCES users(user_id),
+            INDEX idx_user_uploaded (user_id, uploaded_at DESC)
         );
     ''')
 
@@ -97,7 +98,8 @@ def create_item_images_table(cursor):
             image_url LONGTEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (item_id) REFERENCES items(item_id)
+            FOREIGN KEY (item_id) REFERENCES items(item_id),
+            INDEX idx_item_uploaded (item_id, uploaded_at ASC)
         );
     ''')
 
@@ -111,7 +113,8 @@ def create_likes_table(cursor):
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
             FOREIGN KEY (item_id) REFERENCES items(item_id) ON DELETE CASCADE,
-            UNIQUE (user_id, item_id)
+            UNIQUE (user_id, item_id),
+            INDEX idx_user (user_id)
         );
     ''')
 

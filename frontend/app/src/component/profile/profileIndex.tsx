@@ -17,6 +17,8 @@ import {
   Divider,
   useColorModeValue,
   IconButton,
+  Center,
+  Spinner,
 } from "@chakra-ui/react";
 import MyItems from "./myItems";
 import useMyProfile from "../../hooks/useProfile";
@@ -48,15 +50,21 @@ type profileIndexType = {
 const ProfileIndex: FC<profileIndexType> = ({ editFormSwitch }) => {
   const navigate = useNavigate();
   const { memorizeProfile } = useMyProfile();
+  // プロフィール情報は即座に表示
   const profile = useMemo(() => memorizeProfile, [memorizeProfile]);
   // コンポーネント内に追加（useColorModeValue の後）
-  const [isArchiveOpen, setIsArchiveOpen] = useState(false);
+  const [isArchiveOpen, setIsArchiveOpen] = useState<boolean>(false);
+
   // カラーモード対応
   const bgColor = useColorModeValue("white", "gray.800");
   const borderColor = useColorModeValue("gray.200", "gray.700");
   const sectionBg = useColorModeValue("gray.50", "gray.900");
   const textMuted = useColorModeValue("gray.600", "gray.400");
   const accentColor = useColorModeValue("blue.500", "blue.400");
+
+  const itemsLoading = useMemo(() => {
+    return profile.items === undefined || profile.items === null;
+  }, [profile.items]);
 
   const InfoItem: FC<{
     icon: IconType;
@@ -365,7 +373,16 @@ const ProfileIndex: FC<profileIndexType> = ({ editFormSwitch }) => {
                   登録ページ
                 </Button>
               </HStack>
-              <MyItems />
+              {itemsLoading ? (
+                <Center py={8}>
+                  <Spinner size="lg" />
+                  <Text ml={4} color={textMuted}>
+                    商品を読み込み中...
+                  </Text>
+                </Center>
+              ) : (
+                <MyItems />
+              )}
             </Box>
 
             {/* アカウント設定 */}

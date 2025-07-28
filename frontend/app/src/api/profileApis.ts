@@ -42,6 +42,35 @@ export const getProfileApi = async (
       tradeStatusFlag: response.data.profile.trade_status_flag,
     };
 
+    // 空なので
+    const items = response.data.items;
+
+    return {
+      profile,
+      items,
+    };
+  } catch (error: unknown) {
+    let errorMessage = "予期しないエラーが発生しました";
+    if (axios.isAxiosError(error) && error.response?.data?.error) {
+      errorMessage = error.response.data.error;
+    }
+
+    errorSweetalert2(errorMessage);
+    return;
+  }
+};
+
+export const getProfileItemsApi = async (id: number) => {
+  try {
+    const response = await axios.get(
+      `${import.meta.env.VITE_API_URL}/api/getProfileItems`,
+      {
+        params: {
+          id,
+        },
+      }
+    );
+
     const items = response.data.items.map(
       (items: {
         item_id: string;
@@ -71,7 +100,6 @@ export const getProfileApi = async (
     );
 
     return {
-      profile,
       items,
     };
   } catch (error: unknown) {

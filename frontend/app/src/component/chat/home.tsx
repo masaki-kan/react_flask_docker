@@ -351,7 +351,7 @@ const Home: FC = () => {
           isClosable: true,
         });
 
-        navigate(route.home);
+        navigate(route.saved);
       } catch (error) {
         console.error("交換完了エラー:", error);
       }
@@ -665,7 +665,7 @@ const Home: FC = () => {
               </VStack>
             )}
 
-            {memorizeChatItemData.status === "pending" && (
+            {!hasSellerSelectedItem && (
               <Button
                 colorScheme="red"
                 variant="outline"
