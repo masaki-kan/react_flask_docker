@@ -209,11 +209,9 @@ def login():
                     "email" :  user_data[3],
 
                 })
-                conn.close()
                 response.set_cookie('access_token', access_token, httponly=True, secure=True)
                 return response, 200
             else:
-                conn.close()
                 return jsonify({'login': False}), 401
         
     except mysql.connector.Error as err:
