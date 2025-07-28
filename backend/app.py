@@ -1787,6 +1787,7 @@ def get_partner_items():
                 except:
                     item['type'] = []
                     item['brand'] = []
+                    
             cursor.close()
             return jsonify({
                 "partner_items": partner_items, 
@@ -1933,7 +1934,7 @@ def save_shipping_info_with_item():
                 ''', (trade_id,))
             
             conn.commit()
-            cursor.close()
+   
             # 交換商品情報を含めて返す
             cursor.execute('''
                 SELECT seller_exchange_item_id, buyer_exchange_item_id
@@ -1941,7 +1942,7 @@ def save_shipping_info_with_item():
                 WHERE trade_id = %s
             ''', (trade_id,))
             exchange_info = cursor.fetchone()
-            
+            cursor.close()
             return jsonify({
                 'result': True, 
                 'message': '発送情報を保存しました',
