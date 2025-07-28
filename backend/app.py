@@ -1662,7 +1662,7 @@ def get_confirmations():
             confirmed_users = [c['user_id'] for c in confirmations]
             
             cursor.close()
-            cursor.close()
+
             return jsonify({
                 'result': True,
                 'seller_confirmed': trade['seller_id'] in confirmed_users,
@@ -2648,9 +2648,12 @@ def handle_send_message(data):
         image_row = cursor.fetchone()
         image_url = image_row['image_url'] if image_row else ""
         cursor.close()
+        conn.close()
         emit('receive_message', {'message': message , 'sender_id' :sender_id,'sender_image_url': image_url}, to=room)
     except mysql.connector.Error as err:
-        return jsonify({'error': str(err)}), 500
+        print(f"WebSocket error: {err}", flush=True)
+        if conn:
+            conn.close()
 
 # 切断
 @socketio.on('disconnect')
