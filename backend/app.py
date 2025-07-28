@@ -384,7 +384,6 @@ def postStoreProfile():
                 ''', (user_id, tag_json))
                     
             conn.commit()
-            cursor.close()
             return jsonify({"message": "プロフィール更新しました",
                             "result" : True}), 201
     except mysql.connector.Error as err:
@@ -439,7 +438,6 @@ def getMyProfile():
                 SELECT item_id FROM likes WHERE user_id = %s
             ''', (user_id,))
             user_data['likes'] = [like['item_id'] for like in cursor.fetchall()]
-            cursor.close()
             
             # 基本情報だけ先に返す
             return jsonify({
@@ -497,7 +495,6 @@ def getProfileItems():
                 else:
                     item['trade_status_flag'] = 0
                     
-                cursor.close()
             return jsonify({"items": items}), 200
         
     except Exception as e:
@@ -579,7 +576,6 @@ def postStoreProfileItem():
                     ''', (item_id, user_id, url))
                     
             conn.commit()
-            cursor.close()
             return jsonify({"message": "アイテム登録成功",
                             "result" : True}), 200
 
@@ -664,7 +660,7 @@ def getUsers():
 
             # 辞書 → list に変換
             tags = [{'key': k, 'name': v} for k, v in unique_tags.items()]
-            cursor.close()
+
             return jsonify({"users": users, "tags" :tags ,"result": True}), 200
         
     except mysql.connector.Error as err:
@@ -704,7 +700,7 @@ def userFollow():
                 action = "フォローしました。"
 
             conn.commit()
-            cursor.close()
+
             return jsonify({"result": True, "action": action}), 200
         
     except mysql.connector.Error as err:
@@ -839,7 +835,7 @@ def getUserItems():
                 items.append(item)
 
             brand_list = [{'key': k, 'name': v} for k, v in brand_set.items()]
-            cursor.close()
+
             return jsonify({
                 "items": items,
                 "brands": brand_list,
@@ -941,7 +937,7 @@ def deleteUserItem():
             }
             
             conn.commit()
-            cursor.close()
+
             return jsonify({
                 "result": True,
                 "message": "アイテムと関連データを削除しました",
@@ -980,8 +976,9 @@ def itemLike():
                     DELETE FROM likes
                     WHERE user_id = %s AND item_id = %s
                 ''', (my_user_id, item_id))
+                
                 conn.commit()
-                cursor.close()
+                
                 return jsonify({"result": True, "liked": False , "message" : "お気に入り解除しました。"}), 200
             else:
                 # 「いいね」を追加
@@ -989,8 +986,9 @@ def itemLike():
                     INSERT INTO likes (user_id, item_id)
                     VALUES (%s, %s)
                 ''', (my_user_id, item_id))
+                
                 conn.commit()
-                cursor.close()
+ 
                 return jsonify({"result": True, "liked": True, "message" : "お気に入り保存しました。"}), 200
         
     except mysql.connector.Error as err:
@@ -1077,7 +1075,7 @@ def get_active_trades():
                         trade['brand'] = json.loads(trade['brand'])
                     except json.JSONDecodeError:
                         trade['brand'] = None
-            cursor.close()
+
             return jsonify({"trades": active_trades, "result": True}), 200
     except mysql.connector.Error as err:
         return jsonify({
@@ -1196,7 +1194,6 @@ def get_chat_item_detail():
             
 
             # partner_profile_image['image_url'] if partner_profile_image else "",
-            cursor.close()
 
             return jsonify({
                 "item": item_data, 
@@ -1262,7 +1259,7 @@ def get_trade_messages():
             ''', (trade_id,))
             
             messages = cursor.fetchall()
-            cursor.close()
+
             return jsonify({'messages': messages}), 200
     except mysql.connector.Error as err:
         return jsonify({
@@ -1381,7 +1378,7 @@ def create_trade():
                 
                 # コミット
                 conn.commit()
-                cursor.close()
+
                 return jsonify({
                     'result': True,
                     'message': '取引を開始しました',
@@ -1457,7 +1454,7 @@ def trage_status_change():
                 ''', (trade_status, trade_id))
 
             conn.commit() 
-            cursor.close()
+
             return jsonify({"result": True}), 200
     except mysql.connector.Error as err:
         return jsonify({
@@ -1525,7 +1522,7 @@ def save_shipping_info():
                 ''', (trade_id,))
             
             conn.commit()
-            cursor.close()
+
             return jsonify({'result': True, 'message': '発送情報を保存しました'})
         
     except Exception as e:
@@ -1570,7 +1567,7 @@ def get_shipping_info():
                     result['seller_shipping'] = info
                 elif info['user_id'] == trade['buyer_id']:
                     result['buyer_shipping'] = info
-            cursor.close()
+
             return jsonify({'result': True, 'shipping_info': shipping_info, **result})
         
     except Exception as e:
@@ -1612,7 +1609,6 @@ def confirm_item_received():
             count_result = cursor.fetchone()
             
             conn.commit() 
-            cursor.close()
             
             return jsonify({
                 'result': True, 
@@ -1660,8 +1656,6 @@ def get_confirmations():
             
             confirmations = cursor.fetchall()
             confirmed_users = [c['user_id'] for c in confirmations]
-            
-            cursor.close()
 
             return jsonify({
                 'result': True,
@@ -1788,7 +1782,6 @@ def get_partner_items():
                     item['type'] = []
                     item['brand'] = []
                     
-            cursor.close()
             return jsonify({
                 "partner_items": partner_items, 
                 "partner_user": partner_user,
@@ -1860,7 +1853,7 @@ def select_exchange_item():
             ''', (trade_id, user_id, f"交換商品を選択しました"))
             
             conn.commit()
-            cursor.close()
+
             return jsonify({"result": True, "message": "交換商品を選択しました"})
         
     except Exception as e:
@@ -1942,7 +1935,7 @@ def save_shipping_info_with_item():
                 WHERE trade_id = %s
             ''', (trade_id,))
             exchange_info = cursor.fetchone()
-            cursor.close()
+
             return jsonify({
                 'result': True, 
                 'message': '発送情報を保存しました',
@@ -2059,7 +2052,7 @@ def complete_exchange():
             
             # 完了メッセージ（削除前にアーカイブに保存済み）
             conn.commit()
-            cursor.close()
+
             return jsonify({
                 "result": True, 
                 "message": "交換が完了しました。取引データはアーカイブに保存されました。", 
@@ -2132,7 +2125,7 @@ def get_exchange_items():
                     'brand': json.loads(trade_info['buyer_item_brand']) if trade_info['buyer_item_brand'] else [],
                     'image': buyer_img['image_url'] if buyer_img else None
                 }
-            cursor.close()
+
             return jsonify({
                 'result': True,
                 'exchange_items': result
@@ -2304,7 +2297,6 @@ def get_exchange_archive():
                 if trade.get('completed_date'):
                     trade['completed_date'] = trade['completed_date'].isoformat()
                     
-            cursor.close()
             return jsonify({
                 "archives": trades,
                 "total": len(trades),
@@ -2426,7 +2418,7 @@ def get_archive_detail():
                     msg['sent_at'] = msg['sent_at'].isoformat()
                 if msg.get('archived_at'):
                     msg['archived_at'] = msg['archived_at'].isoformat()
-            cursor.close()
+
             return jsonify({
                 'result': True,
                 'trade': trade_data,
@@ -2516,7 +2508,7 @@ def get_thread_messages():
             for msg in messages:
                 if msg.get('created_at'):
                     msg['created_at'] = msg['created_at'].isoformat()
-            cursor.close()
+
             return jsonify({
                 "result": True,
                 "messages": messages,
@@ -2551,7 +2543,6 @@ def post_thread_message():
             
             thread_message_id = cursor.lastrowid
             conn.commit()
-            cursor.close()
             # WebSocketで通知
             socketio.emit('new_thread_message', {
                 'thread_message_id': thread_message_id,
@@ -2600,7 +2591,7 @@ def delete_thread_message():
             ''', (thread_message_id,))
             
             conn.commit()
-            cursor.close()
+
             return jsonify({"result": True, "message": "削除しました"}), 200
         
     except Exception as e:
@@ -2647,13 +2638,13 @@ def handle_send_message(data):
         ''', (sender_id,))
         image_row = cursor.fetchone()
         image_url = image_row['image_url'] if image_row else ""
-        cursor.close()
-        conn.close()
+
         emit('receive_message', {'message': message , 'sender_id' :sender_id,'sender_image_url': image_url}, to=room)
     except mysql.connector.Error as err:
         print(f"WebSocket error: {err}", flush=True)
         if conn:
-            conn.close()
+            cursor.close()
+            conn.close() 
 
 # 切断
 @socketio.on('disconnect')
@@ -2732,7 +2723,6 @@ def cancellationProcess():
             cursor.execute('DELETE FROM users WHERE user_id = %s', (user_id,))
 
             conn.commit()
-            cursor.close()
             return jsonify({'message': '退会処理が完了しました。ご利用ありがとうございました。'}), 200
     except mysql.connector.Error as err:
         return jsonify({
