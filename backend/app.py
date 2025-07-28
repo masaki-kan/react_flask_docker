@@ -87,7 +87,7 @@ def init_db_pool():
     except Exception as e:
         print(f"❌ Failed to initialize database pool: {e}")
         raise
-
+# === DB Connection ===
 @contextmanager
 def get_db_connection():
     """接続プールから接続を取得し、自動的に返却する"""
@@ -140,25 +140,6 @@ def schedule_job():
     while True:
         schedule.run_pending()
         time.sleep(60)
-
-# === DB Connection ===
-def get_db_connection():
-    try:
-        conn = mysql.connector.connect(
-            pool_name="mypool",
-            pool_size=10,  # 10個の接続を事前に作成
-            host=os.getenv("DB_HOST"),
-            user=os.getenv("DB_USER"),
-            password=os.getenv("DB_PASSWORD"),
-            database=os.getenv("DB_NAME"),
-            autocommit=False,
-            connection_timeout=30
-        )
-        print(f"✅ Database pool initialized with 10 connections", flush=True)
-        return conn
-    except Exception as e:
-        print("❌ DB connection failed:", e, flush=True)
-        raise
 
 @app.before_first_request
 def initialize():
@@ -2785,7 +2766,7 @@ def handle_send_message(data):
     # print(f' room: {room}', f' message: {message}', flush=True)
     # DBに保存
     try:
-        conn = get_db_connection()
+        conn = get_db_connection_legacy()
         cursor = conn.cursor(dictionary=True)
         cursor.execute('''
             INSERT INTO trade_messages (trade_id, sender_id, message)
