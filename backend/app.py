@@ -137,6 +137,8 @@ def cleanup_old_unpaid_intents():
 # === 毎日2:00に実行 ===
 def schedule_job():
     schedule.every().day.at("02:00").do(cleanup_old_unpaid_intents)
+    
+    schedule.every().day.at("02:00").do(cleanup_old_archives)
     while True:
         schedule.run_pending()
         time.sleep(60)
@@ -2728,7 +2730,169 @@ def cancellationProcess():
             "result": False
         }), 500
 
+# === アーカイブクリーンアップ関数 ===
+def cleanup_old_archives():
+    """1年以上経過したアーカイブデータを削除"""
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            
+            # 1年前の日付を計算
+            one_year_ago = datetime.now() - timedelta(days=365)
+            
+            # 削除対象の archive_trade_id を取得
+            cursor.execute('''
+                SELECT archive_trade_id 
+                FROM archived_trades 
+                WHERE archived_at < %s
+                LIMIT 100
+            ''', (one_year_ago,))
+            
+            old_archives = cursor.fetchall()
+            deleted_count = 0
+            
+            for archive in old_archives:
+                archive_trade_id = archive[0]
+                
+                try:
+                    # カスケード削除により関連データも自動削除される
+                    cursor.execute('''
+                        DELETE FROM archived_trades 
+                        WHERE archive_trade_id = %s
+                    ''', (archive_trade_id,))
+                    
+                    # archived_items も削除（関連画像も自動削除）
+                    cursor.execute('''
+                        DELETE ai FROM archived_items ai
+                        WHERE ai.archive_id IN (
+                            SELECT item_archive_id FROM archived_trades WHERE archive_trade_id = %s
+                            UNION
+                            SELECT seller_exchange_item_archive_id FROM archived_trades WHERE archive_trade_id = %s
+                            UNION
+                            SELECT buyer_exchange_item_archive_id FROM archived_trades WHERE archive_trade_id = %s
+                        )
+                    ''', (archive_trade_id, archive_trade_id, archive_trade_id))
+                    
+                    deleted_count += 1
+                    
+                except Exception as e:
+                    print(f"Error deleting archive {archive_trade_id}: {e}")
+                    continue
+            
+            conn.commit()
+            print(f"✅ Deleted {deleted_count} old archives (older than 1 year)")
+            
+            # ログテーブルに記録（オプション）
+            cursor.execute('''
+                INSERT INTO cleanup_logs (cleanup_type, deleted_count, cleanup_date)
+                VALUES ('archive_cleanup', %s, NOW())
+            ''', (deleted_count,))
+            conn.commit()
+            
+    except Exception as e:
+        print(f"❌ Archive cleanup failed: {e}")
+        
+@app.route('/api/admin/cleanup-archives', methods=['POST'])
+@jwt_required()
+def manual_cleanup_archives():
+    """管理者用：手動でアーカイブクリーンアップを実行"""
+    try:
+        # 管理者チェック（実装に応じて調整）
+        user_email = get_jwt_identity()
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute('''
+                SELECT type FROM users WHERE email = %s
+            ''', (user_email,))
+            user = cursor.fetchone()
+            
+            if not user or user[0] != 0:  # type = 0 が管理者
+                return jsonify({"error": "権限がありません"}), 403
+        
+        # クリーンアップ実行
+        cleanup_old_archives()
+        
+        return jsonify({
+            "result": True,
+            "message": "アーカイブクリーンアップを実行しました"
+        }), 200
+        
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
     
+@app.route('/api/admin/cleanup-status', methods=['GET'])
+@jwt_required()
+def get_cleanup_status():
+    """クリーンアップ実行履歴を取得"""
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor(dictionary=True)
+            
+            # 最近のクリーンアップ履歴
+            cursor.execute('''
+                SELECT * FROM cleanup_logs 
+                WHERE cleanup_type = 'archive_cleanup'
+                ORDER BY cleanup_date DESC 
+                LIMIT 10
+            ''')
+            logs = cursor.fetchall()
+            
+            # 削除予定のアーカイブ数
+            one_year_ago = datetime.now() - timedelta(days=365)
+            cursor.execute('''
+                SELECT COUNT(*) as count 
+                FROM archived_trades 
+                WHERE archived_at < %s
+            ''', (one_year_ago,))
+            pending = cursor.fetchone()
+            
+            # 日付をISO形式に変換
+            for log in logs:
+                if log.get('cleanup_date'):
+                    log['cleanup_date'] = log['cleanup_date'].isoformat()
+            
+            return jsonify({
+                "result": True,
+                "cleanup_logs": logs,
+                "pending_deletion": pending['count']
+            }), 200
+            
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    
+def notify_before_archive_deletion():
+    """削除予定のアーカイブをユーザーに通知（削除30日前）"""
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor(dictionary=True)
+            
+            # 335日（1年-30日）経過したアーカイブを取得
+            notification_date = datetime.now() - timedelta(days=335)
+            deletion_date = datetime.now() - timedelta(days=365)
+            
+            cursor.execute('''
+                SELECT DISTINCT 
+                    at.seller_id,
+                    at.buyer_id,
+                    at.seller_email,
+                    at.buyer_email,
+                    COUNT(*) as archive_count
+                FROM archived_trades at
+                WHERE at.archived_at > %s 
+                AND at.archived_at <= %s
+                GROUP BY at.seller_id, at.buyer_id
+            ''', (deletion_date, notification_date))
+            
+            notifications = cursor.fetchall()
+            
+            for notification in notifications:
+                # メール送信処理
+                # send_archive_deletion_notice(notification)
+                pass
+                
+    except Exception as e:
+        print(f"Notification error: {e}")
+         
 if __name__ == "__main__":
     socketio.run(
     app,

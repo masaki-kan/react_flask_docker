@@ -290,6 +290,7 @@ def create_archived_trades_table(cursor):
             INDEX idx_buyer_id (buyer_id),
             INDEX idx_original_trade_id (original_trade_id),
             INDEX idx_completed_at (trade_completed_at DESC)
+            INDEX idx_archived_at_cleanup (archived_at)
         );
     ''')
 
@@ -376,6 +377,17 @@ def create_thread_messages_table(cursor):
             FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
             INDEX idx_created_at (created_at DESC),
             INDEX idx_user_id (user_id)
+        );
+    ''')
+    
+def create_cleanup_logs_table(cursor):
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS cleanup_logs (
+            log_id INT AUTO_INCREMENT PRIMARY KEY,
+            cleanup_type VARCHAR(50),
+            deleted_count INT DEFAULT 0,
+            cleanup_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            INDEX idx_cleanup_date (cleanup_date DESC)
         );
     ''')
 
