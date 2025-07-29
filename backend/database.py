@@ -417,3 +417,4 @@ def create_table(cursor):
     create_trade_exchanges_table(cursor)
     create_archive_tables(cursor)
     create_thread_messages_table(cursor)
+    create_cleanup_logs_table(cursor) 
