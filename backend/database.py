@@ -289,7 +289,7 @@ def create_archived_trades_table(cursor):
             INDEX idx_seller_id (seller_id),
             INDEX idx_buyer_id (buyer_id),
             INDEX idx_original_trade_id (original_trade_id),
-            INDEX idx_completed_at (trade_completed_at DESC)
+            INDEX idx_completed_at (trade_completed_at DESC),
             INDEX idx_archived_at_cleanup (archived_at)
         );
     ''')
