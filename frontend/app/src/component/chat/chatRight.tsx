@@ -1,7 +1,6 @@
 import { FC, useState, useEffect, useCallback, useRef } from "react";
 import { io, Socket } from "socket.io-client";
 import {
-  Input,
   Button,
   HStack,
   Text,
@@ -10,18 +9,12 @@ import {
   Image,
   Card,
   VStack,
+  Textarea,
 } from "@chakra-ui/react";
 import useChat from "../../hooks/useChat";
 import { useEffectOnce } from "react-use";
 import { messagesType } from "../../types/chatType";
 import { viewDate } from "../common/date/format";
-
-const socket = io(`${import.meta.env.VITE_API_URL}`, {
-  path: "/socket.io",
-  transports: ["websocket"],
-  secure: true,
-  withCredentials: true,
-});
 
 const ChatLayout: FC = () => {
   const [message, setMessage] = useState("");
@@ -99,7 +92,7 @@ const ChatLayout: FC = () => {
   }, [roomId, tradeIdNumber, userIdNumber]);
 
   const handleMessageChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
+    (e: React.ChangeEvent<HTMLTextAreaElement>) => {
       setMessage(e.target.value);
     },
     []
@@ -107,7 +100,12 @@ const ChatLayout: FC = () => {
 
   const sendMessage = useCallback(async () => {
     if (!message.trim()) return;
-
+    const socket = io(`${import.meta.env.VITE_API_URL}`, {
+      path: "/socket.io",
+      transports: ["websocket"],
+      secure: true,
+      withCredentials: true,
+    });
     socket.emit("send_message", {
       room: roomId,
       message: message,
@@ -117,15 +115,15 @@ const ChatLayout: FC = () => {
     setMessage("");
   }, [message, roomId, tradeIdNumber, userIdNumber]);
 
-  const handleKeyPress = useCallback(
-    (e: React.KeyboardEvent) => {
-      if (e.key === "Enter" && !e.shiftKey) {
-        e.preventDefault();
-        sendMessage();
-      }
-    },
-    [sendMessage]
-  );
+  // const handleKeyPress = useCallback(
+  //   (e: React.KeyboardEvent) => {
+  //     if (e.key === "Enter" && !e.shiftKey) {
+  //       e.preventDefault();
+  //       sendMessage();
+  //     }
+  //   },
+  //   [sendMessage]
+  // );
 
   const imageMatchHandler = useCallback((text: string) => {
     const imageMatch = text.match(/\[画像\]\((.*?)\)/);
@@ -227,7 +225,7 @@ const ChatLayout: FC = () => {
         hidden={memorizeChatItemData.status === "completed"}
       >
         <HStack>
-          <Input
+          {/* <Input
             placeholder="メッセージを入力..."
             value={message}
             onChange={handleMessageChange}
@@ -238,6 +236,15 @@ const ChatLayout: FC = () => {
               borderColor: "blue.400",
               bg: "white",
             }}
+          /> */}
+          <Textarea
+            value={message}
+            onChange={handleMessageChange}
+            placeholder="メッセージを入力..."
+            bg="gray.50"
+            resize="none"
+            rows={2}
+            maxLength={500}
           />
           <Button
             colorScheme="blue"

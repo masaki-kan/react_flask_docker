@@ -81,7 +81,8 @@ def init_db_pool():
             password=os.getenv("DB_PASSWORD"),
             database=os.getenv("DB_NAME"),
             autocommit=False,
-            connection_timeout=30
+            connection_timeout=30,
+            buffered=True
         )
         print(f"✅ Database pool initialized with 10 connections")
     except Exception as e:
@@ -2793,7 +2794,6 @@ def cleanup_old_archives():
         print(f"❌ Archive cleanup failed: {e}")
         
 @app.route('/api/admin/cleanup-archives', methods=['POST'])
-@jwt_required()
 def manual_cleanup_archives():
     """管理者用：手動でアーカイブクリーンアップを実行"""
     try:
@@ -2821,7 +2821,6 @@ def manual_cleanup_archives():
         return jsonify({"error": str(e)}), 500
     
 @app.route('/api/admin/cleanup-status', methods=['GET'])
-@jwt_required()
 def get_cleanup_status():
     """クリーンアップ実行履歴を取得"""
     try:

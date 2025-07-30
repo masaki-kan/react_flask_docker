@@ -22,6 +22,8 @@ import { useNavigate } from "react-router-dom";
 import { io, Socket } from "socket.io-client";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
+import { threadPostApi } from "../../api/threadApi";
+import useMyProfile from "../../hooks/useProfile";
 
 interface ThreadMessage {
   thread_message_id: number;
@@ -49,7 +51,7 @@ const ThreadPage: React.FC = () => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const toast = useToast();
-  const currentUserId = localStorage.getItem("user_id");
+  const { memorizeProfile } = useMyProfile();
 
   const bgColor = useColorModeValue("white", "gray.800");
   const borderColor = useColorModeValue("gray.200", "gray.700");
@@ -61,7 +63,7 @@ const ThreadPage: React.FC = () => {
       setLoading(true);
       try {
         const response = await fetch(
-          `/api/thread/messages?page=${pageNum}&limit=20&filter=${filter}&user_id=${currentUserId}`
+          `/api/thread/messages?page=${pageNum}&limit=20&filter=${filter}&user_id=${memorizeProfile.profile.id}`
         );
         const data = await response.json();
 
@@ -85,7 +87,7 @@ const ThreadPage: React.FC = () => {
         setLoading(false);
       }
     },
-    [currentUserId, toast]
+    [memorizeProfile.profile.id, toast]
   );
 
   // 初回読み込みとWebSocket接続
@@ -98,6 +100,7 @@ const ThreadPage: React.FC = () => {
 
     newSocket.on("new_thread_message", () => {
       // 新しいメッセージが投稿されたら最新を取得
+      console.log("ko");
       fetchMessages(1, filterType, true);
     });
 
@@ -124,38 +127,24 @@ const ThreadPage: React.FC = () => {
     if (!newMessage.trim() || posting) return;
 
     setPosting(true);
-    try {
-      const response = await fetch("/api/thread/post", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          user_id: currentUserId,
-          message: newMessage.trim(),
-        }),
-      });
 
-      if (response.ok) {
-        setNewMessage("");
-        // メッセージ投稿成功後、最新を取得
-        fetchMessages(1, filterType, true);
+    const response = await threadPostApi(
+      memorizeProfile.profile.id,
+      newMessage.trim()
+    );
 
-        toast({
-          title: "投稿しました",
-          status: "success",
-          duration: 2000,
-        });
-      }
-    } catch (error) {
-      console.error("Error posting message:", error);
+    if (response !== undefined && response.ok) {
+      setNewMessage("");
+      // メッセージ投稿成功後、最新を取得
+      fetchMessages(1, filterType, true);
+
       toast({
-        title: "エラー",
-        description: "投稿に失敗しました",
-        status: "error",
-        duration: 3000,
+        title: "投稿しました",
+        status: "success",
+        duration: 2000,
       });
-    } finally {
-      setPosting(false);
     }
+    setPosting(false);
   };
 
   // ユーザープロフィールへ遷移
