@@ -15,6 +15,8 @@ import {
   useColorModeValue,
   Button,
   Wrap,
+  Center,
+  Spinner,
 } from "@chakra-ui/react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { route } from "../../route/routeConst";
@@ -347,14 +349,21 @@ const ShopIndex: FC = () => {
                 <VStack align={"start"} w={"full"}>
                   <Heading size="md">登録商品</Heading>
                   {memorizeuserProfile.items.length === 0 ? (
-                    <Text size={"xs"} color={"#887563"}>
-                      商品がありません。
-                    </Text>
+                    <>
+                      <Center py={8}>
+                        <Spinner size="lg" />
+                        <Text ml={4} color={textMuted}>
+                          商品を読み込み中...
+                        </Text>
+                      </Center>
+                    </>
                   ) : (
-                    <RebderItem
-                      itemList={memorizeuserProfile.items}
-                      navigate={itemDetailHanlder}
-                    />
+                    <>
+                      <RebderItem
+                        itemList={memorizeuserProfile.items}
+                        navigate={itemDetailHanlder}
+                      />
+                    </>
                   )}
                 </VStack>
               </Box>

@@ -225,25 +225,35 @@ const ItemForm: FC<ItemFormProps> = ({ profileItem, ItemNumver }) => {
       formData.append("dateUpChange", dateUpChange);
 
       // 画像の処理
-      for (let i = 0; i < formValues.images.length; i++) {
-        const image = formValues.images[i];
+      formValues.images.forEach((image, index) => {
         if (image instanceof File) {
+          // 新しい画像ファイル
           formData.append("images", image);
         } else if (typeof image === "string") {
-          // 既存の画像URLの場合、Blobに変換
-          try {
-            const response = await fetch(image);
-            const blob = await response.blob();
-            const file = new File([blob], `existing_image_${i}.jpg`, {
-              type: "image/jpeg",
-            });
-            formData.append("images", file);
-          } catch {
-            // URLから画像を取得できない場合は、そのままURLとして送信
-            formData.append("images", image);
-          }
+          // 既存の画像URL（編集時）
+          formData.append(`existing_images[${index}]`, image);
         }
-      }
+      });
+
+      // for (let i = 0; i < formValues.images.length; i++) {
+      //   const image = formValues.images[i];
+      //   if (image instanceof File) {
+      //     formData.append("images", image);
+      //   } else if (typeof image === "string") {
+      //     // 既存の画像URLの場合、Blobに変換
+      //     try {
+      //       const response = await fetch(image);
+      //       const blob = await response.blob();
+      //       const file = new File([blob], `existing_image_${i}.jpg`, {
+      //         type: "image/jpeg",
+      //       });
+      //       formData.append("images", file);
+      //     } catch {
+      //       // URLから画像を取得できない場合は、そのままURLとして送信
+      //       formData.append("images", image);
+      //     }
+      //   }
+      // }
       changeLoading(true);
       const response = await postStoreProfileItemApi(formData);
 

@@ -15,7 +15,7 @@ import {
 } from "@chakra-ui/react";
 import CustomImageSlider from "../common/slider/customImageSlider";
 import { brandType } from "../../types/archiveTradeType";
-import { itemTypeViewHanlder } from "../common/type/itemTypeView";
+import { itemTypeViewHandler } from "../common/type/itemTypeView";
 
 interface ArchiveItemDetailProps {
   title?: string;
@@ -82,7 +82,7 @@ const ArchiveItemDetail: FC<ArchiveItemDetailProps> = ({
               noOfLines={1}
               whiteSpace={"wrap"}
             >
-              {itemTypeViewHanlder(itemType)}
+              {itemTypeViewHandler(itemType)}
             </Badge>
           )}
           {itemBrand && (
@@ -130,7 +130,7 @@ const ArchiveItemDetail: FC<ArchiveItemDetailProps> = ({
                   タイプ
                 </Text>
                 <Text fontSize="sm" whiteSpace="pre-wrap">
-                  {itemType && itemTypeViewHanlder(itemType)}
+                  {itemType && itemTypeViewHandler(itemType)}
                 </Text>
               </Box>
               <Box>

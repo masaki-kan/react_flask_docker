@@ -8,13 +8,11 @@ import { postStoreProfileApi } from "../../api/profileApis";
 import { profileType } from "../../types/profileType";
 import useAlert from "../../hooks/useAlert";
 import useLoading from "../../hooks/useLaoding";
-import FullScreenSpinner from "../common/spliner/FullScreenSpinner";
-import { useEffectOnce } from "react-use";
 
 const Profile: FC = () => {
   const { getMyProfile } = useMyProfile();
   const { defaultToast } = useAlert();
-  const { changeLoading, memorizeLoading } = useLoading();
+  const { changeLoading } = useLoading();
   const [editSwitch, setEditSwitch] = useState<boolean>(false);
 
   const editFormSwitchHandler = useCallback(() => {
@@ -40,7 +38,6 @@ const Profile: FC = () => {
 
   return (
     <VStack align={"start"} gap={9} w={"100%"} mt={{ base: "8em", md: "6em" }}>
-      {memorizeLoading && <FullScreenSpinner />}
       {editSwitch ? (
         <ProfileForm
           formStoreEvent={formStoreEventHandler}

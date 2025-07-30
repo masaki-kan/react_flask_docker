@@ -11,7 +11,7 @@ import {
 } from "@chakra-ui/react";
 import { FC } from "react";
 import CustomImageSlider from "../common/slider/customImageSlider";
-import { itemTypeViewHanlder } from "../common/type/itemTypeView";
+import { itemTypeViewHandler } from "../common/type/itemTypeView";
 import { brandType } from "../../types/archiveTradeType";
 
 type ArchiveItemDetailModalPropsType = {
@@ -67,7 +67,7 @@ const ArchiveItemDetailModal: FC<ArchiveItemDetailModalPropsType> = ({
                   タイプ
                 </Text>
                 <Text fontSize="sm" whiteSpace="pre-wrap">
-                  {itemType && itemTypeViewHanlder(itemType)}
+                  {itemType && itemTypeViewHandler(itemType)}
                 </Text>
               </Box>
               <Box>

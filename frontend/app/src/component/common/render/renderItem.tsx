@@ -1,10 +1,9 @@
-import React, { FC, useCallback, useState } from "react";
+// renderItem.tsx の改善版
+import { FC, useCallback, useState, memo, useMemo } from "react";
 import {
   Grid,
-  Image,
   Text,
   Card,
-  HStack,
   VStack,
   Box,
   Badge,
@@ -15,22 +14,170 @@ import { viewDate } from "../date/format";
 import { useLocation } from "react-router-dom";
 import { route } from "../../../route/routeConst";
 import { useEffectOnce } from "react-use";
-import { itemTypeViewHanlder } from "../../common/type/itemTypeView";
+import { itemTypeViewHandler } from "../../common/type/itemTypeView";
+import OptimizedImage from "./optimizedImage";
 
-type RebderItemProps = {
+type RenderItemProps = {
   itemList: itemListType[];
   navigate: (index: string) => void;
-  avatar?: boolean;
 };
 
-const RebderItem: FC<RebderItemProps> = React.memo(({ itemList, navigate }) => {
+// ItemCardコンポーネントを最適化
+const ItemCard = memo<{ item: itemListType; onClick: () => void }>(
+  ({ item, onClick }) => {
+    const bgColor = useColorModeValue("white", "gray.800");
+    const borderColor = useColorModeValue("gray.200", "gray.700");
+    const overlayBg = useColorModeValue("blackAlpha.700", "blackAlpha.800");
+
+    const statusInfo = useMemo(() => {
+      const statusMap = {
+        0: { show: false, text: "", color: "" },
+        1: { show: true, text: "取引中", color: "red" },
+        2: { show: true, text: "取引完了", color: "gray" },
+      };
+      return (
+        statusMap[item.tradeStatusFlag as keyof typeof statusMap] ||
+        statusMap[0]
+      );
+    }, [item.tradeStatusFlag]);
+
+    return (
+      <Card
+        position="relative"
+        bg={bgColor}
+        borderRadius="lg"
+        overflow="hidden"
+        boxShadow="sm"
+        border="1px solid"
+        borderColor={borderColor}
+        cursor="pointer"
+        onClick={onClick}
+        _hover={{
+          transform: "translateY(-4px)",
+          boxShadow: "lg",
+          transition: "all 0.2s",
+        }}
+        p={0}
+        h="full"
+        display="flex"
+        flexDirection="column"
+      >
+        {/* 商品画像コンテナ */}
+        <Box position="relative" w="full">
+          <OptimizedImage
+            src={item.images?.[0] || "/placeholder.jpg"}
+            alt={item.title}
+            aspectRatio={1}
+            objectFit="cover"
+            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
+          />
+
+          {/* SOLD/取引中オーバーレイ */}
+          {statusInfo.show && (
+            <>
+              <Box
+                position="absolute"
+                top="0"
+                left="0"
+                w="full"
+                h="full"
+                bg={overlayBg}
+                zIndex={1}
+              />
+              <Box
+                position="absolute"
+                top="50%"
+                left="50%"
+                transform="translate(-50%, -50%) rotate(-15deg)"
+                zIndex={2}
+                w="150%"
+              >
+                <Box
+                  bg={statusInfo.color === "red" ? "red.500" : "gray.600"}
+                  color="white"
+                  py={{ base: 1.5, sm: 2, md: 3 }}
+                  fontSize={{ base: "xs", sm: "sm", md: "lg" }}
+                  fontWeight="bold"
+                  letterSpacing="wider"
+                  textAlign="center"
+                  boxShadow="0 2px 8px rgba(0,0,0,0.3)"
+                >
+                  {statusInfo.text}
+                </Box>
+              </Box>
+            </>
+          )}
+
+          {/* 日付バッジ */}
+          <Badge
+            position="absolute"
+            top={{ base: 1, sm: 2 }}
+            left={{ base: 1, sm: 2 }}
+            bg="blackAlpha.700"
+            color="white"
+            fontSize={{ base: "2xs", sm: "2xs", md: "xs" }}
+            px={{ base: 1, sm: 1.5, md: 2 }}
+            py={0.5}
+            borderRadius="sm"
+            zIndex={3}
+          >
+            {viewDate(item.uploaded_at)}
+          </Badge>
+        </Box>
+
+        {/* 商品情報 */}
+        <VStack
+          align="stretch"
+          p={{ base: 2, sm: 2.5, md: 3 }}
+          spacing={{ base: 1.5, sm: 2 }}
+          flex="1"
+        >
+          <Text
+            fontSize={{ base: "sm", sm: "xs", md: "sm" }}
+            fontWeight="medium"
+            noOfLines={2}
+            lineHeight="short"
+            minH={{ base: "1.75rem", sm: "2rem", md: "2.5rem" }}
+          >
+            {item.title}
+          </Text>
+
+          <VStack spacing={1} align="start">
+            {item.brand?.name && (
+              <Badge
+                colorScheme="purple"
+                fontSize={{ base: "2xs", sm: "2xs", md: "2xs" }}
+                px={{ base: 1.5, sm: 2 }}
+                py={0.5}
+                noOfLines={1}
+              >
+                {item.brand.name}
+              </Badge>
+            )}
+            {item.type && item.type.length > 0 && (
+              <Badge
+                colorScheme="teal"
+                fontSize={{ base: "2xs", sm: "2xs", md: "2xs" }}
+                px={{ base: 1.5, sm: 2 }}
+                py={0.5}
+                noOfLines={1}
+              >
+                {itemTypeViewHandler(item.type[0])}
+              </Badge>
+            )}
+          </VStack>
+        </VStack>
+      </Card>
+    );
+  }
+);
+
+ItemCard.displayName = "ItemCard";
+
+// メインコンポーネント
+const RenderItem: FC<RenderItemProps> = memo(({ itemList, navigate }) => {
   const location = useLocation();
   const [isMatch, setIsMatch] = useState<boolean>(false);
-  // カラーモード対応
-  const bgColor = useColorModeValue("white", "gray.800");
-  const borderColor = useColorModeValue("gray.200", "gray.700");
-  // const textMuted = useColorModeValue("gray.600", "gray.400");
-  const overlayBg = useColorModeValue("blackAlpha.700", "blackAlpha.800");
 
   useEffectOnce(() => {
     if (location.pathname === route.home) {
@@ -38,14 +185,12 @@ const RebderItem: FC<RebderItemProps> = React.memo(({ itemList, navigate }) => {
     }
   });
 
-  const getTradeStatusInfo = useCallback((tradeStatusFlag: number) => {
-    const statusMap = {
-      0: { show: false, text: "", color: "" },
-      1: { show: true, text: "取引中", color: "red" },
-      2: { show: true, text: "取引完了", color: "gray" },
-    };
-    return statusMap[tradeStatusFlag as keyof typeof statusMap] || statusMap[0];
-  }, []);
+  const handleItemClick = useCallback(
+    (itemId: string) => {
+      navigate(itemId);
+    },
+    [navigate]
+  );
 
   return (
     <Grid
@@ -58,160 +203,20 @@ const RebderItem: FC<RebderItemProps> = React.memo(({ itemList, navigate }) => {
       }}
       gap={{ base: 2, sm: 3, md: 4 }}
       px={0}
-      height={"min-content"}
+      height="min-content"
       overflowY={isMatch ? "visible" : "scroll"}
     >
-      {itemList.map((product, index) => {
-        const statusInfo = getTradeStatusInfo(product.tradeStatusFlag);
-        return (
-          <Card
-            key={index}
-            position="relative"
-            bg={bgColor}
-            borderRadius="lg"
-            overflow="hidden"
-            boxShadow="sm"
-            border="1px solid"
-            borderColor={borderColor}
-            cursor="pointer"
-            onClick={() => navigate(product.itemId)}
-            _hover={{
-              transform: "translateY(-4px)",
-              boxShadow: "lg",
-              transition: "all 0.2s",
-            }}
-            p={0}
-            h="full"
-            display="flex"
-            flexDirection="column"
-          >
-            {/* 商品画像コンテナ */}
-            <Box
-              position="relative"
-              w="full"
-              paddingBottom={{ base: "120%", sm: "100%" }}
-              bg="gray.50"
-            >
-              <Image
-                src={product.images ? product.images[0] : ""}
-                alt={product.title}
-                position="absolute"
-                top="0"
-                left="0"
-                w="full"
-                h="full"
-                objectFit="cover"
-              />
-
-              {/* SOLD/取引中オーバーレイ（メルカリ風） */}
-              {statusInfo.show && (
-                <>
-                  {/* 半透明オーバーレイ */}
-                  <Box
-                    position="absolute"
-                    top="0"
-                    left="0"
-                    w="full"
-                    h="full"
-                    bg={overlayBg}
-                    zIndex={1}
-                  />
-
-                  {/* 斜めの帯 */}
-                  <Box
-                    position="absolute"
-                    top="50%"
-                    left="50%"
-                    transform="translate(-50%, -50%) rotate(-15deg)"
-                    zIndex={2}
-                    w="150%"
-                  >
-                    <Box
-                      bg={statusInfo.color === "red" ? "red.500" : "gray.600"}
-                      color="white"
-                      py={{ base: 1.5, sm: 2, md: 3 }}
-                      fontSize={{ base: "xs", sm: "sm", md: "lg" }}
-                      fontWeight="bold"
-                      letterSpacing="wider"
-                      textAlign="center"
-                      boxShadow="0 2px 8px rgba(0,0,0,0.3)"
-                    >
-                      {statusInfo.text}
-                    </Box>
-                  </Box>
-                </>
-              )}
-
-              {/* 日付とアバター（画像上に配置） */}
-              <HStack
-                position="absolute"
-                top={{ base: 1, sm: 2 }}
-                left={{ base: 1, sm: 2 }}
-                right={{ base: 1, sm: 2 }}
-                justify="space-between"
-                zIndex={3}
-              >
-                <Badge
-                  bg="blackAlpha.700"
-                  color="white"
-                  fontSize={{ base: "2xs", sm: "2xs", md: "xs" }}
-                  px={{ base: 1, sm: 1.5, md: 2 }}
-                  py={0.5}
-                  borderRadius="sm"
-                >
-                  {viewDate(product.uploaded_at)}
-                </Badge>
-              </HStack>
-            </Box>
-
-            {/* 商品情報 */}
-            <VStack
-              align="stretch"
-              p={{ base: 2, sm: 2.5, md: 3 }}
-              spacing={{ base: 1.5, sm: 2 }}
-              flex="1"
-            >
-              <Text
-                fontSize={{ base: "sm", sm: "xs", md: "sm" }}
-                fontWeight="medium"
-                noOfLines={2}
-                lineHeight="short"
-                minH={{ base: "1.75rem", sm: "2rem", md: "2.5rem" }}
-              >
-                {product.title}
-              </Text>
-
-              <VStack spacing={1} align="start">
-                <Badge
-                  hidden={product.brand.name.length === 0}
-                  display={{ base: "block", md: "flex" }}
-                  whiteSpace={"wrap"}
-                  colorScheme="purple"
-                  fontSize={{ base: "2xs", sm: "2xs", md: "2xs" }}
-                  px={{ base: 1.5, sm: 2 }}
-                  py={0.5}
-                  noOfLines={1}
-                >
-                  {product.brand.name}
-                </Badge>
-                {product.type && product.type.length > 0 && (
-                  <Badge
-                    colorScheme="teal"
-                    fontSize={{ base: "2xs", sm: "2xs", md: "2xs" }}
-                    px={{ base: 1.5, sm: 2 }}
-                    py={0.5}
-                    noOfLines={1}
-                  >
-                    {itemTypeViewHanlder(product.type[0])}
-                  </Badge>
-                )}
-              </VStack>
-            </VStack>
-          </Card>
-        );
-      })}
+      {itemList.map((product) => (
+        <ItemCard
+          key={product.itemId}
+          item={product}
+          onClick={() => handleItemClick(product.itemId)}
+        />
+      ))}
     </Grid>
   );
 });
 
-export default RebderItem;
+RenderItem.displayName = "RenderItem";
+
+export default RenderItem;

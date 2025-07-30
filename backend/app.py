@@ -42,6 +42,12 @@ from database import create_table
 from tradeArchiver import TradeArchiver
 from archiveRetriever import ArchiveRetriever
 
+# S3用のインポート
+import boto3
+import uuid
+from PIL import Image, ImageOps
+import io
+
 # === Flask App Init ===
 app = Flask(__name__)
 env = os.getenv("FLASK_ENV", "development")
@@ -110,6 +116,70 @@ def get_db_connection_legacy():
         return db_pool.get_connection()
     except Exception as e:
         print("❌ DB connection failed:", e, flush=True)
+        raise
+
+
+s3_client = None
+if os.getenv('STORAGE_TYPE') == 's3':
+    try:
+        s3_client = boto3.client(
+            's3',
+            aws_access_key_id=os.getenv('AWS_ACCESS_KEY_ID'),
+            aws_secret_access_key=os.getenv('AWS_SECRET_ACCESS_KEY'),
+            region_name=os.getenv('AWS_REGION', 'ap-northeast-1')
+        )
+        print("✅ S3 client initialized successfully")
+    except Exception as e:
+        print(f"❌ Failed to initialize S3 client: {e}")
+
+def upload_image_to_s3(file, folder='items'):
+    """S3に画像をアップロード"""
+    try:
+        # 画像を開いて最適化
+        img = Image.open(file)
+        
+        # EXIF情報を考慮した回転
+        try:
+            from PIL import ImageOps
+            img = ImageOps.exif_transpose(img)
+        except:
+            pass
+        
+        # リサイズ（最大幅1200px）
+        if img.width > 1200:
+            ratio = 1200 / img.width
+            new_height = int(img.height * ratio)
+            img = img.resize((1200, new_height), Image.Resampling.LANCZOS)
+        
+        # JPEG形式で保存（WebPはブラウザ互換性のため避ける）
+        output = io.BytesIO()
+        if img.mode == 'RGBA':
+            # 透過画像は白背景に変換
+            background = Image.new('RGB', img.size, (255, 255, 255))
+            background.paste(img, mask=img.split()[3])
+            img = background
+        img.save(output, format='JPEG', quality=85, optimize=True)
+        output.seek(0)
+        
+        # ファイル名生成
+        filename = f"{folder}/{uuid.uuid4()}.jpg"
+        
+        # S3にアップロード
+        s3_client.upload_fileobj(
+            output,
+            os.getenv('S3_BUCKET_NAME'),
+            filename,
+            ExtraArgs={
+                'ContentType': 'image/jpeg',
+                'CacheControl': 'public, max-age=31536000'
+            }
+        )
+        
+        # URLを返す
+        return f"https://{os.getenv('S3_BUCKET_NAME')}.s3.{os.getenv('AWS_REGION')}.amazonaws.com/{filename}"
+        
+    except Exception as e:
+        print(f"S3 upload error: {e}")
         raise
 
 # === Scheduler ===
@@ -516,45 +586,49 @@ def postStoreProfileItem():
 
     # 画像ファイル取得（複数）
     image_files = request.files.getlist("images")
+    # 既存の画像URL（編集時）
+    existing_images = []
+    for key in request.form:
+        if key.startswith('existing_images['):
+            existing_images.append(request.form[key])
+        
     image_urls = []
-    
+        
+    # 新しい画像の処理
     for file in image_files:
-        binary = file.read()
-        base64_str = base64.b64encode(binary).decode("utf-8")
-        mime = file.mimetype
-        data_url = f"data:{mime};base64,{base64_str}"
-        image_urls.append(data_url)
+        if os.getenv('STORAGE_TYPE') == 's3' and s3_client:
+            try:
+                # S3にアップロード
+                url = upload_image_to_s3(file, f'items/{user_id}')
+                image_urls.append(url)
+            except Exception as e:
+                print(f"S3 upload error: {e}")
+                # エラー時の処理
+                return jsonify({"error": "画像アップロードに失敗しました"}), 500
+        else:
+            # ローカル保存（開発環境）
+            filename = f"{uuid.uuid4()}_{secure_filename(file.filename)}"
+            filepath = os.path.join(UPLOAD_FOLDER, 'items', str(user_id), filename)
+            os.makedirs(os.path.dirname(filepath), exist_ok=True)
+            file.save(filepath)
+            image_urls.append(f"/uploads/items/{user_id}/{filename}")
+    
+    # 既存の画像URLを追加（編集時）
+    image_urls.extend(existing_images)
 
     try:
         with get_db_connection() as conn:
             cursor = conn.cursor(dictionary=True)  # dict形式で取得できるようにする
             if mode == "update":
-                # すでに登録されている item_id を検索
+                # 更新処理
                 cursor.execute('''
-                    SELECT item_id FROM items WHERE user_id = %s AND item_id = %s ''', (user_id,item_id))
-                existing = cursor.fetchone()
+                    UPDATE items 
+                    SET title = %s, description = %s, type = %s, brand = %s, uploaded_at = CURRENT_TIMESTAMP
+                    WHERE item_id = %s
+                ''', (title, description, type_json, brand_json, item_id))
                 
-                cursor.execute('''
-                    UPDATE users
-                    SET uploaded_at = CURRENT_TIMESTAMP
-                    WHERE user_id = %s
-                ''', (user_id,))
-
-                # 挿入された item_id を取得（AUTO_INCREMENT の値）
-                if existing:
-                    item_id = existing.get('item_id')
-                    cursor.execute('''
-                        UPDATE items 
-                        SET title = %s, description = %s, type = %s, brand = %s , uploaded_at = CURRENT_TIMESTAMP
-                        WHERE item_id = %s
-                    ''', (title, description, type_json, brand_json, item_id))
-
-                else:
-                    return jsonify({"error": "更新対象が見つかりません"}), 404 
-                    
-                # 古い画像を削除
+                # 画像を更新
                 cursor.execute("DELETE FROM item_images WHERE item_id = %s", (item_id,))
-                # 新しい画像を追加
                 for url in image_urls:
                     cursor.execute('''
                         INSERT INTO item_images (item_id, user_id, image_url)
@@ -568,7 +642,6 @@ def postStoreProfileItem():
                     VALUES (%s, %s, %s, %s, %s)
                 ''', (user_id, title, description, type_json, brand_json))
                 
-                # item_items テーブルに挿入
                 item_id = cursor.lastrowid
                 for url in image_urls:
                     cursor.execute('''

@@ -14,7 +14,6 @@ import { setProfile, setProfileArchives } from "../store/profileSlice";
 import { setProfile as setSliceProfile } from "../store/usersSlice";
 import { itemLikeApi } from "../api/likeApi";
 import useAlert from "./useAlert";
-import useLoading from "./useLaoding";
 import {
   exchangeArchive,
   archiveMessage,
@@ -48,7 +47,6 @@ type useMyProfileReturn = {
 
 const useMyProfile = (): useMyProfileReturn => {
   const dispatch = useDispatch();
-  const { changeLoading } = useLoading();
   const { favoriteAlert } = useAlert();
   const profile = useSelector((state: RootState) => state.profile);
 
@@ -70,59 +68,52 @@ const useMyProfile = (): useMyProfileReturn => {
   // 自分のプロフィールデータ取得
   const getMyProfile = useCallback(async () => {
     if (Number(profile.profile.id) === 0) return;
-    // changeLoading(true);
 
-    const [responseProfile, responseItems, responseActive] =
-      await Promise.allSettled([
-        await getProfileApi(Number(profile.profile.id)),
-        await getProfileItemsApi(Number(profile.profile.id)),
-        await exchangeArchiveApi(Number(profile.profile.id)),
-      ]);
+    const [responseProfile, responseItems, responseActive] = await Promise.all([
+      await getProfileApi(Number(profile.profile.id)),
+      await getProfileItemsApi(Number(profile.profile.id)),
+      await exchangeArchiveApi(Number(profile.profile.id)),
+    ]);
 
     // プロフィールが取得できたらすぐに更新
-    if (responseProfile.status === "fulfilled" && responseProfile.value) {
+    if (responseProfile) {
       dispatch(
         setProfile({
-          profile: responseProfile.value.profile,
+          profile: responseProfile.profile,
           items: [], // 一旦空配列
         })
       );
     }
 
     // // 商品が取得できたら更新
-    if (
-      responseItems.status === "fulfilled" &&
-      responseItems.value &&
-      responseProfile.status === "fulfilled" &&
-      responseProfile.value
-    ) {
+    if (responseItems && responseProfile) {
       dispatch(
         setProfile({
-          profile: responseProfile.value.profile,
-          items: responseItems.value.items,
+          profile: responseProfile.profile,
+          items: responseItems.items,
         })
       );
     }
 
-    if (responseActive.status === "fulfilled" && responseActive.value) {
-      dispatch(setProfileArchives(responseActive.value.archives));
+    if (responseActive) {
+      dispatch(setProfileArchives(responseActive.archives));
     }
-
-    // changeLoading(false);
-  }, [changeLoading, dispatch, profile.profile.id]);
+  }, [dispatch, profile.profile.id]);
 
   // ユーザーのプロフィールデータ取得
   const getProfile = useCallback(
     async (userNumver: number, myUserNumber: number) => {
-      const response = await getProfileApi(userNumver, myUserNumber);
-      const responseActive = await exchangeArchiveApi(userNumver);
-      if (response !== undefined) {
+      const [responseUser] = await Promise.allSettled([
+        getProfileApi(userNumver, myUserNumber),
+      ]);
+
+      if (responseUser.status === "fulfilled" && responseUser.value) {
         dispatch(
-          setSliceProfile({ profile: response.profile, items: response.items })
+          setSliceProfile({
+            profile: responseUser.value.profile,
+            items: responseUser.value.items,
+          })
         );
-      }
-      if (responseActive !== undefined) {
-        dispatch(setProfileArchives(responseActive.archives));
       }
     },
     [dispatch]

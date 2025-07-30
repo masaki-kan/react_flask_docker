@@ -8,6 +8,11 @@ type initialStateType = {
   items: itemListType[];
   archive: exchangeArchive[];
   userArchive: exchangeArchive[];
+  loading: {
+    profile: boolean;
+    items: boolean;
+    archive: boolean;
+  };
 };
 const initialState: initialStateType = {
   profile: {
@@ -29,6 +34,11 @@ const initialState: initialStateType = {
   items: [],
   archive: [],
   userArchive: [],
+  loading: {
+    profile: false,
+    items: false,
+    archive: false,
+  },
 };
 
 export const profileSlice = createSlice({
@@ -41,6 +51,8 @@ export const profileSlice = createSlice({
     ) => {
       state.profile = action.payload.profile;
       state.items = action.payload.items;
+      state.loading.profile = false;
+      state.loading.items = false;
     },
     setUserProfile: (
       state,

@@ -15,7 +15,7 @@ import {
   StackDivider,
 } from "@chakra-ui/react";
 import CustomImageSlider from "../common/slider/customImageSlider";
-import { itemTypeViewHanlder } from "../common/type/itemTypeView";
+import { itemTypeViewHandler } from "../common/type/itemTypeView";
 import { statusView } from "../common/saved/saveStatusView.ts";
 import { chatItemDataType } from "../../types/chatType";
 
@@ -69,7 +69,7 @@ const ItemDetailModal: FC<ItemDetailModalProps> = ({
                   タイプ
                 </Heading>
                 <Text fontSize="sm" color="gray.600">
-                  {itemTypeViewHanlder(itemData.type)}
+                  {itemTypeViewHandler(itemData.type)}
                 </Text>
               </Box>
 

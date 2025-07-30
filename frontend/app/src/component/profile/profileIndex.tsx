@@ -1,4 +1,4 @@
-import { FC, useCallback, useMemo, useState, useEffect } from "react";
+import { FC, useCallback, useMemo, useState } from "react";
 import {
   VStack,
   Text,
@@ -17,8 +17,6 @@ import {
   Divider,
   useColorModeValue,
   IconButton,
-  Center,
-  Spinner,
 } from "@chakra-ui/react";
 import MyItems from "./myItems";
 import useMyProfile from "../../hooks/useProfile";
@@ -53,8 +51,6 @@ const ProfileIndex: FC<profileIndexType> = ({ editFormSwitch }) => {
   // プロフィール情報は即座に表示
   const profile = useMemo(() => memorizeProfile, [memorizeProfile]);
   const [isArchiveOpen, setIsArchiveOpen] = useState<boolean>(false);
-  // 商品の読み込み状態を管理
-  const [isItemsLoading, setIsItemsLoading] = useState<boolean>(true);
 
   // カラーモード対応
   const bgColor = useColorModeValue("white", "gray.800");
@@ -62,16 +58,6 @@ const ProfileIndex: FC<profileIndexType> = ({ editFormSwitch }) => {
   const sectionBg = useColorModeValue("gray.50", "gray.900");
   const textMuted = useColorModeValue("gray.600", "gray.400");
   const accentColor = useColorModeValue("blue.500", "blue.400");
-
-  // 初回読み込み完了後にフラグを更新
-  useEffect(() => {
-    // 少し遅延を入れて、実際の読み込みをシミュレート
-    const timer = setTimeout(() => {
-      setIsItemsLoading(false);
-    }, 1000); // 1秒後に読み込み完了とする
-
-    return () => clearTimeout(timer);
-  }, []);
 
   const InfoItem: FC<{
     icon: IconType;
@@ -380,20 +366,7 @@ const ProfileIndex: FC<profileIndexType> = ({ editFormSwitch }) => {
                   登録ページ
                 </Button>
               </HStack>
-              {isItemsLoading ? (
-                <Center py={8}>
-                  <Spinner size="lg" />
-                  <Text ml={4} color={textMuted}>
-                    商品を読み込み中...
-                  </Text>
-                </Center>
-              ) : profile.items.length === 0 ? (
-                <VStack py={8} spacing={4}>
-                  {/* 商品なしの表示 */}
-                </VStack>
-              ) : (
-                <MyItems />
-              )}
+              <MyItems />
             </Box>
 
             {/* アカウント設定 */}

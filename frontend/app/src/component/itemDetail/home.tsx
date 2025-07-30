@@ -22,7 +22,7 @@ import useItems from "../../hooks/useItems";
 import CustomImageSlider from "../common/slider/customImageSlider";
 import { viewDate } from "../common/date/format";
 import { FaHeart, FaRegHeart, FaUserCircle } from "react-icons/fa";
-import { itemTypeViewHanlder } from "../common/type/itemTypeView";
+import { itemTypeViewHandler } from "../common/type/itemTypeView";
 import { tradeStatusFlags } from "../../consts/profileConsts";
 import { tradeApi } from "../../api/tradeApi";
 import useAlert from "../../hooks/useAlert";
@@ -131,7 +131,7 @@ const Home: FC = () => {
         itemUpdateTime: viewDate(filteredItems[0].uploaded_at),
         title: filteredItems[0].title,
         description: filteredItems[0].description,
-        type: itemTypeViewHanlder(filteredItems[0].type),
+        type: itemTypeViewHandler(filteredItems[0].type),
         brand: filteredItems[0].brand.name,
         like: isLiked,
         images: filteredItems[0].images,
@@ -154,7 +154,7 @@ const Home: FC = () => {
       itemUpdateTime: viewDate(filteredItems[0].uploaded_at),
       title: filteredItems[0].title,
       description: filteredItems[0].description,
-      type: itemTypeViewHanlder(filteredItems[0].type),
+      type: itemTypeViewHandler(filteredItems[0].type),
       brand: filteredItems[0].brand.name,
       like: isLiked,
       images: filteredItems[0].images,

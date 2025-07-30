@@ -26,6 +26,10 @@ $ docker exec -it flask_app /bin/bash
 
 $docker exec -it react_app /bin/sh
 
+# flask_app コンテ内　インストール
+
+$docker exec -it flask_app /bin/sh
+
 ローカル環境（React 開発サーバー使用）
 docker-compose up --build
 
