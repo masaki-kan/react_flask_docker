@@ -1,4 +1,4 @@
-import { FC, useCallback, useState } from "react";
+import { FC, useCallback, useState, useEffect } from "react";
 import ProfileIndex from "./profileIndex";
 import ProfileForm from "./profileForm";
 import { VStack } from "@chakra-ui/react";
@@ -34,9 +34,9 @@ const Profile: FC = () => {
     [changeLoading, defaultToast]
   );
 
-  useEffectOnce(() => {
+  useEffect(() => {
     getMyProfile();
-  });
+  }, [getMyProfile]);
 
   return (
     <VStack align={"start"} gap={9} w={"100%"} mt={{ base: "8em", md: "6em" }}>

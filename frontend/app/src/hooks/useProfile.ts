@@ -70,39 +70,45 @@ const useMyProfile = (): useMyProfileReturn => {
   // 自分のプロフィールデータ取得
   const getMyProfile = useCallback(async () => {
     if (Number(profile.profile.id) === 0) return;
-    changeLoading(true);
+    // changeLoading(true);
 
-    const [responseProfile, responseItems, responseActive] = await Promise.all([
-      await getProfileApi(Number(profile.profile.id)),
-      await getProfileItemsApi(Number(profile.profile.id)),
-      await exchangeArchiveApi(Number(profile.profile.id)),
-    ]);
+    const [responseProfile, responseItems, responseActive] =
+      await Promise.allSettled([
+        await getProfileApi(Number(profile.profile.id)),
+        await getProfileItemsApi(Number(profile.profile.id)),
+        await exchangeArchiveApi(Number(profile.profile.id)),
+      ]);
 
     // プロフィールが取得できたらすぐに更新
-    if (responseProfile !== undefined) {
+    if (responseProfile.status === "fulfilled" && responseProfile.value) {
       dispatch(
         setProfile({
-          profile: responseProfile.profile,
+          profile: responseProfile.value.profile,
           items: [], // 一旦空配列
         })
       );
     }
 
-    // 商品が取得できたら更新
-    if (responseItems !== undefined && responseProfile !== undefined) {
+    // // 商品が取得できたら更新
+    if (
+      responseItems.status === "fulfilled" &&
+      responseItems.value &&
+      responseProfile.status === "fulfilled" &&
+      responseProfile.value
+    ) {
       dispatch(
         setProfile({
-          profile: responseProfile.profile,
-          items: responseItems.items,
+          profile: responseProfile.value.profile,
+          items: responseItems.value.items,
         })
       );
     }
 
-    if (responseActive !== undefined) {
-      dispatch(setProfileArchives(responseActive.archives));
+    if (responseActive.status === "fulfilled" && responseActive.value) {
+      dispatch(setProfileArchives(responseActive.value.archives));
     }
 
-    changeLoading(false);
+    // changeLoading(false);
   }, [changeLoading, dispatch, profile.profile.id]);
 
   // ユーザーのプロフィールデータ取得
