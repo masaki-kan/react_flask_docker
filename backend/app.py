@@ -510,6 +510,41 @@ def getMyProfile():
             ''', (user_id,))
             user_data['likes'] = [like['item_id'] for like in cursor.fetchall()]
             
+            # フォロー状態を確認（my_user_idが存在する場合のみ）
+            user_data['is_following'] = False
+            user_data['is_followed'] = False
+            
+            if my_user_id and my_user_id != user_id:
+                # 自分がこのユーザーをフォローしているか
+                cursor.execute('''
+                    SELECT 1 FROM follows 
+                    WHERE follower_id = %s AND followed_id = %s
+                    LIMIT 1
+                ''', (my_user_id, user_id))
+                user_data['is_following'] = cursor.fetchone() is not None
+                
+                # このユーザーが自分をフォローしているか
+                cursor.execute('''
+                    SELECT 1 FROM follows 
+                    WHERE follower_id = %s AND followed_id = %s
+                    LIMIT 1
+                ''', (user_id, my_user_id))
+                user_data['is_followed'] = cursor.fetchone() is not None
+            
+            # フォロー・フォロワー数も取得
+            cursor.execute('''
+                SELECT 
+                    (SELECT COUNT(*) FROM follows WHERE follower_id = %s) as following_count,
+                    (SELECT COUNT(*) FROM follows WHERE followed_id = %s) as followers_count
+            ''', (user_id, user_id))
+            follow_counts = cursor.fetchone()
+            
+            user_data['following_count'] = follow_counts['following_count']
+            user_data['followers_count'] = follow_counts['followers_count']
+            
+            # user_idを文字列に変換（フロントエンドとの整合性）
+            user_data['user_id'] = str(user_data['user_id'])
+            
             # 基本情報だけ先に返す
             return jsonify({
                 "profile": user_data,

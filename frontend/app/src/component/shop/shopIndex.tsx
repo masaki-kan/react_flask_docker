@@ -48,6 +48,7 @@ const ShopIndex: FC = () => {
   const { changeLoading } = useLaoding();
   const [followCheck, setFollowCheck] = useState<boolean>(false);
   const myProfile = useSelector((state: RootState) => state.profile);
+  console.log("memorizeuserProfile", memorizeuserProfile);
 
   // カラーモード対応
   const bgColor = useColorModeValue("white", "gray.800");

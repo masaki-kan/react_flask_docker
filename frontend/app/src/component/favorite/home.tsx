@@ -41,7 +41,7 @@ const Home: FC = () => {
 
   return (
     <>
-      <VStack align={"start"}>
+      <VStack align={"start"} h={"100vh"}>
         <RebderItem
           itemList={likedFileterList}
           avatar={false}
