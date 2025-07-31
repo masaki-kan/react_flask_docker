@@ -924,8 +924,8 @@ def getUserItems():
 # 商品削除
 @app.route('/api/deleteUserItem', methods=['POST'])
 def deleteUserItem():
-    item_id = request.json.get('item_id',None )
-    my_user_id = request.json.get('my_user_id',None )
+    item_id = request.json.get('item_id', None)
+    my_user_id = request.json.get('my_user_id', None)
         
     if not item_id or not my_user_id:
         return jsonify({"error": "item_id と my_user_id は必須です"}), 400
@@ -933,6 +933,7 @@ def deleteUserItem():
     try:
         with get_db_connection() as conn:
             cursor = conn.cursor(dictionary=True)
+            
             # 1. まず、削除しようとしているアイテムが本当にそのユーザーのものか確認
             cursor.execute('''
                 SELECT user_id FROM items 
@@ -946,20 +947,24 @@ def deleteUserItem():
             if item_owner['user_id'] != my_user_id:
                 return jsonify({"error": "他のユーザーのアイテムは削除できません"}), 403
             
-            # 2. アクティブな取引（pending, purchased, shipped）があるか確認
+            # 2. アクティブな取引があるか確認
             cursor.execute('''
-                SELECT trade_id ,status FROM trades 
+                SELECT trade_id, status FROM trades 
                 WHERE (item_id = %s OR seller_exchange_item_id = %s OR buyer_exchange_item_id = %s)
                 AND status IN ('pending', 'purchased', 'shipped')
-            ''', (item_id,))
+            ''', (item_id, item_id, item_id))
             active_trades = cursor.fetchall()
             
             if active_trades:
                 return jsonify({
                     "error": "このアイテムには進行中の取引があるため削除できません", 
-                    "active_trades": active_trades
+                    "active_trades": [
+                        {"trade_id": t["trade_id"], "status": t["status"]} 
+                        for t in active_trades
+                    ]
                 }), 400
             
+            # 3. 削除する前に、関連する取引IDを取得（キャンセル済みも含む）
             cursor.execute('''
                 SELECT DISTINCT trade_id FROM trades 
                 WHERE item_id = %s OR seller_exchange_item_id = %s OR buyer_exchange_item_id = %s
@@ -967,8 +972,9 @@ def deleteUserItem():
             related_trades = cursor.fetchall()
             trade_ids = [t['trade_id'] for t in related_trades]
             
-            # 3. 関連データの削除（順序重要：外部キー制約を考慮）
+            # 4. 関連データの削除（順序重要：外部キー制約を考慮）
             deleted_counts = {}
+            
             if trade_ids:
                 # trade_messages の削除
                 cursor.execute('''
@@ -1003,24 +1009,21 @@ def deleteUserItem():
                 DELETE FROM likes 
                 WHERE item_id = %s
             ''', (item_id,))
+            deleted_counts['likes'] = cursor.rowcount
             
             # item_images の削除
             cursor.execute('''
                 DELETE FROM item_images 
                 WHERE item_id = %s
             ''', (item_id,))
+            deleted_counts['item_images'] = cursor.rowcount
             
             # 最後に items 本体を削除
             cursor.execute('''
                 DELETE FROM items 
                 WHERE item_id = %s
             ''', (item_id,))
-            
-            # 4. 削除した件数を記録（デバッグ用）
-            affected_rows = {
-                'items': cursor.rowcount,
-                'total_deleted': cursor.rowcount
-            }
+            deleted_counts['items'] = cursor.rowcount
             
             conn.commit()
 
@@ -1028,15 +1031,22 @@ def deleteUserItem():
                 "result": True,
                 "message": "アイテムと関連データを削除しました",
                 "item_id": item_id,
-                "affected_rows": affected_rows
+                "deleted_counts": deleted_counts
             }), 200
         
     except mysql.connector.Error as err:
+        print(f"Database error: {err}")
         return jsonify({
             "error": "商品データ削除中にエラーが発生しました",
+            "details": str(err),
             "result": False
         }), 500
-
+    except Exception as e:
+        print(f"Unexpected error: {e}")
+        return jsonify({
+            "error": "予期しないエラーが発生しました",
+            "result": False
+        }), 500
         
 @app.route('/api/itemLike' ,methods=['POST'])
 def itemLike():
