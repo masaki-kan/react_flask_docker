@@ -15,7 +15,7 @@ import {
   StackDivider,
 } from "@chakra-ui/react";
 import CustomImageSlider from "../slider/customImageSlider";
-import { itemTypeViewHandler } from "../common/type/itemTypeView";
+import { itemTypeViewHandler } from "../../utils/type/itemTypeView";
 import { statusView } from "../save/saveStatusView.ts";
 import { chatItemDataType } from "../../types/chatType";
 

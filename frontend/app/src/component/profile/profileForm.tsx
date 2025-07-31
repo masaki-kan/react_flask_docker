@@ -42,6 +42,7 @@ import {
 import CustomBrandsSelect from "../select/customMultipleSelect";
 import useMyProfile from "../../hooks/useProfile";
 import { profileType } from "../../types/profileType";
+import useLoading from "../../hooks/useLaoding";
 
 type ProfileFormProps = {
   formStoreEvent: (formdata: profileType) => void;
@@ -52,6 +53,7 @@ const ProfileForm: FC<ProfileFormProps> = ({
   formStoreEvent,
   onClickFormSwitch,
 }) => {
+  const { memorizeLoading, changeLoading } = useLoading();
   const { memorizeProfile } = useMyProfile();
   const imageInputRef = useRef<HTMLInputElement>(null);
   const [formData, setFormData] = useState<profileType>(
@@ -177,6 +179,7 @@ const ProfileForm: FC<ProfileFormProps> = ({
   );
 
   const storeFormDataHandler = useCallback(() => {
+    changeLoading(true);
     const newErrors = {
       name: formData.name.length === 0,
       location: !formData.location,
@@ -188,7 +191,11 @@ const ProfileForm: FC<ProfileFormProps> = ({
     if (!Object.values(newErrors).some((val) => val)) {
       formStoreEvent(formData);
     }
-  }, [formData, formStoreEvent]);
+
+    changeLoading(false);
+  }, [changeLoading, formData, formStoreEvent]);
+
+  window.scrollTo(0, 0);
 
   return (
     <>
@@ -510,6 +517,7 @@ const ProfileForm: FC<ProfileFormProps> = ({
               </Button>
               <Button
                 size="lg"
+                isLoading={memorizeLoading}
                 colorScheme="blue"
                 onClick={storeFormDataHandler}
                 leftIcon={<FaSave />}

@@ -19,7 +19,7 @@ import FavoriteHome from "../component/favorite/home";
 import { useDispatch } from "react-redux";
 import { setPreviousUrl } from "../store/navigationSlice";
 import ArchiveHome from "../component/archive/archiveDetail";
-import ThreadPage from "../component/thread/home";
+import ThreadPage from "../component/thread/threadPage";
 
 const AppRoutes: FC = () => {
   const location = useLocation();

@@ -1,5 +1,5 @@
 import axios from "axios";
-import { errorSweetalert2 } from "../component/common/alert/sweetalert2";
+import { errorSweetalert2 } from "../utils/alert/sweetalert2";
 
 export const itemLikeApi = async (
   item_id: string,

@@ -15,7 +15,7 @@ import {
 } from "@chakra-ui/react";
 import CustomImageSlider from "../slider/customImageSlider";
 import { brandType } from "../../types/archiveTradeType";
-import { itemTypeViewHandler } from "../common/type/itemTypeView";
+import { itemTypeViewHandler } from "../../utils/type/itemTypeView";
 
 interface ArchiveItemDetailProps {
   title?: string;

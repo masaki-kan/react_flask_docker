@@ -570,7 +570,7 @@ def getProfileItems():
         
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-        
+
 @app.route('/api/postStoreProfileItem' ,methods=['POST'] )
 def postStoreProfileItem():
     item_id = request.form.get("itemId")
@@ -658,7 +658,7 @@ def postStoreProfileItem():
             "error": "アイテム登録中にエラーが発生しました",
             "result": False
         }), 500
-        
+
 @app.route('/api/getUsers' ,methods=['POST'] )
 def getUsers():
     user_id = request.json.get('user_id',None )
@@ -741,7 +741,7 @@ def getUsers():
             "error": "ユーザー取得中にエラーが発生しました",
             "result": False
         }), 500
-        
+
 @app.route('/api/userFollow' ,methods=['POST'])
 def userFollow():
     follow_user_id = request.json.get('follew_user_id',None )
@@ -924,8 +924,8 @@ def getUserItems():
 # 商品削除
 @app.route('/api/deleteUserItem', methods=['POST'])
 def deleteUserItem():
-    item_id = request.json.get('item_id', None)
-    my_user_id = request.json.get('my_user_id', None)
+    item_id = request.json.get('item_id',None )
+    my_user_id = request.json.get('my_user_id',None )
         
     if not item_id or not my_user_id:
         return jsonify({"error": "item_id と my_user_id は必須です"}), 400
@@ -933,7 +933,6 @@ def deleteUserItem():
     try:
         with get_db_connection() as conn:
             cursor = conn.cursor(dictionary=True)
-            
             # 1. まず、削除しようとしているアイテムが本当にそのユーザーのものか確認
             cursor.execute('''
                 SELECT user_id FROM items 
@@ -947,24 +946,20 @@ def deleteUserItem():
             if item_owner['user_id'] != my_user_id:
                 return jsonify({"error": "他のユーザーのアイテムは削除できません"}), 403
             
-            # 2. アクティブな取引があるか確認
+            # 2. アクティブな取引（pending, purchased, shipped）があるか確認
             cursor.execute('''
-                SELECT trade_id, status FROM trades 
+                SELECT trade_id ,status FROM trades 
                 WHERE (item_id = %s OR seller_exchange_item_id = %s OR buyer_exchange_item_id = %s)
                 AND status IN ('pending', 'purchased', 'shipped')
-            ''', (item_id, item_id, item_id))
+            ''', (item_id,))
             active_trades = cursor.fetchall()
             
             if active_trades:
                 return jsonify({
                     "error": "このアイテムには進行中の取引があるため削除できません", 
-                    "active_trades": [
-                        {"trade_id": t["trade_id"], "status": t["status"]} 
-                        for t in active_trades
-                    ]
+                    "active_trades": active_trades
                 }), 400
             
-            # 3. 削除する前に、関連する取引IDを取得（キャンセル済みも含む）
             cursor.execute('''
                 SELECT DISTINCT trade_id FROM trades 
                 WHERE item_id = %s OR seller_exchange_item_id = %s OR buyer_exchange_item_id = %s
@@ -972,9 +967,8 @@ def deleteUserItem():
             related_trades = cursor.fetchall()
             trade_ids = [t['trade_id'] for t in related_trades]
             
-            # 4. 関連データの削除（順序重要：外部キー制約を考慮）
+            # 3. 関連データの削除（順序重要：外部キー制約を考慮）
             deleted_counts = {}
-            
             if trade_ids:
                 # trade_messages の削除
                 cursor.execute('''
@@ -1009,21 +1003,24 @@ def deleteUserItem():
                 DELETE FROM likes 
                 WHERE item_id = %s
             ''', (item_id,))
-            deleted_counts['likes'] = cursor.rowcount
             
             # item_images の削除
             cursor.execute('''
                 DELETE FROM item_images 
                 WHERE item_id = %s
             ''', (item_id,))
-            deleted_counts['item_images'] = cursor.rowcount
             
             # 最後に items 本体を削除
             cursor.execute('''
                 DELETE FROM items 
                 WHERE item_id = %s
             ''', (item_id,))
-            deleted_counts['items'] = cursor.rowcount
+            
+            # 4. 削除した件数を記録（デバッグ用）
+            affected_rows = {
+                'items': cursor.rowcount,
+                'total_deleted': cursor.rowcount
+            }
             
             conn.commit()
 
@@ -1031,23 +1028,16 @@ def deleteUserItem():
                 "result": True,
                 "message": "アイテムと関連データを削除しました",
                 "item_id": item_id,
-                "deleted_counts": deleted_counts
+                "affected_rows": affected_rows
             }), 200
         
     except mysql.connector.Error as err:
-        print(f"Database error: {err}")
         return jsonify({
             "error": "商品データ削除中にエラーが発生しました",
-            "details": str(err),
             "result": False
         }), 500
-    except Exception as e:
-        print(f"Unexpected error: {e}")
-        return jsonify({
-            "error": "予期しないエラーが発生しました",
-            "result": False
-        }), 500
-        
+
+
 @app.route('/api/itemLike' ,methods=['POST'])
 def itemLike():
     item_id = request.json.get('item_id',None )
@@ -1303,7 +1293,7 @@ def get_chat_item_detail():
             "result": False
         }), 500
 
-        
+
 @app.route('/api/upload_image', methods=['POST'])
 def upload_image():
     image = request.files['image']
@@ -1363,7 +1353,7 @@ def get_trade_messages():
             "result": False
         }), 500
 
-        
+
 @app.route('/api/uploads/<path:filename>')
 def uploaded_file(filename):
     return send_from_directory(UPLOAD_FOLDER, filename)
@@ -1494,7 +1484,7 @@ def create_trade():
             'message': '予期しないエラーが発生しました',
             'error': str(e)
         }), 500
-        
+
 @app.route('/api/trade_status_change' , methods=['POST'])
 def trage_status_change():
     trade_id = request.json.get('trade_id')
@@ -1558,7 +1548,7 @@ def trage_status_change():
             "result": False
         }), 500
 
-        
+
 # 発送情報を保存
 @app.route('/api/save_shipping_info', methods=['POST'])
 def save_shipping_info():
@@ -1714,7 +1704,7 @@ def confirm_item_received():
         
     except Exception as e:
         return jsonify({'result': False, 'error': str(e)}), 500
-    
+
 # 確認状況を取得
 @app.route('/api/get_confirmations', methods=['GET'])
 def get_confirmations():
@@ -1763,7 +1753,7 @@ def get_confirmations():
             
     except Exception as e:
         return jsonify({'result': False, 'error': str(e)}), 500
-    
+
 # 交換申請を受けた人が相手の商品一覧を取得
 @app.route('/api/get_partner_items', methods=['POST'])
 def get_partner_items():
@@ -2528,82 +2518,192 @@ def get_archive_detail():
         return jsonify({'result': False, 'error': str(e)}), 500
 
 # スレッドメッセージ一覧取得（フィルタリング付き）
+# スレッドメッセージ一覧取得（フィルタリング付き）
 @app.route('/api/thread/messages', methods=['GET'])
 def get_thread_messages():
     page = request.args.get('page', 1, type=int)
     limit = request.args.get('limit', 20, type=int)
-    filter_type = request.args.get('filter', 'all')  # all, following, followers
-    current_user_id = request.args.get('user_id', type=int)
+    filter_type = request.args.get('filter', 'all')
+    
+    # user_idを確実に整数に変換
+    try:
+        current_user_id = request.args.get('user_id')
+        if current_user_id:
+            current_user_id = int(current_user_id)
+    except (ValueError, TypeError):
+        current_user_id = None
+    
     offset = (page - 1) * limit
+    
+    print(f"Debug - filter_type: {filter_type}, current_user_id: {current_user_id}, type: {type(current_user_id)}")
     
     try:
         with get_db_connection() as conn:
             cursor = conn.cursor(dictionary=True)
             
-            # フィルタ条件を構築
-            filter_condition = ""
-            params = [limit, offset]
+            # デバッグ: フォロー関係を確認
+            if current_user_id and filter_type == 'following':
+                cursor.execute('''
+                    SELECT follower_id, followed_id 
+                    FROM follows 
+                    WHERE follower_id = %s
+                ''', (current_user_id,))
+                follow_relations = cursor.fetchall()
+                print(f"Debug - Follow relations for user {current_user_id}: {follow_relations}")
             
+            # メインクエリの構築
             if filter_type == 'following' and current_user_id:
-                filter_condition = '''
-                    AND tm.user_id IN (
-                        SELECT followed_id FROM follows WHERE follower_id = %s
-                    )
+                # フォロー中のユーザーのメッセージのみ
+                query = '''
+                    SELECT DISTINCT
+                        tm.thread_message_id,
+                        tm.user_id,
+                        tm.message,
+                        tm.created_at,
+                        u.name as user_name,
+                        u.location as user_location,
+                        pi.image_url as user_image
+                    FROM thread_messages tm
+                    INNER JOIN users u ON tm.user_id = u.user_id
+                    INNER JOIN follows f ON tm.user_id = f.followed_id
+                    LEFT JOIN (
+                        SELECT user_id, image_url
+                        FROM profile_images pi1
+                        WHERE uploaded_at = (
+                            SELECT MAX(uploaded_at)
+                            FROM profile_images pi2
+                            WHERE pi2.user_id = pi1.user_id
+                        )
+                    ) pi ON u.user_id = pi.user_id
+                    WHERE tm.is_deleted = FALSE
+                    AND f.follower_id = %s
+                    ORDER BY tm.created_at DESC
+                    LIMIT %s OFFSET %s
                 '''
-                params = [current_user_id] + params
+                params = [current_user_id, limit, offset]
+                
             elif filter_type == 'followers' and current_user_id:
-                filter_condition = '''
-                    AND tm.user_id IN (
-                        SELECT follower_id FROM follows WHERE followed_id = %s
-                    )
+                # フォロワーのメッセージのみ
+                query = '''
+                    SELECT DISTINCT
+                        tm.thread_message_id,
+                        tm.user_id,
+                        tm.message,
+                        tm.created_at,
+                        u.name as user_name,
+                        u.location as user_location,
+                        pi.image_url as user_image
+                    FROM thread_messages tm
+                    INNER JOIN users u ON tm.user_id = u.user_id
+                    INNER JOIN follows f ON tm.user_id = f.follower_id
+                    LEFT JOIN (
+                        SELECT user_id, image_url
+                        FROM profile_images pi1
+                        WHERE uploaded_at = (
+                            SELECT MAX(uploaded_at)
+                            FROM profile_images pi2
+                            WHERE pi2.user_id = pi1.user_id
+                        )
+                    ) pi ON u.user_id = pi.user_id
+                    WHERE tm.is_deleted = FALSE
+                    AND f.followed_id = %s
+                    ORDER BY tm.created_at DESC
+                    LIMIT %s OFFSET %s
                 '''
-                params = [current_user_id] + params
+                params = [current_user_id, limit, offset]
+                
+            else:
+                # すべてのメッセージ
+                query = '''
+                    SELECT 
+                        tm.thread_message_id,
+                        tm.user_id,
+                        tm.message,
+                        tm.created_at,
+                        u.name as user_name,
+                        u.location as user_location,
+                        pi.image_url as user_image
+                    FROM thread_messages tm
+                    INNER JOIN users u ON tm.user_id = u.user_id
+                    LEFT JOIN (
+                        SELECT user_id, image_url
+                        FROM profile_images pi1
+                        WHERE uploaded_at = (
+                            SELECT MAX(uploaded_at)
+                            FROM profile_images pi2
+                            WHERE pi2.user_id = pi1.user_id
+                        )
+                    ) pi ON u.user_id = pi.user_id
+                    WHERE tm.is_deleted = FALSE
+                    ORDER BY tm.created_at DESC
+                    LIMIT %s OFFSET %s
+                '''
+                params = [limit, offset]
             
-            # メッセージとユーザー情報を取得
-            query = f'''
-                SELECT 
-                    tm.thread_message_id,
-                    tm.user_id,
-                    tm.message,
-                    tm.created_at,
-                    u.name as user_name,
-                    u.location as user_location,
-                    pi.image_url as user_image
-                FROM thread_messages tm
-                JOIN users u ON tm.user_id = u.user_id
-                LEFT JOIN (
-                    SELECT user_id, image_url
-                    FROM profile_images
-                    WHERE (user_id, uploaded_at) IN (
-                        SELECT user_id, MAX(uploaded_at)
-                        FROM profile_images
-                        GROUP BY user_id
-                    )
-                ) pi ON u.user_id = pi.user_id
-                WHERE tm.is_deleted = FALSE
-                {filter_condition}
-                ORDER BY tm.created_at DESC
-                LIMIT %s OFFSET %s
-            '''
-            
+            print(f"Debug - Query params: {params}")
             cursor.execute(query, params)
             messages = cursor.fetchall()
             
+            print(f"Debug - Messages count: {len(messages)}")
+            
             # 総件数を取得
-            count_query = f'''
-                SELECT COUNT(*) as total 
-                FROM thread_messages tm
-                WHERE tm.is_deleted = FALSE
-                {filter_condition}
-            '''
-            count_params = [current_user_id] if filter_type in ['following', 'followers'] else []
-            cursor.execute(count_query, count_params)
+            if filter_type == 'following' and current_user_id:
+                count_query = '''
+                    SELECT COUNT(DISTINCT tm.thread_message_id) as total 
+                    FROM thread_messages tm
+                    INNER JOIN follows f ON tm.user_id = f.followed_id
+                    WHERE tm.is_deleted = FALSE
+                    AND f.follower_id = %s
+                '''
+                cursor.execute(count_query, [current_user_id])
+            elif filter_type == 'followers' and current_user_id:
+                count_query = '''
+                    SELECT COUNT(DISTINCT tm.thread_message_id) as total 
+                    FROM thread_messages tm
+                    INNER JOIN follows f ON tm.user_id = f.follower_id
+                    WHERE tm.is_deleted = FALSE
+                    AND f.followed_id = %s
+                '''
+                cursor.execute(count_query, [current_user_id])
+            else:
+                count_query = '''
+                    SELECT COUNT(*) as total 
+                    FROM thread_messages tm
+                    WHERE tm.is_deleted = FALSE
+                '''
+                cursor.execute(count_query)
+                
             total = cursor.fetchone()['total']
             
-            # 日付をISO形式に変換
+            # 日付をISO形式に変換、user_idを文字列に変換
             for msg in messages:
                 if msg.get('created_at'):
                     msg['created_at'] = msg['created_at'].isoformat()
+                # user_idを文字列に統一（フロントエンド用）
+                msg['user_id'] = str(msg['user_id'])
+            
+            # フォロー・フォロワーのカウントを取得
+            follow_counts = {'following': 0, 'followers': 0}
+            if current_user_id:
+                # フォロー中のユーザーでメッセージを投稿した人数
+                cursor.execute('''
+                    SELECT COUNT(DISTINCT tm.user_id) as count
+                    FROM thread_messages tm
+                    INNER JOIN follows f ON tm.user_id = f.followed_id
+                    WHERE f.follower_id = %s 
+                    AND tm.is_deleted = FALSE
+                ''', (current_user_id,))
+                follow_counts['following'] = cursor.fetchone()['count']
+                
+                # フォロワーでメッセージを投稿した人数
+                cursor.execute('''
+                    SELECT COUNT(DISTINCT tm.user_id) as count
+                    FROM thread_messages tm
+                    INNER JOIN follows f ON tm.user_id = f.follower_id
+                    WHERE f.followed_id = %s 
+                    AND tm.is_deleted = FALSE
+                ''', (current_user_id,))
+                follow_counts['followers'] = cursor.fetchone()['count']
 
             return jsonify({
                 "result": True,
@@ -2611,13 +2711,16 @@ def get_thread_messages():
                 "total": total,
                 "page": page,
                 "limit": limit,
-                "has_more": offset + limit < total
+                "has_more": offset + limit < total,
+                "follow_counts": follow_counts
             }), 200
         
     except Exception as e:
+        print(f"Error in get_thread_messages: {e}")
+        import traceback
+        traceback.print_exc()
         return jsonify({"error": str(e)}), 500
-        
-
+    
 # スレッドメッセージ投稿
 @app.route('/api/thread/post', methods=['POST'])
 def post_thread_message():

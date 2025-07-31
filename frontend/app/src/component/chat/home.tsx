@@ -17,9 +17,7 @@ import {
 import { FaBox, FaTruck, FaUserCircle, FaCheckCircle } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import { route } from "../../route/routeConst";
-import useLoading from "../../hooks/useLaoding";
 import { useEffectOnce } from "react-use";
-import FullScreenSpinner from "../spliner/FullScreenSpinner";
 import useChat from "../../hooks/useChat";
 import ChatRight from "./chatRight";
 import PartnerItemsModal from "./partnerItemsModal";
@@ -50,7 +48,6 @@ const Home: FC = () => {
     confirmItemReceived,
     getChatPageData,
   } = useChat();
-  const { memorizeLoading } = useLoading();
   // URLパラメータの取得をメモ化
   const { tradeIdNumber, userIdNumber } = useMemo(() => {
     const searchParams = new URLSearchParams(location.search);
@@ -440,8 +437,6 @@ const Home: FC = () => {
 
   return (
     <>
-      {memorizeLoading && <FullScreenSpinner />}
-
       {/* ヘッダー部分：ユーザーアバターとステータス */}
       <Box
         bg="white"

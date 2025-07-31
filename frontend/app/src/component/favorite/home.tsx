@@ -2,8 +2,6 @@ import { useCallback, useMemo, type FC } from "react";
 import { useEffectOnce } from "react-use";
 import { VStack } from "@chakra-ui/react";
 import useItems from "../../hooks/useItems";
-import useLaoding from "../../hooks/useLaoding";
-import FullScreenSpinner from "../spliner/FullScreenSpinner";
 import RebderItem from "../render/renderItem";
 import { route } from "../../route/routeConst";
 import { useNavigate } from "react-router-dom";
@@ -16,7 +14,6 @@ const Home: FC = () => {
   const dispath = useDispatch();
   const { getItemListHandler, memorizeItemList } = useItems();
   const { memorizeProfile } = useMyProfile();
-  const { memorizeLoading } = useLaoding();
 
   const likedFileterList = useMemo(() => {
     return memorizeItemList.filter((item) =>
@@ -44,7 +41,6 @@ const Home: FC = () => {
 
   return (
     <>
-      {memorizeLoading && <FullScreenSpinner />}
       <VStack align={"start"}>
         <RebderItem
           itemList={likedFileterList}

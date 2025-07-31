@@ -1,6 +1,6 @@
 import axios from "axios";
 import { savedListType } from "../types/savedType";
-import { errorSweetalert2 } from "../component/common/alert/sweetalert2";
+import { errorSweetalert2 } from "../utils/alert/sweetalert2";
 
 export const tradeApi = async (
   item_id: string,

@@ -1,6 +1,6 @@
 import axios from "axios";
 import { followListType, tagType } from "../types/listType";
-import { errorSweetalert2 } from "../component/common/alert/sweetalert2";
+import { errorSweetalert2 } from "../utils/alert/sweetalert2";
 
 export const getUsersApi = async (
   myId: string

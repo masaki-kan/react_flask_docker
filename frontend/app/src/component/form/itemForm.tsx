@@ -33,7 +33,7 @@ import { useSelector } from "react-redux";
 import useAlert from "../../hooks/useAlert";
 import useLoading from "../../hooks/useLaoding";
 import CustomTypeSelect from "../select/customTypeSelect";
-import { renderSrc } from "../common/views/viewItem";
+import { renderSrc } from "../../utils/views/viewItem";
 
 type ItemFormProps = {
   profileItem?: itemListType;
@@ -41,7 +41,7 @@ type ItemFormProps = {
 };
 
 const ItemForm: FC<ItemFormProps> = ({ profileItem, ItemNumver }) => {
-  const { changeLoading } = useLoading();
+  const { changeLoading, memorizeLoading } = useLoading();
   const { defaultToast } = useAlert();
   const profile = useSelector((state: RootState) => state.profile);
   const navigate = useNavigate();
@@ -195,6 +195,7 @@ const ItemForm: FC<ItemFormProps> = ({ profileItem, ItemNumver }) => {
   }, [defaultToast, navigate, profile.profile.id, profileItem]);
 
   const storeItemsHandler = useCallback(async () => {
+    changeLoading(true);
     // バリデーション
     const newErrors = {
       title: formValues.title.trim() === "",
@@ -235,7 +236,6 @@ const ItemForm: FC<ItemFormProps> = ({ profileItem, ItemNumver }) => {
         }
       });
 
-      changeLoading(true);
       const response = await postStoreProfileItemApi(formData);
 
       if (response?.status !== false) {
@@ -266,7 +266,7 @@ const ItemForm: FC<ItemFormProps> = ({ profileItem, ItemNumver }) => {
   return (
     <>
       {/* ヘッダー */}
-      <HStack justify="space-between" mb={4} mt={{ base: "8em", md: "6em" }}>
+      <HStack justify="space-between">
         <HStack spacing={4}>
           <IconButton
             aria-label="戻る"
@@ -278,9 +278,6 @@ const ItemForm: FC<ItemFormProps> = ({ profileItem, ItemNumver }) => {
           <VStack align="start" spacing={0}>
             <Text fontSize="2xl" fontWeight="bold">
               {ItemNumver ? "商品編集" : "商品登録"}
-            </Text>
-            <Text fontSize="sm" color="gray.500">
-              商品情報を入力してください
             </Text>
           </VStack>
         </HStack>
@@ -415,7 +412,7 @@ const ItemForm: FC<ItemFormProps> = ({ profileItem, ItemNumver }) => {
                 })}
 
                 {/* 追加ボタン */}
-                {formValues.images.length < 4 && (
+                {formValues.images.length < 5 && (
                   <AspectRatio ratio={1}>
                     <Button
                       as="label"
@@ -457,7 +454,7 @@ const ItemForm: FC<ItemFormProps> = ({ profileItem, ItemNumver }) => {
       </Grid>
 
       {/* アクションボタン */}
-      <HStack justify="space-between" mt={8} mb={20} px={{ base: 2, md: 4 }}>
+      <HStack justify="space-between" mt={8} px={{ base: 2, md: 4 }}>
         <Button
           leftIcon={<FaTrash />}
           colorScheme="red"
@@ -480,6 +477,7 @@ const ItemForm: FC<ItemFormProps> = ({ profileItem, ItemNumver }) => {
           </Button>
           <Button
             leftIcon={<FaSave />}
+            isLoading={memorizeLoading}
             colorScheme="blue"
             size="md"
             onClick={storeItemsHandler}

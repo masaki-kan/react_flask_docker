@@ -8,7 +8,7 @@ import {
   Fade,
 } from "@chakra-ui/react";
 import { FaChevronLeft, FaChevronRight } from "react-icons/fa";
-import { renderSrc } from "../common/views/viewItem";
+import { renderSrc } from "../../utils/views/viewItem";
 
 type CustomImageSliderProps = {
   images: string[];

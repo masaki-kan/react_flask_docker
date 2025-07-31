@@ -26,10 +26,10 @@ import {
   updateChatPageData, // 新しいアクション
   updateSelectsellerToBuyerItem,
 } from "../store/chatSlice";
-import { viewDate } from "../component/common/date/format";
+import { viewDate } from "../utils/date/format";
 import useLoading from "./useLaoding";
 import { trageStatusChange } from "../api/tradeApi";
-import { errorSweetalert2 } from "../component/common/alert/sweetalert2";
+import { errorSweetalert2 } from "../utils/alert/sweetalert2";
 
 type useChatReturn = {
   memorizeChatMessages: messagesType[];

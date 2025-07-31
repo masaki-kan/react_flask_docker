@@ -14,9 +14,7 @@ import RebderItem from "../render/renderItem";
 import useItems from "../../hooks/useItems";
 import { useNavigate } from "react-router-dom";
 import { route } from "../../route/routeConst";
-import useLoading from "../../hooks/useLaoding";
 import { useEffectOnce } from "react-use";
-import FullScreenSpinner from "../spliner/FullScreenSpinner";
 import { useDispatch } from "react-redux";
 import { setTargetDetailUser } from "../../store/usersSlice";
 import { AnimatePresence, motion } from "framer-motion";
@@ -28,7 +26,6 @@ import { ChevronDownIcon, ChevronUpIcon } from "@chakra-ui/icons";
 const Home: FC = () => {
   const navigate = useNavigate();
   const dispath = useDispatch();
-  const { memorizeLoading } = useLoading();
   const MotionBox = motion.create(Box);
   const {
     getItemListHandler,
@@ -85,7 +82,6 @@ const Home: FC = () => {
 
   return (
     <>
-      {memorizeLoading && <FullScreenSpinner />}
       <Box
         zIndex={999}
         position={"sticky"}

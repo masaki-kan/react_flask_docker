@@ -13,7 +13,7 @@ import {
   Grid,
   GridItem,
 } from "@chakra-ui/react";
-import { viewDate } from "../common/date/format";
+import { viewDate } from "../../utils/date/format";
 import { useNavigate } from "react-router-dom";
 import { route } from "../../route/routeConst";
 import useMyProfile from "../../hooks/useProfile";

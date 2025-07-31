@@ -3,10 +3,15 @@ import { IoMdHelpCircleOutline } from "react-icons/io";
 import { IoSettingsOutline } from "react-icons/io5";
 
 export const menuLists = [
+  // {
+  //   text: "ユーザー",
+  //   route: route.users,
+  // },
   {
-    text: "ユーザー",
-    route: route.users,
+    text: "スレッド",
+    route: route.thread,
   },
+
   {
     text: "アイテム",
     route: route.items,

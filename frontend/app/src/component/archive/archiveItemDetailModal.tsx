@@ -11,7 +11,7 @@ import {
 } from "@chakra-ui/react";
 import { FC } from "react";
 import CustomImageSlider from "../slider/customImageSlider";
-import { itemTypeViewHandler } from "../common/type/itemTypeView";
+import { itemTypeViewHandler } from "../../utils/type/itemTypeView";
 import { brandType } from "../../types/archiveTradeType";
 
 type ArchiveItemDetailModalPropsType = {

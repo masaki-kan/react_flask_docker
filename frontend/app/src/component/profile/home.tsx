@@ -1,17 +1,15 @@
 import { FC, useCallback, useState, useEffect } from "react";
 import ProfileIndex from "./profileIndex";
 import ProfileForm from "./profileForm";
-
 import useMyProfile from "../../hooks/useProfile";
 import { postStoreProfileApi } from "../../api/profileApis";
 import { profileType } from "../../types/profileType";
 import useAlert from "../../hooks/useAlert";
-import useLoading from "../../hooks/useLaoding";
+import { Box } from "@chakra-ui/react";
 
 const Profile: FC = () => {
   const { getMyProfile } = useMyProfile();
   const { defaultToast } = useAlert();
-  const { changeLoading } = useLoading();
   const [editSwitch, setEditSwitch] = useState<boolean>(false);
 
   const editFormSwitchHandler = useCallback(() => {
@@ -20,15 +18,13 @@ const Profile: FC = () => {
 
   const formStoreEventHandler = useCallback(
     async (formdata: profileType) => {
-      changeLoading(true);
       const response = await postStoreProfileApi(formdata);
-      changeLoading(false);
       if (response?.status !== false) {
         defaultToast(response?.message);
         setEditSwitch(false);
       }
     },
-    [changeLoading, defaultToast]
+    [defaultToast]
   );
 
   useEffect(() => {
@@ -37,14 +33,16 @@ const Profile: FC = () => {
 
   return (
     <>
-      {editSwitch ? (
-        <ProfileForm
-          formStoreEvent={formStoreEventHandler}
-          onClickFormSwitch={editFormSwitchHandler}
-        />
-      ) : (
-        <ProfileIndex editFormSwitch={editFormSwitchHandler} />
-      )}
+      <Box mt={4}>
+        {editSwitch ? (
+          <ProfileForm
+            formStoreEvent={formStoreEventHandler}
+            onClickFormSwitch={editFormSwitchHandler}
+          />
+        ) : (
+          <ProfileIndex editFormSwitch={editFormSwitchHandler} />
+        )}
+      </Box>
     </>
   );
 };

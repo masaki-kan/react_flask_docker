@@ -4,7 +4,7 @@ import {
   profileType,
   // profileItemType,
 } from "../types/profileType";
-import { errorSweetalert2 } from "../component/common/alert/sweetalert2";
+import { errorSweetalert2 } from "../utils/alert/sweetalert2";
 import { archiveDetailResponse } from "./../types/archiveTradeType";
 
 // プロフ取得

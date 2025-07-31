@@ -10,16 +10,17 @@ import {
   useColorModeValue,
 } from "@chakra-ui/react";
 import { itemListType } from "../../types/itemType";
-import { viewDate } from "../common/date/format";
+import { viewDate } from "../../utils/date/format";
 import { useLocation } from "react-router-dom";
 import { route } from "../../route/routeConst";
 import { useEffectOnce } from "react-use";
-import { itemTypeViewHandler } from "../common/type/itemTypeView";
+import { itemTypeViewHandler } from "../../utils/type/itemTypeView";
 import OptimizedImage from "./optimizedImage";
 
 type RenderItemProps = {
   itemList: itemListType[];
   navigate: (index: string) => void;
+  avatar?: boolean;
 };
 
 // ItemCardコンポーネントを最適化

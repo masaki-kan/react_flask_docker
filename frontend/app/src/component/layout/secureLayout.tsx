@@ -43,7 +43,7 @@ const SecureLayout: FC = () => {
   );
 
   return (
-    <Flex direction="column" h="100vh" position="relative">
+    <Flex direction="column" position="relative">
       {/* ヘッダーを固定 */}
       <Box
         position="fixed"
@@ -57,15 +57,12 @@ const SecureLayout: FC = () => {
         <MainHeader />
       </Box>
 
-      {/* メインコンテンツエリア */}
+      {/* メインコンテンツエリア（ヘッダーの高さ分の余白） */}
       <Box
-        flex={1}
-        mt={{ base: "7rem", md: "4rem" }}
-        mb={{ base: "9rem", md: "4rem" }}
-        overflowY="auto"
-        overflowX="hidden"
-        position="relative"
+        mt={{ base: "6.5rem", md: "3.5rem" }} // ヘッダーの高さ
+        bg={"#d6d6d66b"}
       >
+        {/* ComponentHeader */}
         {shouldShowComponentHeader && (
           <Container maxW="container.xl" py={4}>
             <ComponentHeader title={pageTitleView()} />
@@ -73,22 +70,20 @@ const SecureLayout: FC = () => {
         )}
 
         {/* スクロール可能なコンテンツ */}
+
         <Container maxW="container.xl" px={{ base: 2, md: 4 }} py={4}>
           <Outlet />
         </Container>
-      </Box>
 
-      {/* フッターを固定 */}
-      <Box
-        position="fixed"
-        bottom={0}
-        left={0}
-        right={0}
-        zIndex={1000}
-        bg="white"
-        boxShadow="0 -2px 4px rgba(0,0,0,0.1)"
-      >
-        <Footer />
+        {/* フッター（スクロールエリア内） */}
+        <Box
+          bg="white"
+          boxShadow="0 -2px 4px rgba(0,0,0,0.1)"
+          borderTop="1px solid"
+          borderColor="gray.200"
+        >
+          <Footer />
+        </Box>
       </Box>
     </Flex>
   );

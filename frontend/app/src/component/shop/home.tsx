@@ -27,12 +27,7 @@ const Home: FC = () => {
 
   return (
     <>
-      <VStack
-        align={"start"}
-        gap={9}
-        w={"100%"}
-        mt={{ base: "8em", md: "6em" }}
-      >
+      <VStack align={"start"} gap={9} w={"100%"}>
         <ShopIndex />
       </VStack>
     </>

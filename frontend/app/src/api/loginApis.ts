@@ -1,6 +1,6 @@
 import axios from "axios";
 import { sinupFormType } from "../types/loginType";
-import { errorSweetalert2 } from "../component/common/alert/sweetalert2";
+import { errorSweetalert2 } from "../utils/alert/sweetalert2";
 
 export const loginCheckApi = async (formdata: {
   email: string;

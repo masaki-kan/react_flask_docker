@@ -1,5 +1,5 @@
 import { FC, useState, useEffect, useCallback, useRef } from "react";
-import { io, Socket } from "socket.io-client";
+import { Socket } from "socket.io-client";
 import {
   Button,
   HStack,
@@ -14,7 +14,8 @@ import {
 import useChat from "../../hooks/useChat";
 import { useEffectOnce } from "react-use";
 import { messagesType } from "../../types/chatType";
-import { viewDate } from "../common/date/format";
+import { viewDate } from "../../utils/date/format";
+import { getSocket } from "../../utils/socket/getSocket";
 
 const ChatLayout: FC = () => {
   const [message, setMessage] = useState("");
@@ -47,23 +48,18 @@ const ChatLayout: FC = () => {
   }, [memorizeChatMessages]);
 
   useEffect(() => {
-    const socket = io(`${import.meta.env.VITE_API_URL}`, {
-      path: "/socket.io",
-      transports: ["websocket"],
-      secure: true,
-      withCredentials: true,
-    });
+    const socket = getSocket();
     socketRef.current = socket;
 
-    if (socket.connected) {
+    if (socket?.connected) {
       // console.log("✅ Already connected to Socket.IO server");
     } else {
-      socket.on("connect", () => {
+      socket?.on("connect", () => {
         // console.log("✅ Connected to Socket.IO server");
       });
     }
 
-    socket.emit("join", { room: roomId });
+    socket?.emit("join", { room: roomId });
 
     const handleReceiveMessage = (data: {
       message: string;
@@ -83,11 +79,11 @@ const ChatLayout: FC = () => {
       ]);
     };
 
-    socket.on("receive_message", handleReceiveMessage);
+    socket?.on("receive_message", handleReceiveMessage);
 
     return () => {
-      socket.off("receive_message", handleReceiveMessage);
-      socket.disconnect();
+      socket?.off("receive_message", handleReceiveMessage);
+      socket?.disconnect();
     };
   }, [roomId, tradeIdNumber, userIdNumber]);
 
@@ -100,13 +96,8 @@ const ChatLayout: FC = () => {
 
   const sendMessage = useCallback(async () => {
     if (!message.trim()) return;
-    const socket = io(`${import.meta.env.VITE_API_URL}`, {
-      path: "/socket.io",
-      transports: ["websocket"],
-      secure: true,
-      withCredentials: true,
-    });
-    socket.emit("send_message", {
+    const socket = getSocket();
+    socket?.emit("send_message", {
       room: roomId,
       message: message,
       trade_id: tradeIdNumber,

@@ -1,6 +1,6 @@
 import axios from "axios";
 import { chatItemDataType, userDataType } from "../types/chatType";
-import { errorSweetalert2 } from "../component/common/alert/sweetalert2";
+import { errorSweetalert2 } from "../utils/alert/sweetalert2";
 
 export const getChatItemDetailApi = async (
   trade_id: string
