@@ -9,6 +9,9 @@ import {
   HStack,
   Collapse,
   IconButton,
+  Center,
+  Spinner,
+  Text,
 } from "@chakra-ui/react";
 import RebderItem from "../render/renderItem";
 import useItems from "../../hooks/useItems";
@@ -40,7 +43,6 @@ const Home: FC = () => {
     hasMore,
     isLoading,
   } = useItems();
-  const itemsEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [search, setSearch] = useState<string>("");
   const [isSearchOpen, setIsSearchOpen] = useState<boolean>(false);
@@ -173,7 +175,7 @@ const Home: FC = () => {
         mt={4}
         pb={4}
         px={{ base: 2, md: 4 }}
-        h={"calc(100vh - 200px)"}
+        h={"calc(-200px + 90vh)"}
         overflowY="auto"
         onScroll={handleScroll}
       >
@@ -189,7 +191,16 @@ const Home: FC = () => {
               itemList={memorizeItemList}
               navigate={itemDetailHanlder}
             />
-            <div ref={itemsEndRef} />
+            {isLoading && (
+              <Center py={4}>
+                <Spinner size="lg" />
+              </Center>
+            )}
+            {!hasMore && memorizeItemList.length > 0 && (
+              <Center py={4}>
+                <Text color="gray.500">すべての商品を読み込みました</Text>
+              </Center>
+            )}
           </MotionBox>
         </AnimatePresence>
       </VStack>

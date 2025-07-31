@@ -959,8 +959,8 @@ def getUserItems():
 # 商品削除
 @app.route('/api/deleteUserItem', methods=['POST'])
 def deleteUserItem():
-    item_id = request.json.get('item_id',None )
-    my_user_id = request.json.get('my_user_id',None )
+    item_id = request.json.get('item_id', None)
+    my_user_id = request.json.get('my_user_id', None)
         
     if not item_id or not my_user_id:
         return jsonify({"error": "item_id と my_user_id は必須です"}), 400
@@ -968,6 +968,7 @@ def deleteUserItem():
     try:
         with get_db_connection() as conn:
             cursor = conn.cursor(dictionary=True)
+            
             # 1. まず、削除しようとしているアイテムが本当にそのユーザーのものか確認
             cursor.execute('''
                 SELECT user_id FROM items 
@@ -978,15 +979,15 @@ def deleteUserItem():
             if not item_owner:
                 return jsonify({"error": "指定されたアイテムが見つかりません"}), 404
                 
-            if item_owner['user_id'] != my_user_id:
+            if int(item_owner['user_id']) != int(my_user_id):
                 return jsonify({"error": "他のユーザーのアイテムは削除できません"}), 403
             
             # 2. アクティブな取引（pending, purchased, shipped）があるか確認
             cursor.execute('''
-                SELECT trade_id ,status FROM trades 
+                SELECT trade_id, status FROM trades 
                 WHERE (item_id = %s OR seller_exchange_item_id = %s OR buyer_exchange_item_id = %s)
                 AND status IN ('pending', 'purchased', 'shipped')
-            ''', (item_id,))
+            ''', (item_id, item_id, item_id))
             active_trades = cursor.fetchall()
             
             if active_trades:
@@ -995,6 +996,7 @@ def deleteUserItem():
                     "active_trades": active_trades
                 }), 400
             
+            # 3. 関連する全ての取引IDを取得
             cursor.execute('''
                 SELECT DISTINCT trade_id FROM trades 
                 WHERE item_id = %s OR seller_exchange_item_id = %s OR buyer_exchange_item_id = %s
@@ -1002,28 +1004,37 @@ def deleteUserItem():
             related_trades = cursor.fetchall()
             trade_ids = [t['trade_id'] for t in related_trades]
             
-            # 3. 関連データの削除（順序重要：外部キー制約を考慮）
+            # 4. 関連データの削除（順序重要：外部キー制約を考慮）
             deleted_counts = {}
+            
             if trade_ids:
-                # trade_messages の削除
+                # trade_exchanges の削除（先に削除が必要）
                 cursor.execute('''
+                    DELETE FROM trade_exchanges 
+                    WHERE offered_item_id = %s OR received_item_id = %s
+                ''', (item_id, item_id))
+                deleted_counts['trade_exchanges'] = cursor.rowcount
+                
+                # trade_messages の削除
+                placeholders = ','.join(['%s'] * len(trade_ids))
+                cursor.execute(f'''
                     DELETE FROM trade_messages 
-                    WHERE trade_id IN (%s)
-                ''' % ','.join(['%s'] * len(trade_ids)), trade_ids)
+                    WHERE trade_id IN ({placeholders})
+                ''', trade_ids)
                 deleted_counts['trade_messages'] = cursor.rowcount
                 
                 # trade_confirmations の削除
-                cursor.execute('''
+                cursor.execute(f'''
                     DELETE FROM trade_confirmations 
-                    WHERE trade_id IN (%s)
-                ''' % ','.join(['%s'] * len(trade_ids)), trade_ids)
+                    WHERE trade_id IN ({placeholders})
+                ''', trade_ids)
                 deleted_counts['trade_confirmations'] = cursor.rowcount
                 
                 # shipping_info の削除
-                cursor.execute('''
+                cursor.execute(f'''
                     DELETE FROM shipping_info 
-                    WHERE trade_id IN (%s)
-                ''' % ','.join(['%s'] * len(trade_ids)), trade_ids)
+                    WHERE trade_id IN ({placeholders})
+                ''', trade_ids)
                 deleted_counts['shipping_info'] = cursor.rowcount
                 
                 # trades の削除
@@ -1038,24 +1049,21 @@ def deleteUserItem():
                 DELETE FROM likes 
                 WHERE item_id = %s
             ''', (item_id,))
+            deleted_counts['likes'] = cursor.rowcount
             
             # item_images の削除
             cursor.execute('''
                 DELETE FROM item_images 
                 WHERE item_id = %s
             ''', (item_id,))
+            deleted_counts['item_images'] = cursor.rowcount
             
             # 最後に items 本体を削除
             cursor.execute('''
                 DELETE FROM items 
                 WHERE item_id = %s
             ''', (item_id,))
-            
-            # 4. 削除した件数を記録（デバッグ用）
-            affected_rows = {
-                'items': cursor.rowcount,
-                'total_deleted': cursor.rowcount
-            }
+            deleted_counts['items'] = cursor.rowcount
             
             conn.commit()
 
@@ -1063,15 +1071,21 @@ def deleteUserItem():
                 "result": True,
                 "message": "アイテムと関連データを削除しました",
                 "item_id": item_id,
-                "affected_rows": affected_rows
+                "deleted_counts": deleted_counts
             }), 200
         
     except mysql.connector.Error as err:
+        print(f"MySQL Error: {err}")
         return jsonify({
-            "error": "商品データ削除中にエラーが発生しました",
+            "error": f"商品データ削除中にエラーが発生しました: {str(err)}",
             "result": False
         }), 500
-
+    except Exception as e:
+        print(f"General Error: {e}")
+        return jsonify({
+            "error": f"予期しないエラーが発生しました: {str(e)}",
+            "result": False
+        }), 500
 
 @app.route('/api/itemLike' ,methods=['POST'])
 def itemLike():

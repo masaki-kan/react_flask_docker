@@ -3,44 +3,44 @@ import MainHeader from "../layout/mainHeader";
 import { Outlet } from "react-router-dom";
 import { Box, Container, Flex } from "@chakra-ui/react";
 import Footer from "../layout/footer";
-import ComponentHeader from "../layout/componentHeader";
-import { menuLists } from "../../consts/menuList";
-import { useLocation } from "react-router-dom";
-import { route } from "../../route/routeConst";
+// import ComponentHeader from "../layout/componentHeader";
+// import { menuLists } from "../../consts/menuList";
+// import { useLocation } from "react-router-dom";
+// import { route } from "../../route/routeConst";
 
 const SecureLayout: FC = () => {
-  const location = useLocation();
+  // const location = useLocation();
 
-  const pageTitleView = useCallback(() => {
-    switch (location.pathname) {
-      case route.users:
-        return menuLists[0].text;
-      case route.items:
-        return menuLists[1].text;
-      case route.favorite:
-        return menuLists[2].text;
-      case route.saved:
-        return menuLists[3].text;
-      case route.itemDetail:
-        return "アイテム詳細";
-      case route.transactionChat:
-        return "交換やりとり";
-      case route.myItem:
-        return "商品登録";
-      case route.myItemEdit:
-        return "商品編集";
-    }
-    return "";
-  }, [location.pathname]);
+  // const pageTitleView = useCallback(() => {
+  //   switch (location.pathname) {
+  //     case route.users:
+  //       return menuLists[0].text;
+  //     case route.items:
+  //       return menuLists[1].text;
+  //     case route.favorite:
+  //       return menuLists[2].text;
+  //     case route.saved:
+  //       return menuLists[3].text;
+  //     case route.itemDetail:
+  //       return "アイテム詳細";
+  //     case route.transactionChat:
+  //       return "交換やりとり";
+  //     case route.myItem:
+  //       return "商品登録";
+  //     case route.myItemEdit:
+  //       return "商品編集";
+  //   }
+  //   return "";
+  // }, [location.pathname]);
 
-  const shouldShowComponentHeader = !(
-    location.pathname === route.home ||
-    location.pathname === route.myItem ||
-    location.pathname === route.myItemEdit ||
-    location.pathname === route.archiveDetail ||
-    location.pathname === route.shopPage ||
-    location.pathname === route.thread
-  );
+  // const shouldShowComponentHeader = !(
+  //   location.pathname === route.home ||
+  //   location.pathname === route.myItem ||
+  //   location.pathname === route.myItemEdit ||
+  //   location.pathname === route.archiveDetail ||
+  //   location.pathname === route.shopPage ||
+  //   location.pathname === route.thread
+  // );
 
   return (
     <Flex direction="column" position="relative">
@@ -63,14 +63,13 @@ const SecureLayout: FC = () => {
         bg={"#d6d6d66b"}
       >
         {/* ComponentHeader */}
-        {shouldShowComponentHeader && (
-          <Container maxW="container.xl" py={4}>
+        {/* {shouldShowComponentHeader && (
+          <Container maxW="container.xl" pt={4}>
             <ComponentHeader title={pageTitleView()} />
           </Container>
-        )}
+        )} */}
 
         {/* スクロール可能なコンテンツ */}
-
         <Container maxW="container.xl" px={{ base: 2, md: 4 }} py={4}>
           <Outlet />
         </Container>
