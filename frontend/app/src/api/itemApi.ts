@@ -2,7 +2,9 @@ import axios from "axios";
 import { errorSweetalert2 } from "../utils/alert/sweetalert2";
 
 export const getUserItemsApi = async (
-  myId: string
+  myId: string,
+  page: number = 1,
+  limit: number = 20
 ): Promise<
   | {
       items: {
@@ -17,8 +19,11 @@ export const getUserItemsApi = async (
         profile_image: string;
         user_id: number;
         trade_status_flag: number;
-      };
+      }[];
       brands: { key: string; name: string }[];
+      total: number;
+      page: number;
+      has_more: boolean;
     }
   | undefined
 > => {
@@ -27,12 +32,17 @@ export const getUserItemsApi = async (
       `${import.meta.env.VITE_API_URL}/api/getUserItems`,
       {
         user_id: myId,
+        page,
+        limit,
       }
     );
 
     return {
       items: response.data.items,
       brands: response.data.brands,
+      total: response.data.total,
+      page: response.data.page,
+      has_more: response.data.has_more,
     };
   } catch (error: unknown) {
     let errorMessage = "予期しないエラーが発生しました";

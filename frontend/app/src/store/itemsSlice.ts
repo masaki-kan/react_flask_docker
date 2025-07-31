@@ -12,6 +12,9 @@ type initialStateType = {
     key: string;
     name: string;
   };
+  currentPage: number;
+  hasMore: boolean;
+  isLoading: boolean;
 };
 const initialState: initialStateType = {
   originalItemsList: [],
@@ -23,6 +26,9 @@ const initialState: initialStateType = {
     key: "",
     name: "",
   },
+  currentPage: 1,
+  hasMore: true,
+  isLoading: false,
 };
 
 export const itemsSlice = createSlice({
@@ -53,6 +59,27 @@ export const itemsSlice = createSlice({
     ) => {
       state.itemsSearchBrandsSelect = action.payload;
     },
+    setCurrentPage: (state, action: PayloadAction<number>) => {
+      state.currentPage = action.payload;
+    },
+
+    setHasMore: (state, action: PayloadAction<boolean>) => {
+      state.hasMore = action.payload;
+    },
+
+    setIsLoading: (state, action: PayloadAction<boolean>) => {
+      state.isLoading = action.payload;
+    },
+    appendItemsList: (state, action: PayloadAction<itemListType[]>) => {
+      state.itemsList = [...state.itemsList, ...action.payload];
+      state.originalItemsList = [...state.originalItemsList, ...action.payload];
+    },
+    resetItemsList: (state) => {
+      state.itemsList = [];
+      state.originalItemsList = [];
+      state.currentPage = 1;
+      state.hasMore = true;
+    },
   },
 });
 
@@ -63,6 +90,11 @@ export const {
   setSelectedTag,
   setItemsSearchTypeSelect,
   setItemsSearchBrandsSelect,
+  resetItemsList,
+  setCurrentPage,
+  setHasMore,
+  setIsLoading,
+  appendItemsList,
 } = itemsSlice.actions;
 
 export default itemsSlice.reducer;

@@ -1,4 +1,4 @@
-import { ChangeEvent, FC, useCallback, useState } from "react";
+import { ChangeEvent, FC, useCallback, useState, useRef } from "react";
 import {
   VStack,
   Box,
@@ -29,6 +29,7 @@ const Home: FC = () => {
   const MotionBox = motion.create(Box);
   const {
     getItemListHandler,
+    loadMoreItems,
     typeChangeHandler,
     brandChangeHandler,
     itemFilterHandler,
@@ -36,7 +37,11 @@ const Home: FC = () => {
     memorizeItemList,
     memorizeItemsSearchTypeSelect,
     memorizeItemsSearchBrandsSelect,
+    hasMore,
+    isLoading,
   } = useItems();
+  const itemsEndRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [search, setSearch] = useState<string>("");
   const [isSearchOpen, setIsSearchOpen] = useState<boolean>(false);
   const borderColor = useColorModeValue("gray.200", "gray.700");
@@ -79,6 +84,19 @@ const Home: FC = () => {
   const toggleSearch = useCallback(() => {
     setIsSearchOpen((prev) => !prev);
   }, []);
+
+  // スクロールでさらに読み込み
+  const handleScroll = useCallback(() => {
+    if (!scrollContainerRef.current || isLoading || !hasMore) return;
+
+    const { scrollTop, scrollHeight, clientHeight } =
+      scrollContainerRef.current;
+
+    // 底から100pxの位置に来たら次を読み込む
+    if (scrollTop + clientHeight >= scrollHeight - 100) {
+      loadMoreItems();
+    }
+  }, [isLoading, hasMore, loadMoreItems]);
 
   return (
     <>
@@ -149,12 +167,15 @@ const Home: FC = () => {
       </Box>
 
       <VStack
+        ref={scrollContainerRef}
         align={"start"}
         spacing={4}
         mt={4}
         pb={4}
         px={{ base: 2, md: 4 }}
-        h={"100vh"}
+        h={"calc(100vh - 200px)"}
+        overflowY="auto"
+        onScroll={handleScroll}
       >
         <AnimatePresence mode="wait">
           <MotionBox
@@ -168,6 +189,7 @@ const Home: FC = () => {
               itemList={memorizeItemList}
               navigate={itemDetailHanlder}
             />
+            <div ref={itemsEndRef} />
           </MotionBox>
         </AnimatePresence>
       </VStack>

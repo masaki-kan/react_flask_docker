@@ -7,12 +7,16 @@ import {
   setOriginalItemsList,
   setItemsSearchTypeSelect,
   setItemsSearchBrandsSelect,
+  resetItemsList,
+  setCurrentPage,
+  setHasMore,
+  setIsLoading,
+  appendItemsList,
 } from "../store/itemsSlice";
 import { RootState } from "../store";
 import { itemListType } from "../types/itemType";
 import { tagType } from "../types/listType";
 import { getUserItemsApi } from "../api/itemApi";
-import useLoading from "./useLaoding";
 
 type userItemsReturn = {
   memorizeOriginalItemsList: itemListType[];
@@ -24,6 +28,9 @@ type userItemsReturn = {
     key: string;
     name: string;
   };
+  loadMoreItems: () => Promise<void>;
+  hasMore: boolean;
+  isLoading: boolean;
   getItemListHandler: () => void;
   tagsUpdateHandler: (index: number, type: string) => void;
   selectedTagUpdateHandler: (
@@ -41,7 +48,6 @@ type userItemsReturn = {
 
 const useItems = (): userItemsReturn => {
   const dispatch = useDispatch();
-  const { changeLoading } = useLoading();
   const profile = useSelector((state: RootState) => state.profile);
 
   const originalItemsList = useSelector(
@@ -88,63 +94,85 @@ const useItems = (): userItemsReturn => {
     return selectedTag;
   }, [selectedTag]);
 
+  const currentPage = useSelector(
+    (state: RootState) => state.items.currentPage
+  );
+  const hasMore = useSelector((state: RootState) => state.items.hasMore);
+  const isLoading = useSelector((state: RootState) => state.items.isLoading);
+
   // 自分以外の商品一覧取得
   const getItemListHandler = useCallback(async () => {
-    changeLoading(true);
-    const response = await getUserItemsApi(profile.profile.id);
+    dispatch(setIsLoading(true));
+    dispatch(resetItemsList()); // リセット
+
+    const response = await getUserItemsApi(profile.profile.id, 1, 20);
+
     if (response !== undefined) {
-      const rawItems = Array.isArray(response.items)
-        ? response.items
-        : [response.items];
+      const itemList = processItemsResponse(response.items);
+      const itemBrandList = response.brands.map((brand) => ({
+        key: Number(brand.key),
+        name: brand.name,
+      }));
 
-      const itemList: itemListType[] = rawItems.map(
-        (item: {
-          seller_name: string;
-          item_id: string;
-          title: string;
-          description: string;
-          type: string;
-          brand: { key: string; name: string }[];
-          images: string[];
-          uploaded_at: Date;
-          profile_image: string;
-          user_id: number;
-          trade_status_flag: number;
-          trade_approvals_status_flag?: number;
-        }) => {
-          return {
-            user_name: item.seller_name,
-            itemId: item.item_id,
-            user_id: item.user_id,
-            title: item.title,
-            description: item.description,
-            type: item.type,
-            brand: item.brand[0],
-            images: item.images,
-            uploaded_at: item.uploaded_at,
-            profile_image: item.profile_image,
-            tradeStatusFlag: item.trade_status_flag,
-            tradeApprovalsFlag: item.trade_approvals_status_flag,
-          };
-        }
-      );
-
-      const itemBrandList: tagType[] = response.brands.map((brand) => {
-        return {
-          key: Number(brand.key),
-          name: brand.name,
-        };
-      });
-
-      dispatch(setOriginalItemsList(itemList));
       dispatch(setItemsList(itemList));
+      dispatch(setOriginalItemsList(itemList));
       dispatch(setItemsTagList(itemBrandList));
-      changeLoading(false);
-
-      return;
+      dispatch(setCurrentPage(1));
+      dispatch(setHasMore(response.has_more));
     }
-    changeLoading(false);
-  }, [changeLoading, dispatch, profile.profile.id]);
+
+    dispatch(setIsLoading(false));
+  }, [dispatch, profile.profile.id]);
+
+  // 追加読み込み
+  const loadMoreItems = useCallback(async () => {
+    if (isLoading || !hasMore) return;
+
+    dispatch(setIsLoading(true));
+    const nextPage = currentPage + 1;
+
+    const response = await getUserItemsApi(profile.profile.id, nextPage, 20);
+
+    if (response !== undefined) {
+      const newItems = processItemsResponse(response.items);
+      dispatch(appendItemsList(newItems));
+      dispatch(setCurrentPage(nextPage));
+      dispatch(setHasMore(response.has_more));
+    }
+
+    dispatch(setIsLoading(false));
+  }, [dispatch, profile.profile.id, currentPage, hasMore, isLoading]);
+
+  // 商品データの処理（共通化）
+  const processItemsResponse = (
+    items: {
+      seller_name: string;
+      item_id: string;
+      title: string;
+      description: string;
+      type: string;
+      brand: { key: string; name: string }[];
+      images: string[];
+      uploaded_at: Date;
+      profile_image: string;
+      user_id: number;
+      trade_status_flag: number;
+    }[]
+  ): itemListType[] => {
+    return items.map((item) => ({
+      user_name: item.seller_name,
+      itemId: item.item_id,
+      user_id: item.user_id,
+      title: item.title,
+      description: item.description,
+      type: item.type,
+      brand: item.brand[0] || { key: "", name: "" },
+      images: item.images,
+      uploaded_at: item.uploaded_at,
+      profile_image: item.profile_image,
+      tradeStatusFlag: item.trade_status_flag,
+    }));
+  };
 
   // タグ検索(使用しない)
   const tagsUpdateHandler = useCallback(
@@ -322,6 +350,9 @@ const useItems = (): userItemsReturn => {
     memorizeSelectedTag,
     memorizeItemsSearchTypeSelect,
     memorizeItemsSearchBrandsSelect,
+    loadMoreItems,
+    hasMore,
+    isLoading,
   };
 };
 
