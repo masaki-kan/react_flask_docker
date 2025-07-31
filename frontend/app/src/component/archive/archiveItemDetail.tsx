@@ -13,7 +13,7 @@ import {
   ModalBody,
   ModalCloseButton,
 } from "@chakra-ui/react";
-import CustomImageSlider from "../common/slider/customImageSlider";
+import CustomImageSlider from "../slider/customImageSlider";
 import { brandType } from "../../types/archiveTradeType";
 import { itemTypeViewHandler } from "../common/type/itemTypeView";
 

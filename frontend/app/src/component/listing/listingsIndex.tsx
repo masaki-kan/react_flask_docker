@@ -8,7 +8,6 @@ import {
   Box,
   VStack,
   Text,
-  Container,
   useColorModeValue,
   Badge,
   Icon,
@@ -62,125 +61,123 @@ const ListingsIndex: FC = React.memo(() => {
   const MotionBox = motion(Box);
 
   return (
-    <Container maxW="container.xl" px={{ base: 2, md: 4 }}>
-      <VStack spacing={6} align="stretch">
-        {/* スタイリッシュなタブ */}
-        <Tabs
-          variant="unstyled"
-          onChange={(index) => setUserSearchHidden(tabs[index].showSearch)}
+    <VStack spacing={6} align="stretch" px={{ base: 2, md: 4 }}>
+      {/* スタイリッシュなタブ */}
+      <Tabs
+        variant="unstyled"
+        onChange={(index) => setUserSearchHidden(tabs[index].showSearch)}
+      >
+        <Box
+          bg={bgColor}
+          p={1}
+          borderRadius="xl"
+          boxShadow="0 2px 10px rgba(0, 0, 0, 0.1)"
+          border="1px solid"
+          borderColor={borderColor}
+          position={"sticky"}
+          top={0}
+          zIndex={100}
         >
-          <Box
-            bg={bgColor}
-            p={1}
-            borderRadius="xl"
-            boxShadow="0 2px 10px rgba(0, 0, 0, 0.1)"
-            border="1px solid"
-            borderColor={borderColor}
-            position={"sticky"}
-            top={0}
-            zIndex={100}
-          >
-            <TabList>
-              {tabs.map((tab, index) => (
-                <Tab
-                  key={index}
-                  flex={1}
-                  mx={0.5}
-                  borderRadius="lg"
-                  _selected={{
-                    bg: activeColor,
-                    color: "white",
-                  }}
-                  transition="all 0.2s"
-                  color={textColor}
-                >
-                  <VStack spacing={1}>
-                    <Icon as={tab.icon} boxSize={5} />
-                    <Text fontWeight="sx">{tab.label}</Text>
-                    <Badge
-                      colorScheme="gray"
-                      variant="subtle"
-                      fontSize="xs"
-                      px={2}
-                      borderRadius="full"
-                    >
-                      {tab.count}
-                    </Badge>
-                  </VStack>
-                </Tab>
-              ))}
-            </TabList>
-            {/* 検索フォーム */}
+          <TabList>
+            {tabs.map((tab, index) => (
+              <Tab
+                key={index}
+                flex={1}
+                mx={0.5}
+                borderRadius="lg"
+                _selected={{
+                  bg: activeColor,
+                  color: "white",
+                }}
+                transition="all 0.2s"
+                color={textColor}
+              >
+                <VStack spacing={1}>
+                  <Icon as={tab.icon} boxSize={5} />
+                  <Text fontWeight="sx">{tab.label}</Text>
+                  <Badge
+                    colorScheme="gray"
+                    variant="subtle"
+                    fontSize="xs"
+                    px={2}
+                    borderRadius="full"
+                  >
+                    {tab.count}
+                  </Badge>
+                </VStack>
+              </Tab>
+            ))}
+          </TabList>
+          {/* 検索フォーム */}
+          <AnimatePresence mode="wait">
+            <Box my={2}>
+              {userSearchHidden && (
+                <SearchForm
+                  hidden={false}
+                  tagList={memorizeTagList}
+                  selectedTag={memorizeSelectedTag}
+                  route={pathname}
+                />
+              )}
+            </Box>
+          </AnimatePresence>
+        </Box>
+
+        <TabPanels>
+          <TabPanel p={0} mb={10}>
             <AnimatePresence mode="wait">
-              <Box my={2}>
-                {userSearchHidden && (
-                  <SearchForm
-                    hidden={false}
-                    tagList={memorizeTagList}
-                    selectedTag={memorizeSelectedTag}
-                    route={pathname}
-                  />
+              <MotionBox
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.2 }}
+              >
+                {memorizeUserList.length === 0 ? (
+                  <Box
+                    textAlign="center"
+                    py={20}
+                    bg={bgColor}
+                    borderRadius="xl"
+                    border="1px solid"
+                    borderColor={borderColor}
+                  >
+                    <Text color="gray.500">ユーザーが見つかりません</Text>
+                  </Box>
+                ) : (
+                  <RenderTabPanel data={memorizeUserList} />
                 )}
-              </Box>
+              </MotionBox>
             </AnimatePresence>
-          </Box>
+          </TabPanel>
 
-          <TabPanels>
-            <TabPanel p={0} mb={10}>
-              <AnimatePresence mode="wait">
-                <MotionBox
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  {memorizeUserList.length === 0 ? (
-                    <Box
-                      textAlign="center"
-                      py={20}
-                      bg={bgColor}
-                      borderRadius="xl"
-                      border="1px solid"
-                      borderColor={borderColor}
-                    >
-                      <Text color="gray.500">ユーザーが見つかりません</Text>
-                    </Box>
-                  ) : (
-                    <RenderTabPanel data={memorizeUserList} />
-                  )}
-                </MotionBox>
-              </AnimatePresence>
-            </TabPanel>
+          <TabPanel px={0}>
+            <AnimatePresence mode="wait">
+              <MotionBox
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.2 }}
+              >
+                <RenderTabPanel data={memorizeFollowLists} />
+              </MotionBox>
+            </AnimatePresence>
+          </TabPanel>
 
-            <TabPanel px={0}>
-              <AnimatePresence mode="wait">
-                <MotionBox
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <RenderTabPanel data={memorizeFollowLists} />
-                </MotionBox>
-              </AnimatePresence>
-            </TabPanel>
-
-            <TabPanel px={0}>
-              <AnimatePresence mode="wait">
-                <MotionBox
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <RenderTabPanel data={memorizeFollowersLists} />
-                </MotionBox>
-              </AnimatePresence>
-            </TabPanel>
-          </TabPanels>
-        </Tabs>
-      </VStack>
-    </Container>
+          <TabPanel px={0}>
+            <AnimatePresence mode="wait">
+              <MotionBox
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.2 }}
+              >
+                <RenderTabPanel data={memorizeFollowersLists} />
+              </MotionBox>
+            </AnimatePresence>
+          </TabPanel>
+        </TabPanels>
+      </Tabs>
+    </VStack>
   );
 });
 

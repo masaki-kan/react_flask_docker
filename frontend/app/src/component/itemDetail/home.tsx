@@ -19,7 +19,7 @@ import { useNavigate } from "react-router-dom";
 import { route } from "../../route/routeConst";
 import useMyProfile from "../../hooks/useProfile";
 import useItems from "../../hooks/useItems";
-import CustomImageSlider from "../common/slider/customImageSlider";
+import CustomImageSlider from "../slider/customImageSlider";
 import { viewDate } from "../common/date/format";
 import { FaHeart, FaRegHeart, FaUserCircle } from "react-icons/fa";
 import { itemTypeViewHandler } from "../common/type/itemTypeView";

@@ -1,6 +1,6 @@
 import React, { FC } from "react";
 import { VStack, Wrap, Tag } from "@chakra-ui/react";
-import { tagType } from "../../../types/listType";
+import { tagType } from "../../types/listType";
 
 type RebderitemTagProps = {
   tagList: tagType[];

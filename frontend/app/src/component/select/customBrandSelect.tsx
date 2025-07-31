@@ -1,7 +1,7 @@
 import { FC, KeyboardEvent } from "react";
 import Select, { SingleValue } from "react-select";
 import makeAnimated from "react-select/animated";
-import { brandList } from "../../../consts/brandListi";
+import { brandList } from "../../consts/brandListi";
 
 const animatedComponents = makeAnimated();
 

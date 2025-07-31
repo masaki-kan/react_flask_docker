@@ -1,7 +1,6 @@
 import { FC, useCallback, useState, useEffect } from "react";
 import ProfileIndex from "./profileIndex";
 import ProfileForm from "./profileForm";
-import { VStack } from "@chakra-ui/react";
 
 import useMyProfile from "../../hooks/useProfile";
 import { postStoreProfileApi } from "../../api/profileApis";
@@ -37,7 +36,7 @@ const Profile: FC = () => {
   }, [getMyProfile]);
 
   return (
-    <VStack align={"start"} gap={9} w={"100%"} mt={{ base: "8em", md: "6em" }}>
+    <>
       {editSwitch ? (
         <ProfileForm
           formStoreEvent={formStoreEventHandler}
@@ -46,7 +45,7 @@ const Profile: FC = () => {
       ) : (
         <ProfileIndex editFormSwitch={editFormSwitchHandler} />
       )}
-    </VStack>
+    </>
   );
 };
 

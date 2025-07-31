@@ -13,7 +13,7 @@ import {
   VStack,
 } from "@chakra-ui/react";
 import { useNavigate } from "react-router-dom";
-import { menuLists, footerMenu } from "../../../consts/menuList";
+import { menuLists, footerMenu } from "../../consts/menuList";
 
 const Side: FC = () => {
   const navigate = useNavigate();

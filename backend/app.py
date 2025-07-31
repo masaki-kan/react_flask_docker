@@ -658,7 +658,6 @@ def postStoreProfileItem():
             "error": "アイテム登録中にエラーが発生しました",
             "result": False
         }), 500
-
         
 @app.route('/api/getUsers' ,methods=['POST'] )
 def getUsers():
@@ -950,7 +949,8 @@ def deleteUserItem():
             # 2. アクティブな取引（pending, purchased, shipped）があるか確認
             cursor.execute('''
                 SELECT trade_id ,status FROM trades 
-                WHERE item_id = %s AND status IN ('pending', 'purchased', 'shipped')
+                WHERE (item_id = %s OR seller_exchange_item_id = %s OR buyer_exchange_item_id = %s)
+                AND status IN ('pending', 'purchased', 'shipped')
             ''', (item_id,))
             active_trades = cursor.fetchall()
             
@@ -959,32 +959,44 @@ def deleteUserItem():
                     "error": "このアイテムには進行中の取引があるため削除できません", 
                     "active_trades": active_trades
                 }), 400
-                
+            
+            cursor.execute('''
+                SELECT DISTINCT trade_id FROM trades 
+                WHERE item_id = %s OR seller_exchange_item_id = %s OR buyer_exchange_item_id = %s
+            ''', (item_id, item_id, item_id))
+            related_trades = cursor.fetchall()
+            trade_ids = [t['trade_id'] for t in related_trades]
+            
             # 3. 関連データの削除（順序重要：外部キー制約を考慮）
-            # trade_messages の削除（trades に依存）
-            cursor.execute('''
-                DELETE tm FROM trade_messages tm
-                INNER JOIN trades t ON tm.trade_id = t.trade_id
-                WHERE t.item_id = %s
-            ''', (item_id,))
-            
-            # trade_confirmationsの削除
-            cursor.execute('''
-                DELETE FROM trade_confirmations 
-                WHERE trade_id = %s
-            ''', (active_trades["trade_id"],))
-            
-            # shipping_infoの削除
-            cursor.execute('''
-                DELETE FROM shipping_info 
-                WHERE trade_id = %s
-            ''', (active_trades["trade_id"],))
-                    
-            # trades の削除
-            cursor.execute('''
-                DELETE FROM trades 
-                WHERE item_id = %s
-            ''', (item_id,))
+            deleted_counts = {}
+            if trade_ids:
+                # trade_messages の削除
+                cursor.execute('''
+                    DELETE FROM trade_messages 
+                    WHERE trade_id IN (%s)
+                ''' % ','.join(['%s'] * len(trade_ids)), trade_ids)
+                deleted_counts['trade_messages'] = cursor.rowcount
+                
+                # trade_confirmations の削除
+                cursor.execute('''
+                    DELETE FROM trade_confirmations 
+                    WHERE trade_id IN (%s)
+                ''' % ','.join(['%s'] * len(trade_ids)), trade_ids)
+                deleted_counts['trade_confirmations'] = cursor.rowcount
+                
+                # shipping_info の削除
+                cursor.execute('''
+                    DELETE FROM shipping_info 
+                    WHERE trade_id IN (%s)
+                ''' % ','.join(['%s'] * len(trade_ids)), trade_ids)
+                deleted_counts['shipping_info'] = cursor.rowcount
+                
+                # trades の削除
+                cursor.execute('''
+                    DELETE FROM trades 
+                    WHERE item_id = %s OR seller_exchange_item_id = %s OR buyer_exchange_item_id = %s
+                ''', (item_id, item_id, item_id))
+                deleted_counts['trades'] = cursor.rowcount
             
             # likes の削除
             cursor.execute('''

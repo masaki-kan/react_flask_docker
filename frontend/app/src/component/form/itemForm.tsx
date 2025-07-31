@@ -9,7 +9,6 @@ import {
   VStack,
   HStack,
   Text,
-  Container,
   Grid,
   GridItem,
   Image,
@@ -22,7 +21,7 @@ import {
 } from "@chakra-ui/react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { FaTrash, FaCamera, FaArrowLeft, FaSave } from "react-icons/fa";
-import CustomBrandSelect from "../common/select/customBrandSelect";
+import CustomBrandSelect from "../select/customBrandSelect";
 import { itemListType } from "../../types/itemType";
 import { route } from "../../route/routeConst";
 import {
@@ -33,7 +32,8 @@ import { RootState } from "../../store";
 import { useSelector } from "react-redux";
 import useAlert from "../../hooks/useAlert";
 import useLoading from "../../hooks/useLaoding";
-import CustomTypeSelect from "../common/select/customTypeSelect";
+import CustomTypeSelect from "../select/customTypeSelect";
+import { renderSrc } from "../common/views/viewItem";
 
 type ItemFormProps = {
   profileItem?: itemListType;
@@ -235,25 +235,6 @@ const ItemForm: FC<ItemFormProps> = ({ profileItem, ItemNumver }) => {
         }
       });
 
-      // for (let i = 0; i < formValues.images.length; i++) {
-      //   const image = formValues.images[i];
-      //   if (image instanceof File) {
-      //     formData.append("images", image);
-      //   } else if (typeof image === "string") {
-      //     // 既存の画像URLの場合、Blobに変換
-      //     try {
-      //       const response = await fetch(image);
-      //       const blob = await response.blob();
-      //       const file = new File([blob], `existing_image_${i}.jpg`, {
-      //         type: "image/jpeg",
-      //       });
-      //       formData.append("images", file);
-      //     } catch {
-      //       // URLから画像を取得できない場合は、そのままURLとして送信
-      //       formData.append("images", image);
-      //     }
-      //   }
-      // }
       changeLoading(true);
       const response = await postStoreProfileItemApi(formData);
 
@@ -283,9 +264,9 @@ const ItemForm: FC<ItemFormProps> = ({ profileItem, ItemNumver }) => {
   }, [navigate]);
 
   return (
-    <Container maxW="container.xl" mb={20} mt={{ base: "8em", md: "6em" }}>
+    <>
       {/* ヘッダー */}
-      <HStack justify="space-between" mb={6}>
+      <HStack justify="space-between" mb={4} mt={{ base: "8em", md: "6em" }}>
         <HStack spacing={4}>
           <IconButton
             aria-label="戻る"
@@ -305,7 +286,11 @@ const ItemForm: FC<ItemFormProps> = ({ profileItem, ItemNumver }) => {
         </HStack>
       </HStack>
 
-      <Grid templateColumns={{ base: "1fr", lg: "1fr 1fr" }} gap={6}>
+      <Grid
+        templateColumns={{ base: "1fr", lg: "1fr 1fr" }}
+        gap={6}
+        px={{ base: 2, md: 4 }}
+      >
         {/* 左側：基本情報 */}
         <GridItem>
           <Box
@@ -394,9 +379,6 @@ const ItemForm: FC<ItemFormProps> = ({ profileItem, ItemNumver }) => {
               <Grid templateColumns="repeat(3, 1fr)" gap={4}>
                 {/* 既存の画像 */}
                 {formValues.images.map((img, index) => {
-                  const src =
-                    img instanceof File ? URL.createObjectURL(img) : img;
-
                   return (
                     <AspectRatio ratio={1} key={index}>
                       <Box
@@ -409,7 +391,7 @@ const ItemForm: FC<ItemFormProps> = ({ profileItem, ItemNumver }) => {
                         transition="all 0.2s"
                       >
                         <Image
-                          src={src}
+                          src={renderSrc(img)}
                           alt={`商品画像 ${index + 1}`}
                           objectFit="cover"
                           w="full"
@@ -475,7 +457,7 @@ const ItemForm: FC<ItemFormProps> = ({ profileItem, ItemNumver }) => {
       </Grid>
 
       {/* アクションボタン */}
-      <HStack justify="space-between" mt={8}>
+      <HStack justify="space-between" mt={8} mb={20} px={{ base: 2, md: 4 }}>
         <Button
           leftIcon={<FaTrash />}
           colorScheme="red"
@@ -486,7 +468,7 @@ const ItemForm: FC<ItemFormProps> = ({ profileItem, ItemNumver }) => {
           削除
         </Button>
 
-        <HStack spacing={4}>
+        <HStack spacing={4} justify="space-between" w={"full"}>
           <Button
             leftIcon={<FaArrowLeft />}
             size="md"
@@ -507,7 +489,7 @@ const ItemForm: FC<ItemFormProps> = ({ profileItem, ItemNumver }) => {
           </Button>
         </HStack>
       </HStack>
-    </Container>
+    </>
   );
 };
 

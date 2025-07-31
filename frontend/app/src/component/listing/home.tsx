@@ -3,7 +3,7 @@ import { useEffectOnce } from "react-use";
 import ListingsIndex from "./listingsIndex";
 import useUsers from "../../hooks/useUsers";
 import useLaoding from "../../hooks/useLaoding";
-import FullScreenSpinner from "../common/spliner/FullScreenSpinner";
+import FullScreenSpinner from "../spliner/FullScreenSpinner";
 
 const Home: FC = () => {
   const { getUserListHandler } = useUsers();

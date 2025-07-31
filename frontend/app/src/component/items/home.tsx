@@ -10,18 +10,18 @@ import {
   Collapse,
   IconButton,
 } from "@chakra-ui/react";
-import RebderItem from "../common/render/renderItem";
+import RebderItem from "../render/renderItem";
 import useItems from "../../hooks/useItems";
 import { useNavigate } from "react-router-dom";
 import { route } from "../../route/routeConst";
 import useLoading from "../../hooks/useLaoding";
 import { useEffectOnce } from "react-use";
-import FullScreenSpinner from "../common/spliner/FullScreenSpinner";
+import FullScreenSpinner from "../spliner/FullScreenSpinner";
 import { useDispatch } from "react-redux";
 import { setTargetDetailUser } from "../../store/usersSlice";
 import { AnimatePresence, motion } from "framer-motion";
-import CustomTypeSelect from "../common/select/customTypeSelect";
-import CustomBrandSelect from "../common/select/customBrandSelect";
+import CustomTypeSelect from "../select/customTypeSelect";
+import CustomBrandSelect from "../select/customBrandSelect";
 import { MdClear } from "react-icons/md";
 import { ChevronDownIcon, ChevronUpIcon } from "@chakra-ui/icons";
 
@@ -152,7 +152,7 @@ const Home: FC = () => {
         </VStack>
       </Box>
 
-      <VStack align={"start"} spacing={4} mt={4} pb={4}>
+      <VStack align={"start"} spacing={4} mt={4} pb={4} px={{ base: 2, md: 4 }}>
         <AnimatePresence mode="wait">
           <MotionBox
             initial={{ opacity: 0, y: 20 }}

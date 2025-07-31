@@ -1,6 +1,6 @@
 import { FC } from "react";
 import Select, { GroupBase, SingleValue, StylesConfig } from "react-select";
-import { itemParts } from "../../../consts/itemConsts";
+import { itemParts } from "../../consts/itemConsts";
 import makeAnimated from "react-select/animated";
 
 const animatedComponents = makeAnimated();

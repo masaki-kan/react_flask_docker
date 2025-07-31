@@ -15,8 +15,6 @@ import {
   useColorModeValue,
   Button,
   Wrap,
-  Center,
-  Spinner,
 } from "@chakra-ui/react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { route } from "../../route/routeConst";
@@ -38,7 +36,7 @@ import {
   FaLink,
 } from "react-icons/fa";
 import { IconType } from "react-icons";
-import RebderItem from "../common/render/renderItem";
+import RebderItem from "../render/renderItem";
 
 const ShopIndex: FC = () => {
   const dispath = useDispatch();
@@ -348,23 +346,10 @@ const ShopIndex: FC = () => {
                 {/* アイテム */}
                 <VStack align={"start"} w={"full"}>
                   <Heading size="md">登録商品</Heading>
-                  {memorizeuserProfile.items.length === 0 ? (
-                    <>
-                      <Center py={8}>
-                        <Spinner size="lg" />
-                        <Text ml={4} color={textMuted}>
-                          商品を読み込み中...
-                        </Text>
-                      </Center>
-                    </>
-                  ) : (
-                    <>
-                      <RebderItem
-                        itemList={memorizeuserProfile.items}
-                        navigate={itemDetailHanlder}
-                      />
-                    </>
-                  )}
+                  <RebderItem
+                    itemList={memorizeuserProfile.items}
+                    navigate={itemDetailHanlder}
+                  />
                 </VStack>
               </Box>
             </VStack>

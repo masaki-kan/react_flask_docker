@@ -9,12 +9,12 @@ import {
   Badge,
   useColorModeValue,
 } from "@chakra-ui/react";
-import { itemListType } from "../../../types/itemType";
-import { viewDate } from "../date/format";
+import { itemListType } from "../../types/itemType";
+import { viewDate } from "../common/date/format";
 import { useLocation } from "react-router-dom";
-import { route } from "../../../route/routeConst";
+import { route } from "../../route/routeConst";
 import { useEffectOnce } from "react-use";
-import { itemTypeViewHandler } from "../../common/type/itemTypeView";
+import { itemTypeViewHandler } from "../common/type/itemTypeView";
 import OptimizedImage from "./optimizedImage";
 
 type RenderItemProps = {
@@ -52,11 +52,6 @@ const ItemCard = memo<{ item: itemListType; onClick: () => void }>(
         borderColor={borderColor}
         cursor="pointer"
         onClick={onClick}
-        _hover={{
-          transform: "translateY(-4px)",
-          boxShadow: "lg",
-          transition: "all 0.2s",
-        }}
         p={0}
         h="full"
         display="flex"
@@ -65,7 +60,7 @@ const ItemCard = memo<{ item: itemListType; onClick: () => void }>(
         {/* 商品画像コンテナ */}
         <Box position="relative" w="full">
           <OptimizedImage
-            src={item.images?.[0] || "/placeholder.jpg"}
+            src={item.images?.[0]}
             alt={item.title}
             aspectRatio={1}
             objectFit="cover"
@@ -107,24 +102,18 @@ const ItemCard = memo<{ item: itemListType; onClick: () => void }>(
               </Box>
             </>
           )}
-
-          {/* 日付バッジ */}
-          <Badge
-            position="absolute"
-            top={{ base: 1, sm: 2 }}
-            left={{ base: 1, sm: 2 }}
-            bg="blackAlpha.700"
-            color="white"
-            fontSize={{ base: "2xs", sm: "2xs", md: "xs" }}
-            px={{ base: 1, sm: 1.5, md: 2 }}
-            py={0.5}
-            borderRadius="sm"
-            zIndex={3}
-          >
-            {viewDate(item.uploaded_at)}
-          </Badge>
         </Box>
-
+        {/* 日付バッジ */}
+        <Badge
+          bg="blackAlpha.700"
+          color="white"
+          fontSize={{ base: "2xs", sm: "2xs", md: "xs" }}
+          px={{ base: 1, sm: 1.5, md: 2 }}
+          py={0.5}
+          borderRadius={0}
+        >
+          {viewDate(item.uploaded_at)}
+        </Badge>
         {/* 商品情報 */}
         <VStack
           align="stretch"

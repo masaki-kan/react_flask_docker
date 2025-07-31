@@ -10,7 +10,7 @@ import {
   Skeleton,
 } from "@chakra-ui/react";
 import useMyProfile from "../../hooks/useProfile";
-import RebderItem from "../common/render/renderItem";
+import RebderItem from "../render/renderItem";
 import { useNavigate } from "react-router-dom";
 import { route } from "../../route/routeConst";
 import { useSelector } from "react-redux";

@@ -8,6 +8,7 @@ import {
   Fade,
 } from "@chakra-ui/react";
 import { FaChevronLeft, FaChevronRight } from "react-icons/fa";
+import { renderSrc } from "../common/views/viewItem";
 
 type CustomImageSliderProps = {
   images: string[];
@@ -111,7 +112,7 @@ const CustomImageSlider: FC<CustomImageSliderProps> = ({
             transition={{ enter: { duration: 0.3 } }}
           >
             <Image
-              src={image}
+              src={renderSrc(image)}
               alt={`商品画像 ${index + 1}`}
               position="absolute"
               top="0"

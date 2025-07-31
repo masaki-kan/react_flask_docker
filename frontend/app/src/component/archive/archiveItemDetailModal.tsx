@@ -10,7 +10,7 @@ import {
   Text,
 } from "@chakra-ui/react";
 import { FC } from "react";
-import CustomImageSlider from "../common/slider/customImageSlider";
+import CustomImageSlider from "../slider/customImageSlider";
 import { itemTypeViewHandler } from "../common/type/itemTypeView";
 import { brandType } from "../../types/archiveTradeType";
 

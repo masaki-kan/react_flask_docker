@@ -14,11 +14,11 @@ import {
   // MenuDivider,
   Link,
 } from "@chakra-ui/react";
-import { route } from "../../../route/routeConst";
+import { route } from "../../route/routeConst";
 import { useNavigate } from "react-router-dom";
-import { menuLists } from "../../../consts/menuList";
-import useMyProfile from "../../../hooks/useProfile";
-import useSaved from "../../../hooks/useSaved";
+import { menuLists } from "../../consts/menuList";
+import useMyProfile from "../../hooks/useProfile";
+import useSaved from "../../hooks/useSaved";
 import { FaUserCircle } from "react-icons/fa";
 import { useEffectOnce } from "react-use";
 

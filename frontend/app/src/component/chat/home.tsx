@@ -19,12 +19,12 @@ import { useNavigate } from "react-router-dom";
 import { route } from "../../route/routeConst";
 import useLoading from "../../hooks/useLaoding";
 import { useEffectOnce } from "react-use";
-import FullScreenSpinner from "../common/spliner/FullScreenSpinner";
+import FullScreenSpinner from "../spliner/FullScreenSpinner";
 import useChat from "../../hooks/useChat";
 import ChatRight from "./chatRight";
 import PartnerItemsModal from "./partnerItemsModal";
 import ItemDetailModal from "./itemDetailModal";
-import { statusView } from "../common/saved/saveStatusView.ts";
+import { statusView } from "../save/saveStatusView.ts";
 import {
   fetchConfirmationsApi,
   saveShippingInfoWithItemApi,

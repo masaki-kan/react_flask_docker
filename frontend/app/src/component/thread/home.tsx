@@ -1,7 +1,7 @@
 import { FC } from "react";
 import { VStack } from "@chakra-ui/react";
 // import { useNavigate } from "react-router-dom";
-import FullScreenSpinner from "../common/spliner/FullScreenSpinner";
+import FullScreenSpinner from "../spliner/FullScreenSpinner";
 import useLaoding from "../../hooks/useLaoding";
 import ThreadPage from "./threadPage";
 

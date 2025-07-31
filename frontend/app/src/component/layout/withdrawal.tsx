@@ -1,9 +1,9 @@
 import { Button } from "@chakra-ui/react";
 import { FC, useCallback } from "react";
 import { RiLogoutBoxRLine } from "react-icons/ri";
-import useMyProfile from "../../../hooks/useProfile";
-import useAlert from "../../../hooks/useAlert";
-import useLog from "../../../hooks/useLog";
+import useMyProfile from "../../hooks/useProfile";
+import useAlert from "../../hooks/useAlert";
+import useLog from "../../hooks/useLog";
 
 const Withdrawal: FC = () => {
   const { tradeAlert } = useAlert();

@@ -283,9 +283,12 @@ const useItems = (): userItemsReturn => {
   const brandChangeHandler = useCallback(
     (brand: { key: string; name: string }) => {
       let filteredItems = [...originalItemsList];
-      filteredItems = filteredItems.filter(
-        (item) => item.brand?.key === itemsSearchBrandsSelect.key
-      );
+      filteredItems = filteredItems.filter((item) => {
+        if (item.brand.key !== "") {
+          return item.brand?.key === itemsSearchBrandsSelect.key;
+        }
+        return;
+      });
       dispatch(setItemsSearchBrandsSelect(brand));
       dispatch(setItemsList(filteredItems));
       return;

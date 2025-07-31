@@ -16,7 +16,6 @@ import {
   HStack,
   Text,
   Box,
-  Container,
   Grid,
   GridItem,
   Heading,
@@ -40,7 +39,7 @@ import {
   FaCamera,
   FaSave,
 } from "react-icons/fa";
-import CustomBrandsSelect from "../common/select/customMultipleSelect";
+import CustomBrandsSelect from "../select/customMultipleSelect";
 import useMyProfile from "../../hooks/useProfile";
 import { profileType } from "../../types/profileType";
 
@@ -192,7 +191,7 @@ const ProfileForm: FC<ProfileFormProps> = ({
   }, [formData, formStoreEvent]);
 
   return (
-    <Container maxW="container.xl" py={8}>
+    <>
       {/* ヘッダー */}
       <HStack justify="space-between" mb={6}>
         <Heading size="lg">プロフィール編集</Heading>
@@ -521,7 +520,7 @@ const ProfileForm: FC<ProfileFormProps> = ({
           </VStack>
         </GridItem>
       </Grid>
-    </Container>
+    </>
   );
 };
 

@@ -3,7 +3,7 @@ import ItemForm from "../form/itemForm";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import useMyProfile from "../../hooks/useProfile";
 import { route } from "../../route/routeConst";
-import FullScreenSpinner from "../common/spliner/FullScreenSpinner";
+import FullScreenSpinner from "../spliner/FullScreenSpinner";
 import useLaoding from "../../hooks/useLaoding";
 
 const Home: FC = () => {

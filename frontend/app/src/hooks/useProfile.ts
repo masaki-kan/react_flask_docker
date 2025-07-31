@@ -103,15 +103,26 @@ const useMyProfile = (): useMyProfileReturn => {
   // ユーザーのプロフィールデータ取得
   const getProfile = useCallback(
     async (userNumver: number, myUserNumber: number) => {
-      const [responseUser] = await Promise.allSettled([
+      const [responseProfile, responseItems] = await Promise.all([
         getProfileApi(userNumver, myUserNumber),
+        getProfileItemsApi(userNumver),
       ]);
 
-      if (responseUser.status === "fulfilled" && responseUser.value) {
+      if (responseProfile) {
         dispatch(
           setSliceProfile({
-            profile: responseUser.value.profile,
-            items: responseUser.value.items,
+            profile: responseProfile.profile,
+            items: [],
+          })
+        );
+      }
+
+      // // 商品が取得できたら更新
+      if (responseItems && responseProfile) {
+        dispatch(
+          setSliceProfile({
+            profile: responseProfile.profile,
+            items: responseItems.items,
           })
         );
       }
