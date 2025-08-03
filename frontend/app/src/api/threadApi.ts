@@ -50,7 +50,44 @@ export const fetchThreadMessages = async (
 
     return response.data;
   } catch (error) {
-    console.error("Error fetching messages:", error);
-    throw error;
+    let errorMessage = "投稿に失敗しました";
+    if (axios.isAxiosError(error) && error.response?.data?.error) {
+      errorMessage = error.response.data.error;
+    }
+    errorSweetalert2(errorMessage);
+    return {
+      ok: false,
+      error: errorMessage,
+    };
+  }
+};
+
+export const deleteThreadMessageApi = async (
+  thread_message_id: number,
+  user_id: string
+) => {
+  try {
+    const response = await axios.post(
+      `${import.meta.env.VITE_API_URL}/api/thread/delete`,
+      {
+        thread_message_id,
+        user_id,
+      }
+    );
+
+    if (response.status === 200 && response.data.result) {
+      return { ok: true };
+    }
+    return { ok: false };
+  } catch (error) {
+    let errorMessage = "投稿に失敗しました";
+    if (axios.isAxiosError(error) && error.response?.data?.error) {
+      errorMessage = error.response.data.error;
+    }
+    errorSweetalert2(errorMessage);
+    return {
+      ok: false,
+      error: errorMessage,
+    };
   }
 };

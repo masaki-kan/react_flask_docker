@@ -1,4 +1,4 @@
-import { ChangeEvent, FC, useCallback, useState, useRef } from "react";
+import { ChangeEvent, FC, useCallback, useState, useEffect } from "react";
 import {
   VStack,
   Box,
@@ -12,6 +12,7 @@ import {
   Center,
   Spinner,
   Text,
+  Container,
 } from "@chakra-ui/react";
 import RebderItem from "../render/renderItem";
 import useItems from "../../hooks/useItems";
@@ -28,7 +29,7 @@ import { ChevronDownIcon, ChevronUpIcon } from "@chakra-ui/icons";
 
 const Home: FC = () => {
   const navigate = useNavigate();
-  const dispath = useDispatch();
+  const dispatch = useDispatch();
   const MotionBox = motion.create(Box);
   const {
     getItemListHandler,
@@ -43,10 +44,9 @@ const Home: FC = () => {
     hasMore,
     isLoading,
   } = useItems();
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
   const [search, setSearch] = useState<string>("");
   const [isSearchOpen, setIsSearchOpen] = useState<boolean>(false);
-  const borderColor = useColorModeValue("gray.200", "gray.700");
   const shadowColor = useColorModeValue(
     "0 4px 12px rgba(0, 0, 0, 0.08)",
     "0 4px 12px rgba(0, 0, 0, 0.3)"
@@ -56,23 +56,40 @@ const Home: FC = () => {
     getItemListHandler();
   });
 
-  const itemDetailHanlder = useCallback(
+  // スクロールでさらに読み込み
+  useEffect(() => {
+    const scrollContainer = document.querySelector(".main-scroll-container");
+    if (!scrollContainer) return;
+
+    const handleScroll = () => {
+      if (isLoading || !hasMore) return;
+
+      const { scrollTop, scrollHeight, clientHeight } = scrollContainer;
+      if (scrollTop + clientHeight >= scrollHeight - 100) {
+        loadMoreItems();
+      }
+    };
+
+    scrollContainer.addEventListener("scroll", handleScroll);
+    return () => scrollContainer.removeEventListener("scroll", handleScroll);
+  }, [isLoading, hasMore, loadMoreItems]);
+
+  const itemDetailHandler = useCallback(
     (index: string) => {
-      dispath(
+      dispatch(
         setTargetDetailUser({
           itemId: index,
         })
       );
       navigate(`${route.itemDetail}`);
     },
-    [dispath, navigate]
+    [dispatch, navigate]
   );
 
   const filterHandler = useCallback(
     (e: ChangeEvent<HTMLInputElement>) => {
       const value = e.target.value;
       setSearch(value);
-
       itemFilterHandler(value);
     },
     [itemFilterHandler]
@@ -87,76 +104,76 @@ const Home: FC = () => {
     setIsSearchOpen((prev) => !prev);
   }, []);
 
-  // スクロールでさらに読み込み
-  const handleScroll = useCallback(() => {
-    if (!scrollContainerRef.current || isLoading || !hasMore) return;
-
-    const { scrollTop, scrollHeight, clientHeight } =
-      scrollContainerRef.current;
-
-    // 底から100pxの位置に来たら次を読み込む
-    if (scrollTop + clientHeight >= scrollHeight - 100) {
-      loadMoreItems();
-    }
-  }, [isLoading, hasMore, loadMoreItems]);
-
   return (
     <>
       <Box
+        position="fixed"
+        top={{ base: "110px", md: "56px" }} // ヘッダーの高さに合わせて調整
+        left={0}
+        right={0}
         zIndex={999}
-        position={"sticky"}
-        top={-1}
-        width="100%"
-        bgColor={"white"}
-        border="1px solid"
-        borderColor={borderColor}
-        boxShadow={shadowColor}
+        px={4}
       >
-        <VStack px={2} py={2} spacing={2} width="100%">
-          {/* 検索フォームヘッダー */}
-          <HStack width="full" justify="space-between" align="center">
-            <Box fontSize="sm" fontWeight="medium" color="gray.600">
-              検索フォーム
-            </Box>
-            <IconButton
-              aria-label="Toggle search form"
-              icon={isSearchOpen ? <ChevronUpIcon /> : <ChevronDownIcon />}
-              size="sm"
-              variant="ghost"
-              onClick={toggleSearch}
-            />
-          </HStack>
-
+        <Container maxW="container.xl" px={{ base: 2, md: 4 }}>
+          <VStack
+            px={2}
+            py={2}
+            spacing={2}
+            width="100%"
+            bgColor="white"
+            boxShadow={shadowColor}
+            borderRadius="md"
+          >
+            {/* 検索フォームヘッダー */}
+            <HStack width="full" justify="space-between" align="center">
+              <Box fontSize="sm" fontWeight="medium" color="gray.600">
+                検索
+              </Box>
+              <IconButton
+                aria-label="Toggle search form"
+                icon={isSearchOpen ? <ChevronUpIcon /> : <ChevronDownIcon />}
+                size="sm"
+                variant="ghost"
+                onClick={toggleSearch}
+              />
+            </HStack>
+            {/* 検索フォームの内容 */}
+          </VStack>
           {/* 折りたたみ可能な検索フォーム */}
           <Collapse in={isSearchOpen} animateOpacity style={{ width: "100%" }}>
-            <VStack spacing={4} pt={2} pb={2} width="full">
+            <VStack
+              spacing={4}
+              p={2}
+              width="full"
+              bg="#ffffff"
+              mt={1}
+              borderRadius="md"
+            >
               <FormControl>
                 <Input
-                  bg={"white"}
+                  bg="white"
                   placeholder="キーワードで検索"
-                  width={"full"}
+                  width="full"
                   size="md"
                   value={search}
-                  onChange={(e) => {
-                    filterHandler(e);
-                  }}
+                  onChange={filterHandler}
                 />
               </FormControl>
-              <Box width={"100%"}>
+              <Box width="100%">
                 <CustomTypeSelect
                   value={memorizeItemsSearchTypeSelect}
                   onChange={typeChangeHandler}
                 />
               </Box>
-              <Box width={"100%"}>
+              <Box width="100%">
                 <CustomBrandSelect
                   tags={memorizeItemsSearchBrandsSelect}
                   onChange={brandChangeHandler}
                 />
               </Box>
-              <HStack justifyContent={"end"} width={"full"}>
+              <HStack justifyContent="end" width="full">
                 <Button
-                  size={"sm"}
+                  size="sm"
                   leftIcon={<MdClear />}
                   onClick={filterClearHandler}
                 >
@@ -165,37 +182,32 @@ const Home: FC = () => {
               </HStack>
             </VStack>
           </Collapse>
-        </VStack>
+        </Container>
       </Box>
 
-      <VStack
-        ref={scrollContainerRef}
-        align={"start"}
-        spacing={4}
-        mt={4}
-        pb={4}
-        px={{ base: 2, md: 4 }}
-        h={"calc(-200px + 90vh)"}
-        overflowY="auto"
-        onScroll={handleScroll}
-      >
+      <Box h={{ base: "100px", md: isSearchOpen ? "300px" : "80px" }} />
+
+      {/* コンテンツエリア */}
+      <Box pt={20}>
         <AnimatePresence mode="wait">
           <MotionBox
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.2 }}
-            w={"full"}
+            w="full"
           >
             <RebderItem
               itemList={memorizeItemList}
-              navigate={itemDetailHanlder}
+              navigate={itemDetailHandler}
             />
+
             {isLoading && (
               <Center py={4}>
                 <Spinner size="lg" />
               </Center>
             )}
+
             {!hasMore && memorizeItemList.length > 0 && (
               <Center py={4}>
                 <Text color="gray.500">すべての商品を読み込みました</Text>
@@ -203,7 +215,7 @@ const Home: FC = () => {
             )}
           </MotionBox>
         </AnimatePresence>
-      </VStack>
+      </Box>
     </>
   );
 };

@@ -9,7 +9,7 @@ import Launch from "../component/launch/home";
 import { route } from "./routeConst";
 import ListingsHome from "../component/listing/home";
 import ShopPageHome from "../component/shop/home";
-import BusinessHome from "../component/save/home";
+import BusinessHome from "../component/save/savedIndex";
 import ItemsHome from "../component/items/home";
 import MyItemHome from "../component/myItem/home";
 import MyItemEditIndex from "../component/myItemEdit/home";

@@ -437,313 +437,315 @@ const Home: FC = () => {
 
   return (
     <>
-      {/* ヘッダー部分：ユーザーアバターとステータス */}
-      <Box
-        bg="white"
-        p={{ base: 3, md: 4 }}
-        borderRadius="lg"
-        boxShadow="sm"
-        mb={4}
-      >
-        <Flex
-          direction={{ base: "column", md: "row" }}
-          justify="space-between"
-          align={{ base: "stretch", md: "center" }}
-          gap={4}
-        >
-          {/* ユーザーアバター */}
-          <HStack spacing={4} justify={{ base: "center", md: "flex-start" }}>
-            <HStack spacing={2}>
-              <Tooltip label="交換したい人">
-                {memorizeBuyerUserData.profile_image?.length > 0 ? (
-                  <Avatar
-                    size={"md"}
-                    src={memorizeBuyerUserData.profile_image}
-                    name={memorizeBuyerUserData.name}
-                    onClick={() => handleUserClick("buyer")}
-                    borderColor="blue.300"
-                    cursor="pointer"
-                  />
-                ) : (
-                  <Icon
-                    as={FaUserCircle}
-                    boxSize={10}
-                    color="gray.400"
-                    onClick={() => handleUserClick("buyer")}
-                    cursor="pointer"
-                  />
-                )}
-              </Tooltip>
-            </HStack>
-            <Text fontSize={{ base: "md", md: "lg" }} fontWeight="bold">
-              ⇄
-            </Text>
-            <HStack spacing={2}>
-              <Tooltip label="交換を受ける人">
-                {memorizeSellerUserData.profile_image ? (
-                  <Avatar
-                    size={"md"}
-                    src={memorizeSellerUserData.profile_image}
-                    name={memorizeSellerUserData.name}
-                    onClick={() => handleUserClick("seller")}
-                    borderColor="blue.300"
-                    cursor="pointer"
-                  />
-                ) : (
-                  <Icon
-                    as={FaUserCircle}
-                    boxSize={10}
-                    color="gray.400"
-                    onClick={() => handleUserClick("seller")}
-                    cursor="pointer"
-                  />
-                )}
-              </Tooltip>
-            </HStack>
-          </HStack>
-
-          {/* ステータスとアクションボタン */}
-          <VStack
-            spacing={3}
-            align={{ base: "stretch", md: "flex-end" }}
-            w={{ base: "100%", md: "auto" }}
+      <Box pt={24}>
+        {/* ヘッダー部分：ユーザーアバターとステータス */}
+        <Box bg="white" borderRadius="lg" boxShadow="sm" mb={4} p={4}>
+          <Flex
+            direction={{ base: "column", md: "row" }}
+            justify="space-between"
+            align={{ base: "stretch", md: "center" }}
+            gap={4}
           >
-            <HStack justify={{ base: "center", md: "flex-end" }} spacing={2}>
-              <Badge
-                colorScheme="purple"
-                fontSize={{ base: "xs", md: "sm" }}
-                p={2}
-              >
-                {statusView(memorizeChatItemData.status)}
-              </Badge>
+            {/* ユーザーアバター */}
+            <HStack spacing={4} justify={{ base: "center", md: "flex-start" }}>
+              <HStack spacing={2}>
+                <Tooltip label="交換したい人">
+                  {memorizeBuyerUserData.profile_image?.length > 0 ? (
+                    <Avatar
+                      size={"md"}
+                      src={memorizeBuyerUserData.profile_image}
+                      name={memorizeBuyerUserData.name}
+                      onClick={() => handleUserClick("buyer")}
+                      borderColor="blue.300"
+                      cursor="pointer"
+                    />
+                  ) : (
+                    <Icon
+                      as={FaUserCircle}
+                      boxSize={10}
+                      color="gray.400"
+                      onClick={() => handleUserClick("buyer")}
+                      cursor="pointer"
+                    />
+                  )}
+                </Tooltip>
+              </HStack>
+              <Text fontSize={{ base: "md", md: "lg" }} fontWeight="bold">
+                ⇄
+              </Text>
+              <HStack spacing={2}>
+                <Tooltip label="交換を受ける人">
+                  {memorizeSellerUserData.profile_image ? (
+                    <Avatar
+                      size={"md"}
+                      src={memorizeSellerUserData.profile_image}
+                      name={memorizeSellerUserData.name}
+                      onClick={() => handleUserClick("seller")}
+                      borderColor="blue.300"
+                      cursor="pointer"
+                    />
+                  ) : (
+                    <Icon
+                      as={FaUserCircle}
+                      boxSize={10}
+                      color="gray.400"
+                      onClick={() => handleUserClick("seller")}
+                      cursor="pointer"
+                    />
+                  )}
+                </Tooltip>
+              </HStack>
             </HStack>
 
-            {/* 発送状況表示 */}
-            {(memorizeChatItemData.status === "pending" ||
-              memorizeChatItemData.status === "shipped") && (
-              <VStack align="stretch" spacing={2}>
-                {/* sellerの交換商品選択状態 */}
-                {isCurrentUserSeller &&
-                  memorizeChatItemData.status === "pending" && (
-                    <HStack>
-                      <Icon
-                        as={FaCheckCircle}
-                        color={hasSellerSelectedItem ? "green.500" : "gray.400"}
-                      />
-                      <Text fontSize="sm">
-                        交換商品:{" "}
-                        {hasSellerSelectedItem ? "選択済み" : "未選択"}
-                      </Text>
-                    </HStack>
-                  )}
-
-                {/* 発送状態（交換商品選択後のみ表示） */}
-                {(!isCurrentUserSeller || hasSellerSelectedItem) && (
-                  <>
-                    <HStack>
-                      <Icon
-                        as={FaTruck}
-                        color={hasUserShipped ? "green.500" : "gray.400"}
-                      />
-                      <Text fontSize="lg">
-                        あなた: {hasUserShipped ? "発送済み" : "未発送"}
-                      </Text>
-                    </HStack>
-                    <HStack>
-                      <Icon
-                        as={FaTruck}
-                        color={hasPartnerShipped ? "green.500" : "gray.400"}
-                      />
-                      <Text fontSize="lg">
-                        相手: {hasPartnerShipped ? "発送済み" : "未発送"}
-                      </Text>
-                    </HStack>
-                  </>
-                )}
-              </VStack>
-            )}
-
-            {/* ステータスに応じたアクションボタン */}
-            {memorizeChatItemData.status === "pending" &&
-              isCurrentUserSeller &&
-              !hasSellerSelectedItem && (
-                <Button
-                  colorScheme="blue"
-                  size={{ base: "sm", md: "sm" }}
-                  onClick={onPartnerItemsOpen}
-                  leftIcon={<FaBox />}
-                  w={{ base: "100%", md: "auto" }}
+            {/* ステータスとアクションボタン */}
+            <VStack
+              spacing={3}
+              align={{ base: "stretch", md: "flex-end" }}
+              w={{ base: "100%", md: "auto" }}
+            >
+              <HStack justify={{ base: "center", md: "flex-end" }} spacing={2}>
+                <Badge
+                  colorScheme="purple"
+                  fontSize={{ base: "xs", md: "sm" }}
+                  p={2}
                 >
-                  交換商品を選択する
-                </Button>
-              )}
+                  {statusView(memorizeChatItemData.status)}
+                </Badge>
+              </HStack>
 
-            {memorizeChatItemData.status === "pending" &&
-              !hasUserShipped &&
-              (!isCurrentUserSeller || hasSellerSelectedItem) && (
-                <Button
-                  leftIcon={<FaTruck />}
-                  colorScheme="green"
-                  size={{ base: "sm", md: "sm" }}
-                  onClick={onShippingOpen}
-                  w={{ base: "100%", md: "auto" }}
-                  isDisabled={isCurrentUserSeller && !hasSellerSelectedItem}
-                >
-                  発送する
-                </Button>
-              )}
-
-            {memorizeChatItemData.status === "shipped" && (
-              <VStack align="stretch" spacing={2} w="100%">
-                <Checkbox
-                  isChecked={hasUserConfirmed}
-                  onChange={(e) => handleItemReceivedChange(e.target.checked)}
-                  size={{ base: "sm", md: "md" }}
-                  isDisabled={hasUserConfirmed}
-                >
-                  <HStack>
-                    <Text>相手の商品を受け取りました</Text>
-                    {hasUserConfirmed && (
-                      <Icon as={FaCheckCircle} color="green.500" boxSize={4} />
+              {/* 発送状況表示 */}
+              {(memorizeChatItemData.status === "pending" ||
+                memorizeChatItemData.status === "shipped") && (
+                <VStack align="stretch" spacing={2}>
+                  {/* sellerの交換商品選択状態 */}
+                  {isCurrentUserSeller &&
+                    memorizeChatItemData.status === "pending" && (
+                      <HStack>
+                        <Icon
+                          as={FaCheckCircle}
+                          color={
+                            hasSellerSelectedItem ? "green.500" : "gray.400"
+                          }
+                        />
+                        <Text fontSize="sm">
+                          交換商品:{" "}
+                          {hasSellerSelectedItem ? "選択済み" : "未選択"}
+                        </Text>
+                      </HStack>
                     )}
-                  </HStack>
-                </Checkbox>
 
-                <HStack>
-                  <Icon
-                    as={FaCheckCircle}
-                    color={hasPartnerConfirmed ? "green.500" : "gray.400"}
-                    boxSize={4}
-                  />
-                  <Text
-                    fontSize="sm"
-                    color={hasPartnerConfirmed ? "green.600" : "gray.600"}
-                  >
-                    相手の受取確認: {hasPartnerConfirmed ? "完了" : "未完了"}
-                  </Text>
-                </HStack>
+                  {/* 発送状態（交換商品選択後のみ表示） */}
+                  {(!isCurrentUserSeller || hasSellerSelectedItem) && (
+                    <>
+                      <HStack>
+                        <Icon
+                          as={FaTruck}
+                          color={hasUserShipped ? "green.500" : "gray.400"}
+                        />
+                        <Text fontSize="lg">
+                          あなた: {hasUserShipped ? "発送済み" : "未発送"}
+                        </Text>
+                      </HStack>
+                      <HStack>
+                        <Icon
+                          as={FaTruck}
+                          color={hasPartnerShipped ? "green.500" : "gray.400"}
+                        />
+                        <Text fontSize="lg">
+                          相手: {hasPartnerShipped ? "発送済み" : "未発送"}
+                        </Text>
+                      </HStack>
+                    </>
+                  )}
+                </VStack>
+              )}
 
-                {/* 交換受理者（seller）のみ取引完了ボタンを表示 */}
-                {isCurrentUserSeller ? (
+              {/* ステータスに応じたアクションボタン */}
+              {memorizeChatItemData.status === "pending" &&
+                isCurrentUserSeller &&
+                !hasSellerSelectedItem && (
                   <Button
                     colorScheme="blue"
                     size={{ base: "sm", md: "sm" }}
-                    onClick={handleCompleteTransaction}
-                    isDisabled={!canCompleteTransaction}
+                    onClick={onPartnerItemsOpen}
+                    leftIcon={<FaBox />}
                     w={{ base: "100%", md: "auto" }}
                   >
-                    取引を完了する
+                    交換商品を選択する
                   </Button>
-                ) : (
-                  // 交換申請者（buyer）には待機メッセージを表示
-                  canCompleteTransaction && (
-                    <Box
-                      p={3}
-                      bg="blue.50"
-                      borderRadius="md"
-                      borderLeft="4px solid"
-                      borderColor="blue.400"
-                    >
-                      <HStack spacing={2}>
-                        <Icon as={FaCheckCircle} color="blue.500" />
-                        <Text fontSize="sm" color="blue.700">
-                          両者の受取確認が完了しました。
-                          <br />
-                          交換受理者が取引を完了するまでお待ちください。
-                          <br />
-                          完了後は取引履歴で確認できます。
-                        </Text>
-                      </HStack>
-                    </Box>
-                  )
                 )}
-              </VStack>
-            )}
 
-            {!hasSellerSelectedItem && (
-              <Button
-                colorScheme="red"
-                variant="outline"
-                size={{ base: "sm", md: "sm" }}
-                onClick={handleCancelTransaction}
-                w={{ base: "100%", md: "auto" }}
-              >
-                取引をキャンセル
-              </Button>
-            )}
-          </VStack>
+              {memorizeChatItemData.status === "pending" &&
+                !hasUserShipped &&
+                (!isCurrentUserSeller || hasSellerSelectedItem) && (
+                  <Button
+                    leftIcon={<FaTruck />}
+                    colorScheme="green"
+                    size={{ base: "sm", md: "sm" }}
+                    onClick={onShippingOpen}
+                    w={{ base: "100%", md: "auto" }}
+                    isDisabled={isCurrentUserSeller && !hasSellerSelectedItem}
+                  >
+                    発送する
+                  </Button>
+                )}
+
+              {memorizeChatItemData.status === "shipped" && (
+                <VStack align="stretch" spacing={2} w="100%">
+                  <Checkbox
+                    isChecked={hasUserConfirmed}
+                    onChange={(e) => handleItemReceivedChange(e.target.checked)}
+                    size={{ base: "sm", md: "md" }}
+                    isDisabled={hasUserConfirmed}
+                  >
+                    <HStack>
+                      <Text>相手の商品を受け取りました</Text>
+                      {hasUserConfirmed && (
+                        <Icon
+                          as={FaCheckCircle}
+                          color="green.500"
+                          boxSize={4}
+                        />
+                      )}
+                    </HStack>
+                  </Checkbox>
+
+                  <HStack>
+                    <Icon
+                      as={FaCheckCircle}
+                      color={hasPartnerConfirmed ? "green.500" : "gray.400"}
+                      boxSize={4}
+                    />
+                    <Text
+                      fontSize="sm"
+                      color={hasPartnerConfirmed ? "green.600" : "gray.600"}
+                    >
+                      相手の受取確認: {hasPartnerConfirmed ? "完了" : "未完了"}
+                    </Text>
+                  </HStack>
+
+                  {/* 交換受理者（seller）のみ取引完了ボタンを表示 */}
+                  {isCurrentUserSeller ? (
+                    <Button
+                      colorScheme="blue"
+                      size={{ base: "sm", md: "sm" }}
+                      onClick={handleCompleteTransaction}
+                      isDisabled={!canCompleteTransaction}
+                      w={{ base: "100%", md: "auto" }}
+                    >
+                      取引を完了する
+                    </Button>
+                  ) : (
+                    // 交換申請者（buyer）には待機メッセージを表示
+                    canCompleteTransaction && (
+                      <Box
+                        p={3}
+                        bg="blue.50"
+                        borderRadius="md"
+                        borderLeft="4px solid"
+                        borderColor="blue.400"
+                      >
+                        <HStack spacing={2}>
+                          <Icon as={FaCheckCircle} color="blue.500" />
+                          <Text fontSize="sm" color="blue.700">
+                            両者の受取確認が完了しました。
+                            <br />
+                            交換受理者が取引を完了するまでお待ちください。
+                            <br />
+                            完了後は取引履歴で確認できます。
+                          </Text>
+                        </HStack>
+                      </Box>
+                    )
+                  )}
+                </VStack>
+              )}
+
+              {!hasSellerSelectedItem && (
+                <Button
+                  colorScheme="red"
+                  variant="outline"
+                  size={{ base: "sm", md: "sm" }}
+                  onClick={handleCancelTransaction}
+                  w={{ base: "100%", md: "auto" }}
+                >
+                  取引をキャンセル
+                </Button>
+              )}
+            </VStack>
+          </Flex>
+
+          {/* 交換商品表示 Buyerの交換商品  交換商品表示 Sellerの交換商品  */}
+          <SelectItems
+            buyerSelectedItemId={buyerSelectedItemId}
+            hasSellerSelectedItem={hasSellerSelectedItem}
+            memorizeBuyerUserData={memorizeBuyerUserData}
+            memorizeSellerUserData={memorizeSellerUserData}
+            memorizeChatItemData={memorizeChatItemData}
+            onItemOpen={onItemOpen}
+            onSellerItemOpen={onSellerItemOpen}
+            selectedSellerItem={selectedSellerItem}
+          />
+
+          <ShippingInfoDisplay
+            sellerShipping={sellerShippingData}
+            buyerShipping={buyerShippingData}
+            sellerName={memorizeSellerUserData.name}
+            buyerName={memorizeBuyerUserData.name}
+          />
+        </Box>
+
+        {/* チャット画面 */}
+        <Flex>
+          <ChatRight />
         </Flex>
 
-        {/* 交換商品表示 Buyerの交換商品  交換商品表示 Sellerの交換商品  */}
-        <SelectItems
-          buyerSelectedItemId={buyerSelectedItemId}
-          hasSellerSelectedItem={hasSellerSelectedItem}
-          memorizeBuyerUserData={memorizeBuyerUserData}
-          memorizeSellerUserData={memorizeSellerUserData}
-          memorizeChatItemData={memorizeChatItemData}
-          onItemOpen={onItemOpen}
-          onSellerItemOpen={onSellerItemOpen}
-          selectedSellerItem={selectedSellerItem}
+        {/* 商品詳細モーダル */}
+        <ItemDetailModal
+          isOpen={isItemOpen}
+          onClose={onItemClose}
+          itemData={memorizeChatItemData}
         />
 
-        <ShippingInfoDisplay
-          sellerShipping={sellerShippingData}
-          buyerShipping={buyerShippingData}
-          sellerName={memorizeSellerUserData.name}
-          buyerName={memorizeBuyerUserData.name}
+        {/* 受信者の選択した商品詳細モーダル */}
+        <ItemDetailModal
+          isOpen={isSellerItemOpen}
+          onClose={onSellerItemClose}
+          itemData={selectedSellerItem()}
+        />
+
+        {/* 相手商品一覧モーダル */}
+        <PartnerItemsModal
+          isOpen={isPartnerItemsOpen}
+          onClose={onPartnerItemsClose}
+          tradeId={memorizeChatItemData.trade_id}
+          partnerName={getPartnerName()}
+          isCurrentUserSeller={isCurrentUserSeller}
+          userId={userIdNumber || ""}
+          onItemSelected={() => {
+            getChatPageData(memorizeChatItemData.trade_id);
+            setHasSellerSelectedItem(true);
+          }}
+        />
+
+        {/* ユーザー情報モーダル */}
+        <UserDataModal
+          isUserOpen={isUserOpen}
+          onUserClose={onUserClose}
+          selectedUser={selectedUser}
+          memorizeSellerUserData={memorizeSellerUserData}
+          memorizeBuyerUserData={memorizeBuyerUserData}
+        />
+
+        {/* 発送情報入力モーダル */}
+        <ShippingModal
+          isShippingOpen={isShippingOpen}
+          onShippingClose={onShippingClose}
+          shippingInfo={shippingInfo}
+          setShippingInfo={setShippingInfo}
+          handleShipping={handleShipping}
         />
       </Box>
-
-      {/* チャット画面 */}
-      <Flex>
-        <ChatRight />
-      </Flex>
-
-      {/* 商品詳細モーダル */}
-      <ItemDetailModal
-        isOpen={isItemOpen}
-        onClose={onItemClose}
-        itemData={memorizeChatItemData}
-      />
-
-      {/* 受信者の選択した商品詳細モーダル */}
-      <ItemDetailModal
-        isOpen={isSellerItemOpen}
-        onClose={onSellerItemClose}
-        itemData={selectedSellerItem()}
-      />
-
-      {/* 相手商品一覧モーダル */}
-      <PartnerItemsModal
-        isOpen={isPartnerItemsOpen}
-        onClose={onPartnerItemsClose}
-        tradeId={memorizeChatItemData.trade_id}
-        partnerName={getPartnerName()}
-        isCurrentUserSeller={isCurrentUserSeller}
-        userId={userIdNumber || ""}
-        onItemSelected={() => {
-          getChatPageData(memorizeChatItemData.trade_id);
-          setHasSellerSelectedItem(true);
-        }}
-      />
-
-      {/* ユーザー情報モーダル */}
-      <UserDataModal
-        isUserOpen={isUserOpen}
-        onUserClose={onUserClose}
-        selectedUser={selectedUser}
-        memorizeSellerUserData={memorizeSellerUserData}
-        memorizeBuyerUserData={memorizeBuyerUserData}
-      />
-
-      {/* 発送情報入力モーダル */}
-      <ShippingModal
-        isShippingOpen={isShippingOpen}
-        onShippingClose={onShippingClose}
-        shippingInfo={shippingInfo}
-        setShippingInfo={setShippingInfo}
-        handleShipping={handleShipping}
-      />
     </>
   );
 };

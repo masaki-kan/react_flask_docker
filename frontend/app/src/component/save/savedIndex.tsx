@@ -18,10 +18,11 @@ import { AnimatePresence } from "framer-motion";
 import { FaHandshake } from "react-icons/fa";
 import useSaved from "../../hooks/useSaved";
 import RenderSaved from "./renderSaved";
+import { useEffectOnce } from "react-use";
 
 const SavedIndex: FC = () => {
   const { savedList } = useSaved();
-
+  const { getSavedListHandler } = useSaved();
   // カラーモード対応
   const bgColor = useColorModeValue("white", "gray.800");
   const borderColor = useColorModeValue("gray.200", "gray.700");
@@ -53,9 +54,13 @@ const SavedIndex: FC = () => {
     },
   ];
 
+  useEffectOnce(() => {
+    getSavedListHandler();
+  });
+
   return (
     <Container maxW="container.xl" px={{ base: 2, md: 4 }}>
-      <VStack spacing={6} align="stretch">
+      <VStack spacing={6} align="stretch" pt={24}>
         {/* スタイリッシュなタブ */}
         <Tabs variant="unstyled" defaultIndex={0}>
           <Box

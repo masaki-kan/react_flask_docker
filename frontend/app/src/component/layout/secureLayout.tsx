@@ -1,90 +1,63 @@
-import { FC, useCallback } from "react";
+import { FC } from "react";
 import MainHeader from "../layout/mainHeader";
 import { Outlet } from "react-router-dom";
-import { Box, Container, Flex } from "@chakra-ui/react";
+import { Box, Container } from "@chakra-ui/react";
 import Footer from "../layout/footer";
-// import ComponentHeader from "../layout/componentHeader";
-// import { menuLists } from "../../consts/menuList";
-// import { useLocation } from "react-router-dom";
-// import { route } from "../../route/routeConst";
 
 const SecureLayout: FC = () => {
-  // const location = useLocation();
-
-  // const pageTitleView = useCallback(() => {
-  //   switch (location.pathname) {
-  //     case route.users:
-  //       return menuLists[0].text;
-  //     case route.items:
-  //       return menuLists[1].text;
-  //     case route.favorite:
-  //       return menuLists[2].text;
-  //     case route.saved:
-  //       return menuLists[3].text;
-  //     case route.itemDetail:
-  //       return "アイテム詳細";
-  //     case route.transactionChat:
-  //       return "交換やりとり";
-  //     case route.myItem:
-  //       return "商品登録";
-  //     case route.myItemEdit:
-  //       return "商品編集";
-  //   }
-  //   return "";
-  // }, [location.pathname]);
-
-  // const shouldShowComponentHeader = !(
-  //   location.pathname === route.home ||
-  //   location.pathname === route.myItem ||
-  //   location.pathname === route.myItemEdit ||
-  //   location.pathname === route.archiveDetail ||
-  //   location.pathname === route.shopPage ||
-  //   location.pathname === route.thread
-  // );
-
   return (
-    <Flex direction="column" position="relative">
+    <Box height="100vh" display="flex" flexDirection="column" overflow="hidden">
       {/* ヘッダーを固定 */}
-      <Box
-        position="fixed"
-        top={0}
-        left={0}
-        right={0}
-        zIndex={1000}
-        bg="white"
-        boxShadow="sm"
-      >
+      <Box flexShrink={0} bg="white" boxShadow="sm" zIndex={1000}>
         <MainHeader />
       </Box>
 
-      {/* メインコンテンツエリア（ヘッダーの高さ分の余白） */}
+      {/* メインコンテンツ（スクロール可能） */}
       <Box
-        mt={{ base: "6.5rem", md: "3.5rem" }} // ヘッダーの高さ
-        bg={"#d6d6d66b"}
+        flex="1"
+        bg="#f5f5f5"
+        overflowY="auto"
+        overflowX="hidden"
+        minHeight={0}
+        className="main-scroll-container"
+        css={{
+          "&::-webkit-scrollbar": {
+            width: "8px",
+          },
+          "&::-webkit-scrollbar-track": {
+            background: "#f1f1f1",
+          },
+          "&::-webkit-scrollbar-thumb": {
+            background: "#888",
+            borderRadius: "4px",
+          },
+          "&::-webkit-scrollbar-thumb:hover": {
+            background: "#555",
+          },
+          "-webkit-overflow-scrolling": "touch",
+        }}
       >
-        {/* ComponentHeader */}
-        {/* {shouldShowComponentHeader && (
-          <Container maxW="container.xl" pt={4}>
-            <ComponentHeader title={pageTitleView()} />
-          </Container>
-        )} */}
-
-        {/* スクロール可能なコンテンツ */}
-        <Container maxW="container.xl" px={{ base: 2, md: 4 }} py={4}>
+        <Container
+          maxW="container.xl"
+          px={{ base: 2, md: 4 }}
+          py={4}
+          minHeight="100%"
+        >
           <Outlet />
         </Container>
-
-        {/* フッター（スクロールエリア内） */}
-        <Box
-          bg="white"
-          boxShadow="0 -2px 4px rgba(0,0,0,0.1)"
-          borderTop="1px solid"
-          borderColor="gray.200"
-        >
-          <Footer />
-        </Box>
       </Box>
-    </Flex>
+
+      {/* フッターを固定 */}
+      <Box
+        flexShrink={0}
+        bg="white"
+        boxShadow="0 -2px 4px rgba(0,0,0,0.1)"
+        borderTop="1px solid"
+        borderColor="gray.200"
+      >
+        <Footer />
+      </Box>
+    </Box>
   );
 };
 

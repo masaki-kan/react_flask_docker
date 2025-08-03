@@ -1597,7 +1597,6 @@ def trage_status_change():
             "result": False
         }), 500
 
-
 # 発送情報を保存
 @app.route('/api/save_shipping_info', methods=['POST'])
 def save_shipping_info():
@@ -2567,7 +2566,6 @@ def get_archive_detail():
         return jsonify({'result': False, 'error': str(e)}), 500
 
 # スレッドメッセージ一覧取得（フィルタリング付き）
-# スレッドメッセージ一覧取得（フィルタリング付き）
 @app.route('/api/thread/messages', methods=['GET'])
 def get_thread_messages():
     page = request.args.get('page', 1, type=int)
@@ -2807,7 +2805,7 @@ def post_thread_message():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-# メッセージ削除（論理削除）
+# スレッドメッセージ削除（論理削除）
 @app.route('/api/thread/delete', methods=['POST'])
 def delete_thread_message():
     data = request.get_json()
@@ -2821,14 +2819,14 @@ def delete_thread_message():
             # 所有者確認
             cursor.execute('''
                 SELECT user_id FROM thread_messages 
-                WHERE thread_message_id = %s
+                WHERE thread_message_id = %s AND is_deleted = FALSE
             ''', (thread_message_id,))
             
             message = cursor.fetchone()
             if not message:
                 return jsonify({"error": "メッセージが見つかりません"}), 404
                 
-            if message['user_id'] != user_id:
+            if int(message['user_id']) != int(user_id):
                 return jsonify({"error": "削除権限がありません"}), 403
             
             # 論理削除
@@ -2839,6 +2837,11 @@ def delete_thread_message():
             ''', (thread_message_id,))
             
             conn.commit()
+            
+            # socketio.emit('thread_message_deleted', {
+            #     'thread_message_id': thread_message_id,
+            #     'user_id': user_id
+            # }, to='thread_room')
 
             return jsonify({"result": True, "message": "削除しました"}), 200
         

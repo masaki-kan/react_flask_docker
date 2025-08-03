@@ -139,7 +139,11 @@ const ItemCard = memo<{ item: itemListType; onClick: () => void }>(
                 fontSize={{ base: "2xs", sm: "2xs", md: "2xs" }}
                 px={{ base: 1.5, sm: 2 }}
                 py={0.5}
-                noOfLines={1}
+                maxWidth={{ base: "140px", md: "125px" }}
+                whiteSpace="normal"
+                textAlign="start"
+                display="inline-block"
+                wordBreak="break-word"
               >
                 {item.brand.name}
               </Badge>
@@ -150,7 +154,11 @@ const ItemCard = memo<{ item: itemListType; onClick: () => void }>(
                 fontSize={{ base: "2xs", sm: "2xs", md: "2xs" }}
                 px={{ base: 1.5, sm: 2 }}
                 py={0.5}
-                noOfLines={1}
+                maxWidth={{ base: "140px", md: "125px" }}
+                whiteSpace="normal"
+                textAlign="start"
+                display="inline-block"
+                wordBreak="break-word"
               >
                 {itemTypeViewHandler(item.type[0])}
               </Badge>

@@ -14,13 +14,22 @@ import {
   Tab,
   useColorModeValue,
   Center,
+  Menu,
+  MenuButton,
+  MenuList,
+  MenuItem,
+  Link,
 } from "@chakra-ui/react";
 import { IoSend } from "react-icons/io5";
-import { FaUserCircle } from "react-icons/fa";
+import { FaUserCircle, FaEllipsisV, FaTrash } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
-import { threadPostApi, fetchThreadMessages } from "../../api/threadApi";
+import {
+  threadPostApi,
+  fetchThreadMessages,
+  deleteThreadMessageApi,
+} from "../../api/threadApi";
 import useMyProfile from "../../hooks/useProfile";
 import { getSocket, disconnectSocket } from "../../utils/socket/getSocket";
 import { route } from "../../route/routeConst";
@@ -55,6 +64,7 @@ const ThreadPage: React.FC = () => {
     followers: 0,
   });
   const [initialLoad, setInitialLoad] = useState(true);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -65,12 +75,68 @@ const ThreadPage: React.FC = () => {
   const bgColor = useColorModeValue("white", "gray.800");
   const borderColor = useColorModeValue("gray.200", "gray.700");
   const inputBgColor = useColorModeValue("gray.50", "gray.700");
+  const linkColor = useColorModeValue("blue.500", "blue.300");
+
+  // URLをリンクに変換する関数
+  const renderMessageWithLinks = (text: string) => {
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
+    const parts = text.split(urlRegex);
+
+    return parts.map((part, index) => {
+      if (part.match(urlRegex)) {
+        return (
+          <Link
+            key={index}
+            href={part}
+            isExternal
+            color={linkColor}
+            textDecoration="underline"
+            _hover={{ textDecoration: "none" }}
+          >
+            {part}
+          </Link>
+        );
+      }
+      return part;
+    });
+  };
+
+  // メッセージ削除
+  const handleDeleteMessage = async (messageId: number) => {
+    setDeletingId(messageId);
+
+    const response = await deleteThreadMessageApi(
+      messageId,
+      memorizeProfile.profile.id
+    );
+
+    if (response.ok) {
+      // メッセージリストから削除
+      setMessages((prev) =>
+        prev.filter((msg) => msg.thread_message_id !== messageId)
+      );
+
+      toast({
+        title: "削除しました",
+        status: "success",
+        duration: 2000,
+      });
+    } else {
+      toast({
+        title: "エラー",
+        description: "削除に失敗しました",
+        status: "error",
+        duration: 3000,
+      });
+    }
+
+    setDeletingId(null);
+  };
 
   // メッセージ取得
   const fetchMessages = useCallback(
     async (pageNum: number, filter: string, reset = false) => {
       setLoading(true);
-      console.log("filter", filter);
       try {
         const data = await fetchThreadMessages(
           pageNum,
@@ -132,7 +198,7 @@ const ThreadPage: React.FC = () => {
       socketInstance.emit("leave_thread");
       disconnectSocket();
     };
-  }, [fetchMessages, filterType]); // filterTypeが変わったら再接続
+  }, [fetchMessages, filterType]);
 
   // タブ変更時
   const handleTabChange = (index: number) => {
@@ -143,7 +209,7 @@ const ThreadPage: React.FC = () => {
     ];
     setFilterType(filters[index]);
     setPage(1);
-    setMessages([]); // メッセージをリセット
+    setMessages([]);
     setInitialLoad(true);
   };
 
@@ -242,7 +308,7 @@ const ThreadPage: React.FC = () => {
   };
 
   return (
-    <VStack h="100%" spacing={0} mt={4}>
+    <Box>
       {/* ヘッダー */}
       <Box
         w="100%"
@@ -281,7 +347,7 @@ const ThreadPage: React.FC = () => {
           align="stretch"
           p={4}
           overflowY={"auto"}
-          h="calc(100vh - 25rem)"
+          h="calc(100vh - 20rem)"
         >
           {messages.length === 0 && !loading
             ? renderEmptyState()
@@ -310,24 +376,60 @@ const ThreadPage: React.FC = () => {
 
                     {/* メッセージ内容 */}
                     <VStack align="start" flex={1} spacing={1}>
-                      <HStack>
-                        <Text
-                          fontWeight="bold"
-                          cursor="pointer"
-                          _hover={{ textDecoration: "underline" }}
-                          onClick={() => handleUserClick(msg.user_id)}
-                        >
-                          {msg.user_name}
-                        </Text>
-                        <Text fontSize="sm" color="gray.500">
-                          {msg.user_location}
-                        </Text>
-                        <Text fontSize="xs" color="gray.400">
-                          {formatDate(msg.created_at)}
-                        </Text>
+                      <HStack width="full" justify="space-between">
+                        <HStack>
+                          <Text
+                            fontWeight="bold"
+                            cursor="pointer"
+                            _hover={{ textDecoration: "underline" }}
+                            onClick={() => handleUserClick(msg.user_id)}
+                          >
+                            {msg.user_name}
+                          </Text>
+                          <Text fontSize="sm" color="gray.500">
+                            {msg.user_location}
+                          </Text>
+                          <Text fontSize="xs" color="gray.400">
+                            {formatDate(msg.created_at)}
+                          </Text>
+                        </HStack>
+
+                        {/* 削除メニュー（自分の投稿のみ） */}
+                        {String(msg.user_id) === memorizeProfile.profile.id && (
+                          <Menu>
+                            <MenuButton
+                              as={IconButton}
+                              icon={<FaEllipsisV />}
+                              variant="ghost"
+                              size="sm"
+                              aria-label="Options"
+                              isDisabled={deletingId === msg.thread_message_id}
+                            />
+                            <MenuList>
+                              <MenuItem
+                                icon={<FaTrash />}
+                                onClick={() =>
+                                  handleDeleteMessage(msg.thread_message_id)
+                                }
+                                color="red.500"
+                              >
+                                削除
+                              </MenuItem>
+                            </MenuList>
+                          </Menu>
+                        )}
                       </HStack>
 
-                      <Text whiteSpace="pre-wrap">{msg.message}</Text>
+                      <Text
+                        whiteSpace="pre-wrap"
+                        wordBreak="break-word"
+                        overflowWrap="break-word"
+                        maxWidth="100%"
+                        fontSize={{ base: "sm", md: "md" }}
+                        lineHeight={{ base: "1.4", md: "1.6" }}
+                      >
+                        {renderMessageWithLinks(msg.message)}
+                      </Text>
                     </VStack>
                   </HStack>
                 </Box>
@@ -356,12 +458,14 @@ const ThreadPage: React.FC = () => {
         borderTop="1px"
         borderColor={borderColor}
         p={4}
+        position="sticky"
+        bottom={0}
       >
         <HStack spacing={2}>
           <Textarea
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
-            placeholder="メッセージを入力..."
+            placeholder="メッセージを入力... (URLは自動的にリンクになります)"
             bg={inputBgColor}
             resize="none"
             rows={2}
@@ -386,7 +490,7 @@ const ThreadPage: React.FC = () => {
           {newMessage.length}/100
         </Text>
       </Box>
-    </VStack>
+    </Box>
   );
 };
 

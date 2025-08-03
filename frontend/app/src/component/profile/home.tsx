@@ -33,7 +33,7 @@ const Profile: FC = () => {
 
   return (
     <>
-      <Box mt={4}>
+      <Box pt={24}>
         {editSwitch ? (
           <ProfileForm
             formStoreEvent={formStoreEventHandler}
