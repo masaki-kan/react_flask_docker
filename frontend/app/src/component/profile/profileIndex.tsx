@@ -160,7 +160,7 @@ const ProfileIndex: FC<profileIndexType> = ({ editFormSwitch }) => {
           {/* アバターとメイン情報 */}
           <VStack spacing={2}>
             <Box position="relative">
-              {profile.profile.image.length > 0 ? (
+              {profile.profile.image?.length > 0 ? (
                 <Avatar
                   size="2xl"
                   src={profile.profile.image}

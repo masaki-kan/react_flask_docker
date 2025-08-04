@@ -2960,6 +2960,83 @@ def cancellationProcess():
             if not user:
                 return jsonify({"error": "ユーザーが見つかりません", "result": False}), 404
             
+            # ===== 進行中の取引チェック =====
+            # 1. 自分が売り手として関わっている進行中の取引
+            cursor.execute('''
+                SELECT 
+                    t.trade_id,
+                    t.status,
+                    i.title as item_title,
+                    u.name as partner_name
+                FROM trades t
+                INNER JOIN items i ON t.item_id = i.item_id
+                INNER JOIN users u ON t.buyer_id = u.user_id
+                WHERE t.seller_id = %s 
+                AND t.status IN ('pending', 'purchased', 'shipped')
+            ''', (user_id,))
+            seller_trades = cursor.fetchall()
+            
+            # 2. 自分が買い手として関わっている進行中の取引
+            cursor.execute('''
+                SELECT 
+                    t.trade_id,
+                    t.status,
+                    i.title as item_title,
+                    u.name as partner_name
+                FROM trades t
+                INNER JOIN items i ON t.item_id = i.item_id
+                INNER JOIN users u ON t.seller_id = u.user_id
+                WHERE t.buyer_id = %s 
+                AND t.status IN ('pending', 'purchased', 'shipped')
+            ''', (user_id,))
+            buyer_trades = cursor.fetchall()
+            
+            # 3. 自分の商品が取引中（trading）ステータスのものがあるかチェック
+            cursor.execute('''
+                SELECT 
+                    item_id,
+                    title,
+                    status
+                FROM items
+                WHERE user_id = %s 
+                AND status = 'trading'
+            ''', (user_id,))
+            trading_items = cursor.fetchall()
+            
+            # 進行中の取引がある場合は退会を中止
+            active_trades = seller_trades + buyer_trades
+            if active_trades or trading_items:
+                error_details = {
+                    "message": "進行中の取引があるため退会できません。取引を完了またはキャンセルしてから再度お試しください。",
+                    "active_trades_count": len(active_trades),
+                    "trading_items_count": len(trading_items)
+                }
+                
+                # 詳細情報を含める（デバッグ用）
+                if active_trades:
+                    error_details["active_trades"] = [
+                        {
+                            "trade_id": trade["trade_id"],
+                            "status": trade["status"],
+                            "item_title": trade["item_title"],
+                            "partner_name": trade["partner_name"]
+                        } for trade in active_trades[:5]  # 最大5件まで表示
+                    ]
+                
+                if trading_items:
+                    error_details["trading_items"] = [
+                        {
+                            "item_id": item["item_id"],
+                            "title": item["title"]
+                        } for item in trading_items[:5]  # 最大5件まで表示
+                    ]
+                
+                return jsonify({
+                    "error": error_details["message"],
+                    "result": False,
+                    "details": error_details
+                }), 400
+            
             # Stripeの顧客データを削除
             if user.get('stripe_customer_id'):
                 try:
@@ -3058,7 +3135,7 @@ def cancellationProcess():
             # コミット
             conn.commit()
             
-            print(f"User {user_id} deletion completed. Counts: {deleted_counts}", flush=True)
+            # print(f"User {user_id} deletion completed. Counts: {deleted_counts}", flush=True)
             
             # 注意: アーカイブデータは削除しない
             # archived_trades, archived_items, archived_trade_messages などは保持される

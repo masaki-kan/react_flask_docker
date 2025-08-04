@@ -107,7 +107,7 @@ const RenderRouteLinks: FC = () => {
           {/* プロフィールメニュー */}
           <HStack spacing={4} onClick={() => navigate(route.profile)}>
             {/* アバターメニュー */}
-            {profile.profile.image.length > 0 ? (
+            {profile.profile.image?.length > 0 ? (
               <Avatar
                 size="md"
                 src={profile.profile.image}
