@@ -126,7 +126,7 @@ const SingUpForm: FC = memo(() => {
       }
       setCurrentStep((prevStep) => prevStep + 1);
     }
-  }, [createPaymentIntent, validateStep]);
+  }, [createPaymentIntent, currentStep, validateStep]);
 
   const handleFinalSubmit = async () => {
     setShowSuccess(true);
@@ -223,8 +223,6 @@ const SingUpForm: FC = memo(() => {
         </Modal>
 
         <Container maxW="container.md">
-          {/* ヘッダー */}
-
           {/* メインカード */}
           <Box bg="white" borderRadius="2xl" shadow="xl" p={8}>
             <ProgressBar />

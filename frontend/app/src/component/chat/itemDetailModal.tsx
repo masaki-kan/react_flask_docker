@@ -33,7 +33,12 @@ const ItemDetailModal: FC<ItemDetailModalProps> = ({
   if (!itemData) return null;
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="lg">
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      size="md"
+      scrollBehavior={"inside"}
+    >
       <ModalOverlay />
       <ModalContent>
         <ModalHeader>交換申請の対象商品</ModalHeader>

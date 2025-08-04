@@ -108,7 +108,7 @@ const Home: FC = () => {
     <>
       <Box
         position="fixed"
-        top={{ base: "110px", md: "56px" }} // ヘッダーの高さに合わせて調整
+        top={{ base: "110px", md: "110px" }} // ヘッダーの高さに合わせて調整
         left={0}
         right={0}
         zIndex={999}
@@ -188,7 +188,7 @@ const Home: FC = () => {
       <Box h={{ base: "100px", md: isSearchOpen ? "300px" : "80px" }} />
 
       {/* コンテンツエリア */}
-      <Box pt={20}>
+      <Box pt={20} pb={24}>
         <AnimatePresence mode="wait">
           <MotionBox
             initial={{ opacity: 0, y: 20 }}

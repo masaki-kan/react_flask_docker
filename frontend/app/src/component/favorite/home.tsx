@@ -80,7 +80,7 @@ const Home: FC = () => {
     <Box>
       <Box
         position="fixed"
-        top={{ base: "110px", md: "56px" }} // ヘッダーの高さに合わせて調整
+        top={{ base: "110px", md: "110px" }} // ヘッダーの高さに合わせて調整
         left={0}
         right={0}
         zIndex={999}
@@ -107,45 +107,47 @@ const Home: FC = () => {
         </Container>
       </Box>
 
-      <Box h={{ base: "100px", md: "300px" }} />
-      <AnimatePresence mode="wait">
-        <Box pt={"5rem"}>
-          <MotionBox
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.2 }}
-            w="full"
-          >
-            {" "}
-            <RebderItem
-              itemList={likedFilterList}
-              avatar={false}
-              navigate={itemDetailHandler}
-            />
-          </MotionBox>
+      <Box h={{ base: "100px", md: "80px" }} />
+      <Box pb={24}>
+        <AnimatePresence mode="wait">
+          <Box pt={"5rem"}>
+            <MotionBox
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.2 }}
+              w="full"
+            >
+              {" "}
+              <RebderItem
+                itemList={likedFilterList}
+                avatar={false}
+                navigate={itemDetailHandler}
+              />
+            </MotionBox>
 
-          {isLoading && (
-            <Center py={4}>
-              <Spinner size="lg" />
-            </Center>
-          )}
+            {isLoading && (
+              <Center py={4}>
+                <Spinner size="lg" />
+              </Center>
+            )}
 
-          {!hasMore && likedFilterList.length > 0 && (
-            <Center py={4}>
-              <Text color="gray.500">すべての商品を読み込みました</Text>
-            </Center>
-          )}
+            {!hasMore && likedFilterList.length > 0 && (
+              <Center py={4}>
+                <Text color="gray.500">すべての商品を読み込みました</Text>
+              </Center>
+            )}
 
-          {likedFilterList.length === 0 && !isLoading && (
-            <Center py={8}>
-              <Text color="gray.500" fontSize="lg">
-                お気に入りの商品はありません
-              </Text>
-            </Center>
-          )}
-        </Box>
-      </AnimatePresence>
+            {likedFilterList.length === 0 && !isLoading && (
+              <Center py={8}>
+                <Text color="gray.500" fontSize="lg">
+                  お気に入りの商品はありません
+                </Text>
+              </Center>
+            )}
+          </Box>
+        </AnimatePresence>
+      </Box>
     </Box>
   );
 };

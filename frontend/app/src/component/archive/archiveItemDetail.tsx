@@ -99,7 +99,12 @@ const ArchiveItemDetail: FC<ArchiveItemDetailProps> = ({
       </Box>
 
       {/* 詳細モーダル */}
-      <Modal isOpen={isOpen} onClose={onClose} size="xl">
+      <Modal
+        isOpen={isOpen}
+        onClose={onClose}
+        size="md"
+        scrollBehavior={"inside"}
+      >
         <ModalOverlay />
         <ModalContent>
           <ModalHeader>{title}</ModalHeader>

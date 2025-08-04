@@ -249,7 +249,7 @@ def loginCheck():
             cursor = conn.cursor()
             cursor.execute("SELECT user_id, name, password , email FROM users WHERE email = %s", (email,))
             user_data = cursor.fetchone()
-            conn.close()
+
             if user_data:
                 return jsonify({'result': True}), 200
             else:

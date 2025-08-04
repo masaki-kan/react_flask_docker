@@ -1,10 +1,13 @@
 import { FC } from "react";
 import MainHeader from "../layout/mainHeader";
-import { Outlet } from "react-router-dom";
+import { Outlet, useLocation } from "react-router-dom";
 import { Box, Container } from "@chakra-ui/react";
 import Footer from "../layout/footer";
+import { route } from "../../route/routeConst";
 
 const SecureLayout: FC = () => {
+  const location = useLocation();
+
   return (
     <Box height="100vh" display="flex" flexDirection="column" overflow="hidden">
       {/* ヘッダーを固定 */}
@@ -50,6 +53,7 @@ const SecureLayout: FC = () => {
       {/* フッターを固定 */}
       <Box
         flexShrink={0}
+        hidden={location.pathname !== route.profile}
         bg="white"
         boxShadow="0 -2px 4px rgba(0,0,0,0.1)"
         borderTop="1px solid"

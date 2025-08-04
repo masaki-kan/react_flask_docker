@@ -123,7 +123,12 @@ const ExchangeArchiveModal: FC<ExchangeArchiveModalProps> = ({
 
   return (
     <>
-      <Modal isOpen={isOpen} onClose={onClose} size="3xl">
+      <Modal
+        isOpen={isOpen}
+        onClose={onClose}
+        size="2xl"
+        scrollBehavior={"inside"}
+      >
         <ModalOverlay />
         <ModalContent maxH="90vh">
           <ModalHeader>交換履歴</ModalHeader>

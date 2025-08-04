@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Box,
   VStack,
@@ -66,8 +66,6 @@ const ThreadPage: React.FC = () => {
   const [initialLoad, setInitialLoad] = useState(true);
   const [deletingId, setDeletingId] = useState<number | null>(null);
 
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const toast = useToast();
   const { memorizeProfile } = useMyProfile();
@@ -111,7 +109,6 @@ const ThreadPage: React.FC = () => {
     );
 
     if (response.ok) {
-      // メッセージリストから削除
       setMessages((prev) =>
         prev.filter((msg) => msg.thread_message_id !== messageId)
       );
@@ -155,7 +152,6 @@ const ThreadPage: React.FC = () => {
         setHasMore(data.has_more);
         setPage(pageNum);
 
-        // フォローカウントを更新
         if (data.follow_counts) {
           setFollowCounts(data.follow_counts);
         }
@@ -180,25 +176,38 @@ const ThreadPage: React.FC = () => {
   useEffect(() => {
     const socketInstance = getSocket();
 
-    // スレッドルームに参加
     socketInstance.emit("join_thread");
 
-    // 新しいメッセージのリスナー
     socketInstance.on("new_thread_message", () => {
-      // 最新のメッセージを取得
       fetchMessages(1, filterType, true);
     });
 
-    // 初回データ取得
     fetchMessages(1, filterType, true);
 
-    // クリーンアップ
     return () => {
       socketInstance.off("new_thread_message");
       socketInstance.emit("leave_thread");
       disconnectSocket();
     };
   }, [fetchMessages, filterType]);
+
+  // スクロールでさらに読み込み
+  useEffect(() => {
+    const scrollContainer = document.querySelector(".main-scroll-container");
+    if (!scrollContainer) return;
+
+    const handleScroll = () => {
+      if (loading || !hasMore) return;
+
+      const { scrollTop, scrollHeight, clientHeight } = scrollContainer;
+      if (scrollTop + clientHeight >= scrollHeight - 100) {
+        fetchMessages(page + 1, filterType, false);
+      }
+    };
+
+    scrollContainer.addEventListener("scroll", handleScroll);
+    return () => scrollContainer.removeEventListener("scroll", handleScroll);
+  }, [loading, hasMore, fetchMessages, page, filterType]);
 
   // タブ変更時
   const handleTabChange = (index: number) => {
@@ -232,7 +241,6 @@ const ThreadPage: React.FC = () => {
         duration: 2000,
       });
 
-      // 少し遅延を入れてから最新を取得
       setTimeout(() => {
         fetchMessages(1, filterType, true);
       }, 100);
@@ -246,17 +254,6 @@ const ThreadPage: React.FC = () => {
       navigate(route.home);
     } else {
       navigate(`${route.shopPage}?user=${userId}`);
-    }
-  };
-
-  // スクロールでさらに読み込み
-  const handleScroll = () => {
-    if (!scrollContainerRef.current || loading || !hasMore) return;
-
-    const { scrollTop, scrollHeight, clientHeight } =
-      scrollContainerRef.current;
-    if (scrollTop + clientHeight >= scrollHeight - 100) {
-      fetchMessages(page + 1, filterType, false);
     }
   };
 
@@ -308,26 +305,31 @@ const ThreadPage: React.FC = () => {
   };
 
   return (
-    <Box>
-      {/* ヘッダー */}
+    <Box position="relative" height="100%">
+      {/* タブヘッダー */}
       <Box
-        w="100%"
         bg={bgColor}
+        position="fixed"
+        top={"110px"}
         borderBottom="1px"
         borderColor={borderColor}
-        p={4}
+        p={3}
+        mb={2}
+        zIndex={100}
+        borderRadius="md"
       >
         <Tabs
           variant="soft-rounded"
           onChange={handleTabChange}
           index={["all", "following", "followers"].indexOf(filterType)}
+          size="sm"
         >
           <TabList>
-            <Tab>{getTabLabel("all")}</Tab>
-            <Tab isDisabled={followCounts.following === 0}>
+            <Tab fontSize="sm">{getTabLabel("all")}</Tab>
+            <Tab fontSize="sm" isDisabled={followCounts.following === 0}>
               {getTabLabel("following")}
             </Tab>
-            <Tab isDisabled={followCounts.followers === 0}>
+            <Tab fontSize="sm" isDisabled={followCounts.followers === 0}>
               {getTabLabel("followers")}
             </Tab>
           </TabList>
@@ -335,58 +337,44 @@ const ThreadPage: React.FC = () => {
       </Box>
 
       {/* メッセージエリア */}
-      <Box
-        ref={scrollContainerRef}
-        flex={1}
-        w="100%"
-        onScroll={handleScroll}
-        bg={useColorModeValue("gray.50", "gray.900")}
-      >
-        <VStack
-          spacing={0}
-          align="stretch"
-          p={4}
-          overflowY={"auto"}
-          h="calc(100vh - 20rem)"
-        >
+      <Box pb="100px" mt={"150px"}>
+        <VStack spacing={2} align="stretch">
           {messages.length === 0 && !loading
             ? renderEmptyState()
             : messages.map((msg) => (
                 <Box
                   key={msg.thread_message_id}
-                  w="100%"
                   bg={bgColor}
-                  p={4}
-                  mb={2}
+                  p={3}
                   borderRadius="lg"
                   boxShadow="sm"
                 >
                   <HStack align="start" spacing={3}>
-                    {/* アバター */}
                     <Box
                       cursor="pointer"
                       onClick={() => handleUserClick(msg.user_id)}
+                      flexShrink={0}
                     >
                       {msg.user_image ? (
-                        <Avatar size="md" src={msg.user_image} />
+                        <Avatar size="sm" src={msg.user_image} />
                       ) : (
-                        <FaUserCircle size={40} color="gray.500" />
+                        <FaUserCircle size={32} color="gray.500" />
                       )}
                     </Box>
 
-                    {/* メッセージ内容 */}
                     <VStack align="start" flex={1} spacing={1}>
                       <HStack width="full" justify="space-between">
-                        <HStack>
+                        <HStack flexWrap="wrap" spacing={1}>
                           <Text
                             fontWeight="bold"
                             cursor="pointer"
+                            fontSize="sm"
                             _hover={{ textDecoration: "underline" }}
                             onClick={() => handleUserClick(msg.user_id)}
                           >
                             {msg.user_name}
                           </Text>
-                          <Text fontSize="sm" color="gray.500">
+                          <Text fontSize="xs" color="gray.500">
                             {msg.user_location}
                           </Text>
                           <Text fontSize="xs" color="gray.400">
@@ -394,14 +382,13 @@ const ThreadPage: React.FC = () => {
                           </Text>
                         </HStack>
 
-                        {/* 削除メニュー（自分の投稿のみ） */}
                         {String(msg.user_id) === memorizeProfile.profile.id && (
                           <Menu>
                             <MenuButton
                               as={IconButton}
                               icon={<FaEllipsisV />}
                               variant="ghost"
-                              size="sm"
+                              size="xs"
                               aria-label="Options"
                               isDisabled={deletingId === msg.thread_message_id}
                             />
@@ -412,6 +399,7 @@ const ThreadPage: React.FC = () => {
                                   handleDeleteMessage(msg.thread_message_id)
                                 }
                                 color="red.500"
+                                fontSize="sm"
                               >
                                 削除
                               </MenuItem>
@@ -425,8 +413,8 @@ const ThreadPage: React.FC = () => {
                         wordBreak="break-word"
                         overflowWrap="break-word"
                         maxWidth="100%"
-                        fontSize={{ base: "sm", md: "md" }}
-                        lineHeight={{ base: "1.4", md: "1.6" }}
+                        fontSize="sm"
+                        lineHeight="1.5"
                       >
                         {renderMessageWithLinks(msg.message)}
                       </Text>
@@ -437,58 +425,62 @@ const ThreadPage: React.FC = () => {
 
           {loading && (
             <Box textAlign="center" py={4}>
-              <Spinner />
+              <Spinner size="md" />
             </Box>
           )}
 
           {!hasMore && messages.length > 0 && (
-            <Text textAlign="center" color="gray.500" py={4}>
+            <Text textAlign="center" color="gray.500" py={4} fontSize="sm">
               すべて読み込みました
             </Text>
           )}
-
-          <div ref={messagesEndRef} />
         </VStack>
       </Box>
 
-      {/* 投稿エリア */}
+      {/* 投稿エリア（ビューポート下部に固定） */}
       <Box
-        w="100%"
+        position="fixed"
+        bottom={0} // フッターの高さ分上に配置
+        left={0}
+        right={0}
         bg={bgColor}
         borderTop="1px"
         borderColor={borderColor}
-        p={4}
-        position="sticky"
-        bottom={0}
+        p={3}
+        zIndex={1000}
       >
-        <HStack spacing={2}>
-          <Textarea
-            value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
-            placeholder="メッセージを入力... (URLは自動的にリンクになります)"
-            bg={inputBgColor}
-            resize="none"
-            rows={2}
-            maxLength={100}
-            onKeyPress={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                handleSubmit();
-              }
-            }}
-          />
-          <IconButton
-            aria-label="送信"
-            icon={<IoSend />}
-            colorScheme="blue"
-            onClick={handleSubmit}
-            isLoading={posting}
-            isDisabled={!newMessage.trim()}
-          />
-        </HStack>
-        <Text fontSize="xs" color="gray.500" mt={1} textAlign="right">
-          {newMessage.length}/100
-        </Text>
+        <Box maxW="container.xl" mx="auto" px={{ base: 2, md: 4 }}>
+          <HStack spacing={2}>
+            <Textarea
+              value={newMessage}
+              onChange={(e) => setNewMessage(e.target.value)}
+              placeholder="メッセージを入力... (URLは自動的にリンクになります)"
+              bg={inputBgColor}
+              resize="none"
+              rows={2}
+              maxLength={100}
+              fontSize="sm"
+              // onKeyPress={(e) => {
+              //   if (e.key === "Enter" && !e.shiftKey) {
+              //     e.preventDefault();
+              //     handleSubmit();
+              //   }
+              // }}
+            />
+            <IconButton
+              aria-label="送信"
+              icon={<IoSend />}
+              colorScheme="blue"
+              size="md"
+              onClick={handleSubmit}
+              isLoading={posting}
+              isDisabled={!newMessage.trim()}
+            />
+          </HStack>
+          <Text fontSize="xs" color="gray.500" mt={1} textAlign="right">
+            {newMessage.length}/100
+          </Text>
+        </Box>
       </Box>
     </Box>
   );
