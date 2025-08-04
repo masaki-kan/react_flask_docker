@@ -173,21 +173,24 @@ export const cancellationProcessApi = async (userID: string) => {
   try {
     const response = await axios.post(
       `${import.meta.env.VITE_API_URL}/api/cancellationProcess`,
-      {
-        userID,
-      }
+      { userID: userID }
     );
 
-    return response.data.message;
+    console.log("成功:", response.data);
+    return {
+      success: true,
+      message: response.data.message,
+    };
   } catch (error: unknown) {
     let errorMessage = "予期しないエラーが発生しました";
-
     if (axios.isAxiosError(error) && error.response?.data?.error) {
       errorMessage = error.response.data.error;
     }
 
-    errorSweetalert2(errorMessage);
-    return;
+    return {
+      success: false,
+      message: errorMessage,
+    };
   }
 };
 

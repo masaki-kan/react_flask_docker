@@ -34,7 +34,13 @@ type useMyProfileReturn = {
   getMyProfile: () => Promise<void>;
   getProfile: (userNumver: number, myUserNumber: number) => Promise<void>;
   favoriteUpdateHandler: (itemId: string, userId: string) => Promise<void>;
-  cancellationProcess: () => Promise<string>;
+  cancellationProcess: () => Promise<
+    | {
+        success: boolean;
+        message: string;
+      }
+    | undefined
+  >;
   getArchiveDetailHandler: (archiveId: string) => Promise<
     | {
         archiveData: archiveTradeType;

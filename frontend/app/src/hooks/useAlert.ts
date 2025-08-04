@@ -55,7 +55,7 @@ const useAlert = (): useAlertReturn => {
 
   const sweetSuccessTextOverAlert = (text: string) => {
     return Swal.fire({
-      title: text,
+      title: `<p style="font-size: 1rem; margin: 0;">${text}</p>`,
       icon: "success",
       draggable: true,
     });

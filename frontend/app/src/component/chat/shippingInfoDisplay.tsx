@@ -38,7 +38,12 @@ const ShippingInfoDisplay: FC<ShippingInfoDisplayProps> = ({
         >
           <HStack mb={2}>
             <Icon as={FaBox} color="gray.400" />
-            <Text fontWeight="bold" fontSize="xs">
+            <Text
+              fontWeight="bold"
+              fontSize="xs"
+              display={"inline-block"}
+              wordBreak={"break-all"}
+            >
               {label}
             </Text>
           </HStack>

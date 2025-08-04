@@ -42,7 +42,12 @@ const SelectItems: FC<SelectItemsType> = ({
             </Text>
             <HStack>
               <Icon as={FaBox} color="blue.500" />
-              <Text fontSize="xs" color="gray.600">
+              <Text
+                fontSize="xs"
+                color="gray.600"
+                display={"inline-block"}
+                wordBreak={"break-word"}
+              >
                 {memorizeBuyerUserData.name}
               </Text>
             </HStack>

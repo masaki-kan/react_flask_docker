@@ -4,6 +4,7 @@ import { RiLogoutBoxRLine } from "react-icons/ri";
 import useMyProfile from "../../hooks/useProfile";
 import useAlert from "../../hooks/useAlert";
 import useLog from "../../hooks/useLog";
+import { errorSweetalert2 } from "../../utils/alert/sweetalert2";
 
 const Withdrawal: FC = () => {
   const { tradeAlert } = useAlert();
@@ -13,12 +14,21 @@ const Withdrawal: FC = () => {
   // 退会処理
   const pushCancellationProcess = useCallback(async () => {
     const response = await cancellationProcess();
-    tradeAlert(response).then((result) => {
-      if (result.isConfirmed) {
-        // OK 押下時の処理
-        logOutHandler();
-      }
-    });
+    console.log(response);
+    if (response?.success === false) {
+      errorSweetalert2(response.message);
+
+      return;
+    }
+
+    if (response !== undefined && response.success) {
+      tradeAlert(response.message).then((result) => {
+        if (result.isConfirmed) {
+          // OK 押下時の処理
+          logOutHandler();
+        }
+      });
+    }
   }, [cancellationProcess, logOutHandler, tradeAlert]);
 
   return (

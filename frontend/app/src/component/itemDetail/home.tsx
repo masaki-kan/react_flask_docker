@@ -8,7 +8,6 @@ import {
   Avatar,
   useColorModeValue,
   Badge,
-  Container,
   Divider,
   Flex,
   Grid,
@@ -238,178 +237,171 @@ const Home: FC = () => {
 
   return (
     <>
-      <Container maxW="container.xl" py={4} px={{ base: 0, md: 4 }}>
-        <VStack spacing={4} align="stretch">
-          {/* ヘッダーセクション */}
-          <HStack justify="end" px={{ base: 2, md: 0 }}>
-            <Badge
-              fontSize="sm"
-              px={3}
-              py={1}
-              borderRadius="full"
-              colorScheme={
-                itemDetailData.tradeStatusFlag === 0 ? "green" : "orange"
-              }
-              display={itemDetailData.tradeStatusFlag === 0 ? "none" : "flex"}
-            >
-              {getTradeStatusFlag(itemDetailData.tradeStatusFlag)}
-            </Badge>
-          </HStack>
-
-          {/* メインコンテンツグリッド */}
-          <Grid
-            templateColumns={{ base: "1fr", lg: "1fr 1fr" }}
-            gap={{ base: 6, lg: 8 }}
-            px={{ base: 0, md: 0 }}
+      <VStack spacing={4} align="stretch" pt={20}>
+        {/* ヘッダーセクション */}
+        <HStack justify="end" px={{ base: 2, md: 0 }}>
+          <Badge
+            fontSize="sm"
+            px={3}
+            py={1}
+            borderRadius="full"
+            colorScheme={
+              itemDetailData.tradeStatusFlag === 0 ? "green" : "orange"
+            }
+            display={itemDetailData.tradeStatusFlag === 0 ? "none" : "flex"}
           >
-            {/* 画像セクション */}
-            <GridItem>
-              <Box
-                position="relative"
-                h={{ base: "400px", md: "500px" }}
-                borderRadius={{ base: 0, md: "xl" }}
-                overflow="hidden"
-                bg={bgColor}
-                boxShadow={{ base: "none", md: "lg" }}
-              >
-                <CustomImageSlider images={itemDetailData.images} />
-              </Box>
-            </GridItem>
+            {getTradeStatusFlag(itemDetailData.tradeStatusFlag)}
+          </Badge>
+        </HStack>
 
-            {/* 詳細情報セクション */}
-            <GridItem>
-              <VStack
-                align="stretch"
-                spacing={6}
-                bg={bgColor}
-                p={{ base: 4, md: 6 }}
-                borderRadius={{ base: 0, md: "xl" }}
-                boxShadow={{ base: "none", md: "lg" }}
-                h="full"
-              >
-                {/* タイトルといいねボタン */}
-                <Flex justify="space-between" align="start">
-                  <VStack align="start" spacing={2} flex={1}>
-                    <Text
-                      fontSize={{ base: "2xl", md: "3xl" }}
-                      fontWeight="bold"
-                      lineHeight="short"
+        {/* メインコンテンツグリッド */}
+        <Grid
+          templateColumns={{ base: "1fr", lg: "1fr 1fr" }}
+          gap={{ base: 6, lg: 8 }}
+          px={{ base: 0, md: 0 }}
+        >
+          {/* 画像セクション */}
+          <GridItem>
+            <Box
+              position="relative"
+              h={{ base: "400px", md: "500px" }}
+              borderRadius={{ base: 0, md: "xl" }}
+              overflow="hidden"
+              bg={bgColor}
+              boxShadow={{ base: "none", md: "lg" }}
+            >
+              <CustomImageSlider images={itemDetailData.images} />
+            </Box>
+          </GridItem>
+
+          {/* 詳細情報セクション */}
+          <GridItem>
+            <VStack
+              align="stretch"
+              spacing={6}
+              bg={bgColor}
+              p={{ base: 4, md: 6 }}
+              borderRadius={{ base: 0, md: "xl" }}
+              boxShadow={{ base: "none", md: "lg" }}
+              h="full"
+            >
+              {/* タイトルといいねボタン */}
+              <Flex justify="space-between" align="start">
+                <VStack align="start" spacing={2} flex={1}>
+                  <Text
+                    fontSize={{ base: "2xl", md: "3xl" }}
+                    fontWeight="bold"
+                    lineHeight="short"
+                  >
+                    {itemDetailData.title}
+                  </Text>
+                  <HStack spacing={3} flexWrap="wrap">
+                    <Badge colorScheme="purple" fontSize="sm" px={3} py={1}>
+                      {itemDetailData.type}
+                    </Badge>
+                    <Badge
+                      colorScheme="teal"
+                      fontSize="sm"
+                      px={3}
+                      py={1}
+                      hidden={itemDetailData.brand.length === 0}
                     >
-                      {itemDetailData.title}
-                    </Text>
-                    <HStack spacing={3} flexWrap="wrap">
-                      <Badge colorScheme="purple" fontSize="sm" px={3} py={1}>
-                        {itemDetailData.type}
-                      </Badge>
-                      <Badge
-                        colorScheme="teal"
-                        fontSize="sm"
-                        px={3}
-                        py={1}
-                        hidden={itemDetailData.brand.length === 0}
-                      >
-                        {itemDetailData.brand}
-                      </Badge>
-                    </HStack>
-                  </VStack>
-                  <IconButton
-                    aria-label="いいね"
-                    icon={itemDetailData.like ? <FaHeart /> : <FaRegHeart />}
-                    variant="ghost"
+                      {itemDetailData.brand}
+                    </Badge>
+                  </HStack>
+                </VStack>
+                <IconButton
+                  aria-label="いいね"
+                  icon={itemDetailData.like ? <FaHeart /> : <FaRegHeart />}
+                  variant="ghost"
+                  size="lg"
+                  color={itemDetailData.like ? "red.500" : "gray.400"}
+                  onClick={favoriteClickHandler}
+                  _hover={{
+                    transform: "scale(1.1)",
+                    color: "red.500",
+                  }}
+                  transition="all 0.2s"
+                />
+              </Flex>
+
+              <Divider />
+
+              {/* 投稿者情報 */}
+              <HStack
+                p={4}
+                bg={hoverBg}
+                borderRadius="lg"
+                spacing={4}
+                cursor="pointer"
+                transition="all 0.2s"
+                _hover={{
+                  transform: "translateY(-2px)",
+                  boxShadow: "sm",
+                }}
+                onClick={() => {
+                  navigate(`${route.shopPage}?user=${itemDetailData.userId}`);
+                }}
+              >
+                {itemDetailData.profImage.length > 0 ? (
+                  <Avatar
+                    size={"md"}
+                    name={itemDetailData.uesrname}
+                    src={itemDetailData.profImage}
+                  />
+                ) : (
+                  <>
+                    <Box mx={"auto"}>
+                      <FaUserCircle size={"60px"} color="gray.500" />
+                    </Box>
+                  </>
+                )}
+                <VStack align="start" spacing={0} flex={1}>
+                  <Text fontWeight="medium">{itemDetailData.uesrname}</Text>
+                  <Text fontSize="sm" color={textMuted}>
+                    {itemDetailData.itemUpdateTime}
+                  </Text>
+                </VStack>
+              </HStack>
+
+              {/* 説明文 */}
+              <Box>
+                <Text fontSize="sm" fontWeight="bold" color={textMuted} mb={2}>
+                  説明
+                </Text>
+                <Text lineHeight="tall">
+                  {itemDetailData.description || "説明はありません"}
+                </Text>
+              </Box>
+
+              <Divider />
+
+              {/* アクションボタン */}
+              <VStack spacing={3} pt={4}>
+                {itemDetailData.tradeStatusFlag === 0 ? (
+                  <Button
+                    w="full"
                     size="lg"
-                    color={itemDetailData.like ? "red.500" : "gray.400"}
-                    onClick={favoriteClickHandler}
+                    colorScheme="blue"
+                    onClick={tradeHandler}
                     _hover={{
-                      transform: "scale(1.1)",
-                      color: "red.500",
+                      transform: "translateY(-2px)",
+                      boxShadow: "lg",
                     }}
                     transition="all 0.2s"
-                  />
-                </Flex>
-
-                <Divider />
-
-                {/* 投稿者情報 */}
-                <HStack
-                  p={4}
-                  bg={hoverBg}
-                  borderRadius="lg"
-                  spacing={4}
-                  cursor="pointer"
-                  transition="all 0.2s"
-                  _hover={{
-                    transform: "translateY(-2px)",
-                    boxShadow: "sm",
-                  }}
-                  onClick={() => {
-                    navigate(`${route.shopPage}?user=${itemDetailData.userId}`);
-                  }}
-                >
-                  {itemDetailData.profImage.length > 0 ? (
-                    <Avatar
-                      size={"md"}
-                      name={itemDetailData.uesrname}
-                      src={itemDetailData.profImage}
-                    />
-                  ) : (
-                    <>
-                      <Box mx={"auto"}>
-                        <FaUserCircle size={"60px"} color="gray.500" />
-                      </Box>
-                    </>
-                  )}
-                  <VStack align="start" spacing={0} flex={1}>
-                    <Text fontWeight="medium">{itemDetailData.uesrname}</Text>
-                    <Text fontSize="sm" color={textMuted}>
-                      {itemDetailData.itemUpdateTime}
-                    </Text>
-                  </VStack>
-                </HStack>
-
-                {/* 説明文 */}
-                <Box>
-                  <Text
-                    fontSize="sm"
-                    fontWeight="bold"
-                    color={textMuted}
-                    mb={2}
                   >
-                    説明
-                  </Text>
-                  <Text lineHeight="tall">
-                    {itemDetailData.description || "説明はありません"}
-                  </Text>
-                </Box>
-
-                <Divider />
-
-                {/* アクションボタン */}
-                <VStack spacing={3} pt={4}>
-                  {itemDetailData.tradeStatusFlag === 0 ? (
-                    <Button
-                      w="full"
-                      size="lg"
-                      colorScheme="blue"
-                      onClick={tradeHandler}
-                      _hover={{
-                        transform: "translateY(-2px)",
-                        boxShadow: "lg",
-                      }}
-                      transition="all 0.2s"
-                    >
-                      取引を申請する
-                    </Button>
-                  ) : (
-                    <Button w="full" size="lg" isDisabled colorScheme="gray">
-                      取引中もしくは取引終了
-                    </Button>
-                  )}
-                </VStack>
+                    取引を申請する
+                  </Button>
+                ) : (
+                  <Button w="full" size="lg" isDisabled colorScheme="gray">
+                    取引中もしくは取引終了
+                  </Button>
+                )}
               </VStack>
-            </GridItem>
-          </Grid>
-        </VStack>
-      </Container>
+            </VStack>
+          </GridItem>
+        </Grid>
+      </VStack>
     </>
   );
 };

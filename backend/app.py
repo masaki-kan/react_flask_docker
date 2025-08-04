@@ -3035,7 +3035,7 @@ def cancellationProcess():
                     "error": error_details["message"],
                     "result": False,
                     "details": error_details
-                }), 400
+                }), 500
             
             # Stripeの顧客データを削除
             if user.get('stripe_customer_id'):
@@ -3147,13 +3147,13 @@ def cancellationProcess():
             }), 200
             
     except mysql.connector.Error as err:
-        print(f"MySQL Error during user deletion: {err}", flush=True)
+        # print(f"MySQL Error during user deletion: {err}", flush=True)
         return jsonify({
             "error": f"退会処理中にエラーが発生しました: {str(err)}",
             "result": False
         }), 500
     except Exception as e:
-        print(f"Unexpected error during user deletion: {e}", flush=True)
+        # print(f"Unexpected error during user deletion: {e}", flush=True)
         import traceback
         traceback.print_exc()
         return jsonify({

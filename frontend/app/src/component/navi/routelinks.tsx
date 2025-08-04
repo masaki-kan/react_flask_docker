@@ -120,7 +120,7 @@ const RenderRouteLinks: FC = () => {
               />
             ) : (
               <Box
-                p={2}
+                p={1}
                 borderRadius="full"
                 bg={hoverBg}
                 _hover={{
@@ -129,7 +129,7 @@ const RenderRouteLinks: FC = () => {
                 }}
                 transition="all 0.2s"
               >
-                <Icon as={FaUserCircle} boxSize={7} />
+                <Icon as={FaUserCircle} boxSize={8} />
               </Box>
             )}
             {/* <Menu>
