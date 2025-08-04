@@ -2941,46 +2941,149 @@ def create_payment():
         }), 500
     
 # 退会処理
-@app.route('/api/cancellationProcess' ,methods=['POST'])
+@app.route('/api/cancellationProcess', methods=['POST'])
 def cancellationProcess():
     data = request.get_json()
     user_id = data.get('userID')
     
+    if not user_id:
+        return jsonify({"error": "ユーザーIDが必要です", "result": False}), 400
+    
     try:
         with get_db_connection() as conn:
             cursor = conn.cursor(dictionary=True)
-                # ユーザー情報
-            cursor.execute("SELECT stripe_customer_id FROM users WHERE user_id = %s", (user_id,))
             
-            result = cursor.fetchone()
-            print( 'result _ stripe_customer_id :' , result,  flush=True)
-            if result:
-                stripe_customer_id = result.get('stripe_customer_id')
-                if stripe_customer_id:
-                    stripe.Customer.delete(stripe_customer_id)
-                    
-            # 子テーブルから先に削除（ON DELETE CASCADEが効かない場合の対処）
-            cursor.execute('DELETE FROM trade_reviews WHERE reviewer_id = %s OR reviewee_id = %s', (user_id, user_id))
-            cursor.execute('DELETE FROM trade_messages WHERE sender_id = %s', (user_id,))
-            cursor.execute('DELETE FROM trades WHERE seller_id = %s OR buyer_id = %s', (user_id, user_id))
-            cursor.execute('DELETE FROM item_images WHERE user_id = %s', (user_id,))
-            cursor.execute('DELETE FROM items WHERE user_id = %s', (user_id,))
+            # ユーザーの存在確認
+            cursor.execute("SELECT user_id, stripe_customer_id FROM users WHERE user_id = %s", (user_id,))
+            user = cursor.fetchone()
+            
+            if not user:
+                return jsonify({"error": "ユーザーが見つかりません", "result": False}), 404
+            
+            # Stripeの顧客データを削除
+            if user.get('stripe_customer_id'):
+                try:
+                    stripe.Customer.delete(user['stripe_customer_id'])
+                    print(f"Stripe customer deleted: {user['stripe_customer_id']}", flush=True)
+                except stripe.error.StripeError as e:
+                    print(f"Stripe deletion error: {e}", flush=True)
+                    # Stripeのエラーは無視して処理を継続
+            
+            # 削除カウンター
+            deleted_counts = {}
+            
+            # 1. スレッドメッセージを論理削除（物理削除しない）
+            cursor.execute('''
+                UPDATE thread_messages 
+                SET is_deleted = TRUE 
+                WHERE user_id = %s AND is_deleted = FALSE
+            ''', (user_id,))
+            deleted_counts['thread_messages'] = cursor.rowcount
+            
+            # 2. 取引関連データの削除（外部キー制約の順序を考慮）
+            
+            # 2-1. trade_confirmations の削除
+            cursor.execute('''
+                DELETE tc FROM trade_confirmations tc
+                INNER JOIN trades t ON tc.trade_id = t.trade_id
+                WHERE t.seller_id = %s OR t.buyer_id = %s
+            ''', (user_id, user_id))
+            deleted_counts['trade_confirmations'] = cursor.rowcount
+            
+            # 2-2. shipping_info の削除
+            cursor.execute('''
+                DELETE si FROM shipping_info si
+                INNER JOIN trades t ON si.trade_id = t.trade_id
+                WHERE t.seller_id = %s OR t.buyer_id = %s OR si.sender_user_id = %s
+            ''', (user_id, user_id, user_id))
+            deleted_counts['shipping_info'] = cursor.rowcount
+            
+            # 2-3. trade_messages の削除
+            cursor.execute('''
+                DELETE tm FROM trade_messages tm
+                INNER JOIN trades t ON tm.trade_id = t.trade_id
+                WHERE t.seller_id = %s OR t.buyer_id = %s OR tm.sender_id = %s
+            ''', (user_id, user_id, user_id))
+            deleted_counts['trade_messages'] = cursor.rowcount
+            
+            # 2-4. trade_exchanges の削除
+            cursor.execute('''
+                DELETE te FROM trade_exchanges te
+                WHERE te.user_id = %s
+            ''', (user_id,))
+            deleted_counts['trade_exchanges'] = cursor.rowcount
+            
+            # 2-5. trades の削除
+            cursor.execute('''
+                DELETE FROM trades 
+                WHERE seller_id = %s OR buyer_id = %s
+            ''', (user_id, user_id))
+            deleted_counts['trades'] = cursor.rowcount
+            
+            # 3. 商品関連データの削除
+            
+            # 3-1. likes の削除
             cursor.execute('DELETE FROM likes WHERE user_id = %s', (user_id,))
+            deleted_counts['likes'] = cursor.rowcount
+            
+            # 3-2. item_images の削除
+            cursor.execute('DELETE FROM item_images WHERE user_id = %s', (user_id,))
+            deleted_counts['item_images'] = cursor.rowcount
+            
+            # 3-3. items の削除
+            cursor.execute('DELETE FROM items WHERE user_id = %s', (user_id,))
+            deleted_counts['items'] = cursor.rowcount
+            
+            # 4. プロフィール関連データの削除
+            
+            # 4-1. tags の削除
             cursor.execute('DELETE FROM tags WHERE user_id = %s', (user_id,))
+            deleted_counts['tags'] = cursor.rowcount
+            
+            # 4-2. profile_images の削除
             cursor.execute('DELETE FROM profile_images WHERE user_id = %s', (user_id,))
-            cursor.execute('DELETE FROM follows WHERE follower_id = %s OR followed_id = %s', (user_id, user_id))
-
-            # 最後にusersを削除
+            deleted_counts['profile_images'] = cursor.rowcount
+            
+            # 4-3. follows の削除
+            cursor.execute('''
+                DELETE FROM follows 
+                WHERE follower_id = %s OR followed_id = %s
+            ''', (user_id, user_id))
+            deleted_counts['follows'] = cursor.rowcount
+            
+            # 5. 最後にユーザー本体を削除
             cursor.execute('DELETE FROM users WHERE user_id = %s', (user_id,))
-
+            deleted_counts['users'] = cursor.rowcount
+            
+            # コミット
             conn.commit()
-            return jsonify({'message': '退会処理が完了しました。ご利用ありがとうございました。'}), 200
+            
+            print(f"User {user_id} deletion completed. Counts: {deleted_counts}", flush=True)
+            
+            # 注意: アーカイブデータは削除しない
+            # archived_trades, archived_items, archived_trade_messages などは保持される
+            
+            return jsonify({
+                'message': '退会処理が完了しました。ご利用ありがとうございました。',
+                'result': True,
+                'deleted_counts': deleted_counts
+            }), 200
+            
     except mysql.connector.Error as err:
+        print(f"MySQL Error during user deletion: {err}", flush=True)
         return jsonify({
-            "error": "退会処理中にエラーが発生しました",
+            "error": f"退会処理中にエラーが発生しました: {str(err)}",
             "result": False
         }), 500
-
+    except Exception as e:
+        print(f"Unexpected error during user deletion: {e}", flush=True)
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            "error": "予期しないエラーが発生しました",
+            "result": False
+        }), 500
+        
 # === アーカイブクリーンアップ関数 ===
 def cleanup_old_archives():
     """1年以上経過したアーカイブデータを削除"""
