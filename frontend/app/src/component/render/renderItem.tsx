@@ -2,19 +2,19 @@
 import { FC, useCallback, useState, memo, useMemo } from "react";
 import {
   Grid,
-  Text,
+  // Text,
   Card,
-  VStack,
+  // VStack,
   Box,
-  Badge,
+  // Badge,
   useColorModeValue,
 } from "@chakra-ui/react";
 import { itemListType } from "../../types/itemType";
-import { viewDate } from "../../utils/date/format";
+// import { viewDate } from "../../utils/date/format";
 import { useLocation } from "react-router-dom";
 import { route } from "../../route/routeConst";
 import { useEffectOnce } from "react-use";
-import { itemTypeViewHandler } from "../../utils/type/itemTypeView";
+// import { itemTypeViewHandler } from "../../utils/type/itemTypeView";
 import OptimizedImage from "./optimizedImage";
 
 type RenderItemProps = {
@@ -105,7 +105,7 @@ const ItemCard = memo<{ item: itemListType; onClick: () => void }>(
           )}
         </Box>
         {/* 日付バッジ */}
-        <Badge
+        {/* <Badge
           bg="blackAlpha.700"
           color="white"
           fontSize={{ base: "2xs", sm: "2xs", md: "xs" }}
@@ -114,9 +114,9 @@ const ItemCard = memo<{ item: itemListType; onClick: () => void }>(
           borderRadius={0}
         >
           {viewDate(item.uploaded_at)}
-        </Badge>
+        </Badge> */}
         {/* 商品情報 */}
-        <VStack
+        {/* <VStack
           align="stretch"
           p={{ base: 2, sm: 2.5, md: 3 }}
           spacing={{ base: 1.5, sm: 2 }}
@@ -164,7 +164,7 @@ const ItemCard = memo<{ item: itemListType; onClick: () => void }>(
               </Badge>
             )}
           </VStack>
-        </VStack>
+        </VStack> */}
       </Card>
     );
   }

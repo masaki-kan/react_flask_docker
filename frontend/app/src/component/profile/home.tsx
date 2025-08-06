@@ -5,7 +5,6 @@ import useMyProfile from "../../hooks/useProfile";
 import { postStoreProfileApi } from "../../api/profileApis";
 import { profileType } from "../../types/profileType";
 import useAlert from "../../hooks/useAlert";
-import { Box } from "@chakra-ui/react";
 
 const Profile: FC = () => {
   const { getMyProfile } = useMyProfile();
@@ -21,10 +20,10 @@ const Profile: FC = () => {
       const response = await postStoreProfileApi(formdata);
       if (response?.status !== false) {
         defaultToast(response?.message);
-        setEditSwitch(false);
+        getMyProfile();
       }
     },
-    [defaultToast]
+    [defaultToast, getMyProfile]
   );
 
   useEffect(() => {
@@ -33,16 +32,14 @@ const Profile: FC = () => {
 
   return (
     <>
-      <Box pt={24}>
-        {editSwitch ? (
-          <ProfileForm
-            formStoreEvent={formStoreEventHandler}
-            onClickFormSwitch={editFormSwitchHandler}
-          />
-        ) : (
-          <ProfileIndex editFormSwitch={editFormSwitchHandler} />
-        )}
-      </Box>
+      {editSwitch ? (
+        <ProfileForm
+          formStoreEvent={formStoreEventHandler}
+          onClickFormSwitch={editFormSwitchHandler}
+        />
+      ) : (
+        <ProfileIndex editFormSwitch={editFormSwitchHandler} />
+      )}
     </>
   );
 };

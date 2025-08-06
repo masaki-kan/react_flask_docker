@@ -1,4 +1,4 @@
-import mysql.connector
+
 from datetime import datetime
 
 class TradeArchiver:

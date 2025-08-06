@@ -33,6 +33,7 @@ import {
 import useMyProfile from "../../hooks/useProfile";
 import { getSocket, disconnectSocket } from "../../utils/socket/getSocket";
 import { route } from "../../route/routeConst";
+import { checkPatter } from "../../utils/varidate/detectProhibitedContent";
 
 interface ThreadMessage {
   thread_message_id: number;
@@ -226,6 +227,18 @@ const ThreadPage: React.FC = () => {
   const handleSubmit = async () => {
     if (!newMessage.trim() || posting) return;
 
+    const check = checkPatter(newMessage.trim());
+    if (check.isProhibited) {
+      toast({
+        title: "投稿できません",
+        description: check.message,
+        status: "error",
+        duration: 4000,
+        isClosable: true,
+      });
+      return;
+    }
+
     setPosting(true);
 
     const response = await threadPostApi(
@@ -337,7 +350,7 @@ const ThreadPage: React.FC = () => {
       </Box>
 
       {/* メッセージエリア */}
-      <Box pb="100px" mt={"150px"}>
+      <Box pb="150px" mt={"50px"}>
         <VStack spacing={2} align="stretch">
           {messages.length === 0 && !loading
             ? renderEmptyState()

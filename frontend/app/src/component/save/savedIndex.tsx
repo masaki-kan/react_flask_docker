@@ -1,20 +1,14 @@
 import { FC, useMemo } from "react";
 import {
-  Tab,
-  TabList,
-  TabPanel,
-  TabPanels,
-  Tabs,
   Box,
   Container,
   VStack,
   HStack,
   Text,
   Icon,
-  Badge,
   useColorModeValue,
 } from "@chakra-ui/react";
-import { AnimatePresence } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { FaHandshake } from "react-icons/fa";
 import useSaved from "../../hooks/useSaved";
 import RenderSaved from "./renderSaved";
@@ -23,11 +17,14 @@ import { useEffectOnce } from "react-use";
 const SavedIndex: FC = () => {
   const { savedList } = useSaved();
   const { getSavedListHandler } = useSaved();
+  const MotionBox = motion.create(Box);
   // カラーモード対応
   const bgColor = useColorModeValue("white", "gray.800");
   const borderColor = useColorModeValue("gray.200", "gray.700");
-  const activeColor = useColorModeValue("gray.500", "gray.400");
-  const textColor = useColorModeValue("gray.600", "gray.300");
+  const shadowColor = useColorModeValue(
+    "0 4px 12px rgba(0, 0, 0, 0.08)",
+    "0 4px 12px rgba(0, 0, 0, 0.3)"
+  );
 
   const unCompletedList = useMemo(() => {
     return savedList
@@ -59,91 +56,65 @@ const SavedIndex: FC = () => {
   });
 
   return (
-    <Container maxW="container.xl" px={{ base: 2, md: 4 }}>
-      <VStack spacing={6} align="stretch" pt={24}>
-        {/* スタイリッシュなタブ */}
-        <Tabs variant="unstyled" defaultIndex={0}>
-          <Box
-            bg={bgColor}
-            p={1}
-            borderRadius="xl"
-            boxShadow="0 2px 10px rgba(0, 0, 0, 0.1)"
-            border="1px solid"
-            borderColor={borderColor}
-            position={"sticky"}
-            top={-1}
-            zIndex={100}
+    <>
+      <Box px={4}>
+        <Container maxW="container.xl" px={{ base: 2, md: 4 }}>
+          <VStack
+            px={2}
+            py={3}
+            spacing={2}
+            width="100%"
+            bgColor="white"
+            boxShadow={shadowColor}
+            borderRadius="md"
           >
-            <TabList>
-              {tabs.map((tab, index) => (
-                <Tab
-                  key={index}
-                  flex={1}
-                  py={4}
-                  mx={0.5}
-                  borderRadius="lg"
-                  _selected={{
-                    bg: activeColor,
-                    color: "white",
-                  }}
-                  transition="all 0.2s"
-                  color={textColor}
-                >
-                  <HStack spacing={3}>
-                    <Icon as={tab.icon} boxSize={5} />
-                    <Text fontWeight="medium">{tab.label}</Text>
-                    <Badge
-                      colorScheme="gray"
-                      variant="subtle"
-                      fontSize="xs"
-                      px={2}
-                      borderRadius="full"
-                      minW={6}
-                      textAlign="center"
-                    >
-                      {tab.count}
-                    </Badge>
-                  </HStack>
-                </Tab>
-              ))}
-            </TabList>
-          </Box>
+            <HStack width="full" justify="space-between" align="center">
+              <Box fontSize="sm" fontWeight="medium" color="gray.600">
+                交換リスト
+              </Box>
+            </HStack>
+            {/* 検索フォームの内容 */}
+          </VStack>
+        </Container>
+      </Box>
 
-          <TabPanels>
-            {tabs.map((tab, index) => (
-              <TabPanel key={index} px={0}>
-                <AnimatePresence mode="wait">
-                  {tab.data.length === 0 ? (
-                    <Box
-                      textAlign="center"
-                      py={20}
-                      bg={bgColor}
-                      borderRadius="xl"
-                      border="1px solid"
-                      borderColor={borderColor}
-                    >
-                      <Icon
-                        as={tab.icon}
-                        boxSize={12}
-                        color="gray.300"
-                        mb={4}
-                      />
-                      <Text color="gray.500" fontSize="lg">
-                        {index === 0
-                          ? "現在進行中の取引はありません"
-                          : "完了した取引はありません"}
-                      </Text>
-                    </Box>
-                  ) : (
-                    <RenderSaved savedList={tab.data} />
-                  )}
-                </AnimatePresence>
-              </TabPanel>
-            ))}
-          </TabPanels>
-        </Tabs>
-      </VStack>
-    </Container>
+      <Box pb={24} pt={4}>
+        <AnimatePresence mode="wait">
+          <MotionBox
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.2 }}
+            w="full"
+          >
+            {tabs.map((tab, index) => {
+              if (tab.data.length === 0) {
+                return (
+                  <Box
+                    key={index} // 👈 keyを追加
+                    textAlign="center"
+                    py={20}
+                    bg={bgColor}
+                    borderRadius="xl"
+                    border="1px solid"
+                    borderColor={borderColor}
+                  >
+                    <Icon as={tab.icon} boxSize={12} color="gray.300" mb={4} />
+                    <Text color="gray.500" fontSize="lg">
+                      {index === 0
+                        ? "現在進行中の取引はありません"
+                        : "完了した取引はありません"}
+                    </Text>
+                  </Box>
+                );
+              } else {
+                return <RenderSaved key={index} savedList={tab.data} />;
+              }
+            })}
+          </MotionBox>
+        </AnimatePresence>
+      </Box>
+    </>
   );
 };
 

@@ -237,7 +237,7 @@ const Home: FC = () => {
 
   return (
     <>
-      <VStack spacing={4} align="stretch" pt={20}>
+      <VStack spacing={4} align="stretch">
         {/* ヘッダーセクション */}
         <HStack justify="end" px={{ base: 2, md: 0 }}>
           <Badge
@@ -382,7 +382,7 @@ const Home: FC = () => {
                   <Button
                     w="full"
                     size="lg"
-                    colorScheme="blue"
+                    variant="solid"
                     onClick={tradeHandler}
                     _hover={{
                       transform: "translateY(-2px)",

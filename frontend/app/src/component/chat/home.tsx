@@ -565,7 +565,7 @@ const Home: FC = () => {
                 isCurrentUserSeller &&
                 !hasSellerSelectedItem && (
                   <Button
-                    colorScheme="blue"
+                    variant="solid"
                     size={{ base: "sm", md: "sm" }}
                     onClick={onPartnerItemsOpen}
                     leftIcon={<FaBox />}

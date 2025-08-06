@@ -40,6 +40,7 @@ export const getProfileApi = async (
       likes: response.data.profile.likes,
       plan: response.data.profile.plan,
       tradeStatusFlag: response.data.profile.trade_status_flag,
+      type: response.data.profile.type,
     };
 
     // 空なので

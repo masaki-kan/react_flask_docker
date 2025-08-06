@@ -264,7 +264,7 @@ const ItemForm: FC<ItemFormProps> = ({ profileItem, ItemNumver }) => {
   }, [navigate]);
 
   return (
-    <Box pt={"100px"}>
+    <>
       {/* ヘッダー */}
       <HStack justify="space-between">
         <HStack spacing={4}>
@@ -487,7 +487,7 @@ const ItemForm: FC<ItemFormProps> = ({ profileItem, ItemNumver }) => {
           </Button>
         </HStack>
       </HStack>
-    </Box>
+    </>
   );
 };
 

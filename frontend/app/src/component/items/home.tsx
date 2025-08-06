@@ -185,10 +185,10 @@ const Home: FC = () => {
         </Container>
       </Box>
 
-      <Box h={{ base: "100px", md: isSearchOpen ? "300px" : "80px" }} />
+      <Box h={{ base: "50px", md: isSearchOpen ? "300px" : "80px" }} />
 
       {/* コンテンツエリア */}
-      <Box pt={20} pb={24}>
+      <Box pb={24}>
         <AnimatePresence mode="wait">
           <MotionBox
             initial={{ opacity: 0, y: 20 }}

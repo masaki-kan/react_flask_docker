@@ -10,10 +10,23 @@ const SecureLayout: FC = () => {
 
   return (
     <Box height="100vh" display="flex" flexDirection="column" overflow="hidden">
-      {/* ヘッダーを固定 */}
-      <Box flexShrink={0} bg="white" boxShadow="sm" zIndex={1000}>
+      {/* ヘッダーをアニメーション付きで表示/非表示 */}
+      <Box
+        position="fixed"
+        top={0}
+        left={0}
+        right={0}
+        bg="white"
+        boxShadow="sm"
+        zIndex={1000}
+        transform={"translateY(0)"}
+        transition="transform 0.3s ease-in-out"
+      >
         <MainHeader />
       </Box>
+
+      {/* ヘッダーの高さ分のスペーサー */}
+      <Box height="103px" flexShrink={0} />
 
       {/* メインコンテンツ（スクロール可能） */}
       <Box

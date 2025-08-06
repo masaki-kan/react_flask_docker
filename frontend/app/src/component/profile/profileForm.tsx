@@ -229,7 +229,7 @@ const ProfileForm: FC<ProfileFormProps> = ({
               </Text>
 
               <Box position="relative">
-                {formData.image.length > 0 ? (
+                {formData.image?.length > 0 ? (
                   <Avatar
                     size="2xl"
                     src={formData.image}
@@ -339,7 +339,7 @@ const ProfileForm: FC<ProfileFormProps> = ({
                   <Input
                     placeholder="例: 大阪"
                     name="location"
-                    value={formData.location}
+                    defaultValue={formData.location}
                     onChange={formDateChangeHandler}
                     size="lg"
                   />

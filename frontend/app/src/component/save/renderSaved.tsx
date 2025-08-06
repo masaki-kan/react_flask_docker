@@ -1,24 +1,24 @@
 import { FC, useState, useCallback } from "react";
 import { savedListType } from "../../types/savedType";
 import {
-  HStack,
+  // HStack,
   VStack,
-  Avatar,
-  Image,
-  Text,
+  // Avatar,
+  // Text,
   Box,
   Flex,
   Badge,
-  Divider,
+  // Divider,
   Grid,
   GridItem,
 } from "@chakra-ui/react";
-import { viewDate } from "../../utils/date/format";
+// import { viewDate } from "../../utils/date/format";
 import { useNavigate } from "react-router-dom";
 import { route } from "../../route/routeConst";
 import useMyProfile from "../../hooks/useProfile";
-import { FaUserCircle } from "react-icons/fa";
-import { itemParts } from "../../consts/itemConsts";
+import OptimizedImage from "../render/optimizedImage";
+// import { FaUserCircle } from "react-icons/fa";
+// import { itemParts } from "../../consts/itemConsts";
 
 type RenderSavedType = {
   savedList: savedListType[];
@@ -173,8 +173,7 @@ const RenderSaved: FC<RenderSavedType> = ({ savedList }) => {
 
               <VStack spacing={0} align="stretch">
                 {/* 商品画像 */}
-                <Box position="relative" h="200px" overflow="hidden">
-                  <Image
+                {/* <Image
                     src={save.image_url}
                     alt="取引商品画像"
                     objectFit="cover"
@@ -182,22 +181,30 @@ const RenderSaved: FC<RenderSavedType> = ({ savedList }) => {
                     h="100%"
                     transition="transform 0.3s ease"
                     _groupHover={{ transform: "scale(1.05)" }}
+                  /> */}
+                <Box position="relative" w="full">
+                  <OptimizedImage
+                    src={save.image_url}
+                    alt={save.title}
+                    aspectRatio={1}
+                    objectFit="cover"
+                    sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
                   />
                 </Box>
 
                 {/* 商品情報 */}
-                <VStack align="start" p={2} spacing={2}>
-                  <Text
+                {/* <VStack align="start" p={2} spacing={2}> */}
+                {/* <Text
                     fontWeight="bold"
                     fontSize={{ base: "sm", md: "md" }}
                     noOfLines={2}
                     lineHeight="short"
                   >
                     {save.title}
-                  </Text>
-                  <Divider />
-                  {/* 取引相手情報 */}
-                  <HStack spacing={3} w="full">
+                  </Text> */}
+                {/* <Divider /> */}
+                {/* 取引相手情報 */}
+                {/* <HStack spacing={3} w="full">
                     {save.user_image_url !== null ? (
                       <Avatar
                         src={save.user_image_url}
@@ -210,7 +217,13 @@ const RenderSaved: FC<RenderSavedType> = ({ savedList }) => {
                       </Box>
                     )}
                     <VStack align="start" spacing={0} flex={1}>
-                      <Text fontSize="sm" fontWeight="medium" noOfLines={1}>
+                      <Text
+                        fontSize="sm"
+                        fontWeight="medium"
+                        noOfLines={1}
+                        whiteSpace={"wrap"}
+                        wordBreak={"break-all"}
+                      >
                         {save.user_name}
                       </Text>
                       <Text fontSize="xs" color="gray.500">
@@ -219,21 +232,21 @@ const RenderSaved: FC<RenderSavedType> = ({ savedList }) => {
                           : "出品者"}
                       </Text>
                     </VStack>
-                  </HStack>
+                  </HStack> */}
 
-                  {/* 取引開始日 */}
-                  <Box w="full">
+                {/* 取引開始日 */}
+                {/* <Box w="full">
                     <Text fontSize="xs" color="gray.500">
                       取引開始日
                     </Text>
                     <Text fontSize="sm" fontWeight="medium">
                       {viewDate(save.trade_created_at)}
                     </Text>
-                  </Box>
+                  </Box> */}
 
-                  {/* ブランド・タイプ情報（あれば表示） */}
-                  {(save.brand || save.type) && (
-                    <VStack spacing={2} w={"full"}>
+                {/* ブランド・タイプ情報（あれば表示） */}
+                {/* {(save.brand || save.type) && (
+                    <VStack spacing={2} w={"full"} align={"start"}>
                       {save.brand && (
                         <Badge
                           display={{ base: "block", md: "flex" }}
@@ -261,8 +274,8 @@ const RenderSaved: FC<RenderSavedType> = ({ savedList }) => {
                         </Badge>
                       )}
                     </VStack>
-                  )}
-                </VStack>
+                  )} */}
+                {/* </VStack> */}
               </VStack>
             </GridItem>
           );

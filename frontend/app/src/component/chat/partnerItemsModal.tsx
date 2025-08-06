@@ -155,9 +155,14 @@ const PartnerItemsModal: FC<PartnerItemsModalProps> = ({
 
   return (
     <>
-      <Modal isOpen={isOpen} onClose={onClose} size="xl">
+      <Modal
+        isOpen={isOpen}
+        onClose={onClose}
+        size="xl"
+        scrollBehavior={"inside"}
+      >
         <ModalOverlay />
-        <ModalContent maxH="90vh" overflowY="auto">
+        <ModalContent maxH="70vh" overflowY="auto">
           <ModalHeader>
             {isCurrentUserSeller
               ? `${partnerName}さんの商品から交換商品を選択`

@@ -10,15 +10,18 @@ import {
   Card,
   VStack,
   Textarea,
+  useToast,
 } from "@chakra-ui/react";
 import useChat from "../../hooks/useChat";
 import { useEffectOnce } from "react-use";
 import { messagesType } from "../../types/chatType";
 import { viewDate } from "../../utils/date/format";
 import { getSocket } from "../../utils/socket/getSocket";
+import { checkPatter } from "../../utils/varidate/detectProhibitedContent";
 
 const ChatLayout: FC = () => {
-  const [message, setMessage] = useState("");
+  const toast = useToast();
+  const [message, setMessage] = useState<string>("");
   const socketRef = useRef<Socket | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { memorizeChatMessages, memorizeChatItemData } = useChat();
@@ -96,6 +99,18 @@ const ChatLayout: FC = () => {
 
   const sendMessage = useCallback(async () => {
     if (!message.trim()) return;
+
+    const check = checkPatter(message.trim());
+    if (check.isProhibited) {
+      toast({
+        title: "投稿できません",
+        description: check.message,
+        status: "error",
+        duration: 4000,
+        isClosable: true,
+      });
+      return;
+    }
     const socket = getSocket();
     socket?.emit("send_message", {
       room: roomId,
@@ -154,7 +169,6 @@ const ChatLayout: FC = () => {
       minH={{ base: "400px", md: "500px" }}
       display="flex"
       flexDirection="column"
-      mb={8}
     >
       {/* メッセージ表示部分 */}
       <Box

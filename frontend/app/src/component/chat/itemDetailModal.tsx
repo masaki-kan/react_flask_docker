@@ -36,7 +36,7 @@ const ItemDetailModal: FC<ItemDetailModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      size="md"
+      size="full"
       scrollBehavior={"inside"}
     >
       <ModalOverlay />

@@ -30,6 +30,7 @@ const initialState: initialStateType = {
     reasen: "",
     likes: [],
     plan: "1",
+    type: 0,
   },
   items: [],
   archive: [],
