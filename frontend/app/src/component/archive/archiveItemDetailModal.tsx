@@ -36,7 +36,12 @@ const ArchiveItemDetailModal: FC<ArchiveItemDetailModalPropsType> = ({
 }) => {
   return (
     <>
-      <Modal isOpen={isOpen} onClose={onClose} size="xl">
+      <Modal
+        isOpen={isOpen}
+        onClose={onClose}
+        size="full"
+        scrollBehavior={"inside"}
+      >
         <ModalOverlay />
         <ModalContent>
           <ModalHeader>{title}</ModalHeader>
@@ -76,7 +81,7 @@ const ArchiveItemDetailModal: FC<ArchiveItemDetailModalPropsType> = ({
                 </Text>
                 <Text fontSize="sm" whiteSpace="pre-wrap">
                   {itemBrand
-                    ? itemBrand.name.length > 0
+                    ? itemBrand.name?.length > 0
                       ? itemBrand.name
                       : itemBrand.name
                     : "未設定"}
