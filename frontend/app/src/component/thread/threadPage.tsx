@@ -23,8 +23,6 @@ import {
 import { IoSend } from "react-icons/io5";
 import { FaUserCircle, FaEllipsisV, FaTrash } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
-import { format } from "date-fns";
-import { ja } from "date-fns/locale";
 import {
   threadPostApi,
   fetchThreadMessages,
@@ -34,6 +32,7 @@ import useMyProfile from "../../hooks/useProfile";
 import { getSocket, disconnectSocket } from "../../utils/socket/getSocket";
 import { route } from "../../route/routeConst";
 import { checkPatter } from "../../utils/varidate/detectProhibitedContent";
+import { viewDate } from "../../utils/date/format";
 
 interface ThreadMessage {
   thread_message_id: number;
@@ -270,12 +269,6 @@ const ThreadPage: React.FC = () => {
     }
   };
 
-  // 日時フォーマット
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return format(date, "MM/dd HH:mm", { locale: ja });
-  };
-
   // タブのラベルを動的に生成
   const getTabLabel = (type: "all" | "following" | "followers") => {
     switch (type) {
@@ -391,7 +384,7 @@ const ThreadPage: React.FC = () => {
                             {msg.user_location}
                           </Text>
                           <Text fontSize="xs" color="gray.400">
-                            {formatDate(msg.created_at)}
+                            {viewDate(new Date(msg.created_at))}
                           </Text>
                         </HStack>
 

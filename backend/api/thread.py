@@ -7,8 +7,12 @@ from flask_socketio import emit, join_room
 from utils.db_utils import get_db_connection
 import json
 import mysql.connector
+import pytz
 
 thread_bp = Blueprint('thread', __name__, url_prefix='/api')
+
+# 日本時間のタイムゾーン
+JST = pytz.timezone('Asia/Tokyo')
 
 # スレッドメッセージ一覧取得（フィルタリング付き）
 @thread_bp.route('/thread/messages', methods=['GET'])
