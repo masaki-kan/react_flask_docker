@@ -1,16 +1,29 @@
 import { FC, useEffect, useState } from "react";
 import { Box, Center, Text } from "@chakra-ui/react";
 import VintageLandingPage from "./vintageLandingPage";
-import { AnimatePresence } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import SplashBackground from "./splashBackground";
+import { keyframes } from "@emotion/react";
+
+// タイプライター風のアニメーション
+const typewriter = keyframes`
+  from { width: 0; }
+  to { width: 100%; }
+`;
+
+const blink = keyframes`
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
+`;
 
 const Home: FC = () => {
   const [showSplash, setShowSplash] = useState(true);
+  const MotionCenter = motion.create(Center);
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      setShowSplash(false); // 一定時間後に非表示へ
-    }, 2500); // 2.5秒間表示
+      setShowSplash(false);
+    }, 2800); // 少し長めに
 
     return () => clearTimeout(timer);
   }, []);
@@ -19,14 +32,96 @@ const Home: FC = () => {
     <>
       <AnimatePresence>
         {showSplash && (
-          <Box position="relative" w="100vw" h="100vh">
+          <Box position="relative" w="100vw" h="100vh" overflow="hidden">
             <SplashBackground />
-            <Center h="100vh" zIndex={1000} position="relative">
-              {/* <Image src="/logo.png" boxSize="120px" /> */}
-              <Text fontSize={"xl"} fontWeight={"bold"} mb={10}>
-                僕らのヴィンテージ
-              </Text>
-            </Center>
+            <MotionCenter
+              h="100vh"
+              zIndex={1002}
+              position="relative"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              transition={{ duration: 0.5 }}
+            >
+              <Box position="relative">
+                {/* ロゴテキスト */}
+                <motion.div
+                  initial={{ y: 20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{
+                    duration: 0.8,
+                    delay: 0.5,
+                    ease: [0.43, 0.13, 0.23, 0.96],
+                  }}
+                >
+                  <Text
+                    fontSize={{ base: "2xl", md: "3xl" }}
+                    fontWeight="black"
+                    color="white"
+                    letterSpacing="wider"
+                    textShadow="0 4px 20px rgba(0,0,0,0.3)"
+                    position="relative"
+                    overflow="hidden"
+                    whiteSpace="nowrap"
+                    _after={{
+                      content: '""',
+                      position: "absolute",
+                      right: 0,
+                      top: 0,
+                      bottom: 0,
+                      width: "2px",
+                      bg: "white",
+                      animation: `${blink} 1s infinite`,
+                      animationDelay: "1.5s",
+                    }}
+                  >
+                    <Box
+                      as="span"
+                      display="inline-block"
+                      overflow="hidden"
+                      animation={`${typewriter} 1.5s steps(10) 0.8s forwards`}
+                      maxW="0"
+                      whiteSpace="nowrap"
+                    >
+                      僕らのヴィンテージ
+                    </Box>
+                  </Text>
+                </motion.div>
+
+                {/* サブテキスト */}
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.6, delay: 2 }}
+                  style={{ marginTop: "8px" }}
+                >
+                  <Text
+                    fontSize={{ base: "xs", md: "sm" }}
+                    color="rgba(255,255,255,0.8)"
+                    letterSpacing="widest"
+                    textTransform="uppercase"
+                  >
+                    Coming Soon
+                  </Text>
+                </motion.div>
+
+                {/* 装飾的な要素 */}
+                <motion.div
+                  initial={{ scaleX: 0 }}
+                  animate={{ scaleX: 1 }}
+                  transition={{ duration: 0.8, delay: 1.8 }}
+                  style={{
+                    position: "absolute",
+                    bottom: "-20px",
+                    left: "50%",
+                    transform: "translateX(-50%)",
+                    width: "80px",
+                    height: "2px",
+                    background: "rgba(255,255,255,0.6)",
+                  }}
+                />
+              </Box>
+            </MotionCenter>
           </Box>
         )}
       </AnimatePresence>
@@ -34,4 +129,5 @@ const Home: FC = () => {
     </>
   );
 };
+
 export default Home;
