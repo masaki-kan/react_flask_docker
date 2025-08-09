@@ -10,7 +10,7 @@ class Config:
         env = os.getenv("FLASK_ENV", "development")
         
         if env == "production":
-            self.ORIGINS = ["https://35.78.248.43"]
+            self.ORIGINS = ["https://bokurano-vintage.com"]
             load_dotenv(dotenv_path=Path(".env.production"))
         else:
             self.ORIGINS = ["http://localhost:5173"]
