@@ -160,9 +160,6 @@ def send_welcome_email(user_name, plan_type, to_email):
                     </div>
                     
                     <div style="font-size: 12px; color: #888; text-align: center;">
-                        <p>ご不明な点がございましたら、お気軽にお問い合わせください。</p>
-                        <p>support@bokura-vintage.com</p>
-                        <hr style="border: none; border-top: 1px solid #E9DFCE; margin: 20px 0;">
                         <p>© 2025 僕らのヴィンテージ</p>
                     </div>
                 </div>
