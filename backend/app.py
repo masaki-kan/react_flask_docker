@@ -56,10 +56,12 @@ app = Flask(__name__)
 
 # === CORS設定 ===
 if env == "production":
-    origins = ["https://35.78.248.43"]
+    # origins = ["https://35.78.248.43"]
+    origins = ["https://bokurano-vintage.com"]
+    
 else:
     origins = ["http://localhost:5173"]
-
+    
 CORS(app, supports_credentials=True, resources={
     r"/api/*": {"origins": origins}, 
     r"/socket.io/*": {"origins": origins}
