@@ -12,3 +12,15 @@ export const errorSweetalert2 = (errorTitle: string) => {
     }
   });
 };
+
+// システムエラーでログアウトする場合のアラート
+export const systemErrorLogoutAlert = () => {
+  Swal.fire({
+    title: "システムエラー",
+    text: "プロフィール情報の取得に失敗したため、ログアウトします。",
+    icon: "error",
+    confirmButtonText: "OK",
+    allowOutsideClick: false,
+    allowEscapeKey: false,
+  });
+};

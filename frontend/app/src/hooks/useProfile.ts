@@ -21,6 +21,7 @@ import {
   archiveTradeType,
 } from "../types/archiveTradeType";
 import useLog from "./useLog";
+import { systemErrorLogoutAlert } from "../utils/alert/sweetalert2";
 
 type useMyProfileReturn = {
   memorizeProfile: {
@@ -85,7 +86,10 @@ const useMyProfile = (): useMyProfileReturn => {
 
     // もしプロフィール情報が取得できない場合はログアウトする
     if (responseProfile === undefined) {
+      systemErrorLogoutAlert();
       logOutHandler();
+
+      return;
     }
 
     // プロフィールが取得できたらすぐに更新
