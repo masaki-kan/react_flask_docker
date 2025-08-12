@@ -103,7 +103,7 @@ const CustomImageSlider: FC<CustomImageSliderProps> = ({
       onTouchEnd={handleTouchEnd}
     >
       {/* メイン画像 */}
-      <Box position="relative" h="100%" w="100%">
+      <Box position="relative" h="100%" w="90%" mx={"auto"}>
         {images.map((image, index) => (
           <Fade
             key={index}

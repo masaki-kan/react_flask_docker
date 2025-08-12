@@ -5,7 +5,6 @@ import ChatHome from "../component/chat/home";
 import PublicLayout from "../component/layout/publicLayout";
 import SecureLayout from "../component/layout/secureLayout";
 import Login from "../component/pages/login";
-import Launch from "../component/launch/home";
 import { route } from "./routeConst";
 import ListingsHome from "../component/listing/home";
 import ShopPageHome from "../component/shop/home";
@@ -35,13 +34,12 @@ const AppRoutes: FC = () => {
       <AuthProvider>
         <Routes>
           <Route element={<PublicLayout />}>
-            <Route path={route.launch} element={<Launch />} />
-            <Route path={route.login} element={<Login />} />
+            <Route path={route.top} element={<Login />} />
             {/* 他の公開ページもここに追加できます */}
           </Route>
 
           <Route element={<SecureLayout />}>
-            <Route path={route.home} element={<ProfileHome />} />
+            <Route path={route.profile} element={<ProfileHome />} />
             <Route path={route.users} element={<ListingsHome />} />
             <Route path={route.items} element={<ItemsHome />} />
             <Route path={route.shopPage} element={<ShopPageHome />} />

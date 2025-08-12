@@ -7,12 +7,8 @@ from flask_socketio import emit, join_room
 from utils.db_utils import get_db_connection
 import json
 import mysql.connector
-import pytz
 
 thread_bp = Blueprint('thread', __name__, url_prefix='/api')
-
-# 日本時間のタイムゾーン
-JST = pytz.timezone('Asia/Tokyo')
 
 # スレッドメッセージ一覧取得（フィルタリング付き）
 @thread_bp.route('/thread/messages', methods=['GET'])
@@ -173,8 +169,8 @@ def get_thread_messages():
             
             # 日付をISO形式に変換、user_idを文字列に変換
             for msg in messages:
-                if msg.get('created_at'):
-                    msg['created_at'] = msg['created_at'].isoformat()
+                # if msg.get('created_at'):
+                #     msg['created_at'] = msg['created_at'].isoformat()
                 # user_idを文字列に統一（フロントエンド用）
                 msg['user_id'] = str(msg['user_id'])
             

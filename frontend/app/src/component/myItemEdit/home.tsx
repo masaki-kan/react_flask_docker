@@ -16,7 +16,7 @@ const Home: FC = () => {
   }, [memorizeProfile, userItemNumver]);
 
   if (userItemNumver === null || !userItemNumver) {
-    navigate(route.home);
+    navigate(route.profile);
 
     return;
   }

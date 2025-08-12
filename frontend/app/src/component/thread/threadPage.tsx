@@ -263,7 +263,7 @@ const ThreadPage: React.FC = () => {
   // ユーザープロフィールへ遷移
   const handleUserClick = (userId: string) => {
     if (String(userId) === memorizeProfile.profile.id) {
-      navigate(route.home);
+      navigate(route.profile);
     } else {
       navigate(`${route.shopPage}?user=${userId}`);
     }

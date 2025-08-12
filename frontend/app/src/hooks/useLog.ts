@@ -9,7 +9,7 @@ const useLog = () => {
 
   const logOutHandler = useCallback(() => {
     logout();
-    navigate(route.login);
+    navigate(route.top);
   }, [logout, navigate]);
 
   return {

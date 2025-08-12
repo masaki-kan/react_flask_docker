@@ -492,7 +492,7 @@ const ProfileForm: FC<ProfileFormProps> = ({
                 <FormLabel>
                   <HStack spacing={2}>
                     <Icon as={FaComment} boxSize={4} />
-                    <Heading size="md">古着にハマったきっかけ</Heading>
+                    <Heading size="md">自己紹介</Heading>
                   </HStack>
                 </FormLabel>
                 <Textarea

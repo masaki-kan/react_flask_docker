@@ -5,6 +5,7 @@ import { RootState } from "../store";
 import { savedListType } from "../types/savedType";
 import { getSavedList } from "../api/tradeApi";
 import useLoading from "./useLaoding";
+import { cancelNotification } from "../utils/alert/showCancelledTradesNotification";
 
 type useSavedReturn = {
   savedList: savedListType[];
@@ -40,6 +41,11 @@ const useSaved = (): useSavedReturn => {
       });
 
       dispatch(setSaveList(savedData));
+
+      // キャンセルされた取引がある場合、トーストで通知
+      if (response.cancelled_trades && response.cancelled_trades.length > 0) {
+        cancelNotification(response.cancelled_trades);
+      }
     }
     changeLoading(false);
   }, [changeLoading, dispatch, profile.profile.id]);

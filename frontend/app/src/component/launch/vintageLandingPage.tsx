@@ -4,7 +4,6 @@ import {
   Box,
   Heading,
   Flex,
-  Button,
   SimpleGrid,
   Icon,
   Text,
@@ -28,54 +27,57 @@ const floatAnimation = keyframes`
 
 const VintageLandingPage: FC = () => {
   const MotionBox = motion.create(Box);
-  const MotionButton = motion.create(Button);
   const MotionText = motion.create(Text);
 
-  const renderTextView = useCallback((text: string, index: number) => {
-    return (
-      <MotionText
-        key={index}
-        initial={{ opacity: 0, x: index % 2 === 0 ? -30 : 30 }}
-        whileInView={{ opacity: 1, x: 0 }}
-        viewport={{ once: true }}
-        transition={{ duration: 0.6, delay: index * 0.1 }}
-        textAlign="center"
-        my={3}
-        fontWeight="bold"
-        fontSize={{ base: "md", md: "lg" }}
-        color="#1C160C"
-        position="relative"
-        _after={{
-          content: '""',
-          position: "absolute",
-          bottom: "-5px",
-          left: "50%",
-          transform: "translateX(-50%)",
-          width: "0%",
-          height: "2px",
-          bg: "#e68019",
-          transition: "width 0.3s ease-in-out",
-        }}
-        _hover={{
-          color: "#e68019",
-          _after: {
-            width: "80%",
-          },
-        }}
-      >
-        {text}
-      </MotionText>
-    );
-  }, []);
+  const renderTextView = useCallback(
+    (text: string, index: number) => {
+      return (
+        <MotionText
+          key={index}
+          initial={{ opacity: 0, x: index % 2 === 0 ? -30 : 30 }}
+          whileInView={{ opacity: 1, x: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6, delay: index * 0.1 }}
+          textAlign="center"
+          my={3}
+          fontWeight="bold"
+          fontSize={{ base: "md", md: "lg" }}
+          color="#1C160C"
+          position="relative"
+          _after={{
+            content: '""',
+            position: "absolute",
+            bottom: "-5px",
+            left: "50%",
+            transform: "translateX(-50%)",
+            width: "0%",
+            height: "2px",
+            bg: "#e68019",
+            transition: "width 0.3s ease-in-out",
+          }}
+          _hover={{
+            color: "#e68019",
+            _after: {
+              width: "80%",
+            },
+          }}
+        >
+          {text}
+        </MotionText>
+      );
+    },
+    [MotionText]
+  );
 
   const textMessages = [
-    "古着ってこんなに高かったっけ？新品はない。",
-    "あの空気感に憧れて町の古着屋をまわったあの頃。",
-    "今はあなたの古着も誰かのもとでもう一度輝ける。",
+    "古着ってこんなに高かったっけ？",
+    "新品にはない、あの空気感に憧れて",
+    "町の古着屋をまわったあの頃。",
+    "今は着なくなったあの服も、",
+    "誰かのもとでもう一度輝ける。",
     "スーパーなヴィンテージじゃないし、",
-    "買い取りに出しても二束三文。",
-    "それなら、",
-    "古着をみんなで着まわす方が絶対楽しい。",
+    "買い取りに出しても、二束三文。",
+    "それなら、みんなで着まわす方が絶対楽しい。",
   ];
 
   return (
@@ -141,55 +143,6 @@ const VintageLandingPage: FC = () => {
               ヴィンテージをもっと楽しく, もっと自由に。
             </Text>
           </motion.div>
-
-          <Flex mt={8} justify="center" gap={4} flexWrap="wrap">
-            <MotionButton
-              initial={{ opacity: 0, x: -30 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.6, delay: 0.7 }}
-              whileHover={{
-                scale: 1.05,
-                boxShadow: "0 10px 30px rgba(0,0,0,0.3)",
-              }}
-              whileTap={{ scale: 0.95 }}
-              size="lg"
-              bg="#e68019"
-              color="white"
-              borderRadius="full"
-              px={8}
-              py={6}
-              fontSize="md"
-              fontWeight="bold"
-              _hover={{ bg: "#d67316" }}
-              boxShadow="0 4px 20px rgba(230, 128, 25, 0.4)"
-            >
-              ローンチをいち早くお知らせ
-            </MotionButton>
-
-            <MotionButton
-              initial={{ opacity: 0, x: 30 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.6, delay: 0.7 }}
-              whileHover={{
-                scale: 1.05,
-                boxShadow: "0 10px 30px rgba(0,0,0,0.2)",
-              }}
-              whileTap={{ scale: 0.95 }}
-              size="lg"
-              bg="rgba(255, 255, 255, 0.9)"
-              color="#1C160C"
-              borderRadius="full"
-              px={8}
-              py={6}
-              fontSize="md"
-              fontWeight="bold"
-              backdropFilter="blur(10px)"
-              border="2px solid rgba(255, 255, 255, 0.3)"
-              _hover={{ bg: "rgba(255, 255, 255, 0.95)" }}
-            >
-              僕らのヴィンテージを応援
-            </MotionButton>
-          </Flex>
         </Box>
       </MotionBox>
 
@@ -251,19 +204,19 @@ const VintageLandingPage: FC = () => {
           <FeatureCard
             icon={IoLogInOutline}
             title="古着登録"
-            desc="簡単に登録"
+            desc="古着を登録"
             index={0}
           />
           <FeatureCard
             icon={IoShieldCheckmarkOutline}
             title="欲しい古着とマッチング"
-            desc="好みの古着を探す"
+            desc="いい感じの古着を探す"
             index={1}
           />
           <FeatureCard
             icon={IoSwapHorizontal}
             title="発送・受け取り"
-            desc="3ステップで交換"
+            desc="チャットで発送方法を登録"
             index={2}
           />
         </SimpleGrid>
@@ -281,7 +234,7 @@ const VintageLandingPage: FC = () => {
         textAlign="center"
       >
         <Text
-          fontSize={{ base: "lg", md: "xl" }}
+          fontSize={{ base: "md", md: "xl" }}
           color="#A18249"
           fontWeight="medium"
           position="relative"

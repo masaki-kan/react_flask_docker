@@ -2,6 +2,16 @@ import axios from "axios";
 import { sinupFormType } from "../types/loginType";
 import { errorSweetalert2 } from "../utils/alert/sweetalert2";
 
+export interface LoginSuccessResponse {
+  token: string;
+  username: string;
+  userId: string;
+}
+
+export interface LoginErrorResponse {
+  error: string;
+}
+
 export const loginCheckApi = async (formdata: {
   email: string;
 }): Promise<undefined | { result: string }> => {
@@ -29,14 +39,7 @@ export const loginCheckApi = async (formdata: {
 export const loginApi = async (formdata: {
   email: string;
   password: string;
-}): Promise<
-  | {
-      token: string;
-      username: string;
-      userId: string;
-    }
-  | undefined
-> => {
+}): Promise<LoginSuccessResponse | undefined> => {
   try {
     const response = await axios.post(
       `${import.meta.env.VITE_API_URL}/api/login`,
@@ -49,15 +52,27 @@ export const loginApi = async (formdata: {
       userId: response.data.user_id,
     };
   } catch (error: unknown) {
-    let errorMessage = "予期しないエラーが発生しました";
-
-    if (axios.isAxiosError(error) && error.response?.data?.error) {
-      errorMessage = error.response.data.error;
-    }
-
-    errorSweetalert2(errorMessage);
-    return;
+    // エラーは呼び出し元で処理するため、undefinedを返す
+    return undefined;
   }
+};
+
+export const getLoginErrorMessage = (error: unknown): string => {
+  let errorMessage = "ログインできませんでした";
+
+  if (axios.isAxiosError(error)) {
+    if (error.response?.status === 401) {
+      errorMessage = "メールアドレスまたはパスワードが正しくありません";
+    } else if (error.response?.data?.error) {
+      errorMessage = error.response.data.error;
+    } else if (error.code === "ECONNABORTED") {
+      errorMessage = "接続がタイムアウトしました";
+    } else if (!error.response) {
+      errorMessage = "サーバーに接続できませんでした";
+    }
+  }
+
+  return errorMessage;
 };
 
 export const singupApi = async (

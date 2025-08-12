@@ -29,7 +29,7 @@ const AuthProvider: FC<{ children: React.ReactNode }> = ({ children }) => {
     const token = localStorage.getItem("token");
     if (!token) {
       logout();
-      navigate("/login"); // ログインページへのルートを直接指定
+      navigate("/"); // ログインページへのルートを直接指定
     }
   }, [changeLoading, logout, navigate]);
 

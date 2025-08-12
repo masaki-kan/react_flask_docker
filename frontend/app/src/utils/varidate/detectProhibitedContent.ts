@@ -68,30 +68,30 @@ export const checkPatter = (text: string) => {
   }
 
   // 追加の禁止ワード
-  const prohibitedWords = [
-    "直接取引",
-    "直取引",
-    "直接",
-    "ちょくせつ",
-    "直接やり取り",
-    "外部で",
-    "別の場所で",
-    "連絡先",
-    "個人情報",
-    "電話して",
-    "メールして",
-    "DM",
-    "ダイレクトメッセージ",
-  ];
+  // const prohibitedWords = [
+  //   "直接取引",
+  //   "直取引",
+  //   "直接",
+  //   "ちょくせつ",
+  //   "直接やり取り",
+  //   "外部で",
+  //   "別の場所で",
+  //   "連絡先",
+  //   "個人情報",
+  //   "電話して",
+  //   "メールして",
+  //   "DM",
+  //   "ダイレクトメッセージ",
+  // ];
 
-  for (const word of prohibitedWords) {
-    if (text.includes(word)) {
-      return {
-        isProhibited: true,
-        message: `「${word}」を含む内容は投稿できません。`,
-      };
-    }
-  }
+  // for (const word of prohibitedWords) {
+  //   if (text.includes(word)) {
+  //     return {
+  //       isProhibited: true,
+  //       message: `「${word}」を含む内容は投稿できません。`,
+  //     };
+  //   }
+  // }
 
   return { isProhibited: false, message: "" };
 };

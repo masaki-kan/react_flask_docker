@@ -45,7 +45,7 @@ const ArchiveDetail: FC = () => {
     if (archiveId) {
       fetchArchiveData();
     } else {
-      navigate(route.home);
+      navigate(route.profile);
     }
   });
 

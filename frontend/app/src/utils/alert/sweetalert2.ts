@@ -8,7 +8,7 @@ export const errorSweetalert2 = (errorTitle: string) => {
     icon: "error",
   }).then((result) => {
     if (result.isConfirmed) {
-      window.location.href = route.home;
+      window.location.href = route.profile;
     }
   });
 };

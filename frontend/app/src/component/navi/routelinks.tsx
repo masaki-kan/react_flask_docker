@@ -33,7 +33,7 @@ const RenderRouteLinks: FC = () => {
   // カラーモード対応
   // const bgColor = useColorModeValue("white", "gray.800");
   // const borderColor = useColorModeValue("gray.200", "gray.700");
-  const hoverBg = useColorModeValue("gray.50", "gray.700");
+  // const hoverBg = useColorModeValue("gray.50", "gray.700");
   const activeColor = useColorModeValue("blue.500", "blue.400");
 
   const readSaveTimestamps = useCallback(() => {
@@ -119,18 +119,9 @@ const RenderRouteLinks: FC = () => {
                 }}
               />
             ) : (
-              <Box
-                p={1}
-                borderRadius="full"
-                bg={hoverBg}
-                _hover={{
-                  bg: activeColor,
-                  color: "white",
-                }}
-                transition="all 0.2s"
-              >
+              <>
                 <Icon as={FaUserCircle} boxSize={8} />
-              </Box>
+              </>
             )}
             {/* <Menu>
               <MenuButton

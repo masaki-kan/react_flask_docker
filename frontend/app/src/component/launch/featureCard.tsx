@@ -1,5 +1,5 @@
 import { FC } from "react";
-import { Box, Flex, Icon, Text, VStack } from "@chakra-ui/react";
+import { Box, Flex, HStack, Icon, Text, VStack } from "@chakra-ui/react";
 import { keyframes } from "@emotion/react";
 import { motion } from "framer-motion";
 import { IconType } from "react-icons";
@@ -58,22 +58,24 @@ const FeatureCard: FC<FeatureCardType> = ({ icon, title, desc, index }) => {
         zIndex: 0,
       }}
     >
-      <Box
-        position="relative"
-        zIndex={1}
-        p={3}
-        bg="rgba(230, 128, 25, 0.1)"
-        borderRadius="full"
-        w="fit-content"
-        animation={`${floatAnimation} 3s ease-in-out infinite`}
-        transitionDelay={`${index * 0.3}s`}
-      >
-        <Icon as={icon} boxSize={8} color="#e68019" />
-      </Box>
-      <VStack align="start" spacing={2} position="relative" zIndex={1}>
+      <HStack>
+        <Box
+          position="relative"
+          zIndex={1}
+          p={3}
+          bg="rgba(230, 128, 25, 0.1)"
+          borderRadius="full"
+          w="fit-content"
+          animation={`${floatAnimation} 3s ease-in-out infinite`}
+          transitionDelay={`${index * 0.3}s`}
+        >
+          <Icon as={icon} boxSize={8} color="#e68019" />
+        </Box>
         <Text fontWeight="bold" fontSize="lg" color="#1C160C">
           {title}
         </Text>
+      </HStack>
+      <VStack align="start" spacing={2} position="relative" zIndex={1}>
         <Text fontSize="sm" color="#A18249" lineHeight="1.6">
           {desc}
         </Text>

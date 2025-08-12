@@ -96,12 +96,12 @@ const Home: FC = () => {
                   style={{ marginTop: "8px" }}
                 >
                   <Text
-                    fontSize={{ base: "xs", md: "sm" }}
+                    fontSize={{ base: "md", md: "sm" }}
                     color="rgba(255,255,255,0.8)"
                     letterSpacing="widest"
                     textTransform="uppercase"
                   >
-                    Coming Soon
+                    僕らのヴィンテージ
                   </Text>
                 </motion.div>
 

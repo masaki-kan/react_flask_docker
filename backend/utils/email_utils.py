@@ -155,7 +155,7 @@ def send_welcome_email(user_name, plan_type, to_email):
                         </div>
                         
                         <div style="text-align: center; margin: 30px 0;">
-                            <a href="https://bokura-vintage.com/login" style="display: inline-block; background: #e68019; color: white; text-decoration: none; padding: 12px 30px; border-radius: 25px; font-weight: bold;">マイページへログイン</a>
+                            <a href="https://bokura-vintage.com" style="display: inline-block; background: #e68019; color: white; text-decoration: none; padding: 12px 30px; border-radius: 25px; font-weight: bold;">マイページへログイン</a>
                         </div>
                     </div>
                     

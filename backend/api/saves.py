@@ -5,6 +5,7 @@ import mysql.connector
 import json
 from utils.image_utils import s3_client ,upload_image_to_s3
 import uuid
+from datetime import datetime, timedelta
 
 
 saves_bp = Blueprint('saves', __name__, url_prefix='/api')
@@ -12,10 +13,103 @@ saves_bp = Blueprint('saves', __name__, url_prefix='/api')
 @saves_bp.route('/getSavedList', methods=['POST'])
 def get_active_trades():
     user_id = request.json.get('user_id')
-    
+    cancelled_trades = []  # キャンセルされた取引を追跡
+
     try:
         with get_db_connection() as conn:
             cursor = conn.cursor(dictionary=True)
+            
+            #まず、1週間以上メッセージがない取引を検出してキャンセル
+            one_week_ago = datetime.now() - timedelta(days=7)
+            
+            # 1週間以上メッセージがない取引を検出（発送情報がない取引のみ）
+            cursor.execute('''
+                SELECT 
+                    t.trade_id,
+                    t.item_id,
+                    i.title,
+                    MAX(tm.created_at) as last_message_time,
+                    COUNT(si.shipping_id) as shipping_count
+                FROM trades t
+                JOIN items i ON t.item_id = i.item_id
+                LEFT JOIN trade_messages tm ON t.trade_id = tm.trade_id
+                LEFT JOIN shipping_info si ON t.trade_id = si.trade_id
+                WHERE 
+                    (t.buyer_id = %s OR i.user_id = %s)
+                    AND t.status = 'active'
+                GROUP BY t.trade_id, t.item_id, i.title
+                HAVING 
+                    (MAX(tm.created_at) IS NULL OR MAX(tm.created_at) < %s)
+                    AND COUNT(si.shipping_id) = 0  -- 発送情報がない場合のみ
+            ''', (user_id, user_id, one_week_ago))
+            
+            inactive_trades = cursor.fetchall()
+
+            # 非アクティブな取引をキャンセルし、商品ステータスを元に戻す
+            for trade in inactive_trades:
+                # 取引に関連するメッセージを削除
+                cursor.execute('''
+                    DELETE FROM trade_messages 
+                    WHERE trade_id = %s
+                ''', (trade['trade_id'],))
+                
+                # 取引ステータスをキャンセルに更新
+                cursor.execute('''
+                    UPDATE trades 
+                    SET status = 'cancelled', 
+                        cancelled_at = NOW(),
+                        cancel_reason = 'inactive_timeout'
+                    WHERE trade_id = %s
+                ''', (trade['trade_id'],))
+                
+                # 取引レコード自体を削除
+                cursor.execute('''
+                    DELETE FROM trades 
+                    WHERE trade_id = %s
+                ''', (trade['trade_id'],))
+                
+                
+                # 商品ステータスを'available'に戻す（取引可能な状態に戻す）
+                cursor.execute('''
+                    UPDATE items 
+                    SET status = 'available'
+                    WHERE item_id = %s
+                ''', (trade['item_id'],))
+                
+                # キャンセルされた取引情報を記録
+                cancelled_trades.append({
+                    'trade_id': trade['trade_id'],
+                    'item_title': trade['title']
+                })
+            
+            conn.commit()
+            
+            # 非アクティブな取引をキャンセルし、商品ステータスを元に戻す
+            for trade in inactive_trades:
+                # 取引ステータスをキャンセルに更新
+                cursor.execute('''
+                    UPDATE trades 
+                    SET status = 'cancelled', 
+                        cancelled_at = NOW(),
+                        cancel_reason = 'inactive_timeout'
+                    WHERE trade_id = %s
+                ''', (trade['trade_id'],))
+                
+                # 商品ステータスを'active'に戻す（取引可能な状態に戻す）
+                cursor.execute('''
+                    UPDATE items 
+                    SET status = 'active'
+                    WHERE item_id = %s
+                ''', (trade['item_id'],))
+                
+                # キャンセルされた取引情報を記録
+                cancelled_trades.append({
+                    'trade_id': trade['trade_id'],
+                    'item_title': trade['title']
+                })
+            
+            conn.commit()
+    
             cursor.execute('''
                 SELECT 
                     trades.trade_id,
@@ -89,7 +183,7 @@ def get_active_trades():
                     except json.JSONDecodeError:
                         trade['brand'] = None
 
-            return jsonify({"trades": active_trades, "result": True}), 200
+            return jsonify({"trades": active_trades, "result": True , "cancelled_trades": cancelled_trades }), 200
     except mysql.connector.Error as err:
         return jsonify({
             "error": "取引中リストの取得中にエラーが発生しました",

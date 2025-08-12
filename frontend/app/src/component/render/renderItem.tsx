@@ -178,7 +178,7 @@ const RenderItem: FC<RenderItemProps> = memo(({ itemList, navigate }) => {
   const [isMatch, setIsMatch] = useState<boolean>(false);
 
   useEffectOnce(() => {
-    if (location.pathname === route.home) {
+    if (location.pathname === route.profile) {
       setIsMatch(true);
     }
   });

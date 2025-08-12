@@ -1,5 +1,5 @@
 import { type FC } from "react";
-import { Box, Heading, HStack } from "@chakra-ui/react";
+import { Box, Text, HStack } from "@chakra-ui/react";
 import RenderRouteLinks from "../navi/routelinks";
 
 const MainHeader: FC = () => {
@@ -36,14 +36,14 @@ const MainHeader: FC = () => {
             ></path>
           </svg>
         </Box>
-        <Heading
-          size="lg"
-          color="#181411"
+        <Text
+          size="md"
+          color="#734e30"
           fontWeight="bold"
           letterSpacing="-0.015em"
         >
           僕らのヴィンテージ
-        </Heading>
+        </Text>
       </HStack>
       <RenderRouteLinks />
     </Box>

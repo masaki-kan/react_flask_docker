@@ -20,6 +20,7 @@ import {
   archiveShippingInfo,
   archiveTradeType,
 } from "../types/archiveTradeType";
+import useLog from "./useLog";
 
 type useMyProfileReturn = {
   memorizeProfile: {
@@ -52,6 +53,7 @@ type useMyProfileReturn = {
 };
 
 const useMyProfile = (): useMyProfileReturn => {
+  const { logOutHandler } = useLog();
   const dispatch = useDispatch();
   const { favoriteAlert } = useAlert();
   const profile = useSelector((state: RootState) => state.profile);
@@ -81,6 +83,11 @@ const useMyProfile = (): useMyProfileReturn => {
       await exchangeArchiveApi(Number(profile.profile.id)),
     ]);
 
+    // もしプロフィール情報が取得できない場合はログアウトする
+    if (responseProfile === undefined) {
+      logOutHandler();
+    }
+
     // プロフィールが取得できたらすぐに更新
     if (responseProfile) {
       dispatch(
@@ -91,7 +98,7 @@ const useMyProfile = (): useMyProfileReturn => {
       );
     }
 
-    // // 商品が取得できたら更新
+    //商品が取得できたら更新
     if (responseItems && responseProfile) {
       dispatch(
         setProfile({
@@ -104,7 +111,7 @@ const useMyProfile = (): useMyProfileReturn => {
     if (responseActive) {
       dispatch(setProfileArchives(responseActive.archives));
     }
-  }, [dispatch, profile.profile.id]);
+  }, [dispatch, logOutHandler, profile.profile.id]);
 
   // ユーザーのプロフィールデータ取得
   const getProfile = useCallback(

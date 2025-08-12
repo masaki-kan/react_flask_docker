@@ -1,6 +1,5 @@
 export const route = {
-  home: "/",
-  login: "/login",
+  top: "/",
   users: "/users",
   items: "/items",
   itemDetail: "/user/item",
@@ -12,8 +11,7 @@ export const route = {
   transactionChat: "/transaction/chat",
   favorite: "/favorite",
   approvals: "/approvals",
-  profile: "/",
-  launch: "/launch",
+  profile: "/profile",
   archiveDetail: "/archive-detail",
   thread: "/thread",
 };

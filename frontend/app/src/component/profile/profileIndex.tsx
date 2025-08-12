@@ -321,7 +321,7 @@ const ProfileIndex: FC<profileIndexType> = ({ editFormSwitch }) => {
             >
               <InfoItem
                 icon={FaComment}
-                label="古着にハマったきっかけ"
+                label="自己紹介"
                 value={
                   <Text lineHeight="tall" color={textMuted}>
                     {profile.profile.reasen}

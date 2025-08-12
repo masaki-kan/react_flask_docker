@@ -132,7 +132,7 @@ const SingUpForm: FC = memo(() => {
     setShowSuccess(true);
     setTimeout(() => {
       // 実際はログイン画面へ遷移
-      window.location.href = "/login"; // または適切なルーティング処理
+      window.location.href = "/"; // または適切なルーティング処理
     }, 2000);
   };
 

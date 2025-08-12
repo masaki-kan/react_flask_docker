@@ -35,7 +35,17 @@ export const tradeApi = async (
 
 export const getSavedList = async (
   user_id: string
-): Promise<{ trades: savedListType[]; result: string } | undefined> => {
+): Promise<
+  | {
+      trades: savedListType[];
+      result: string;
+      cancelled_trades?: {
+        trade_id: string;
+        item_title: string;
+      }[];
+    }
+  | undefined
+> => {
   try {
     const response = await axios.post(
       `${import.meta.env.VITE_API_URL}/api/getSavedList`,
@@ -47,6 +57,7 @@ export const getSavedList = async (
     return {
       trades: response.data.trades,
       result: response.data.result,
+      cancelled_trades: response.data.cancelled_trades,
     };
   } catch (error: unknown) {
     let errorMessage = "予期しないエラーが発生しました";

@@ -369,7 +369,7 @@ const Home: FC = () => {
         memorizeChatItemData.trade_id,
         "cancelled"
       );
-      navigate(route.home);
+      navigate(route.saved);
     }
   }, [memorizeChatItemData.trade_id, tradeStatusChangeHandler, navigate]);
 
@@ -386,7 +386,7 @@ const Home: FC = () => {
 
       onShippingClose();
 
-      // // 発送情報をクリア
+      // 発送情報をクリア
       setShippingInfo({
         trackingNumber: "",
         shippingCompany: "",
@@ -400,7 +400,7 @@ const Home: FC = () => {
         isClosable: true,
       });
 
-      // // データを再取得
+      // データを再取得
       await getChatPageData(memorizeChatItemData.trade_id);
     } catch (error) {
       console.error("発送処理エラー:", error);
@@ -439,7 +439,7 @@ const Home: FC = () => {
     <>
       <Box pt={24}>
         {/* ヘッダー部分：ユーザーアバターとステータス */}
-        <Box bg="white" borderRadius="lg" boxShadow="sm" mb={4} p={4}>
+        <Box bg="white" borderRadius="lg" boxShadow="sm" p={4}>
           <Flex
             direction={{ base: "column", md: "row" }}
             justify="space-between"
@@ -695,10 +695,17 @@ const Home: FC = () => {
           />
         </Box>
 
+        <Text
+          fontSize={"xs"}
+          color={"gray.500"}
+          wordBreak={"break-all"}
+          mt={4}
+          mb={2}
+        >
+          注:発送していない状態で１週間やりとりがない場合は自動でキャンセルされます。
+        </Text>
         {/* チャット画面 */}
-        <Flex>
-          <ChatRight />
-        </Flex>
+        <ChatRight />
 
         {/* 商品詳細モーダル */}
         <ItemDetailModal
@@ -723,8 +730,9 @@ const Home: FC = () => {
           isCurrentUserSeller={isCurrentUserSeller}
           userId={userIdNumber || ""}
           onItemSelected={() => {
-            getChatPageData(memorizeChatItemData.trade_id);
-            setHasSellerSelectedItem(true);
+            // getChatPageData(memorizeChatItemData.trade_id);
+            // setHasSellerSelectedItem(true);
+            window.location.reload();
           }}
         />
 

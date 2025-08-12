@@ -11,13 +11,19 @@ import {
   Divider,
   Button,
   Link,
+  Alert,
+  AlertIcon,
+  AlertDescription,
+  CloseButton,
+  Collapse,
 } from "@chakra-ui/react";
 import { keyframes } from "@emotion/react";
+import { motion } from "framer-motion";
 import { route } from "../../route/routeConst";
 import { useNavigate } from "react-router-dom";
-import { loginApi } from "../../api/loginApis";
+import { loginApi, getLoginErrorMessage } from "../../api/loginApis";
 import { useAuth } from "../../provider/authContext";
-import useAlert from "../../hooks/useAlert";
+// import useAlert from "../../hooks/useAlert";
 
 interface ErrorState {
   emailError: string;
@@ -41,11 +47,12 @@ const fadeIn = keyframes`
 `;
 
 const InputForm: FC = () => {
-  const { errorAlert } = useAlert();
   const { isLoggedIn, login } = useAuth();
   const navigate = useNavigate();
 
   const [isLoading, setIsLoading] = useState(false);
+  const [loginError, setLoginError] = useState<string>("");
+  const [showError, setShowError] = useState(false);
   const [error, setError] = useState<ErrorState>({
     emailError: "",
     passwordError: "",
@@ -57,13 +64,22 @@ const InputForm: FC = () => {
 
   useEffect(() => {
     if (isLoggedIn) {
-      navigate(route.home);
+      navigate(route.profile);
     }
   }, [isLoggedIn, navigate]);
+
+  // ログインエラーが設定されたら表示する
+  useEffect(() => {
+    if (loginError) {
+      setShowError(true);
+    }
+  }, [loginError]);
 
   const loginClick = useCallback(async () => {
     const { email, password } = form;
     setIsLoading(true);
+    setLoginError(""); // 前回のエラーをクリア
+    setShowError(false);
 
     // バリデーションチェック
     const emailValid = validateEmail(email);
@@ -87,15 +103,20 @@ const InputForm: FC = () => {
       const response = await loginApi(form);
       if (response && response.token) {
         login(response.username, response.token, response.userId);
-        navigate(route.home);
+        navigate(route.profile);
         return;
+      } else {
+        // ログイン失敗（401エラーなど）
+        setLoginError("メールアドレスまたはパスワードが正しくありません");
       }
     } catch (error) {
-      errorAlert("ログインに失敗しました。");
+      // APIエラーメッセージを取得
+      const errorMessage = getLoginErrorMessage(error);
+      setLoginError(errorMessage);
     } finally {
       setIsLoading(false);
     }
-  }, [errorAlert, form, login, navigate]);
+  }, [form, login, navigate]);
 
   const validatePassword = (password: string): boolean => {
     return /^[a-zA-Z0-9]+$/.test(password) && password.length <= 16;
@@ -106,6 +127,10 @@ const InputForm: FC = () => {
   };
 
   const formErrorCheckHanler = useCallback((value: string, type: string) => {
+    // エラーメッセージをクリア
+    setLoginError("");
+    setShowError(false);
+
     if (type === "password") {
       if (!value) {
         setError((prev) => ({
@@ -197,6 +222,39 @@ const InputForm: FC = () => {
 
         <Box w={{ md: "100%", base: "90%" }} px={6} margin="auto">
           <VStack spacing={5}>
+            {/* ログインエラーメッセージ */}
+            <Collapse in={showError} animateOpacity style={{ width: "100%" }}>
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3 }}
+              >
+                <Alert
+                  status="error"
+                  borderRadius="md"
+                  mb={4}
+                  fontSize="sm"
+                  bg="red.50"
+                  border="1px solid"
+                  borderColor="red.200"
+                >
+                  <AlertIcon color="red.500" />
+                  <AlertDescription flex="1" color="red.700">
+                    {loginError}
+                  </AlertDescription>
+                  <CloseButton
+                    size="sm"
+                    onClick={() => {
+                      setShowError(false);
+                      setLoginError("");
+                    }}
+                    color="red.500"
+                    _hover={{ color: "red.700" }}
+                  />
+                </Alert>
+              </motion.div>
+            </Collapse>
+
             <FormControl id="email" isInvalid={!!error.emailError}>
               <FormLabel
                 fontSize="sm"
@@ -305,7 +363,7 @@ const InputForm: FC = () => {
             </Box>
 
             <VStack spacing={3} pt={2}>
-              <Link
+              {/* <Link
                 color="#887563"
                 fontSize="sm"
                 _hover={{
@@ -315,7 +373,7 @@ const InputForm: FC = () => {
                 transition="color 0.2s"
               >
                 パスワードをお忘れですか？
-              </Link>
+              </Link> */}
 
               <Divider borderColor="gray.200" />
 

@@ -1,4 +1,4 @@
-import { Box, Heading, Button, Stack, HStack } from "@chakra-ui/react";
+import { Box, Text, Button, Stack, HStack } from "@chakra-ui/react";
 import { type FC } from "react";
 
 type HeaderPropsType = {
@@ -22,14 +22,13 @@ const Header: FC<HeaderPropsType> = ({ singupClick, loginSwitch }) => {
           borderBottom={1}
           borderBottomColor={"#f4f2f0"}
         >
-          <HStack justifyContent={"start"} alignItems={"center"}>
+          <HStack justifyContent={"start"} alignItems={"center"} py={2}>
             <Box
               color="currentColor"
               as="svg"
               viewBox="0 0 48 48"
               width={"30px"}
               height={"30px"}
-              margin={2}
             >
               <svg
                 viewBox="0 0 48 48"
@@ -50,9 +49,14 @@ const Header: FC<HeaderPropsType> = ({ singupClick, loginSwitch }) => {
                 ></path>
               </svg>
             </Box>
-            <Heading as="h2" size="sm" color="#181411">
+            <Text
+              size={"md"}
+              color="#734e30"
+              fontWeight="bold"
+              letterSpacing="-0.015em"
+            >
               僕らのヴィンテージ
-            </Heading>
+            </Text>
           </HStack>
           <HStack justifyContent={"end"} alignItems={"center"} mr={2}>
             <Button

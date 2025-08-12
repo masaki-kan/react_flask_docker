@@ -26,7 +26,7 @@ const SecureLayout: FC = () => {
       </Box>
 
       {/* ヘッダーの高さ分のスペーサー */}
-      <Box height="103px" flexShrink={0} />
+      <Box height="90px" flexShrink={0} />
 
       {/* メインコンテンツ（スクロール可能） */}
       <Box
