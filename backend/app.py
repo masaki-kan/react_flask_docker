@@ -56,8 +56,10 @@ app = Flask(__name__)
 
 # === CORS設定 ===
 if env == "production":
-    origins = ["https://bokurano-vintage.com"]
-    # origins = ["https://35.78.248.43"]
+    origins = [
+        "https://bokurano-vintage.com",
+        "https://www.bokurano-vintage.com"
+    ]
 
     
 else:
