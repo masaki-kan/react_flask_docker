@@ -294,77 +294,6 @@ def create_archived_trades_table(cursor):
         );
     ''')
 
-# アーカイブ取引メッセージテーブル
-def create_archived_trade_messages_table(cursor):
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS archived_trade_messages (
-            archive_message_id INT AUTO_INCREMENT PRIMARY KEY,
-            archive_trade_id INT NOT NULL,
-            sender_id INT NOT NULL,
-            sender_name VARCHAR(255),  -- 送信者名のスナップショット
-            message TEXT NOT NULL,
-            sent_at TIMESTAMP,
-            sender_profile_image_at_archive LONGTEXT COMMENT '送信者のプロフィール画像（アーカイブ時点）',
-            archived_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (archive_trade_id) REFERENCES archived_trades(archive_trade_id) ON DELETE CASCADE,
-            INDEX idx_archive_trade_sent (archive_trade_id, sent_at)
-        );
-    ''')
-
-# アーカイブ配送情報テーブル
-def create_archived_shipping_info_table(cursor):
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS archived_shipping_info (
-            archive_shipping_id INT AUTO_INCREMENT PRIMARY KEY,
-            archive_trade_id INT NOT NULL,
-            sender_user_id INT NOT NULL,
-            sender_name VARCHAR(255),
-            tracking_number VARCHAR(255),
-            shipping_company VARCHAR(255),
-            created_at TIMESTAMP,
-            archived_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (archive_trade_id) REFERENCES archived_trades(archive_trade_id) ON DELETE CASCADE,
-            INDEX idx_archive_trade (archive_trade_id)
-        );
-    ''')
-
-# アーカイブ取引確認情報テーブル（新規追加）
-def create_archived_trade_confirmations_table(cursor):
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS archived_trade_confirmations (
-            archive_confirmation_id INT AUTO_INCREMENT PRIMARY KEY,
-            archive_trade_id INT NOT NULL,
-            user_id INT NOT NULL,
-            user_name VARCHAR(100),
-            confirmation_type VARCHAR(50),
-            confirmed_at TIMESTAMP,
-            archived_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (archive_trade_id) REFERENCES archived_trades(archive_trade_id) ON DELETE CASCADE,
-            INDEX idx_archive_trade (archive_trade_id),
-            INDEX idx_user (user_id)
-        ) COMMENT='アーカイブされた取引確認情報';
-    ''')
-    
-# アーカイブ取引評価テーブル
-def create_archived_trade_reviews_table(cursor):
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS archived_trade_reviews (
-            archive_review_id INT AUTO_INCREMENT PRIMARY KEY,
-            archive_trade_id INT NOT NULL,
-            reviewer_id INT NOT NULL,
-            reviewer_name VARCHAR(255),
-            reviewee_id INT NOT NULL,
-            reviewee_name VARCHAR(255),
-            rating INT CHECK (rating >= 1 AND rating <= 5),
-            reviewer_comment TEXT,
-            reviewee_comment TEXT,
-            reviewed_at TIMESTAMP,
-            archived_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (archive_trade_id) REFERENCES archived_trades(archive_trade_id) ON DELETE CASCADE,
-            INDEX idx_archive_trade (archive_trade_id)
-        );
-    ''')
-    
 # スレッドメッセージテーブル
 def create_thread_messages_table(cursor):
     cursor.execute('''
@@ -397,10 +326,6 @@ def create_archive_tables(cursor):
     create_archived_items_table(cursor)
     create_archived_item_images_table(cursor)
     create_archived_trades_table(cursor)
-    create_archived_trade_messages_table(cursor)
-    create_archived_shipping_info_table(cursor)
-    create_archived_trade_confirmations_table(cursor)  # 新規追加
-    create_archived_trade_reviews_table(cursor)
 
 def create_table(cursor):
     create_users_table(cursor)
