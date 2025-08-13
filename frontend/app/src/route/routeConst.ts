@@ -1,5 +1,5 @@
 export const route = {
-  top: "",
+  top: "/",
   users: "/users",
   items: "/items",
   itemDetail: "/user/item",

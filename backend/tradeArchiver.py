@@ -42,9 +42,6 @@ class TradeArchiver:
                 buyer_exchange_archive_id
             )
             
-            # 5. メッセージをアーカイブ（プロフィール画像含む）
-            self._archive_messages_with_profiles(trade_id, archive_trade_id)
-            
             # カーソルを閉じる
             if self.cursor:
                 self.cursor.close()
