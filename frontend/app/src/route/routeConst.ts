@@ -12,6 +12,5 @@ export const route = {
   favorite: "/favorite",
   approvals: "/approvals",
   profile: "/profile",
-  archiveDetail: "/archive-detail",
   thread: "/thread",
 };
