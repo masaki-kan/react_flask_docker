@@ -18,6 +18,8 @@ import {
   IoSwapHorizontal,
 } from "react-icons/io5";
 import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
+import { route } from "../../route/routeConst";
 
 // カスタムキーフレームアニメーション
 const floatAnimation = keyframes`
@@ -26,6 +28,7 @@ const floatAnimation = keyframes`
 `;
 
 const VintageLandingPage: FC = () => {
+  const navigate = useNavigate();
   const MotionBox = motion.create(Box);
   const MotionText = motion.create(Text);
 
@@ -273,6 +276,16 @@ const VintageLandingPage: FC = () => {
             </Link>
           </motion.div>
         </Flex>
+        <Text
+          fontSize={"xs"}
+          color="#A18249"
+          mb={2}
+          onClick={() => {
+            navigate(route.tokushoho);
+          }}
+        >
+          特定商取引法に基づく表記
+        </Text>
         <Text fontSize="sm" color="#A18249" letterSpacing="wider">
           © 2025 僕らのヴィンテージ
         </Text>

@@ -2,11 +2,10 @@ import { Box, Text, Button, Stack, HStack } from "@chakra-ui/react";
 import { type FC } from "react";
 
 type HeaderPropsType = {
-  singupClick: () => void;
   loginSwitch: () => void;
 };
 
-const Header: FC<HeaderPropsType> = ({ singupClick, loginSwitch }) => {
+const Header: FC<HeaderPropsType> = ({ loginSwitch }) => {
   return (
     <>
       <Stack
@@ -69,9 +68,9 @@ const Header: FC<HeaderPropsType> = ({ singupClick, loginSwitch }) => {
               size="sm"
               onClick={loginSwitch}
             >
-              Log in
+              始める
             </Button>
-            <Button
+            {/* <Button
               minW="80px"
               maxW="480px"
               bg="#e68019"
@@ -82,7 +81,7 @@ const Header: FC<HeaderPropsType> = ({ singupClick, loginSwitch }) => {
               onClick={singupClick}
             >
               Sign up
-            </Button>
+            </Button> */}
           </HStack>
         </HStack>
       </Stack>

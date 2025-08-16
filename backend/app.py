@@ -76,7 +76,6 @@ socketio = SocketIO(app, cors_allowed_origins="*", async_mode="eventlet")
 app.config['JWT_SECRET_KEY'] = os.environ.get('JWT_SECRET_KEY')
 app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=1)
 app.config['MAX_CONTENT_LENGTH'] = 20 * 1024 * 1024
-stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
 jwt = JWTManager(app)
 
 UPLOAD_FOLDER = os.path.join(os.getcwd(), 'uploads')

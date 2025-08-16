@@ -1,42 +1,21 @@
 import { useCallback } from "react";
-import { createPaymentIntent } from "../api/creditApi";
+import { createPaymentIntent, StripePaymentResponse } from "../api/creditApi";
 
 type useCreditReturn = {
   getCreatePaymentIntent: (
     amount: string,
-    status: string
-  ) => Promise<
-    | {
-        clientSecret: string;
-        stripeCustomerId: string;
-        intentId: string;
-      }
-    | undefined
-  >;
+    status: number
+  ) => Promise<StripePaymentResponse | undefined>;
 };
 
 const useCredit = (): useCreditReturn => {
   const getCreatePaymentIntent = useCallback(
     async (
       amount: string,
-      status: string
-    ): Promise<
-      | {
-          clientSecret: string;
-          stripeCustomerId: string;
-          intentId: string;
-        }
-      | undefined
-    > => {
-      const clientSecret = await createPaymentIntent(amount, status);
-
-      if (clientSecret !== undefined) {
-        return {
-          clientSecret: clientSecret.clientSecret,
-          stripeCustomerId: clientSecret.stripeCustomerId,
-          intentId: clientSecret.intentId,
-        };
-      }
+      status: number
+    ): Promise<StripePaymentResponse | undefined> => {
+      const response = await createPaymentIntent(amount, status);
+      return response;
     },
     []
   );

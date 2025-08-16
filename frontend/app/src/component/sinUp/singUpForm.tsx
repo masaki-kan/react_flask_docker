@@ -15,16 +15,19 @@ import {
   Progress,
   Text,
 } from "@chakra-ui/react";
-import { sinupFormType, errorStateType } from "../../../types/loginType";
+import { sinupFormType, errorStateType } from "../../types/loginType";
 import Step1 from "./step1";
 import Step2 from "./step2";
 import Step3 from "./step3";
 import { FaCheck } from "react-icons/fa";
-import { loginCheckApi } from "../../../api/loginApis";
-import useCredit from "../../../hooks/useCredit";
+import { loginCheckApi } from "../../api/loginApis";
+import useCredit from "../../hooks/useCredit";
+import { useNavigate } from "react-router-dom";
+import { route } from "../../route/routeConst";
 
 const SingUpForm: FC = memo(() => {
   const { getCreatePaymentIntent } = useCredit();
+  const navigate = useNavigate();
   const toast = useToast();
   const [loading, setLoading] = useState(false);
   const [currentStep, setCurrentStep] = useState<number>(1);
@@ -38,6 +41,7 @@ const SingUpForm: FC = memo(() => {
     username: "",
     email: "",
     password: "",
+    location: "",
     plan: "1",
     clientSecret: "",
     stripeCustomerId: "",
@@ -90,23 +94,28 @@ const SingUpForm: FC = memo(() => {
   const createPaymentIntent = useCallback(async () => {
     setLoading(true);
     try {
-      // API呼び出し処理
-      const secret = await getCreatePaymentIntent(
-        formData.plan === "1" ? "550" : "5500",
-        formData.plan
+      // plan "1" は月額プラン（status 0）、"2" は年額プラン（status 1）
+      const planStatus = formData.plan === "1" ? 0 : 1;
+
+      const response = await getCreatePaymentIntent(
+        formData.plan === "1" ? "500" : "5500",
+        planStatus
       );
 
-      if (secret !== undefined)
+      if (response !== undefined) {
         setFormData({
           ...formData,
-          clientSecret: secret.clientSecret,
-          stripeCustomerId: secret.stripeCustomerId,
-          intentId: secret.intentId,
+          clientSecret: response.clientSecret,
+          stripeCustomerId: response.stripeCustomerId,
+          subscriptionId: response.subscriptionId,
+          intentId: response.intentId,
+          paymentType: response.type,
         });
+      }
     } catch (error) {
       toast({
         title: "エラー",
-        description: "Payment Intent の作成に失敗しました",
+        description: "決済の準備に失敗しました",
         status: "error",
         duration: 5000,
       });
@@ -122,7 +131,7 @@ const SingUpForm: FC = memo(() => {
   const nextStep = useCallback(async () => {
     if (await validateStep(currentStep)) {
       if (currentStep === 2) {
-        createPaymentIntent();
+        await createPaymentIntent();
       }
       setCurrentStep((prevStep) => prevStep + 1);
     }
@@ -131,8 +140,8 @@ const SingUpForm: FC = memo(() => {
   const handleFinalSubmit = async () => {
     setShowSuccess(true);
     setTimeout(() => {
-      // 実際はログイン画面へ遷移
-      window.location.href = "/"; // または適切なルーティング処理
+      // ログイン画面へ遷移
+      navigate(route.login);
     }, 2000);
   };
 
@@ -141,7 +150,7 @@ const SingUpForm: FC = memo(() => {
     {
       id: "1",
       name: "月額プラン",
-      price: "¥550",
+      price: "¥500",
       period: "/月",
       description: "毎月のお支払い",
       badge: "ベーシック",
@@ -159,7 +168,7 @@ const SingUpForm: FC = memo(() => {
       period: "/年",
       description: "年間一括払い",
       badge: "お得！",
-      save: "¥1,100お得!",
+      save: "¥1,000お得!",
       color: "orange",
       recommended: true,
       features: [
@@ -260,8 +269,29 @@ const SingUpForm: FC = memo(() => {
           <Center mt={6}>
             <Text fontSize="sm" color="gray.500">
               すでにアカウントをお持ちですか？{" "}
-              <Button variant="link" colorScheme="orange" size="sm">
+              <Button
+                variant="link"
+                colorScheme="orange"
+                size="sm"
+                onClick={() => {
+                  navigate(route.login);
+                }}
+              >
                 ログイン
+              </Button>
+            </Text>
+          </Center>
+          <Center mt={2}>
+            <Text fontSize="sm" color="gray.500">
+              <Button
+                variant="link"
+                colorScheme="orange"
+                size="sm"
+                onClick={() => {
+                  navigate(route.top);
+                }}
+              >
+                戻る
               </Button>
             </Text>
           </Center>

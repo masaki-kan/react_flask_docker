@@ -19,7 +19,7 @@ class Config:
         self.JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY')
         self.JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=1)
         self.MAX_CONTENT_LENGTH = 20 * 1024 * 1024
-        self.STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY")
+        self.STRIPE_SECRET_KEY = os.getenv("STRIPE_DEVELOP_SECRET_KEY")
         
         # Database config
         self.DB_CONFIG = {

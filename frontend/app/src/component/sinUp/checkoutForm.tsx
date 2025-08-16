@@ -5,9 +5,9 @@ import {
 } from "@stripe/react-stripe-js";
 import { Box, Button, FormLabel, Heading, Input } from "@chakra-ui/react";
 import { FC, memo, useCallback, useState } from "react";
-import useAlert from "../../../hooks/useAlert";
-import { sinupFormType } from "../../../types/loginType";
-import { singupApi } from "../../../api/loginApis";
+import useAlert from "../../hooks/useAlert";
+import { sinupFormType } from "../../types/loginType";
+import { singupApi } from "../../api/loginApis";
 
 type checkoutFormType = {
   singUpEvent: () => Promise<void>;

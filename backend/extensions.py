@@ -14,6 +14,6 @@ def init_extensions(app):
                            r"/socket.io/*": {"origins": app.config['ORIGINS']}})
     jwt.init_app(app)
     socketio.init_app(app, cors_allowed_origins="*", async_mode="eventlet")
-    stripe.api_key = app.config['STRIPE_SECRET_KEY']
+    stripe.api_key = app.config['STRIPE_DEVELOP_SECRET_KEY']
     
     return socketio

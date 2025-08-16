@@ -4,7 +4,7 @@ import AuthProvider from "../provider/authProvider";
 import ChatHome from "../component/chat/home";
 import PublicLayout from "../component/layout/publicLayout";
 import SecureLayout from "../component/layout/secureLayout";
-import Login from "../component/pages/login";
+import Top from "../component/pages/login";
 import { route } from "./routeConst";
 import ListingsHome from "../component/listing/home";
 import ShopPageHome from "../component/shop/home";
@@ -18,6 +18,18 @@ import FavoriteHome from "../component/favorite/home";
 import { useDispatch } from "react-redux";
 import { setPreviousUrl } from "../store/navigationSlice";
 import ThreadPage from "../component/thread/threadPage";
+import TokushohoPage from "../component/tokushoho/tokushohoPage";
+import Login from "../component/login/loginForm";
+import SingUp from "../component/sinUp/singUpForm";
+
+// 認証が必要なルートのラッパーコンポーネント
+const ProtectedLayout = () => {
+  return (
+    <AuthProvider>
+      <SecureLayout />
+    </AuthProvider>
+  );
+};
 
 const AppRoutes: FC = () => {
   const location = useLocation();
@@ -29,31 +41,35 @@ const AppRoutes: FC = () => {
   }, [dispatch, location.pathname]);
 
   return (
-    <>
-      <AuthProvider>
-        <Routes>
-          <Route element={<PublicLayout />}>
-            <Route path={route.top} element={<Login />} />
-            {/* 他の公開ページもここに追加できます */}
-          </Route>
+    <Routes>
+      {/* パブリックルート */}
+      <Route element={<PublicLayout />}>
+        <Route path={route.top} element={<Top />} />
+        <Route path={route.login} element={<Login />} />
+        <Route path={route.singUp} element={<SingUp />} />
 
-          <Route element={<SecureLayout />}>
-            <Route path={route.profile} element={<ProfileHome />} />
-            <Route path={route.users} element={<ListingsHome />} />
-            <Route path={route.items} element={<ItemsHome />} />
-            <Route path={route.shopPage} element={<ShopPageHome />} />
-            <Route path={route.saved} element={<BusinessHome />} />
-            <Route path={route.myItem} element={<MyItemHome />} />
-            <Route path={route.myItemEdit} element={<MyItemEditIndex />} />
-            <Route path={route.itemDetail} element={<ItemDetailHome />} />
-            <Route path={route.favorite} element={<FavoriteHome />} />
-            <Route path={route.transactionChat} element={<ChatHome />} />
-            <Route path={route.thread} element={<ThreadPage />} />
-          </Route>
-          <Route path="*" element={<h1>Not Found Page</h1>} />
-        </Routes>
-      </AuthProvider>
-    </>
+        <Route path={route.tokushoho} element={<TokushohoPage />} />
+        {/* 他の公開ページもここに追加できます */}
+      </Route>
+
+      {/* 認証が必要なルート（プロテクテッドルート） */}
+      <Route element={<ProtectedLayout />}>
+        <Route path={route.profile} element={<ProfileHome />} />
+        <Route path={route.users} element={<ListingsHome />} />
+        <Route path={route.items} element={<ItemsHome />} />
+        <Route path={route.shopPage} element={<ShopPageHome />} />
+        <Route path={route.saved} element={<BusinessHome />} />
+        <Route path={route.myItem} element={<MyItemHome />} />
+        <Route path={route.myItemEdit} element={<MyItemEditIndex />} />
+        <Route path={route.itemDetail} element={<ItemDetailHome />} />
+        <Route path={route.favorite} element={<FavoriteHome />} />
+        <Route path={route.transactionChat} element={<ChatHome />} />
+        <Route path={route.thread} element={<ThreadPage />} />
+      </Route>
+
+      {/* 404ページ */}
+      <Route path="*" element={<h1>Not Found Page</h1>} />
+    </Routes>
   );
 };
 

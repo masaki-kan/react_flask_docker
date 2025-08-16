@@ -88,7 +88,6 @@ const useMyProfile = (): useMyProfileReturn => {
     if (responseProfile === undefined) {
       systemErrorLogoutAlert();
       logOutHandler();
-
       return;
     }
 

@@ -1,11 +1,31 @@
+// export interface sinupFormType {
+//   username: string;
+//   email: string;
+//   password: string;
+//   plan: string;
+//   stripeCustomerId: string;
+//   subscriptionId: string;
+//   intentId: string;
+//   clientSecret: string;
+// }
+
 export interface sinupFormType {
   username: string;
   email: string;
   password: string;
-  plan: string;
-  stripeCustomerId: string;
-  intentId: string;
-  clientSecret: string;
+  location: string;
+  plan: string; // "1": 月額プラン, "2": 年額プラン
+  shopName?: string;
+  url?: string;
+  reason?: string;
+
+  // Stripe関連
+  clientSecret?: string;
+  stripeCustomerId?: string;
+  subscriptionId?: string;
+  intentId?: string;
+  setupIntentId?: string;
+  paymentType?: "setup" | "payment";
 }
 
 export interface errorStateType {
@@ -13,12 +33,6 @@ export interface errorStateType {
   email: string;
   password: string;
 }
-
-// export interface stepsStatueType {
-//   form: boolean;
-//   select: boolean;
-//   credit: boolean;
-// }
 
 export interface plansType {
   id: string;

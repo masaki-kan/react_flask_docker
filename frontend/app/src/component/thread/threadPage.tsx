@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   Box,
   VStack,
@@ -19,6 +19,7 @@ import {
   MenuList,
   MenuItem,
   Link,
+  Card,
 } from "@chakra-ui/react";
 import { IoSend } from "react-icons/io5";
 import { FaUserCircle, FaEllipsisV, FaTrash } from "react-icons/fa";
@@ -66,6 +67,9 @@ const ThreadPage: React.FC = () => {
   const [initialLoad, setInitialLoad] = useState(true);
   const [deletingId, setDeletingId] = useState<number | null>(null);
 
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
   const navigate = useNavigate();
   const toast = useToast();
   const { memorizeProfile } = useMyProfile();
@@ -74,6 +78,11 @@ const ThreadPage: React.FC = () => {
   const borderColor = useColorModeValue("gray.200", "gray.700");
   const inputBgColor = useColorModeValue("gray.50", "gray.700");
   const linkColor = useColorModeValue("blue.500", "blue.300");
+
+  // 自動スクロール
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
 
   // URLをリンクに変換する関数
   const renderMessageWithLinks = (text: string) => {
@@ -193,20 +202,20 @@ const ThreadPage: React.FC = () => {
 
   // スクロールでさらに読み込み
   useEffect(() => {
-    const scrollContainer = document.querySelector(".main-scroll-container");
-    if (!scrollContainer) return;
+    const container = scrollContainerRef.current;
+    if (!container) return;
 
     const handleScroll = () => {
       if (loading || !hasMore) return;
 
-      const { scrollTop, scrollHeight, clientHeight } = scrollContainer;
+      const { scrollTop, scrollHeight, clientHeight } = container;
       if (scrollTop + clientHeight >= scrollHeight - 100) {
         fetchMessages(page + 1, filterType, false);
       }
     };
 
-    scrollContainer.addEventListener("scroll", handleScroll);
-    return () => scrollContainer.removeEventListener("scroll", handleScroll);
+    container.addEventListener("scroll", handleScroll);
+    return () => container.removeEventListener("scroll", handleScroll);
   }, [loading, hasMore, fetchMessages, page, filterType]);
 
   // タブ変更時
@@ -255,6 +264,7 @@ const ThreadPage: React.FC = () => {
 
       setTimeout(() => {
         fetchMessages(1, filterType, true);
+        scrollToBottom();
       }, 100);
     }
     setPosting(false);
@@ -311,12 +321,10 @@ const ThreadPage: React.FC = () => {
   };
 
   return (
-    <Box position="relative" height="100%">
+    <>
       {/* タブヘッダー */}
       <Box
         bg={bgColor}
-        position="fixed"
-        top={"110px"}
         borderBottom="1px"
         borderColor={borderColor}
         p={3}
@@ -343,119 +351,150 @@ const ThreadPage: React.FC = () => {
       </Box>
 
       {/* メッセージエリア */}
-      <Box pb="150px" mt={"50px"}>
-        <VStack spacing={2} align="stretch">
-          {messages.length === 0 && !loading
-            ? renderEmptyState()
-            : messages.map((msg) => (
-                <Box
-                  key={msg.thread_message_id}
-                  bg={bgColor}
-                  p={3}
-                  borderRadius="lg"
-                  boxShadow="sm"
-                >
-                  <HStack align="start" spacing={3}>
-                    <Box
-                      cursor="pointer"
-                      onClick={() => handleUserClick(msg.user_id)}
-                      flexShrink={0}
-                    >
-                      {msg.user_image ? (
-                        <Avatar size="sm" src={msg.user_image} />
-                      ) : (
-                        <FaUserCircle size={32} color="gray.500" />
-                      )}
-                    </Box>
+      <Card
+        w="100%"
+        borderWidth={1}
+        borderColor="#edf2f7"
+        bg="white"
+        h={{ base: "calc(100vh - 180px)", md: "calc(100vh - 280px)" }}
+        minH={{ base: "400px", md: "500px" }}
+        display="flex"
+        flexDirection="column"
+      >
+        <Box
+          ref={scrollContainerRef}
+          flex="1"
+          overflowY="auto"
+          p={4}
+          bg="gray.50"
+          css={{
+            "&::-webkit-scrollbar": {
+              width: "8px",
+            },
+            "&::-webkit-scrollbar-track": {
+              background: "#f1f1f1",
+            },
+            "&::-webkit-scrollbar-thumb": {
+              background: "#888",
+              borderRadius: "4px",
+            },
+            "&::-webkit-scrollbar-thumb:hover": {
+              background: "#555",
+            },
+          }}
+        >
+          <VStack spacing={2} align="stretch">
+            {messages.length === 0 && !loading
+              ? renderEmptyState()
+              : messages.map((msg) => (
+                  <Box
+                    key={msg.thread_message_id}
+                    bg={bgColor}
+                    p={3}
+                    borderRadius="lg"
+                    boxShadow="sm"
+                  >
+                    <HStack align="start" spacing={3}>
+                      <Box
+                        cursor="pointer"
+                        onClick={() => handleUserClick(msg.user_id)}
+                        flexShrink={0}
+                      >
+                        {msg.user_image ? (
+                          <Avatar size="sm" src={msg.user_image} />
+                        ) : (
+                          <FaUserCircle size={32} color="gray.500" />
+                        )}
+                      </Box>
 
-                    <VStack align="start" flex={1} spacing={1}>
-                      <HStack width="full" justify="space-between">
-                        <HStack flexWrap="wrap" spacing={1}>
-                          <Text
-                            fontWeight="bold"
-                            cursor="pointer"
-                            fontSize="sm"
-                            _hover={{ textDecoration: "underline" }}
-                            onClick={() => handleUserClick(msg.user_id)}
-                          >
-                            {msg.user_name}
-                          </Text>
-                          <Text fontSize="xs" color="gray.500">
-                            {msg.user_location}
-                          </Text>
-                          <Text fontSize="xs" color="gray.400">
-                            {viewDate(new Date(msg.created_at))}
-                          </Text>
+                      <VStack align="start" flex={1} spacing={1}>
+                        <HStack width="full" justify="space-between">
+                          <HStack flexWrap="wrap" spacing={1}>
+                            <Text
+                              fontWeight="bold"
+                              cursor="pointer"
+                              fontSize="sm"
+                              _hover={{ textDecoration: "underline" }}
+                              onClick={() => handleUserClick(msg.user_id)}
+                            >
+                              {msg.user_name}
+                            </Text>
+                            <Text fontSize="xs" color="gray.500">
+                              {msg.user_location}
+                            </Text>
+                            <Text fontSize="xs" color="gray.400">
+                              {viewDate(new Date(msg.created_at))}
+                            </Text>
+                          </HStack>
+
+                          {String(msg.user_id) ===
+                            memorizeProfile.profile.id && (
+                            <Menu>
+                              <MenuButton
+                                as={IconButton}
+                                icon={<FaEllipsisV />}
+                                variant="ghost"
+                                size="xs"
+                                aria-label="Options"
+                                isDisabled={
+                                  deletingId === msg.thread_message_id
+                                }
+                              />
+                              <MenuList>
+                                <MenuItem
+                                  icon={<FaTrash />}
+                                  onClick={() =>
+                                    handleDeleteMessage(msg.thread_message_id)
+                                  }
+                                  color="red.500"
+                                  fontSize="sm"
+                                >
+                                  削除
+                                </MenuItem>
+                              </MenuList>
+                            </Menu>
+                          )}
                         </HStack>
 
-                        {String(msg.user_id) === memorizeProfile.profile.id && (
-                          <Menu>
-                            <MenuButton
-                              as={IconButton}
-                              icon={<FaEllipsisV />}
-                              variant="ghost"
-                              size="xs"
-                              aria-label="Options"
-                              isDisabled={deletingId === msg.thread_message_id}
-                            />
-                            <MenuList>
-                              <MenuItem
-                                icon={<FaTrash />}
-                                onClick={() =>
-                                  handleDeleteMessage(msg.thread_message_id)
-                                }
-                                color="red.500"
-                                fontSize="sm"
-                              >
-                                削除
-                              </MenuItem>
-                            </MenuList>
-                          </Menu>
-                        )}
-                      </HStack>
+                        <Text
+                          whiteSpace="pre-wrap"
+                          wordBreak="break-word"
+                          overflowWrap="break-word"
+                          maxWidth="100%"
+                          fontSize="sm"
+                          lineHeight="1.5"
+                          py={2}
+                        >
+                          {renderMessageWithLinks(msg.message)}
+                        </Text>
+                      </VStack>
+                    </HStack>
+                  </Box>
+                ))}
 
-                      <Text
-                        whiteSpace="pre-wrap"
-                        wordBreak="break-word"
-                        overflowWrap="break-word"
-                        maxWidth="100%"
-                        fontSize="sm"
-                        lineHeight="1.5"
-                      >
-                        {renderMessageWithLinks(msg.message)}
-                      </Text>
-                    </VStack>
-                  </HStack>
-                </Box>
-              ))}
+            {loading && (
+              <Box textAlign="center" py={4}>
+                <Spinner size="md" />
+              </Box>
+            )}
 
-          {loading && (
-            <Box textAlign="center" py={4}>
-              <Spinner size="md" />
-            </Box>
-          )}
+            {!hasMore && messages.length > 0 && (
+              <Text textAlign="center" color="gray.500" py={4} fontSize="sm">
+                すべて読み込みました
+              </Text>
+            )}
+            <div ref={messagesEndRef} />
+          </VStack>
+        </Box>
 
-          {!hasMore && messages.length > 0 && (
-            <Text textAlign="center" color="gray.500" py={4} fontSize="sm">
-              すべて読み込みました
-            </Text>
-          )}
-        </VStack>
-      </Box>
-
-      {/* 投稿エリア（ビューポート下部に固定） */}
-      <Box
-        position="fixed"
-        bottom={0} // フッターの高さ分上に配置
-        left={0}
-        right={0}
-        bg={bgColor}
-        borderTop="1px"
-        borderColor={borderColor}
-        p={3}
-        zIndex={1000}
-      >
-        <Box maxW="container.xl" mx="auto" px={{ base: 2, md: 4 }}>
+        {/* 投稿エリア（下部に固定） */}
+        <Box
+          p={4}
+          borderTop="1px"
+          borderColor="gray.200"
+          bg="white"
+          position="relative"
+        >
           <HStack spacing={2}>
             <Textarea
               value={newMessage}
@@ -465,13 +504,20 @@ const ThreadPage: React.FC = () => {
               resize="none"
               rows={2}
               maxLength={100}
-              fontSize="sm"
-              // onKeyPress={(e) => {
-              //   if (e.key === "Enter" && !e.shiftKey) {
-              //     e.preventDefault();
-              //     handleSubmit();
-              //   }
-              // }}
+              fontSize="16px" // スマホでの自動ズームを防ぐ
+              borderColor="gray.300"
+              _focus={{
+                borderColor: "blue.400",
+                bg: "white",
+              }}
+              onFocus={(e) => {
+                e.preventDefault();
+                // フォーカス時の自動スクロールを防ぐ
+                const scrollY = window.scrollY;
+                setTimeout(() => {
+                  window.scrollTo(0, scrollY);
+                }, 0);
+              }}
             />
             <IconButton
               aria-label="送信"
@@ -487,8 +533,8 @@ const ThreadPage: React.FC = () => {
             {newMessage.length}/100
           </Text>
         </Box>
-      </Box>
-    </Box>
+      </Card>
+    </>
   );
 };
 

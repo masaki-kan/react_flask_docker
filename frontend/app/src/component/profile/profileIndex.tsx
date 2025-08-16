@@ -22,7 +22,7 @@ import useMyProfile from "../../hooks/useProfile";
 import LogOut from "../layout/logOut";
 import { useNavigate } from "react-router-dom";
 import { plans } from "../../consts/profileConsts";
-import Withdrawal from "../layout/withdrawal";
+// import Withdrawal from "../layout/withdrawal";
 import {
   FaUserCircle,
   FaEdit,
@@ -39,6 +39,7 @@ import { IconType } from "react-icons";
 import ExchangeArchiveModal from "../archive/exchangeArchiveModal";
 import { MdOutlineShoppingBag } from "react-icons/md";
 import { route } from "../../route/routeConst";
+import WithdrawalButton from "./withdrawalButton";
 
 type profileIndexType = {
   editFormSwitch: () => void;
@@ -387,7 +388,8 @@ const ProfileIndex: FC<profileIndexType> = ({ editFormSwitch }) => {
             </Heading>
             <HStack justify="space-between">
               <LogOut />
-              <Withdrawal />
+              <WithdrawalButton />
+              {/* <Withdrawal /> */}
             </HStack>
           </Box>
 

@@ -8,8 +8,8 @@ const useLog = () => {
   const navigate = useNavigate();
 
   const logOutHandler = useCallback(() => {
-    logout();
     navigate(route.top);
+    logout();
   }, [logout, navigate]);
 
   return {

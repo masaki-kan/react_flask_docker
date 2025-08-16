@@ -1,37 +1,39 @@
 import React, { FC, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import AuthContext from "./authContext"; // AuthContext のインポート
+import AuthContext from "./authContext";
 import { useDispatch } from "react-redux";
 import { deleteProfile, setLoginAfterProfile } from "../store/profileSlice";
 import useLaoding from "../hooks/useLaoding";
 
 const AuthProvider: FC<{ children: React.ReactNode }> = ({ children }) => {
-  const dispath = useDispatch();
+  const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { changeLoading, memorizeLoading } = useLaoding();
+  const { memorizeLoading } = useLaoding();
 
   const login = useCallback(
     (user: string, token: string, userId: string) => {
       localStorage.setItem("token", token);
-      dispath(
+      dispatch(
         setLoginAfterProfile({ profile: { id: userId.toString(), name: user } })
       );
     },
-    [dispath]
+    [dispatch]
   );
 
   const logout = useCallback(() => {
     localStorage.removeItem("token");
-    dispath(deleteProfile());
-  }, [dispath]);
+    dispatch(deleteProfile());
+  }, [dispatch]);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
+
+    // トークンがない場合は、ログアウト処理をしてホームページへリダイレクト
     if (!token) {
       logout();
-      navigate("/"); // ログインページへのルートを直接指定
+      navigate("/");
     }
-  }, [changeLoading, logout, navigate]);
+  }, [logout, navigate]);
 
   return (
     <AuthContext.Provider

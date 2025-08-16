@@ -1,37 +1,22 @@
-import { type FC, useCallback, useState } from "react";
+import { type FC, useCallback } from "react";
 import Header from "../layout/header";
-import InputForm from "../login/inputForm";
-import SingUpForm from "../login/sinUp/singUpForm";
-import {
-  Modal,
-  ModalBody,
-  // ModalCloseButton,
-  ModalContent,
-  ModalOverlay,
-  useDisclosure,
-} from "@chakra-ui/react";
 import Launch from "../../component/launch/home";
+import { useNavigate } from "react-router-dom";
+import { route } from "../../route/routeConst";
 
 const Login: FC = () => {
-  const { isOpen, onOpen, onClose } = useDisclosure();
-  const [formSwitchStatus, setFormSwitchStatus] = useState<boolean>(false);
-
-  const singUpClick = useCallback(() => {
-    setFormSwitchStatus(true);
-  }, []);
+  const navigate = useNavigate();
 
   const loginClick = useCallback(() => {
-    if (formSwitchStatus) {
-      setFormSwitchStatus(false);
-      return;
-    }
-    onOpen();
-  }, [formSwitchStatus, onOpen]);
+    navigate(route.login);
+  }, [navigate]);
 
   return (
     <>
-      <Header singupClick={singUpClick} loginSwitch={loginClick} />
-      <Modal
+      <Header loginSwitch={loginClick} />
+      <Launch />
+
+      {/* <Modal
         isOpen={isOpen}
         onClose={onClose}
         size="md"
@@ -46,26 +31,13 @@ const Login: FC = () => {
           overflow="hidden"
           mx={4}
         >
-          {/* <ModalCloseButton
-            size="lg"
-            top={4}
-            right={4}
-            color="gray.500"
-            _hover={{
-              color: "gray.700",
-              bg: "gray.100",
-              transform: "rotate(90deg)",
-            }}
-            transition="all 0.3s"
-            borderRadius="full"
-          /> */}
           <ModalBody px={0} pb={0}>
             <InputForm />
           </ModalBody>
         </ModalContent>
       </Modal>
       {!formSwitchStatus && <Launch />}
-      {formSwitchStatus && <SingUpForm />}
+      {formSwitchStatus && <SingUpForm />} */}
     </>
   );
 };

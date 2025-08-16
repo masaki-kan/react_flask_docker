@@ -11,7 +11,7 @@ import {
 } from "@chakra-ui/react";
 import { FC } from "react";
 import { FaCheck, FaChevronLeft, FaChevronRight } from "react-icons/fa";
-import { sinupFormType, plansType } from "../../../types/loginType";
+import { sinupFormType, plansType } from "../../types/loginType";
 
 type Step2Type = {
   formData: sinupFormType;

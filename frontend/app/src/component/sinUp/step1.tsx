@@ -22,7 +22,7 @@ import {
   FaEye,
   FaChevronRight,
 } from "react-icons/fa";
-import { errorStateType, sinupFormType } from "../../../types/loginType";
+import { errorStateType, sinupFormType } from "../../types/loginType";
 
 type Step1Type = {
   errors: errorStateType;

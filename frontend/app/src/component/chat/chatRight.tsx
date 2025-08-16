@@ -119,7 +119,7 @@ const ChatLayout: FC = () => {
       sender_id: userIdNumber,
     });
     setMessage("");
-  }, [message, roomId, tradeIdNumber, userIdNumber]);
+  }, [message, roomId, toast, tradeIdNumber, userIdNumber]);
 
   // const handleKeyPress = useCallback(
   //   (e: React.KeyboardEvent) => {

@@ -24,6 +24,7 @@ import ItemDetailModal from "./itemDetailModal";
 import { chatItemDataType } from "../../types/chatType";
 import { itemParts } from "../../consts/itemConsts";
 import { selectExchangeItemApi } from "../../api/chatApi";
+import { renderSrc } from "../../utils/views/viewItem";
 
 interface PartnerItemsModalProps {
   isOpen: boolean;
@@ -235,7 +236,7 @@ const PartnerItemsModal: FC<PartnerItemsModalProps> = ({
 
                         {item.images && item.images.length > 0 && (
                           <Image
-                            src={item.images[0]}
+                            src={renderSrc(item.images[0])}
                             alt={item.title}
                             h="150px"
                             w="100%"
