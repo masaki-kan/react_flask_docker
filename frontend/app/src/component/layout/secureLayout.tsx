@@ -4,6 +4,7 @@ import { Outlet, useLocation } from "react-router-dom";
 import { Box, Container } from "@chakra-ui/react";
 import Footer from "../layout/footer";
 import { route } from "../../route/routeConst";
+// import { useAuth } from "../../provider/authContext";
 
 const SecureLayout: FC = () => {
   const location = useLocation();

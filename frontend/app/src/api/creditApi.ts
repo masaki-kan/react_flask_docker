@@ -111,15 +111,11 @@ export const createPaymentIntent = async (
 };
 
 // サブスクリプション情報取得
-export const getSubscriptionInfo = async () => {
+export const getSubscriptionInfo = async (userID: string) => {
   try {
-    const response = await axios.get(
+    const response = await axios.post(
       `${import.meta.env.VITE_API_URL}/api/subscription-info`,
-      {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("access_token")}`,
-        },
-      }
+      { user_id: userID }
     );
 
     return response.data;
@@ -130,16 +126,11 @@ export const getSubscriptionInfo = async () => {
 };
 
 // サブスクリプションキャンセル
-export const cancelSubscription = async () => {
+export const cancelSubscription = async (userID: string) => {
   try {
     const response = await axios.post(
       `${import.meta.env.VITE_API_URL}/api/cancel-subscription`,
-      {},
-      {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("access_token")}`,
-        },
-      }
+      { user_id: userID }
     );
 
     return response.data;
@@ -148,6 +139,34 @@ export const cancelSubscription = async () => {
       errorSweetalert2(error.response.data.error);
     } else {
       errorSweetalert2("サブスクリプションのキャンセルに失敗しました");
+    }
+    return null;
+  }
+};
+
+export const withdrawalApi = async (
+  userID: string
+): Promise<{
+  result: boolean;
+  message?: string;
+} | null> => {
+  console.log("userID", userID);
+  try {
+    const response = await axios.post(
+      `${import.meta.env.VITE_API_URL}/api/withdraw`,
+      { user_id: userID },
+      {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("access_token")}`,
+        },
+      }
+    );
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response?.data?.error) {
+      errorSweetalert2(error.response.data.error);
+    } else {
+      errorSweetalert2("退会処理に失敗しました");
     }
     return null;
   }

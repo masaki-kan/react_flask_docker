@@ -1,6 +1,7 @@
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from utils.db_utils import get_db_connection
+import mysql.connector
 import stripe
 import os
 from datetime import datetime, timedelta
@@ -382,78 +383,395 @@ def handle_trial_ending(subscription):
     # ここでメール通知などを実装
 
 
-@payment_bp.route('/subscription-info', methods=['GET'])
-@jwt_required()
+@payment_bp.route('/subscription-info', methods=['POST'])
 def get_subscription_info():
     """ユーザーのサブスクリプション情報を取得"""
-    user_id = get_jwt_identity()
-    
     try:
-        connection = get_db_connection()
-        cursor = connection.cursor(dictionary=True)
+        data = request.get_json()
+        user_id = data.get("user_id")
         
-        cursor.execute("""
-            SELECT stripe_customer_id, plan, status
-            FROM users 
-            WHERE user_id = %s
-        """, (user_id,))
+        # print(f"[DEBUG] Received user_id: {user_id}", flush=True)
         
-        user = cursor.fetchone()
-        
-        if not user or not user['stripe_customer_id']:
+        # user_idの検証
+        if not user_id:
             return jsonify({
+                "error": "ユーザーIDが指定されていません",
                 "has_subscription": False,
-                "status": "no_subscription"
-            })
+                "status": "error"
+            }), 400
         
-        # Stripeから最新の情報を取得
-        subscriptions = stripe.Subscription.list(
-            customer=user['stripe_customer_id'],
-            status='all',
-            limit=1
-        )
-        
-        if not subscriptions.data:
-            return jsonify({
-                "has_subscription": False,
-                "status": "no_subscription"
-            })
-        
-        subscription = subscriptions.data[0]
-        
-        # プランタイプを判定
-        plan_type = 'unknown'
-        if subscription.items and subscription.items.data:
-            price = subscription.items.data[0].price
-            if price.recurring:
-                if price.recurring.interval == 'month':
-                    plan_type = 'monthly'
-                elif price.recurring.interval == 'year':
-                    plan_type = 'yearly'
-        
-        response_data = {
-            "has_subscription": True,
-            "status": subscription['status'],
-            "plan_type": plan_type,
-            "current_period_end": subscription['current_period_end'],
-            "cancel_at_period_end": subscription['cancel_at_period_end']
-        }
-        
-        # トライアル情報を追加
-        if subscription['status'] == 'trialing' and subscription.get('trial_end'):
-            response_data['trial_end'] = subscription['trial_end']
-            response_data['days_until_trial_end'] = max(0, (subscription['trial_end'] - datetime.now().timestamp()) // 86400)
-        
-        return jsonify(response_data)
-        
+        with get_db_connection() as conn:
+            cursor = conn.cursor(dictionary=True)
+            
+            # print("[DEBUG] DB connection successful", flush=True)
+            
+            cursor.execute("""
+                SELECT stripe_customer_id, plan, status
+                FROM users 
+                WHERE user_id = %s
+            """, (user_id,))
+            
+            user = cursor.fetchone()
+            
+            # print(f"[DEBUG] User data: {user}", flush=True)
+            
+            if not user:
+                return jsonify({
+                    "error": "ユーザーが見つかりません",
+                    "has_subscription": False,
+                    "status": "no_user"
+                }), 404
+            
+            if not user.get('stripe_customer_id'):
+                # print("[DEBUG] No stripe_customer_id found", flush=True)
+                return jsonify({
+                    "has_subscription": False,
+                    "status": "no_subscription"
+                })
+            
+            # print(f"[DEBUG] Fetching Stripe subscriptions for customer: {user['stripe_customer_id']}", flush=True)
+            
+            # Stripeから最新の情報を取得
+            subscriptions = stripe.Subscription.list(
+                customer=user['stripe_customer_id'],
+                status='all',
+                limit=1
+            )
+            
+            # print(f"[DEBUG] Found {len(subscriptions.data)} subscriptions", flush=True)
+            
+            if not subscriptions.data:
+                return jsonify({
+                    "has_subscription": False,
+                    "status": "no_subscription"
+                })
+            
+            subscription = subscriptions.data[0]
+            
+            # プランタイプを判定
+            plan_type = 'unknown'
+            if 'items' in subscription and subscription['items'].get('data'):
+                items_data = subscription['items']['data']
+                if items_data and len(items_data) > 0:
+                    price = items_data[0].get('price', {})
+                    if price.get('recurring'):
+                        interval = price['recurring'].get('interval')
+                        if interval == 'month':
+                            plan_type = 'monthly'
+                        elif interval == 'year':
+                            plan_type = 'yearly'
+            
+            if plan_type == 'unknown' and subscription.get('metadata'):
+                plan_type = subscription['metadata'].get('plan_type', 'unknown')
+            
+            response_data = {
+                "has_subscription": True,
+                "status": subscription['status'],
+                "plan_type": plan_type,
+                "current_period_end": subscription['current_period_end'],
+                "cancel_at_period_end": subscription['cancel_at_period_end']
+            }
+            
+            # トライアル情報を追加
+            if subscription['status'] == 'trialing' and subscription.get('trial_end'):
+                response_data['trial_end'] = subscription['trial_end']
+                response_data['days_until_trial_end'] = max(0, (subscription['trial_end'] - datetime.now().timestamp()) // 86400)
+            
+            # print(f"[DEBUG] Returning response: {response_data}", flush=True)
+            
+            return jsonify(response_data)
+            
     except Exception as e:
-        logger.error(f"Error getting subscription info: {str(e)}")
+        print(f"[ERROR] Exception occurred: {type(e).__name__}: {str(e)}", flush=True)
+        import traceback
+        traceback.print_exc()
+        
         return jsonify({
             "error": "サブスクリプション情報の取得に失敗しました",
+            "has_subscription": False,
+            "status": "error"
+        }), 500
+        
+@payment_bp.route('/withdraw', methods=['POST'])
+def withdraw_user():
+    """ユーザー退会処理エンドポイント
+    
+    論理削除とサブスクリプションキャンセルを同時に実行
+    """
+    data = request.get_json()
+    user_id = data.get("user_id")
+    
+    # user_idの検証
+    if not user_id:
+        return jsonify({
+            "error": "ユーザーIDが指定されていません",
+            "result": False
+        }), 400
+    
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor(dictionary=True)
+            
+            # トランザクション開始
+            conn.start_transaction()
+            
+            try:
+                # ユーザー情報を取得
+                cursor.execute("""
+                    SELECT user_id, stripe_customer_id, email, name, is_deleted
+                    FROM users 
+                    WHERE user_id = %s
+                    FOR UPDATE
+                """, (user_id,))
+                
+                user = cursor.fetchone()
+                
+                if not user:
+                    conn.rollback()
+                    return jsonify({
+                        "error": "ユーザーが見つかりません",
+                        "result": False
+                    }), 404
+                
+                if user.get('is_deleted'):
+                    conn.rollback()
+                    return jsonify({
+                        "error": "既に退会済みのユーザーです",
+                        "result": False
+                    }), 400
+                
+                # 取引中のアイテムがあるかチェック
+                cursor.execute("""
+                    SELECT i.item_id, i.title, t.status as trade_status
+                    FROM items i
+                    LEFT JOIN trades t ON i.item_id = t.item_id
+                    WHERE i.user_id = %s 
+                    AND i.status = 'trading'
+                    LIMIT 5
+                """, (user_id,))
+                
+                trading_items = cursor.fetchall()
+                if trading_items:
+                    conn.rollback()
+                    item_titles = [item['title'][:20] + '...' if len(item['title']) > 20 else item['title'] 
+                                  for item in trading_items[:3]]
+                    return jsonify({
+                        "error": "取引中のアイテムがあります。すべての取引を完了してから退会してください。",
+                        "result": False,
+                        "trading_items_count": len(trading_items),
+                        "trading_items_sample": item_titles,
+                        "message": "取引完了後に再度退会手続きを行ってください。"
+                    }), 400
+                
+                # 進行中の取引があるかチェック（自分が売り手または買い手）
+                cursor.execute("""
+                    SELECT t.trade_id, t.status, i.title,
+                           CASE 
+                               WHEN t.seller_id = %s THEN 'seller'
+                               ELSE 'buyer'
+                           END as user_role
+                    FROM trades t
+                    JOIN items i ON t.item_id = i.item_id
+                    WHERE (t.seller_id = %s OR t.buyer_id = %s)
+                    AND t.status IN ('pending', 'purchased', 'shipped')
+                    LIMIT 5
+                """, (user_id, user_id, user_id))
+                
+                active_trades = cursor.fetchall()
+                if active_trades:
+                    conn.rollback()
+                    trade_info = []
+                    for trade in active_trades[:3]:
+                        status_ja = {
+                            'pending': '申請中',
+                            'purchased': '決済済み',
+                            'shipped': '発送済み'
+                        }.get(trade['status'], trade['status'])
+                        trade_info.append({
+                            'title': trade['title'][:20] + '...' if len(trade['title']) > 20 else trade['title'],
+                            'status': status_ja,
+                            'role': '出品者' if trade['user_role'] == 'seller' else '購入者'
+                        })
+                    
+                    return jsonify({
+                        "error": "進行中の取引があります。すべての取引を完了またはキャンセルしてから退会してください。",
+                        "result": False,
+                        "active_trades_count": len(active_trades),
+                        "active_trades_sample": trade_info,
+                        "message": "取引を完了させるか、取引相手と相談の上キャンセルしてから退会手続きを行ってください。"
+                    }), 400
+                
+                # Stripeサブスクリプションのキャンセル処理
+                cancelled_subscriptions = []
+                stripe_errors = []
+                
+                if user.get('stripe_customer_id'):
+                    try:
+                        # アクティブなサブスクリプションを取得
+                        subscriptions = stripe.Subscription.list(
+                            customer=user['stripe_customer_id'],
+                            status='all',
+                            limit=10
+                        )
+                        
+                        # すべてのアクティブなサブスクリプションを即座にキャンセル
+                        for subscription in subscriptions.data:
+                            if subscription['status'] in ['active', 'trialing']:
+                                try:
+                                    stripe.Subscription.delete(subscription['id'])
+                                    cancelled_subscriptions.append(subscription['id'])
+                                    logger.info(f"Subscription {subscription['id']} cancelled for user {user_id}")
+                                except stripe.error.StripeError as e:
+                                    stripe_errors.append({
+                                        "subscription_id": subscription['id'],
+                                        "error": str(e)
+                                    })
+                                    logger.error(f"Failed to cancel subscription {subscription['id']}: {str(e)}")
+                        
+                    except stripe.error.StripeError as e:
+                        logger.error(f"Stripe cancellation error for user {user_id}: {str(e)}")
+                        stripe_errors.append({
+                            "error": f"サブスクリプション一覧取得エラー: {str(e)}"
+                        })
+                else:
+                    logger.info(f"User {user_id} has no stripe_customer_id, skipping subscription cancellation")
+                
+                # 現在の日時を取得
+                current_time = datetime.now()
+                
+                # 1. ユーザーを論理削除
+                cursor.execute("""
+                    UPDATE users 
+                    SET is_deleted = TRUE,
+                        deleted_at = %s,
+                        updated_at = %s,
+                        status = 0,
+                        token = NULL
+                    WHERE user_id = %s
+                """, (current_time, current_time, user_id))
+                
+                # 2. 出品中・削除済み・交換済みのアイテムを物理削除
+                # （取引中のアイテムは事前チェックで除外済み）
+                cursor.execute("""
+                    DELETE FROM items 
+                    WHERE user_id = %s 
+                    AND status IN ('available', 'deleted', 'exchanged')
+                """, (user_id,))
+                
+                deleted_items = cursor.rowcount
+                
+                # 3. アイテム画像を物理削除（アーカイブ済みの画像は保存されている）
+                cursor.execute("""
+                    DELETE ii FROM item_images ii
+                    INNER JOIN items i ON ii.item_id = i.item_id
+                    WHERE i.user_id = %s
+                """, (user_id,))
+                
+                # 4. プロフィール画像を物理削除
+                cursor.execute("""
+                    DELETE FROM profile_images 
+                    WHERE user_id = %s
+                """, (user_id,))
+                
+                # 5. タグを物理削除
+                cursor.execute("""
+                    DELETE FROM tags 
+                    WHERE user_id = %s
+                """, (user_id,))
+                
+                # 6. フォロー関係を物理削除
+                cursor.execute("""
+                    DELETE FROM follows 
+                    WHERE follower_id = %s OR followed_id = %s
+                """, (user_id, user_id))
+                
+                # 7. いいねを物理削除
+                cursor.execute("""
+                    DELETE FROM likes 
+                    WHERE user_id = %s
+                """, (user_id,))
+                
+                # 8. 保存リストを物理削除（saved_itemsテーブルがある場合）
+                try:
+                    cursor.execute("""
+                        DELETE FROM saved_items 
+                        WHERE user_id = %s
+                    """, (user_id,))
+                except Exception:
+                    pass  # テーブルが存在しない場合は無視
+                
+                # 9. 通知を物理削除（notificationsテーブルがある場合）
+                try:
+                    cursor.execute("""
+                        DELETE FROM notifications 
+                        WHERE user_id = %s OR sender_id = %s
+                    """, (user_id, user_id))
+                except Exception:
+                    pass  # テーブルが存在しない場合は無視
+                
+                # 10. 退会ログを記録
+                try:
+                    import json
+                    cursor.execute("""
+                        INSERT INTO withdrawal_logs (
+                            user_id, 
+                            email, 
+                            name, 
+                            stripe_customer_id,
+                            withdrawal_reason,
+                            created_at
+                        ) VALUES (%s, %s, %s, %s, %s, %s)
+                    """, (
+                        user_id, 
+                        user['email'], 
+                        user['name'], 
+                        user.get('stripe_customer_id'),
+                        data.get('reason', 'ユーザーによる退会'),
+                        current_time
+                    ))
+                except Exception as log_error:
+                    # ログテーブルがない場合でも退会処理は続行
+                    logger.warning(f"Failed to insert withdrawal log: {str(log_error)}")
+                
+                # トランザクションをコミット
+                conn.commit()
+                
+                logger.info(f"User {user_id} successfully withdrawn. Deleted items: {deleted_items}")
+                
+                response_data = {
+                    "result": True,
+                    "message": "退会処理が完了しました",
+                    "details": {
+                        "deleted_items": deleted_items,
+                        "cancelled_subscriptions": len(cancelled_subscriptions)
+                    }
+                }
+                
+                # Stripeエラーがあった場合は警告を含める
+                if stripe_errors:
+                    response_data["warnings"] = "一部のサブスクリプションキャンセルに失敗しましたが、退会処理は完了しました"
+                    logger.warning(f"Stripe errors during withdrawal: {stripe_errors}")
+                
+                return jsonify(response_data)
+                
+            except Exception as e:
+                # エラーが発生した場合はロールバック
+                conn.rollback()
+                raise
+        
+    except mysql.connector.Error as e:
+        logger.error(f"Database error during withdrawal for user {user_id}: {str(e)}")
+        return jsonify({
+            "error": "データベースエラーが発生しました",
             "result": False
         }), 500
-    finally:
-        if 'cursor' in locals():
-            cursor.close()
-        if 'connection' in locals():
-            connection.close()
+        
+    except Exception as e:
+        logger.error(f"Withdrawal error for user {user_id}: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        
+        return jsonify({
+            "error": "退会処理中にエラーが発生しました",
+            "result": False
+        }), 500

@@ -61,7 +61,6 @@ if env == "production":
         "https://www.bokurano-vintage.com"
     ]
 
-    
 else:
     origins = ["http://localhost:5173"]
     

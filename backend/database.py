@@ -13,13 +13,23 @@ def create_users_table(cursor):
             shop_name VARCHAR(255),
             shop_url VARCHAR(255),
             reasen TEXT,
-            stripe_customer_id VARCHAR(255) NOT NULL,
-            plan  VARCHAR(1) DEFAULT '1',
+            stripe_customer_id VARCHAR(255),
+            plan VARCHAR(1) DEFAULT '1',
+            status INT DEFAULT 1,
             type INT DEFAULT 1, -- 0 : 管理者, 1 : 利用者
+            is_deleted BOOLEAN DEFAULT FALSE COMMENT '論理削除フラグ',
+            deleted_at TIMESTAMP NULL COMMENT '削除日時',
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            INDEX idx_users_active (is_deleted, email),
+            INDEX idx_users_deleted_at (deleted_at),
+            INDEX idx_email (email),
+            INDEX idx_stripe_customer (stripe_customer_id)
         );
     ''')
+    
+    
 
 # ユーザーフォローテーブル
 def create_follows_table(cursor):
@@ -320,6 +330,22 @@ def create_cleanup_logs_table(cursor):
         );
     ''')
 
+# 退会ログテーブルを作成する関数
+def create_withdrawal_logs_table(cursor):
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS withdrawal_logs (
+            log_id INT AUTO_INCREMENT PRIMARY KEY,
+            user_id INT NOT NULL,
+            email VARCHAR(255) NOT NULL,
+            name VARCHAR(255),
+            stripe_customer_id VARCHAR(255),
+            withdrawal_reason TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            INDEX idx_user_id (user_id),
+            INDEX idx_created_at (created_at DESC)
+        );
+    ''')
+    
     
 # アーカイブテーブル作成関数
 def create_archive_tables(cursor):
@@ -343,3 +369,4 @@ def create_table(cursor):
     create_archive_tables(cursor)
     create_thread_messages_table(cursor)
     create_cleanup_logs_table(cursor) 
+    create_withdrawal_logs_table(cursor)

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Modal,
   ModalOverlay,
@@ -21,9 +21,15 @@ import {
   ListIcon,
   useDisclosure,
   HStack,
+  useToast,
 } from "@chakra-ui/react";
 import { MdWarning, MdCancel, MdCheckCircle } from "react-icons/md";
 import { FaExclamationTriangle } from "react-icons/fa";
+import { useNavigate } from "react-router-dom";
+import { getSubscriptionInfo, withdrawalApi } from "../../api/creditApi";
+import { useAuth } from "../../provider/authContext";
+import { route } from "../../route/routeConst";
+import useMyProfile from "../../hooks/useProfile";
 
 interface WithdrawalModalProps {
   isOpen: boolean;
@@ -31,6 +37,8 @@ interface WithdrawalModalProps {
   onConfirm: () => Promise<void>;
   subscriptionType?: "monthly" | "yearly";
   nextBillingDate?: string;
+  isTrialing?: boolean;
+  trialEndDate?: string;
 }
 
 const WithdrawalModal: React.FC<WithdrawalModalProps> = ({
@@ -39,6 +47,8 @@ const WithdrawalModal: React.FC<WithdrawalModalProps> = ({
   onConfirm,
   subscriptionType = "monthly",
   nextBillingDate,
+  isTrialing = false,
+  trialEndDate,
 }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [step, setStep] = useState<"confirm" | "final">("confirm");
@@ -51,7 +61,6 @@ const WithdrawalModal: React.FC<WithdrawalModalProps> = ({
     setIsLoading(true);
     try {
       await onConfirm();
-      onClose();
     } catch (error) {
       console.error("退会処理エラー:", error);
     } finally {
@@ -66,6 +75,12 @@ const WithdrawalModal: React.FC<WithdrawalModalProps> = ({
 
   const subscriptionInfo =
     subscriptionType === "monthly" ? "月額500円プラン" : "年額5,500円プラン";
+
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return "";
+    const date = new Date(dateString);
+    return date.toLocaleDateString("ja-JP");
+  };
 
   return (
     <Modal isOpen={isOpen} onClose={handleClose} size="md" isCentered>
@@ -110,6 +125,10 @@ const WithdrawalModal: React.FC<WithdrawalModalProps> = ({
                       <ListIcon as={MdCancel} color="red.500" />
                       お気に入り・保存したアイテム
                     </ListItem>
+                    <ListItem fontSize="sm">
+                      <ListIcon as={MdCancel} color="red.500" />
+                      プロフィール情報
+                    </ListItem>
                   </List>
                 </Box>
 
@@ -123,11 +142,29 @@ const WithdrawalModal: React.FC<WithdrawalModalProps> = ({
                     <Text fontSize="sm">
                       現在のプラン: <strong>{subscriptionInfo}</strong>
                     </Text>
-                    {nextBillingDate && (
-                      <Text fontSize="sm">次回請求日: {nextBillingDate}</Text>
+                    {isTrialing && trialEndDate && (
+                      <>
+                        <Text fontSize="sm" color="green.600">
+                          無料トライアル期間中
+                        </Text>
+                        <Text fontSize="sm">
+                          トライアル終了日: {formatDate(trialEndDate)}
+                        </Text>
+                      </>
                     )}
-                    <Text fontSize="sm" color="red.600" fontWeight="medium">
-                      ※ 退会と同時にサブスクリプションも解約されます
+                    {!isTrialing && nextBillingDate && (
+                      <Text fontSize="sm">
+                        サービス利用可能期限: {formatDate(nextBillingDate)}
+                      </Text>
+                    )}
+                    <Text
+                      fontSize="sm"
+                      color="red.600"
+                      fontWeight="medium"
+                      mt={2}
+                    >
+                      ※ {isTrialing ? "無料期間終了時" : "期間満了時"}
+                      に自動的にサービスが終了します
                     </Text>
                   </VStack>
                 </Box>
@@ -135,6 +172,9 @@ const WithdrawalModal: React.FC<WithdrawalModalProps> = ({
                 <Alert status="info" borderRadius="md">
                   <AlertIcon />
                   <Text fontSize="sm">
+                    {isTrialing
+                      ? "無料トライアル期間中のため、料金は発生しません。"
+                      : "お支払い済みの期間までサービスをご利用いただけます。"}
                     退会後も同じメールアドレスで再登録が可能ですが、
                     削除されたデータは復元できません。
                   </Text>
@@ -233,17 +273,93 @@ const WithdrawalModal: React.FC<WithdrawalModalProps> = ({
 
 // 退会ボタンコンポーネント
 export const WithdrawalButton: React.FC = () => {
+  const { memorizeProfile } = useMyProfile();
   const { isOpen, onOpen, onClose } = useDisclosure();
+  const [subscriptionInfo, setSubscriptionInfo] = useState<any>(null);
+  const [isLoadingInfo, setIsLoadingInfo] = useState(false);
+  const navigate = useNavigate();
+  const { logout } = useAuth();
+  const toast = useToast();
+
+  // サブスクリプション情報を取得
+  useEffect(() => {
+    const fetchSubscriptionInfo = async () => {
+      setIsLoadingInfo(true);
+      try {
+        const info = await getSubscriptionInfo(memorizeProfile.profile.id);
+        setSubscriptionInfo(info);
+      } catch (error) {
+        console.error("サブスクリプション情報の取得に失敗:", error);
+      } finally {
+        setIsLoadingInfo(false);
+      }
+    };
+
+    if (isOpen) {
+      fetchSubscriptionInfo();
+    }
+  }, [isOpen, memorizeProfile.profile.id]);
 
   const handleWithdrawal = async () => {
-    // ここで退会APIを呼び出す
-    console.log("退会処理を実行");
-    // await withdrawalApi();
+    const result = await withdrawalApi(memorizeProfile.profile.id);
+
+    if (result?.result) {
+      toast({
+        title: "退会完了",
+        description: "退会処理が完了しました。ご利用ありがとうございました。",
+        status: "success",
+        duration: 5000,
+        isClosable: true,
+      });
+
+      // ログアウト処理
+      logout();
+
+      // トップページへリダイレクト
+      setTimeout(() => {
+        navigate(route.top);
+      }, 1000);
+    } else {
+      toast({
+        title: "エラー",
+        description: "退会処理に失敗しました。時間をおいて再度お試しください。",
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
+      onClose();
+    }
+  };
+
+  // 次回請求日を計算
+  const getNextBillingDate = () => {
+    if (!subscriptionInfo) return undefined;
+
+    if (subscriptionInfo.current_period_end) {
+      return new Date(subscriptionInfo.current_period_end * 1000).toISOString();
+    }
+    return undefined;
+  };
+
+  // トライアル終了日を取得
+  const getTrialEndDate = () => {
+    if (!subscriptionInfo) return undefined;
+
+    if (subscriptionInfo.trial_end) {
+      return new Date(subscriptionInfo.trial_end * 1000).toISOString();
+    }
+    return undefined;
   };
 
   return (
     <>
-      <Button colorScheme="red" variant="outline" size="sm" onClick={onOpen}>
+      <Button
+        colorScheme="red"
+        variant="outline"
+        size="sm"
+        onClick={onOpen}
+        isLoading={isLoadingInfo}
+      >
         退会する
       </Button>
 
@@ -251,8 +367,10 @@ export const WithdrawalButton: React.FC = () => {
         isOpen={isOpen}
         onClose={onClose}
         onConfirm={handleWithdrawal}
-        subscriptionType="monthly" // ユーザーのプランに応じて変更
-        nextBillingDate="2025年9月1日" // 実際の請求日を設定
+        subscriptionType={subscriptionInfo?.plan_type || "monthly"}
+        nextBillingDate={getNextBillingDate()}
+        isTrialing={subscriptionInfo?.status === "trialing"}
+        trialEndDate={getTrialEndDate()}
       />
     </>
   );

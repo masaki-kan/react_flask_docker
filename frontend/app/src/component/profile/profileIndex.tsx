@@ -22,7 +22,6 @@ import useMyProfile from "../../hooks/useProfile";
 import LogOut from "../layout/logOut";
 import { useNavigate } from "react-router-dom";
 import { plans } from "../../consts/profileConsts";
-// import Withdrawal from "../layout/withdrawal";
 import {
   FaUserCircle,
   FaEdit,
@@ -389,7 +388,6 @@ const ProfileIndex: FC<profileIndexType> = ({ editFormSwitch }) => {
             <HStack justify="space-between">
               <LogOut />
               <WithdrawalButton />
-              {/* <Withdrawal /> */}
             </HStack>
           </Box>
 
