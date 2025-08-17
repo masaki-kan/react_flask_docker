@@ -153,7 +153,7 @@ const SingUpForm: FC = memo(() => {
       price: "¥500",
       period: "/月",
       description: "毎月のお支払い",
-      badge: "ベーシック",
+      badge: "初月無料",
       color: "blue",
       features: [
         "出品・購入・取引が可能",

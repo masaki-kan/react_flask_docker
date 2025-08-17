@@ -250,7 +250,9 @@ const CheckoutFormContent: FC<{
               <Text fontSize="2xl" fontWeight="bold" color="orange.600">
                 {paymentType === "setup"
                   ? "¥0"
-                  : `¥${amount?.toLocaleString()}`}
+                  : amount
+                    ? `¥${amount.toLocaleString()}`
+                    : selectedPlan?.price || "¥5,500"}
                 <Text as="span" fontSize="sm" fontWeight="normal">
                   {paymentType === "setup" ? "（初月）" : selectedPlan?.period}
                 </Text>
@@ -347,7 +349,7 @@ const CheckoutFormContent: FC<{
         <HStack spacing={3}>
           <Button
             flex={1}
-            size="sm"
+            size="lg"
             variant="outline"
             onClick={prevStep}
             leftIcon={<FaChevronLeft />}
@@ -358,7 +360,7 @@ const CheckoutFormContent: FC<{
           <Button
             flex={2}
             colorScheme="orange"
-            size="sm"
+            size="lg"
             onClick={handleSubmit}
             leftIcon={<FaShieldAlt />}
             isLoading={loading}
