@@ -238,7 +238,7 @@ const CheckoutFormContent: FC<{
                 選択中のプラン
               </Text>
               <Text fontSize="lg" fontWeight="bold">
-                {selectedPlan?.name}
+                {selectedPlan?.price}
               </Text>
               {paymentType === "setup" && (
                 <Badge colorScheme="green" mt={1}>
@@ -349,7 +349,7 @@ const CheckoutFormContent: FC<{
         <HStack spacing={3}>
           <Button
             flex={1}
-            size="lg"
+            size="sm"
             variant="outline"
             onClick={prevStep}
             leftIcon={<FaChevronLeft />}
@@ -360,9 +360,8 @@ const CheckoutFormContent: FC<{
           <Button
             flex={2}
             colorScheme="orange"
-            size="lg"
+            size="sm"
             onClick={handleSubmit}
-            leftIcon={<FaShieldAlt />}
             isLoading={loading}
             loadingText="処理中..."
           >
@@ -455,7 +454,7 @@ const Step3: FC<Step3Props> = memo(
         setPaymentType(formData.paymentType || "payment");
         setIsLoadingIntent(false);
       }
-    }, []);
+    }, [formData, getCreatePaymentIntent, setFormData]);
 
     if (isLoadingIntent) {
       return (
