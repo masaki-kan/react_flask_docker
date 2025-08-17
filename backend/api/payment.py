@@ -59,6 +59,15 @@ def create_payment():
     amount = data.get("amount")
     plan_status = data.get("status")  # 0: 月額プラン, 1: 年額プラン
     
+     # 文字列の場合は整数に変換
+    try:
+        plan_status = int(plan_status) if plan_status is not None else None
+    except (ValueError, TypeError):
+        return jsonify({
+            "error": "無効なプランステータスです",
+            "result": False
+        }), 400
+    
     # バリデーション
     if plan_status not in [0, 1]:
         return jsonify({

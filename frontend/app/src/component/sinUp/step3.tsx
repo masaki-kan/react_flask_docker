@@ -347,7 +347,7 @@ const CheckoutFormContent: FC<{
         <HStack spacing={3}>
           <Button
             flex={1}
-            size="lg"
+            size="sm"
             variant="outline"
             onClick={prevStep}
             leftIcon={<FaChevronLeft />}
@@ -358,7 +358,7 @@ const CheckoutFormContent: FC<{
           <Button
             flex={2}
             colorScheme="orange"
-            size="lg"
+            size="sm"
             onClick={handleSubmit}
             leftIcon={<FaShieldAlt />}
             isLoading={loading}
