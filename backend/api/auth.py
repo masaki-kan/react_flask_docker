@@ -54,30 +54,36 @@ def login():
                 return jsonify({
                     'login': False,
                     'error': 'メールアドレスまたはパスワードが正しくありません'
-                }), 401
+                }), 200
 
             # 退会済みユーザーのチェック
             if user_data[5]:  # is_deleted が True の場合
                 return jsonify({
                     'login': False,
-                    'error': 'このアカウントは退会済みです。新しいアカウントを作成してください。'
-                }), 401
+                    'error': 'このアカウントは退会済みです。新しいアカウントを作成してください。',
+                    'is_deleted': True
+                }), 200
 
-            if user_data and check_password_hash(user_data[2], password):
-                access_token = create_access_token(identity=email)
-                response = jsonify({
-                    'login': True,
-                    "access_token": access_token,
-                    "user_id": user_data[0],
-                    "username": user_data[1],
-                    "email": user_data[3],
-                    "type": user_data[4]  # 管理者判定用
-                })
-                response.set_cookie('access_token', access_token, httponly=True, secure=True)
+            # パスワードの確認
+            if not check_password_hash(user_data[2], password):
+                return jsonify({
+                    'login': False,
+                    'error': 'メールアドレスまたはパスワードが正しくありません'
+                }), 200
+       
+            access_token = create_access_token(identity=email)
+            response = jsonify({
+                'login': True,
+                "access_token": access_token,
+                "user_id": user_data[0],
+                "username": user_data[1],
+                "email": user_data[3],
+                "type": user_data[4]  # 管理者判定用
+            })
+            response.set_cookie('access_token', access_token, httponly=True, secure=True)
 
-                return response, 200
-            else:
-                return jsonify({'login': False}), 401
+            return response, 200
+
         
     except mysql.connector.Error as err:
         return jsonify({
