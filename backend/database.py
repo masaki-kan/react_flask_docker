@@ -9,7 +9,6 @@ def create_users_table(cursor):
             location VARCHAR(255),
             old INT DEFAULT 0,
             age INT DEFAULT 1,
-            token VARCHAR(255),
             shop_name VARCHAR(255),
             shop_url VARCHAR(255),
             reasen TEXT,

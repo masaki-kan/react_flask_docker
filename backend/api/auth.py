@@ -15,7 +15,12 @@ def login_check():
     try:
         with get_db_connection() as conn:
             cursor = conn.cursor()
-            cursor.execute("SELECT user_id FROM users WHERE email = %s", (email,))
+            cursor.execute("""
+                SELECT user_id 
+                FROM users 
+                WHERE email = %s 
+                AND (is_deleted = FALSE OR is_deleted IS NULL)
+            """, (email,))
             user_data = cursor.fetchone()
 
             if user_data:
@@ -37,11 +42,26 @@ def login():
     try:
         with get_db_connection() as conn:
             cursor = conn.cursor()
-            cursor.execute(
-                "SELECT user_id, name, password, email, type FROM users WHERE email = %s", 
-                (email,)
-            )
+            cursor.execute("""
+                SELECT user_id, name, password, email, type, is_deleted, deleted_at
+                FROM users 
+                WHERE email = %s
+            """, (email,))
             user_data = cursor.fetchone()
+            
+             # ユーザーが存在しない場合
+            if not user_data:
+                return jsonify({
+                    'login': False,
+                    'error': 'メールアドレスまたはパスワードが正しくありません'
+                }), 401
+
+            # 退会済みユーザーのチェック
+            if user_data[5]:  # is_deleted が True の場合
+                return jsonify({
+                    'login': False,
+                    'error': 'このアカウントは退会済みです。新しいアカウントを作成してください。'
+                }), 401
 
             if user_data and check_password_hash(user_data[2], password):
                 access_token = create_access_token(identity=email)
@@ -54,6 +74,7 @@ def login():
                     "type": user_data[4]  # 管理者判定用
                 })
                 response.set_cookie('access_token', access_token, httponly=True, secure=True)
+
                 return response, 200
             else:
                 return jsonify({'login': False}), 401
@@ -82,6 +103,26 @@ def sign_up():
     try:
         with get_db_connection() as conn:
             cursor = conn.cursor()
+            
+            cursor.execute("""
+                SELECT email, is_deleted 
+                FROM users 
+                WHERE email = %s
+            """, (email,))
+            existing_user = cursor.fetchone()
+            
+            if existing_user:
+                if existing_user[1]:  # 退会済みユーザーの場合
+                    return jsonify({
+                        "error": "このメールアドレスは退会済みアカウントで使用されています。別のメールアドレスをご利用ください。",
+                        "result": False
+                    }), 400
+                else:  # アクティブなユーザーの場合
+                    return jsonify({
+                        "error": "このメールアドレスは既に登録されています。",
+                        "result": False
+                    }), 400
+                    
             cursor.execute(
                 "INSERT INTO users (name, email, password, plan, stripe_customer_id) VALUES (%s, %s, %s, %s, %s)", 
                 (username, email, hashed_password, plan, stripe_customer_id)
@@ -94,6 +135,7 @@ def sign_up():
                 "message": "登録しました。ログイン画面に移ります",
                 "result": True
             }), 201
+            
     except mysql.connector.Error as err:
         return jsonify({
             "error": "アカウント登録中にエラーが発生しました",
