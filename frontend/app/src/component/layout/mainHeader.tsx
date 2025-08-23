@@ -18,10 +18,10 @@ const MainHeader: FC = () => {
       as="header"
       borderBottom="1px"
       borderColor="#f4f2f0"
-      px={{ base: 2, md: 10 }}
+      px={{ base: 1, md: 10 }}
       py="3"
     >
-      <HStack align="center" gap="4" color="#181411">
+      <HStack align="center" gap="4" color="#181411" w={"100%"}>
         <Box fontSize="4xl" width={"30px"} height={"30px"}>
           <svg
             viewBox="0 0 48 48"

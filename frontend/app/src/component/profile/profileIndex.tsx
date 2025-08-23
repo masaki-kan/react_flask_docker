@@ -1,4 +1,4 @@
-import { FC, useCallback, useMemo, useState } from "react";
+import { FC, useCallback, useMemo, useState, useEffect } from "react";
 import {
   VStack,
   Text,
@@ -39,6 +39,7 @@ import ExchangeArchiveModal from "../archive/exchangeArchiveModal";
 import { MdOutlineShoppingBag } from "react-icons/md";
 import { route } from "../../route/routeConst";
 import WithdrawalButton from "./withdrawalButton";
+import CreditCardSection from "./creditCardSection";
 
 type profileIndexType = {
   editFormSwitch: () => void;
@@ -57,6 +58,12 @@ const ProfileIndex: FC<profileIndexType> = ({ editFormSwitch }) => {
   const sectionBg = useColorModeValue("gray.50", "gray.900");
   const textMuted = useColorModeValue("gray.600", "gray.400");
   const accentColor = useColorModeValue("blue.500", "blue.400");
+
+  useEffect(() => {
+    if (profile.profile.is_deleted === 1) {
+      navigate(route.checkReactivationstatus);
+    }
+  }, [navigate, profile.profile.is_deleted]);
 
   const InfoItem: FC<{
     icon: IconType;
@@ -131,7 +138,6 @@ const ProfileIndex: FC<profileIndexType> = ({ editFormSwitch }) => {
     }
     return null;
   }, [profile.profile.favoriteShop, accentColor]);
-
   const planView = () => {
     const plan = plans
       .filter((p) => p.planKey === profile.profile.plan)
@@ -373,6 +379,7 @@ const ProfileIndex: FC<profileIndexType> = ({ editFormSwitch }) => {
             <MyItems />
           </Box>
 
+          <CreditCardSection />
           {/* アカウント設定 */}
           <Box
             bg={bgColor}

@@ -1,5 +1,5 @@
 import { FC, useCallback } from "react";
-import FeatureCard from "./featureCard";
+import FeatureCard from "../checkReactivationstatus/featureCard";
 import {
   Box,
   Heading,

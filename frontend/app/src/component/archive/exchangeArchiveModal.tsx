@@ -29,6 +29,7 @@ import {
   brandType,
 } from "../../types/archiveTradeType";
 import ArchiveItemDetailModal from "./archiveItemDetailModal";
+import { renderSrc } from "../../utils/views/viewItem";
 
 interface ExchangeArchiveModalProps {
   isOpen: boolean;
@@ -98,7 +99,6 @@ const ExchangeArchiveModal: FC<ExchangeArchiveModalProps> = ({
     archive: archiveTradeItemDetailType,
     itemType: "buyer" | "seller"
   ) => {
-    console.log(archive);
     if (itemType === "buyer") {
       setSelectedItem({
         title: `${archive.buyer_name}さんの商品`,
@@ -208,7 +208,9 @@ const ExchangeArchiveModal: FC<ExchangeArchiveModalProps> = ({
                               archive.buyer_item_images[0] && (
                                 <Box position="relative" w="100%">
                                   <Image
-                                    src={archive.buyer_item_images[0]}
+                                    src={renderSrc(
+                                      archive.buyer_item_images[0]
+                                    )}
                                     alt={archive.buyer_item_title}
                                     h="100px"
                                     w="100%"
@@ -282,7 +284,9 @@ const ExchangeArchiveModal: FC<ExchangeArchiveModalProps> = ({
                               archive.seller_item_images[0] && (
                                 <Box position="relative" w="100%">
                                   <Image
-                                    src={archive.seller_item_images[0]}
+                                    src={renderSrc(
+                                      archive.seller_item_images[0]
+                                    )}
                                     alt={archive.seller_item_title}
                                     h="100px"
                                     w="100%"

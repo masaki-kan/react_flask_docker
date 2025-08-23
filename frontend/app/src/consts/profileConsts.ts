@@ -17,7 +17,7 @@ export const genres = [
 
 export const plans = [
   {
-    planKey: "1",
+    planKey: "0",
     planContents: {
       title: "月額プラン",
       text: "¥550/月",
@@ -26,7 +26,7 @@ export const plans = [
     },
   },
   {
-    planKey: "2",
+    planKey: "1",
     planContents: {
       title: "年額プラン",
       text: "¥5500/年",

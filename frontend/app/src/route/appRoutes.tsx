@@ -22,6 +22,7 @@ import TokushohoPage from "../component/tokushoho/tokushohoPage";
 import Login from "../component/login/loginForm";
 import SingUp from "../component/sinUp/singUpForm";
 import { useAuth } from "../provider/authContext";
+import CheckReactivationstatus from "../component/checkReactivationstatus/checkReactivationstatus";
 
 // 認証が必要なルートのラッパーコンポーネント
 const ProtectedLayout = () => {
@@ -71,6 +72,10 @@ const AppRoutes: FC = () => {
           <Route path={route.favorite} element={<FavoriteHome />} />
           <Route path={route.transactionChat} element={<ChatHome />} />
           <Route path={route.thread} element={<ThreadPage />} />
+          <Route
+            path={route.checkReactivationstatus}
+            element={<CheckReactivationstatus />}
+          />
         </Route>
 
         {/* 404ページ */}

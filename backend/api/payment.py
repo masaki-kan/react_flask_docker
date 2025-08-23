@@ -53,6 +53,7 @@ def get_or_create_price(plan_type='monthly'):
         logger.error(f"Price creation/retrieval error: {str(e)}")
         raise
 
+
 @payment_bp.route('/create-payment-intent', methods=['POST'])
 def create_payment():
     """支払いインテント作成エンドポイント"""
@@ -198,10 +199,10 @@ def create_payment():
 
 
 @payment_bp.route('/cancel-subscription', methods=['POST'])
-@jwt_required()
 def cancel_subscription():
     """サブスクリプションキャンセルエンドポイント"""
-    user_id = get_jwt_identity()
+    data = request.get_json()
+    user_id = data.get("user_id")
     
     try:
         connection = get_db_connection()
@@ -265,17 +266,15 @@ def cancel_subscription():
         })
         
     except Exception as e:
-        logger.error(f"Subscription cancellation error: {str(e)}")
-        return jsonify({
+        print(f"[ERROR] Exception occurred: {type(e).__name__}: {str(e)}", flush=True)
+        import traceback
+        traceback.print_exc()
+        
+    return jsonify({
             "error": "サブスクリプションのキャンセル中にエラーが発生しました",
-            "result": False
+            "has_subscription": False,
+            "status": "error"
         }), 500
-    finally:
-        if 'cursor' in locals():
-            cursor.close()
-        if 'connection' in locals():
-            connection.close()
-
 
 @payment_bp.route('/stripe-webhook', methods=['POST'])
 def stripe_webhook():
@@ -359,7 +358,7 @@ def handle_subscription_deleted(subscription):
             connection.close()
 
 
-def handle_payment_succeeded(invoice):
+def handle_payment_succeedeßd(invoice):
     """支払い成功時の処理"""
     logger.info(f"Payment succeeded for invoice: {invoice['id']}")
     
@@ -491,9 +490,677 @@ def get_subscription_info():
             "has_subscription": False,
             "status": "error"
         }), 500
+
+# 決済情報取得
+@payment_bp.route('/payment-methods', methods=['POST'])
+def get_payment_methods():
+    """ユーザーの支払い方法一覧を取得"""
+    user_id = request.json.get('user_id', None)
+
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor(dictionary=True)
+
+            # ユーザーのStripe Customer IDを取得
+            cursor.execute("""
+                SELECT stripe_customer_id, email
+                FROM users 
+                WHERE user_id = %s
+            """, (user_id,))
+
+            user = cursor.fetchone()
+
+            if not user or not user['stripe_customer_id']:
+                return jsonify({
+                    "payment_methods": [],
+                    "default_payment_method": None
+                })
+
+            # Stripeから支払い方法を取得
+            payment_methods = stripe.PaymentMethod.list(
+                customer=user['stripe_customer_id'],
+                type='card'
+            )
+
+            # デフォルトの支払い方法を取得
+            customer = stripe.Customer.retrieve(user['stripe_customer_id'])
+            default_payment_method_id = customer.invoice_settings.default_payment_method
+
+            # 支払い方法の情報を整形
+            methods = []
+            for pm in payment_methods.data:
+                method_data = {
+                    "id": pm.id,
+                    "brand": pm.card.brand,
+                    "last4": pm.card.last4,
+                    "exp_month": pm.card.exp_month,
+                    "exp_year": pm.card.exp_year,
+                    "is_default": pm.id == default_payment_method_id,
+                    "created": pm.created
+                }
+                methods.append(method_data)
+
+            # 作成日時で降順ソート（新しいものが上）
+            methods.sort(key=lambda x: x['created'], reverse=True)
+
+            return jsonify({
+                "payment_methods": methods,
+                "default_payment_method": default_payment_method_id
+            })
+
+    except Exception as e:
+        print(f"[ERROR] Exception occurred: {type(e).__name__}: {str(e)}", flush=True)
+        import traceback
+        traceback.print_exc()
+
+        return jsonify({
+            "error": "決済情報取得に失敗しました。",
+            "has_subscription": False,
+            "status": "error"
+        }), 500
+
+@payment_bp.route('/create-setup-intent', methods=['POST'])
+def create_setup_intent():
+    """新しい支払い方法を追加するためのSetupIntentを作成"""
+    user_id = request.json.get('user_id', None)
+    
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor(dictionary=True)
+            
+            cursor.execute("""
+                SELECT stripe_customer_id
+                FROM users 
+                WHERE user_id = %s 
+            """, (user_id,))
+            
+            user = cursor.fetchone()
+            
+            if not user or not user['stripe_customer_id']:
+                return jsonify({
+                    "error": "顧客情報が見つかりません",
+                    "result": False
+                }), 404
+            
+            # SetupIntentを作成
+            setup_intent = stripe.SetupIntent.create(
+                customer=user['stripe_customer_id'],
+                payment_method_types=['card'],
+                usage='off_session',  # 将来の決済で使用
+                metadata={
+                    'user_id': str(user_id),
+                    'action': 'add_payment_method'
+                }
+            )
+            
+            return jsonify({
+                'clientSecret': setup_intent.client_secret,
+                'setupIntentId': setup_intent.id
+            })
+            
+    except Exception as e:
+        print(f"[ERROR] Exception occurred: {type(e).__name__}: {str(e)}", flush=True)
+        import traceback
+        traceback.print_exc()
         
+    return jsonify({
+            "error": "決済情報取得に失敗しました。",
+            "has_subscription": False,
+            "status": "error"
+        }), 500
+
+#　選択したクレジットカードの削除
+@payment_bp.route('/delete-payment-method', methods=['POST'])
+def delete_payment_method():
+    """支払い方法を削除"""
+    data = request.get_json()
+    user_id = data.get('user_id')
+    payment_method_id = data.get('payment_method_id')
+    
+    if not payment_method_id:
+        return jsonify({
+            "error": "支払い方法IDが指定されていません",
+            "result": False
+        }), 400
+    
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor(dictionary=True)
+            
+            cursor.execute("""
+                SELECT stripe_customer_id
+                FROM users 
+                WHERE user_id = %s 
+            """, (user_id,))
+            
+            user = cursor.fetchone()
+            
+            if not user or not user['stripe_customer_id']:
+                return jsonify({
+                    "error": "顧客情報が見つかりません",
+                    "result": False
+                }), 404
+            
+            # 支払い方法を取得して、削除可能か確認
+            payment_methods = stripe.PaymentMethod.list(
+                customer=user['stripe_customer_id'],
+                type='card'
+            )
+            
+            if len(payment_methods.data) <= 1:
+                return jsonify({
+                    "error": "最後の支払い方法は削除できません",
+                    "result": False
+                }), 400
+            
+            # 支払い方法をデタッチ（削除）
+            stripe.PaymentMethod.detach(payment_method_id)
+            
+            return jsonify({
+                "result": True,
+                "message": "支払い方法を削除しました"
+            })
+            
+    except Exception as e:
+        print(f"[ERROR] Exception occurred: {type(e).__name__}: {str(e)}", flush=True)
+        import traceback
+        traceback.print_exc()
+        
+    return jsonify({
+            "error": "支払い方法削除に失敗しました。",
+            "has_subscription": False,
+            "status": "error"
+        }), 500
+
+# 再登録時のチェック関数
+@payment_bp.route('/check-reactivation-status', methods=['POST'])
+def check_and_reactivate_customer():
+    """退会済みユーザーの再アクティベーション状態をチェック"""
+    data = request.get_json()
+    user_id = data.get('user_id')
+    
+    with get_db_connection() as conn:
+        cursor = conn.cursor(dictionary=True)
+        
+        # ユーザー情報取得
+        cursor.execute("""
+            SELECT stripe_customer_id, is_deleted
+            FROM users 
+            WHERE user_id = %s
+        """, (user_id,))
+        
+        user = cursor.fetchone()
+        
+        if user and user.get('stripe_customer_id'):
+            try:
+                # Stripeで顧客情報を確認
+                customer = stripe.Customer.retrieve(user['stripe_customer_id'])
+                
+                # 支払い方法の確認
+                payment_methods = stripe.PaymentMethod.list(
+                    customer=user['stripe_customer_id'],
+                    type='card'
+                )
+                
+                return {
+                    "customer_exists": True,
+                    "customer_id": user['stripe_customer_id'],
+                    "has_payment_methods": len(payment_methods.data) > 0,
+                    "payment_methods": payment_methods.data
+                }
+            except:
+                pass
+        
+        return {
+            "customer_exists": False,
+            "customer_id": None,
+            "has_payment_methods": False
+        }
+        
+# クレジットカードの支払いカードのデフォルト設定
+@payment_bp.route('/set-default-payment-method', methods=['POST'])
+def set_default_payment_method():
+    """デフォルトの支払い方法を設定"""
+    data = request.get_json()
+    user_id = data.get('user_id')
+    payment_method_id = data.get('payment_method_id')
+    
+    if not payment_method_id:
+        return jsonify({
+            "error": "支払い方法IDが指定されていません",
+            "result": False
+        }), 400
+    
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor(dictionary=True)
+            
+            cursor.execute("""
+                SELECT stripe_customer_id
+                FROM users 
+                WHERE user_id = %s AND is_deleted = FALSE
+            """, (user_id,))
+            
+            user = cursor.fetchone()
+            
+            if not user or not user['stripe_customer_id']:
+                return jsonify({
+                    "error": "顧客情報が見つかりません",
+                    "result": False
+                }), 404
+            
+            # Stripeのデフォルト支払い方法を更新
+            stripe.Customer.modify(
+                user['stripe_customer_id'],
+                invoice_settings={
+                    'default_payment_method': payment_method_id
+                }
+            )
+            
+            # アクティブなサブスクリプションのデフォルト支払い方法も更新
+            subscriptions = stripe.Subscription.list(
+                customer=user['stripe_customer_id'],
+                status='all',
+                limit=10
+            )
+            
+            for subscription in subscriptions.data:
+                if subscription['status'] in ['active', 'trialing']:
+                    stripe.Subscription.modify(
+                        subscription['id'],
+                        default_payment_method=payment_method_id
+                    )
+            
+            return jsonify({
+                "result": True,
+                "message": "デフォルトの支払い方法を更新しました"
+            })
+            
+    except Exception as e:
+        logger.error(f"Default payment method update error: {str(e)}")
+        return jsonify({
+            "error": "デフォルト支払い方法の更新に失敗しました",
+            "result": False
+        }), 500
+
+# マイページからクレジット登録
+@payment_bp.route('/pymage-create-payment-intent', methods=['POST'])
+def pymage_create_payment_intent():
+    user_id = request.json.get('user_id', None)
+
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor(dictionary=True)
+            cursor.execute("""
+                SELECT plan
+                FROM users 
+                WHERE user_id = 
+            """, (user_id,))
+
+            plan_status = cursor.fetchone()
+
+            # Stripe Customer を作成
+            customer = stripe.Customer.create(
+                metadata={
+                    "plan_type": "monthly" if plan_status == 0 else "yearly",
+                    "created_at": datetime.now().isoformat()
+                }
+            )
+
+            if plan_status == 0:  # 月額プラン（500円、初月無料）
+                price = get_or_create_price('monthly')
+
+                # サブスクリプションを作成（30日間の無料トライアル付き）
+                subscription = stripe.Subscription.create(
+                    customer=customer.id,
+                    items=[{"price": price.id}],
+                    trial_period_days=30,  # 30日間の無料トライアル
+                    payment_behavior="default_incomplete",
+                    payment_settings={
+                        "save_default_payment_method": "on_subscription"
+                    },
+                    expand=["latest_invoice.payment_intent", "pending_setup_intent"],
+                    metadata={
+                        "plan_type": "monthly"
+                    }
+                )
+
+                # SetupIntentを取得
+                setup_intent = subscription.pending_setup_intent
+
+                if not setup_intent:
+                    raise Exception("SetupIntentの作成に失敗しました")
+
+                return jsonify({
+                    'type': 'setup',
+                    'clientSecret': setup_intent.client_secret,
+                    'stripeCustomerId': customer.id,
+                    'subscriptionId': subscription.id,
+                    'plan': 'monthly',
+                    'trialEnd': (datetime.now() + timedelta(days=30)).isoformat(),
+                    'nextBillingDate': (datetime.now() + timedelta(days=30)).isoformat(),
+                    'nextBillingAmount': 500
+                })
+
+            else:  # 年額プラン（5500円、即時決済）
+                price = get_or_create_price('yearly')
+
+                # サブスクリプションを作成（即時課金）
+                subscription = stripe.Subscription.create(
+                    customer=customer.id,
+                    items=[{"price": price.id}],
+                    payment_behavior="default_incomplete",
+                    payment_settings={
+                        "save_default_payment_method": "on_subscription"
+                    },
+                    expand=["latest_invoice.payment_intent"],
+                    metadata={
+                        "plan_type": "yearly"
+                    }
+                )
+
+                # Payment Intentを取得
+                if not subscription.latest_invoice or not subscription.latest_invoice.payment_intent:
+                    raise Exception("PaymentIntentの作成に失敗しました")
+
+                payment_intent = subscription.latest_invoice.payment_intent
+
+                return jsonify({
+                    'type': 'payment',
+                    'clientSecret': payment_intent.client_secret,
+                    'intentId': payment_intent.id,
+                    'stripeCustomerId': customer.id,
+                    'subscriptionId': subscription.id,
+                    'plan': 'yearly',
+                    'nextBillingDate': (datetime.now() + timedelta(days=365)).isoformat(),
+                    'amount': 5500
+                })
+
+    except Exception as e:
+        print(f"[ERROR] Exception occurred: {type(e).__name__}: {str(e)}", flush=True)
+        import traceback
+        traceback.print_exc()
+
+    return jsonify({
+            "error": "支払い方法削除に失敗しました。",
+            "has_subscription": False,
+            "status": "error"
+        }), 500
+
+@payment_bp.route('/reactivation-payment-intent', methods=['POST'])
+def create_reactivation_payment_intent():
+    """退会済みユーザーの再アクティベーション用の支払いインテント作成"""
+    data = request.get_json()
+    user_id = data.get("user_id")
+    plan_type = data.get("plan_type", 0)  # 0: 月額, 1: 年額
+    
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor(dictionary=True)
+            
+            # ユーザー情報とstripe_customer_idを取得
+            cursor.execute("""
+                SELECT user_id, stripe_customer_id, email, name, is_deleted
+                FROM users 
+                WHERE user_id = %s
+            """, (user_id,))
+            
+            user = cursor.fetchone()
+            
+            if not user:
+                return jsonify({
+                    "error": "ユーザーが見つかりません",
+                    "result": False
+                }), 404
+            
+            if not user.get('is_deleted'):
+                return jsonify({
+                    "error": "このユーザーは退会していません",
+                    "result": False
+                }), 400
+            
+            # Stripe Customerの確認・作成
+            if user.get('stripe_customer_id'):
+                try:
+                    customer = stripe.Customer.retrieve(user['stripe_customer_id'])
+                    if customer.get('deleted'):
+                        # 削除済みの場合は新規作成
+                        raise stripe.error.InvalidRequestError("Customer deleted")
+                except:
+                    # 新規Customer作成
+                    customer = stripe.Customer.create(
+                        email=user['email'],
+                        metadata={
+                            "user_id": str(user_id),
+                            "reactivated": "true"
+                        }
+                    )
+                    # DBを更新
+                    cursor.execute("""
+                        UPDATE users 
+                        SET stripe_customer_id = %s
+                        WHERE user_id = %s
+                    """, (customer.id, user_id))
+                    conn.commit()
+            else:
+                # 新規Customer作成
+                customer = stripe.Customer.create(
+                    email=user['email'],
+                    metadata={
+                        "user_id": str(user_id),
+                        "reactivated": "true"
+                    }
+                )
+                cursor.execute("""
+                    UPDATE users 
+                    SET stripe_customer_id = %s
+                    WHERE user_id = %s
+                """, (customer.id, user_id))
+                conn.commit()
+            
+            # SetupIntentを作成（支払い方法の登録のみ）
+            setup_intent = stripe.SetupIntent.create(
+                customer=customer.id,
+                payment_method_types=['card'],
+                usage='off_session',
+                metadata={
+                    'user_id': str(user_id),
+                    'action': 'reactivation',
+                    'plan_type': 'monthly' if plan_type == 0 else 'yearly'
+                }
+            )
+            
+            return jsonify({
+                'type': 'setup',
+                'clientSecret': setup_intent.client_secret,
+                'stripeCustomerId': customer.id,
+                'setupIntentId': setup_intent.id,
+                'plan': 'monthly' if plan_type == 0 else 'yearly'
+            })
+            
+    except Exception as e:
+        logger.error(f"Reactivation payment intent error: {str(e)}")
+        return jsonify({
+            "error": "支払い設定の作成に失敗しました",
+            "result": False
+        }), 500
+
+@payment_bp.route('/reactivate-account', methods=['POST'])
+def reactivate_account():
+    """退会済みユーザーのアカウント再開処理"""
+    data = request.get_json()
+    user_id = data.get("user_id")
+    payment_method_id = data.get("payment_method_id")
+    plan_type = data.get("plan_type", 0)  # 0: 月額, 1: 年額
+    
+    # バリデーション
+    if not user_id or not payment_method_id:
+        return jsonify({
+            "error": "必要なパラメータが不足しています",
+            "result": False
+        }), 400
+    
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor(dictionary=True)
+            
+            # ユーザー情報を取得
+            cursor.execute("""
+                SELECT user_id, stripe_customer_id, email, name, is_deleted, status
+                FROM users 
+                WHERE user_id = %s
+            """, (user_id,))
+            
+            user = cursor.fetchone()
+            
+            if not user:
+                return jsonify({
+                    "error": "ユーザーが見つかりません",
+                    "result": False
+                }), 404
+            
+            if not user.get('is_deleted'):
+                return jsonify({
+                    "error": "このユーザーは退会していません",
+                    "result": False
+                }), 400
+            
+            if not user.get('stripe_customer_id'):
+                return jsonify({
+                    "error": "Stripe顧客IDが見つかりません",
+                    "result": False
+                }), 400
+            
+            try:
+                # 支払い方法をCustomerに紐付け
+                stripe.PaymentMethod.attach(
+                    payment_method_id,
+                    customer=user['stripe_customer_id']
+                )
+                
+                # デフォルトの支払い方法として設定
+                stripe.Customer.modify(
+                    user['stripe_customer_id'],
+                    invoice_settings={
+                        'default_payment_method': payment_method_id
+                    }
+                )
+                
+                # 価格オブジェクトを取得
+                if plan_type == 0:  # 月額プラン
+                    price = get_or_create_price('monthly')
+                    
+                    # サブスクリプションを作成（30日間の無料トライアル付き）
+                    subscription = stripe.Subscription.create(
+                        customer=user['stripe_customer_id'],
+                        items=[{"price": price.id}],
+                        trial_period_days=30,
+                        default_payment_method=payment_method_id,
+                        metadata={
+                            "plan_type": "monthly",
+                            "reactivated": "true",
+                            "user_id": str(user_id)
+                        }
+                    )
+                    
+                    subscription_id = subscription.id
+                    trial_end = subscription.trial_end
+                    next_billing_date = datetime.fromtimestamp(trial_end).isoformat()
+                    
+                else:  # 年額プラン（即時課金）
+                    price = get_or_create_price('yearly')
+                    
+                    # サブスクリプションを作成（即時課金）
+                    subscription = stripe.Subscription.create(
+                        customer=user['stripe_customer_id'],
+                        items=[{"price": price.id}],
+                        default_payment_method=payment_method_id,
+                        metadata={
+                            "plan_type": "yearly",
+                            "reactivated": "true",
+                            "user_id": str(user_id)
+                        }
+                    )
+                    
+                    subscription_id = subscription.id
+                    # 最初のインボイスを確認
+                    if subscription.latest_invoice:
+                        invoice = stripe.Invoice.retrieve(subscription.latest_invoice)
+                        if invoice.status != 'paid':
+                            # 支払いを実行
+                            stripe.Invoice.pay(invoice.id)
+                    
+                    next_billing_date = datetime.fromtimestamp(
+                        subscription.current_period_end
+                    ).isoformat()
+                
+                # データベースを更新
+                cursor.execute("""
+                    UPDATE users 
+                    SET is_deleted = FALSE,
+                        deleted_at = NULL,
+                        status = 1,
+                        plan = %s,
+                        updated_at = NOW()
+                    WHERE user_id = %s
+                """, (plan_type, user_id))
+                
+                # アカウント再開ログを記録（オプション）
+                try:
+                    cursor.execute("""
+                        INSERT INTO account_reactivation_logs (
+                            user_id,
+                            plan_type,
+                            subscription_id,
+                            payment_method_id,
+                            created_at
+                        ) VALUES (%s, %s, %s, %s, NOW())
+                    """, (user_id, plan_type, subscription_id, payment_method_id))
+                except:
+                    # ログテーブルがない場合でも処理は続行
+                    pass
+                
+                conn.commit()
+                
+                logger.info(f"Account reactivated successfully for user {user_id}")
+                
+                return jsonify({
+                    "result": True,
+                    "message": "アカウントを再開しました",
+                    "subscription_id": subscription_id,
+                    "plan_type": "monthly" if plan_type == 0 else "yearly",
+                    "next_billing_date": next_billing_date,
+                    "trial_end": trial_end if plan_type == 0 else None
+                })
+                
+            except stripe.error.CardError as e:
+                logger.error(f"Card error during reactivation: {str(e)}")
+                return jsonify({
+                    "error": "カードの承認に失敗しました。別のカードをお試しください。",
+                    "result": False
+                }), 400
+                
+            except stripe.error.StripeError as e:
+                logger.error(f"Stripe error during reactivation: {str(e)}")
+                return jsonify({
+                    "error": "決済処理中にエラーが発生しました",
+                    "result": False
+                }), 500
+                
+    except Exception as e:
+        logger.error(f"Reactivation error for user {user_id}: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        
+        return jsonify({
+            "error": "アカウント再開中にエラーが発生しました",
+            "result": False
+        }), 500
+
+# 退会処理
 @payment_bp.route('/withdraw', methods=['POST'])
 def withdraw_user():
+
     """ユーザー退会処理エンドポイント
     
     論理削除とサブスクリプションキャンセルを同時に実行
@@ -511,10 +1178,10 @@ def withdraw_user():
     try:
         with get_db_connection() as conn:
             cursor = conn.cursor(dictionary=True)
-            
+
             # トランザクション開始
             conn.start_transaction()
-            
+
             try:
                 # ユーザー情報を取得
                 cursor.execute("""
@@ -523,23 +1190,23 @@ def withdraw_user():
                     WHERE user_id = %s
                     FOR UPDATE
                 """, (user_id,))
-                
+
                 user = cursor.fetchone()
-                
+
                 if not user:
                     conn.rollback()
                     return jsonify({
                         "error": "ユーザーが見つかりません",
                         "result": False
                     }), 404
-                
+
                 if user.get('is_deleted'):
                     conn.rollback()
                     return jsonify({
                         "error": "既に退会済みのユーザーです",
                         "result": False
                     }), 400
-                
+
                 # 取引中のアイテムがあるかチェック
                 cursor.execute("""
                     SELECT i.item_id, i.title, t.status as trade_status
@@ -549,7 +1216,7 @@ def withdraw_user():
                     AND i.status = 'trading'
                     LIMIT 5
                 """, (user_id,))
-                
+
                 trading_items = cursor.fetchall()
                 if trading_items:
                     conn.rollback()
@@ -562,7 +1229,7 @@ def withdraw_user():
                         "trading_items_sample": item_titles,
                         "message": "取引完了後に再度退会手続きを行ってください。"
                     }), 400
-                
+
                 # 進行中の取引があるかチェック（自分が売り手または買い手）
                 cursor.execute("""
                     SELECT t.trade_id, t.status, i.title,
@@ -576,7 +1243,7 @@ def withdraw_user():
                     AND t.status IN ('pending', 'purchased', 'shipped')
                     LIMIT 5
                 """, (user_id, user_id, user_id))
-                
+
                 active_trades = cursor.fetchall()
                 if active_trades:
                     conn.rollback()
@@ -592,7 +1259,7 @@ def withdraw_user():
                             'status': status_ja,
                             'role': '出品者' if trade['user_role'] == 'seller' else '購入者'
                         })
-                    
+
                     return jsonify({
                         "error": "進行中の取引があります。すべての取引を完了またはキャンセルしてから退会してください。",
                         "result": False,
@@ -600,11 +1267,11 @@ def withdraw_user():
                         "active_trades_sample": trade_info,
                         "message": "取引を完了させるか、取引相手と相談の上キャンセルしてから退会手続きを行ってください。"
                     }), 400
-                
+
                 # Stripeサブスクリプションのキャンセル処理
                 cancelled_subscriptions = []
                 stripe_errors = []
-                
+
                 if user.get('stripe_customer_id'):
                     try:
                         # アクティブなサブスクリプションを取得
@@ -613,7 +1280,7 @@ def withdraw_user():
                             status='all',
                             limit=10
                         )
-                        
+
                         # すべてのアクティブなサブスクリプションを即座にキャンセル
                         for subscription in subscriptions.data:
                             if subscription['status'] in ['active', 'trialing']:
@@ -627,7 +1294,7 @@ def withdraw_user():
                                         "error": str(e)
                                     })
                                     logger.error(f"Failed to cancel subscription {subscription['id']}: {str(e)}")
-                        
+
                     except stripe.error.StripeError as e:
                         logger.error(f"Stripe cancellation error for user {user_id}: {str(e)}")
                         stripe_errors.append({
@@ -635,10 +1302,10 @@ def withdraw_user():
                         })
                 else:
                     logger.info(f"User {user_id} has no stripe_customer_id, skipping subscription cancellation")
-                
+
                 # 現在の日時を取得
                 current_time = datetime.now()
-                
+
                 # 1. ユーザーを論理削除
                 cursor.execute("""
                     UPDATE users 
@@ -649,7 +1316,7 @@ def withdraw_user():
                         token = NULL
                     WHERE user_id = %s
                 """, (current_time, current_time, user_id))
-                
+
                 # 2. 出品中・削除済み・交換済みのアイテムを物理削除
                 # （取引中のアイテムは事前チェックで除外済み）
                 cursor.execute("""
@@ -657,58 +1324,40 @@ def withdraw_user():
                     WHERE user_id = %s 
                     AND status IN ('available', 'deleted', 'exchanged')
                 """, (user_id,))
-                
+
                 deleted_items = cursor.rowcount
-                
+
                 # 3. アイテム画像を物理削除（アーカイブ済みの画像は保存されている）
                 cursor.execute("""
                     DELETE ii FROM item_images ii
                     INNER JOIN items i ON ii.item_id = i.item_id
                     WHERE i.user_id = %s
                 """, (user_id,))
-                
+
                 # 4. プロフィール画像を物理削除
                 cursor.execute("""
                     DELETE FROM profile_images 
                     WHERE user_id = %s
                 """, (user_id,))
-                
+
                 # 5. タグを物理削除
                 cursor.execute("""
                     DELETE FROM tags 
                     WHERE user_id = %s
                 """, (user_id,))
-                
+
                 # 6. フォロー関係を物理削除
                 cursor.execute("""
                     DELETE FROM follows 
                     WHERE follower_id = %s OR followed_id = %s
                 """, (user_id, user_id))
-                
+
                 # 7. いいねを物理削除
                 cursor.execute("""
                     DELETE FROM likes 
                     WHERE user_id = %s
                 """, (user_id,))
-                
-                # 8. 保存リストを物理削除（saved_itemsテーブルがある場合）
-                try:
-                    cursor.execute("""
-                        DELETE FROM saved_items 
-                        WHERE user_id = %s
-                    """, (user_id,))
-                except Exception:
-                    pass  # テーブルが存在しない場合は無視
-                
-                # 9. 通知を物理削除（notificationsテーブルがある場合）
-                try:
-                    cursor.execute("""
-                        DELETE FROM notifications 
-                        WHERE user_id = %s OR sender_id = %s
-                    """, (user_id, user_id))
-                except Exception:
-                    pass  # テーブルが存在しない場合は無視
-                
+
                 # 10. 退会ログを記録
                 try:
                     import json

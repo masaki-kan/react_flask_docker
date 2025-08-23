@@ -15,6 +15,9 @@ export interface profileType {
   likes: number[];
   plan: string;
   type: number;
+  is_deleted: number;
+  deleted_at: Date | null;
+  email: string;
 }
 
 export interface apiRetuenProfileType {

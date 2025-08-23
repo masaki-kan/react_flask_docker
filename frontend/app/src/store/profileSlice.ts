@@ -31,6 +31,8 @@ const initialState: initialStateType = {
     likes: [],
     plan: "1",
     type: 0,
+    is_deleted: 0,
+    deleted_at: null,
   },
   items: [],
   archive: [],

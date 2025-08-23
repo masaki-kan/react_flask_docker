@@ -19,6 +19,7 @@ export const route = {
   approvals: "/approvals",
   profile: "/profile",
   thread: "/thread",
+  checkReactivationstatus: "/check_reactivation_status",
 };
 
 // パブリックルートのリスト（認証不要）
@@ -44,4 +45,5 @@ export const PROTECTED_ROUTES = [
   route.transactionChat,
   route.favorite,
   route.approvals,
+  route.checkReactivationstatus,
 ];

@@ -43,7 +43,7 @@ def login():
         with get_db_connection() as conn:
             cursor = conn.cursor()
             cursor.execute("""
-                SELECT user_id, name, password, email, type, is_deleted, deleted_at
+                SELECT user_id, name, password, email, type
                 FROM users 
                 WHERE email = %s
             """, (email,))
@@ -57,12 +57,12 @@ def login():
                 }), 200
 
             # 退会済みユーザーのチェック
-            if user_data[5]:  # is_deleted が True の場合
-                return jsonify({
-                    'login': False,
-                    'error': 'このアカウントは退会済みです。新しいアカウントを作成してください。',
-                    'is_deleted': True
-                }), 200
+            # if user_data[5]:  # is_deleted が True の場合
+            #     return jsonify({
+            #         'login': False,
+            #         'error': 'このアカウントは退会済みです。新しいアカウントを作成してください。',
+            #         'is_deleted': True
+            #     }), 200
 
             # パスワードの確認
             if not check_password_hash(user_data[2], password):

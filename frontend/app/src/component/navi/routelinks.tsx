@@ -73,7 +73,7 @@ const RenderRouteLinks: FC = () => {
   return (
     <>
       <Container maxW="container.xl">
-        <HStack justify="space-between" align="end">
+        <HStack justify="end" align="end">
           {/* デスクトップナビゲーション */}
           {menuLists.map((menu, index) => {
             return (
@@ -85,6 +85,7 @@ const RenderRouteLinks: FC = () => {
                 href={menu.route}
                 onClick={() => {}}
                 position={"relative"}
+                mr={2}
               >
                 <Text fontSize={"sm"}>{menu.text}</Text>
                 {menu.route === route.saved && (

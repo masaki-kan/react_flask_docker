@@ -20,12 +20,13 @@ def getMyProfile():
     try:
         with get_db_connection() as conn:
             cursor = conn.cursor(dictionary=True)
-            
+
             # 1. 基本的なユーザー情報を最初に返す
             cursor.execute('''
                 SELECT 
-                    u.user_id, u.name, u.location, u.old, u.age, 
+                    u.user_id, u.name, u.location, u.old, u.age, u.email, 
                     u.shop_name, u.shop_url, u.reasen, u.plan, u.type,
+                    u.is_deleted , u.deleted_at,
                     pi.image_url as image,
                     t.tag as tags
                 FROM users u

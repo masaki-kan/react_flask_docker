@@ -41,6 +41,9 @@ export const getProfileApi = async (
       plan: response.data.profile.plan,
       tradeStatusFlag: response.data.profile.trade_status_flag,
       type: response.data.profile.type,
+      is_deleted: response.data.profile.is_deleted,
+      deleted_at: response.data.profile.deleted_at,
+      email: response.data.profile.email,
     };
 
     // 空なので
