@@ -6,6 +6,7 @@ import stripe
 import os
 from datetime import datetime, timedelta
 import logging
+from utils.email_utils import reactivation_send_welcome_email ,send_withdrawal_email
 
 payment_bp = Blueprint('payment', __name__, url_prefix='/api')
 
@@ -275,49 +276,6 @@ def cancel_subscription():
             "has_subscription": False,
             "status": "error"
         }), 500
-
-@payment_bp.route('/stripe-webhook', methods=['POST'])
-def stripe_webhook():
-    """Stripeからのwebhookを処理"""
-    payload = request.get_data(as_text=True)
-    sig_header = request.headers.get('Stripe-Signature')
-    
-    endpoint_secret = os.getenv('STRIPE_WEBHOOK_SECRET')
-    
-    if not endpoint_secret:
-        logger.warning("STRIPE_WEBHOOK_SECRET not configured")
-        return jsonify({"status": "webhook secret not configured"}), 200
-    
-    try:
-        event = stripe.Webhook.construct_event(
-            payload, sig_header, endpoint_secret
-        )
-    except ValueError:
-        logger.error("Invalid webhook payload")
-        return jsonify({"error": "Invalid payload"}), 400
-    except stripe.error.SignatureVerificationError:
-        logger.error("Invalid webhook signature")
-        return jsonify({"error": "Invalid signature"}), 400
-    
-    # イベントタイプに応じて処理
-    event_handlers = {
-        'customer.subscription.created': handle_subscription_created,
-        'customer.subscription.updated': handle_subscription_updated,
-        'customer.subscription.deleted': handle_subscription_deleted,
-        'invoice.payment_succeeded': handle_payment_succeeded,
-        'invoice.payment_failed': handle_payment_failed,
-        'customer.subscription.trial_will_end': handle_trial_ending
-    }
-    
-    handler = event_handlers.get(event['type'])
-    if handler:
-        try:
-            handler(event['data']['object'])
-        except Exception as e:
-            logger.error(f"Webhook handler error for {event['type']}: {str(e)}")
-    
-    return jsonify({"status": "success"}), 200
-
 
 def handle_subscription_created(subscription):
     """サブスクリプション作成時の処理"""
@@ -1029,6 +987,9 @@ def reactivate_account():
                 
                 conn.commit()
                 
+                #再開メール
+                reactivation_send_welcome_email(user['name'], plan_type, user['email'])
+                
                 logger.info(f"Account reactivated successfully for user {user_id}")
                 
                 return jsonify({
@@ -1289,6 +1250,9 @@ def withdraw_user():
                 
                 # トランザクションをコミット
                 conn.commit()
+                
+                # 退会メール
+                send_withdrawal_email(user['name'],  user['email'])
                 
                 logger.info(f"User {user_id} successfully withdrawn. Deleted items: {deleted_items}")
                 
