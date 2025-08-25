@@ -1054,7 +1054,6 @@ def reactivate_account():
                     subscription = stripe.Subscription.create(
                         customer=user['stripe_customer_id'],
                         items=[{"price": price.id}],
-                        trial_period_days=30,
                         default_payment_method=payment_method_id,
                         metadata={
                             "plan_type": "monthly",

@@ -12,6 +12,7 @@ type useAlertReturn = {
     text: string
   ) => Promise<SweetAlertResult<unknown>>;
   sweetErrorOverAlert: () => Promise<SweetAlertResult<unknown>>;
+  sweetStripeErrorOverAlert: () => Promise<SweetAlertResult<unknown>>;
   favoriteAlert: (text: string) => void;
 };
 
@@ -95,6 +96,15 @@ const useAlert = (): useAlertReturn => {
     });
   };
 
+  const sweetStripeErrorOverAlert = () => {
+    return Swal.fire({
+      title: "クレジット登録にエラーが発生しました。",
+      text: "入力内容が間違っていないか確認ください。",
+      icon: "error",
+      draggable: true,
+    });
+  };
+
   return {
     successAlert,
     errorAlert,
@@ -104,6 +114,7 @@ const useAlert = (): useAlertReturn => {
     sweetSuccessOverAlert,
     sweetSuccessTextOverAlert,
     sweetErrorOverAlert,
+    sweetStripeErrorOverAlert,
     favoriteAlert,
   };
 };

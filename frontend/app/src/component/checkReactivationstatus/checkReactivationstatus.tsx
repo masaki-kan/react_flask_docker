@@ -53,7 +53,11 @@ const ReactivationForm: FC<{
 }> = memo(({ profile, onSuccess, onCancel, clientSecret, planType }) => {
   const stripe = useStripe();
   const elements = useElements();
-  const { sweetSuccessTextOverAlert, sweetErrorOverAlert } = useAlert();
+  const {
+    sweetSuccessTextOverAlert,
+    sweetErrorOverAlert,
+    sweetStripeErrorOverAlert,
+  } = useAlert();
   const [loading, setLoading] = useState(false);
   const { reactivateAccount } = useCredit();
 
@@ -81,7 +85,7 @@ const ReactivationForm: FC<{
       });
 
       if (result.error) {
-        await sweetErrorOverAlert();
+        await sweetStripeErrorOverAlert();
       } else if (result.setupIntent?.status === "succeeded") {
         // 再アクティベーション実行
 
@@ -122,11 +126,12 @@ const ReactivationForm: FC<{
     profile.name,
     profile.email,
     profile.id,
-    sweetErrorOverAlert,
+    sweetStripeErrorOverAlert,
     reactivateAccount,
     planType,
     sweetSuccessTextOverAlert,
     onSuccess,
+    sweetErrorOverAlert,
   ]);
 
   return (
@@ -201,11 +206,6 @@ const ReactivationForm: FC<{
             <Text fontSize="lg" fontWeight="bold">
               {planType === "monthly" ? "月額プラン" : "年額プラン"}
             </Text>
-            {planType === "monthly" && (
-              <Badge colorScheme="green" mt={1}>
-                初月無料トライアル付き
-              </Badge>
-            )}
           </Box>
           <Box textAlign="right">
             <Text fontSize="2xl" fontWeight="bold" color="orange.600">
