@@ -887,6 +887,7 @@ def pymage_create_payment_intent():
             "status": "error"
         }), 500
 
+#退会済みユーザーの再アクティベーション用の支払いインテント作成
 @payment_bp.route('/reactivation-payment-intent', methods=['POST'])
 def create_reactivation_payment_intent():
     """退会済みユーザーの再アクティベーション用の支払いインテント作成"""
@@ -985,6 +986,7 @@ def create_reactivation_payment_intent():
             "result": False
         }), 500
 
+#退会済みユーザーのアカウント再開処理
 @payment_bp.route('/reactivate-account', methods=['POST'])
 def reactivate_account():
     """退会済みユーザーのアカウント再開処理"""
@@ -1287,12 +1289,12 @@ def withdraw_user():
                         subscriptions = stripe.Subscription.list(
                             customer=user['stripe_customer_id'],
                             status='all',
-                            limit=10
+                            limit=100
                         )
 
                         # すべてのアクティブなサブスクリプションを即座にキャンセル
                         for subscription in subscriptions.data:
-                            if subscription['status'] in ['active', 'trialing']:
+                            if subscription['status'] in ['active', 'trialing', 'past_due']:
                                 try:
                                     stripe.Subscription.delete(subscription['id'])
                                     cancelled_subscriptions.append(subscription['id'])
@@ -1309,8 +1311,6 @@ def withdraw_user():
                         stripe_errors.append({
                             "error": f"サブスクリプション一覧取得エラー: {str(e)}"
                         })
-                else:
-                    logger.info(f"User {user_id} has no stripe_customer_id, skipping subscription cancellation")
 
                 # 現在の日時を取得
                 current_time = datetime.now()

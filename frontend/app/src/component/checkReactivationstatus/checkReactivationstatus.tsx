@@ -329,6 +329,9 @@ const CheckReactivationStatus: FC = () => {
     const checkStatus = async () => {
       if (!memorizeProfile?.profile?.id) return;
 
+      if (memorizeProfile?.profile.is_deleted === 0)
+        return navigate(route.profile);
+
       try {
         const response = await checkReactivationStatus(
           Number(memorizeProfile.profile.id)
@@ -343,7 +346,7 @@ const CheckReactivationStatus: FC = () => {
     };
 
     checkStatus();
-  }, [checkReactivationStatus, memorizeProfile]);
+  }, [checkReactivationStatus, memorizeProfile, navigate]);
 
   // APIコール関数を修正
   const createReactivationPaymentIntent = async (
