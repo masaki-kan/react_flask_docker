@@ -1047,10 +1047,10 @@ def reactivate_account():
                 )
                 
                 # 価格オブジェクトを取得
-                if plan_type == 0:  # 月額プラン
+                if plan_type == 0:  # 月額プラン（即時課金）
                     price = get_or_create_price('monthly')
                     
-                    # サブスクリプションを作成（30日間の無料トライアル付き）
+                    # サブスクリプションを作成（即時課金）
                     subscription = stripe.Subscription.create(
                         customer=user['stripe_customer_id'],
                         items=[{"price": price.id}],
@@ -1063,8 +1063,17 @@ def reactivate_account():
                     )
                     
                     subscription_id = subscription.id
-                    trial_end = subscription.trial_end
-                    next_billing_date = datetime.fromtimestamp(trial_end).isoformat()
+                    
+                    # 最初のインボイスを確認
+                    if subscription.latest_invoice:
+                        invoice = stripe.Invoice.retrieve(subscription.latest_invoice)
+                        if invoice.status != 'paid':
+                            # 支払いを実行
+                            stripe.Invoice.pay(invoice.id)
+                    
+                    next_billing_date = datetime.fromtimestamp(
+                        subscription.current_period_end
+                    ).isoformat()
                     
                 else:  # 年額プラン（即時課金）
                     price = get_or_create_price('yearly')
@@ -1082,6 +1091,7 @@ def reactivate_account():
                     )
                     
                     subscription_id = subscription.id
+                    
                     # 最初のインボイスを確認
                     if subscription.latest_invoice:
                         invoice = stripe.Invoice.retrieve(subscription.latest_invoice)
@@ -1129,7 +1139,7 @@ def reactivate_account():
                     "subscription_id": subscription_id,
                     "plan_type": "monthly" if plan_type == 0 else "yearly",
                     "next_billing_date": next_billing_date,
-                    "trial_end": trial_end if plan_type == 0 else None
+                    "amount": 500 if plan_type == 0 else 5500
                 })
                 
             except stripe.error.CardError as e:
