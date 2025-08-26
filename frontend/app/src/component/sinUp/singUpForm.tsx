@@ -94,11 +94,11 @@ const SingUpForm: FC = memo(() => {
   const createPaymentIntent = useCallback(async () => {
     setLoading(true);
     try {
-      // plan "1" は月額プラン（status 0）、"2" は年額プラン（status 1）
-      const planStatus = formData.plan === "1" ? 0 : 1;
+      // plan "0" は月額プラン（status 0）、"1" は年額プラン（status 1）
+      const planStatus = formData.plan === "0" ? 0 : 1;
 
       const response = await getCreatePaymentIntent(
-        formData.plan === "1" ? "500" : "5500",
+        formData.plan === "0" ? "500" : "5500",
         planStatus
       );
 
@@ -148,7 +148,7 @@ const SingUpForm: FC = memo(() => {
   // プラン情報
   const plans = [
     {
-      id: "1",
+      id: "0",
       name: "月額プラン",
       price: "¥500",
       period: "/月",
@@ -162,7 +162,7 @@ const SingUpForm: FC = memo(() => {
       ],
     },
     {
-      id: "2",
+      id: "1",
       name: "年額プラン",
       price: "¥5,500",
       period: "/年",

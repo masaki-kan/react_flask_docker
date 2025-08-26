@@ -405,12 +405,13 @@ const Step3: FC<Step3Props> = memo(
     useEffect(() => {
       const createPaymentIntent = async () => {
         setIsLoadingIntent(true);
+
         try {
-          // plan "1" は月額プラン（status 0）、"2" は年額プラン（status 1）
-          const planStatus = formData.plan === "1" ? 0 : 1;
+          // plan "0" は月額プラン（status 0）、"1" は年額プラン（status 1）
+          const planStatus = formData.plan === "0" ? 0 : 1;
 
           const response = await getCreatePaymentIntent(
-            formData.plan === "1" ? "500" : "5500",
+            formData.plan === "0" ? "500" : "5500",
             planStatus
           );
 
@@ -430,7 +431,7 @@ const Step3: FC<Step3Props> = memo(
               subscriptionId: response.subscriptionId,
               intentId: response.intentId,
               paymentType: response.type,
-              plan: response.plan === "monthly" ? "1" : "2",
+              plan: response.plan === "monthly" ? "0" : "1",
             });
           }
         } catch (error) {

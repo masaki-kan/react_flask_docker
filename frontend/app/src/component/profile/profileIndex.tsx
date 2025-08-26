@@ -138,6 +138,7 @@ const ProfileIndex: FC<profileIndexType> = ({ editFormSwitch }) => {
     }
     return null;
   }, [profile.profile.favoriteShop, accentColor]);
+
   const planView = () => {
     const plan = plans
       .filter((p) => p.planKey === profile.profile.plan)

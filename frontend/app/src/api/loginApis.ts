@@ -84,12 +84,12 @@ export const singupApi = async (
     }
   | undefined
 > => {
+  console.log("formdata", formdata);
   try {
     const response = await axios.post(
       `${import.meta.env.VITE_API_URL}/api/singUp`,
       formdata
     );
-
     return {
       result: response.data.result,
       message: response.data.message,
