@@ -86,7 +86,9 @@ const PartnerItemsModal: FC<PartnerItemsModalProps> = ({
   // 交換商品として選択
   const handleSelectExchangeItem = useCallback(
     async (itemId: string) => {
-      const confirm = window.confirm("この商品でよろしいですか？");
+      const confirm = window.confirm(
+        "この商品でよろしいですか？選択後取引キャンセルすることができません。"
+      );
       if (!confirm) return;
 
       if (!isCurrentUserSeller) {
