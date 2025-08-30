@@ -316,7 +316,7 @@ const ProfileIndex: FC<profileIndexType> = ({ editFormSwitch }) => {
               />
             </Box>
           )}
-          {/* 古着にハマったきっかけ */}
+          {/* 自己紹介 */}
           {profile.profile.reasen && (
             <Box
               bg={bgColor}

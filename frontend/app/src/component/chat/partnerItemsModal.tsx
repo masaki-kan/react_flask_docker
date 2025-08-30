@@ -13,18 +13,23 @@ import {
   Grid,
   GridItem,
   Badge,
-  useDisclosure,
   Button,
   useToast,
   HStack,
+  IconButton,
+  Heading,
+  Stack,
+  StackDivider,
 } from "@chakra-ui/react";
-import { FaCheckCircle, FaTimesCircle } from "react-icons/fa";
+import { FaCheckCircle, FaTimesCircle, FaArrowLeft } from "react-icons/fa";
 import useChat from "../../hooks/useChat";
-import ItemDetailModal from "./itemDetailModal";
 import { chatItemDataType } from "../../types/chatType";
 import { itemParts } from "../../consts/itemConsts";
 import { selectExchangeItemApi } from "../../api/chatApi";
 import { renderSrc } from "../../utils/views/viewItem";
+import CustomImageSlider from "../slider/customImageSlider";
+import { itemTypeViewHandler } from "../../utils/type/itemTypeView";
+import { statusView } from "../save/saveStatusView.ts";
 
 interface PartnerItemsModalProps {
   isOpen: boolean;
@@ -35,6 +40,8 @@ interface PartnerItemsModalProps {
   userId: string;
   onItemSelected: () => void;
 }
+
+type ViewMode = "list" | "detail";
 
 const PartnerItemsModal: FC<PartnerItemsModalProps> = ({
   isOpen,
@@ -51,30 +58,35 @@ const PartnerItemsModal: FC<PartnerItemsModalProps> = ({
     updateSelectsellerToBuyerItemHandler,
   } = useChat();
   const toast = useToast();
-  const {
-    isOpen: isItemDetailOpen,
-    onOpen: onItemDetailOpen,
-    onClose: onItemDetailClose,
-  } = useDisclosure();
+
+  // ビューモードの状態管理
+  const [viewMode, setViewMode] = useState<ViewMode>("list");
   const [selectedItem, setSelectedItem] = useState<chatItemDataType | null>(
     null
   );
-
   const [isSelecting, setIsSelecting] = useState(false);
 
-  const handleItemClick = (item: chatItemDataType) => {
-    // 商品詳細を表示（選択可能な商品のみ）
-    if (item.trade_status_flag === 0 || !isCurrentUserSeller) {
-      setSelectedItem(item);
-      onItemDetailOpen();
-    }
-  };
+  // リストビューに戻る
+  const handleBackToList = useCallback(() => {
+    setViewMode("list");
+    setSelectedItem(null);
+  }, []);
+
+  // アイテムクリック時の処理
+  const handleItemClick = useCallback(
+    (item: chatItemDataType) => {
+      if (item.trade_status_flag === 0 || !isCurrentUserSeller) {
+        setSelectedItem(item);
+        setViewMode("detail");
+      }
+    },
+    [isCurrentUserSeller]
+  );
 
   // 交換商品として選択
   const handleSelectExchangeItem = useCallback(
     async (itemId: string) => {
       const confirm = window.confirm("この商品でよろしいですか？");
-
       if (!confirm) return;
 
       if (!isCurrentUserSeller) {
@@ -101,7 +113,6 @@ const PartnerItemsModal: FC<PartnerItemsModalProps> = ({
             status: "success",
             duration: 3000,
           });
-          // 選択完了後の処理
           setTimeout(() => {
             onItemSelected();
             onClose();
@@ -158,159 +169,223 @@ const PartnerItemsModal: FC<PartnerItemsModalProps> = ({
     }
   };
 
-  return (
+  // モーダルを閉じる時の処理
+  const handleClose = useCallback(() => {
+    setViewMode("list");
+    setSelectedItem(null);
+    onClose();
+  }, [onClose]);
+
+  // リストビューのレンダリング
+  const renderListView = () => (
     <>
-      <Modal
-        isOpen={isOpen}
-        onClose={onClose}
-        size="xl"
-        scrollBehavior={"inside"}
-      >
-        <ModalOverlay />
-        <ModalContent maxH="70vh" overflowY="auto">
-          <ModalHeader>
-            {isCurrentUserSeller
-              ? `${partnerName}さんの商品から交換商品を選択`
-              : `${partnerName}さんの商品一覧`}
-          </ModalHeader>
-          <ModalCloseButton />
-          <ModalBody pb={6}>
-            {isCurrentUserSeller && (
-              <Box mb={4} p={3} bg="blue.50" borderRadius="md">
-                <Text fontSize="sm">
-                  交換したい商品を選択してください。
-                  選択できるのは「選択可能」な商品のみです。
-                </Text>
-              </Box>
-            )}
+      {isCurrentUserSeller && (
+        <Box mb={4} p={3} bg="blue.50" borderRadius="md">
+          <Text fontSize="sm">
+            交換したい商品を選択してください。
+            選択できるのは「選択可能」な商品のみです。
+          </Text>
+        </Box>
+      )}
 
-            {memorizePartnerItems && memorizePartnerItems.length > 0 ? (
-              <Grid
-                templateColumns="repeat(auto-fill, minmax(200px, 1fr))"
-                gap={4}
-              >
-                {memorizePartnerItems.map((item) => {
-                  const isSelectable = item.trade_status_flag === 0;
-                  const isSelected =
-                    memorizeSelectsellerToBuyerItem.item_id === item.item_id;
+      {memorizePartnerItems && memorizePartnerItems.length > 0 ? (
+        <Grid templateColumns="repeat(auto-fill, minmax(200px, 1fr))" gap={4}>
+          {memorizePartnerItems.map((item) => {
+            const isSelectable = item.trade_status_flag === 0;
+            const isSelected =
+              memorizeSelectsellerToBuyerItem.item_id === item.item_id;
 
-                  return (
-                    <GridItem key={item.item_id}>
-                      <Box
-                        borderWidth={2}
-                        borderColor={
-                          isSelected
-                            ? "blue.500"
-                            : isSelectable
-                              ? "gray.200"
-                              : "gray.100"
+            return (
+              <GridItem key={item.item_id}>
+                <Box
+                  borderWidth={2}
+                  borderColor={
+                    isSelected
+                      ? "blue.500"
+                      : isSelectable
+                        ? "gray.200"
+                        : "gray.100"
+                  }
+                  borderRadius="lg"
+                  overflow="hidden"
+                  cursor={
+                    isCurrentUserSeller
+                      ? isSelectable
+                        ? "pointer"
+                        : "not-allowed"
+                      : "pointer"
+                  }
+                  opacity={isCurrentUserSeller && !isSelectable ? 0.6 : 1}
+                  onClick={() => handleItemClick(item)}
+                  _hover={
+                    isSelectable || !isCurrentUserSeller
+                      ? {
+                          shadow: "md",
+                          transform: "translateY(-2px)",
+                          borderColor: "blue.300",
                         }
-                        borderRadius="lg"
-                        overflow="hidden"
-                        cursor={
-                          isCurrentUserSeller
-                            ? isSelectable
-                              ? "pointer"
-                              : "not-allowed"
-                            : "pointer"
-                        }
-                        opacity={isCurrentUserSeller && !isSelectable ? 0.6 : 1}
-                        onClick={() => handleItemClick(item)}
-                        _hover={
-                          isSelectable || !isCurrentUserSeller
-                            ? {
-                                shadow: "md",
-                                transform: "translateY(-2px)",
-                                borderColor: "blue.300",
-                              }
-                            : {}
-                        }
-                        transition="all 0.2s"
-                        position="relative"
-                        bg={isSelected ? "blue.50" : "white"}
-                      >
-                        {/* 商品ステータスバッジ */}
-                        <Box position="absolute" top={2} right={2} zIndex={1}>
-                          {getItemStatusBadge(item)}
-                        </Box>
+                      : {}
+                  }
+                  transition="all 0.2s"
+                  position="relative"
+                  bg={isSelected ? "blue.50" : "white"}
+                >
+                  <Box position="absolute" top={2} right={2} zIndex={1}>
+                    {getItemStatusBadge(item)}
+                  </Box>
 
-                        {item.images && item.images.length > 0 && (
-                          <Image
-                            src={renderSrc(item.images[0])}
-                            alt={item.title}
-                            h="150px"
-                            w="100%"
-                            objectFit="cover"
-                          />
-                        )}
-                        <Box p={3}>
-                          <Text
-                            fontSize="sm"
-                            fontWeight="semibold"
-                            noOfLines={2}
-                            mb={2}
-                          >
-                            {item.title}
-                          </Text>
-                          <VStack align="start" spacing={1}>
-                            {item.type && (
-                              <Badge colorScheme="blue" size="sm">
-                                {itemParts
-                                  .filter(
-                                    (part) => Number(item.type) === part.key
-                                  )
-                                  .map((part) => part.name)}
-                              </Badge>
-                            )}
-                            {item.brand && (
-                              <Badge colorScheme="purple" size="sm">
-                                {item.brand.name}
-                              </Badge>
-                            )}
-                          </VStack>
-
-                          {/* 選択ボタン（sellerのみ） */}
-                          {isCurrentUserSeller && isSelectable && (
-                            <Button
-                              size="sm"
-                              colorScheme="blue"
-                              mt={3}
-                              width="full"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleSelectExchangeItem(String(item.item_id));
-                              }}
-                              isLoading={isSelecting}
-                              isDisabled={!isSelectable || isSelecting}
-                              loadingText="選択中..."
-                            >
-                              {isSelected ? "選択済み" : "この商品を選択"}
-                            </Button>
-                          )}
-                        </Box>
-                      </Box>
-                    </GridItem>
-                  );
-                })}
-              </Grid>
-            ) : (
-              <Box textAlign="center" py={8}>
-                <Text color="gray.500">商品がありません</Text>
-              </Box>
-            )}
-          </ModalBody>
-        </ModalContent>
-      </Modal>
-
-      {/* 商品詳細モーダル */}
-      {selectedItem !== null && (
-        <ItemDetailModal
-          isOpen={isItemDetailOpen}
-          onClose={onItemDetailClose}
-          itemData={selectedItem}
-        />
+                  {item.images && item.images.length > 0 && (
+                    <Image
+                      src={renderSrc(item.images[0])}
+                      alt={item.title}
+                      h="150px"
+                      w="100%"
+                      objectFit="cover"
+                    />
+                  )}
+                  <Box p={3}>
+                    <Text
+                      fontSize="sm"
+                      fontWeight="semibold"
+                      noOfLines={2}
+                      mb={2}
+                    >
+                      {item.title}
+                    </Text>
+                    <VStack align="start" spacing={1}>
+                      {item.type && (
+                        <Badge colorScheme="blue" size="sm">
+                          {itemParts
+                            .filter((part) => Number(item.type) === part.key)
+                            .map((part) => part.name)}
+                        </Badge>
+                      )}
+                      {item.brand && (
+                        <Badge colorScheme="purple" size="sm">
+                          {item.brand.name}
+                        </Badge>
+                      )}
+                    </VStack>
+                  </Box>
+                </Box>
+              </GridItem>
+            );
+          })}
+        </Grid>
+      ) : (
+        <Box textAlign="center" py={8}>
+          <Text color="gray.500">商品がありません</Text>
+        </Box>
       )}
     </>
+  );
+
+  // 詳細ビューのレンダリング
+  const renderDetailView = () => {
+    if (!selectedItem) return null;
+
+    const isSelectable = selectedItem.trade_status_flag === 0;
+
+    return (
+      <VStack spacing={4} align="stretch">
+        <HStack justifyContent="center">
+          <Text fontSize="sm" fontWeight="bold" color="purple.600">
+            {statusView(selectedItem.status)}
+          </Text>
+        </HStack>
+
+        <Box>
+          <CustomImageSlider images={selectedItem.images} />
+        </Box>
+
+        <Stack divider={<StackDivider />} spacing={4}>
+          <Box>
+            <Heading size="xs" textTransform="uppercase" mb={2}>
+              商品名
+            </Heading>
+            <Text fontSize="sm" color="gray.600">
+              {selectedItem.title}
+            </Text>
+          </Box>
+
+          <Box>
+            <Heading size="xs" textTransform="uppercase" mb={2}>
+              タイプ
+            </Heading>
+            <Text fontSize="sm" color="gray.600">
+              {itemTypeViewHandler(selectedItem.type)}
+            </Text>
+          </Box>
+
+          <Box>
+            <Heading size="xs" textTransform="uppercase" mb={2}>
+              商品説明
+            </Heading>
+            <Text fontSize="sm" color="gray.600" whiteSpace="pre-wrap">
+              {selectedItem.description}
+            </Text>
+          </Box>
+        </Stack>
+
+        {/* 選択ボタン（sellerのみ） */}
+        {isCurrentUserSeller && isSelectable && (
+          <Button
+            size="md"
+            colorScheme="blue"
+            width="full"
+            onClick={() =>
+              handleSelectExchangeItem(String(selectedItem.item_id))
+            }
+            isLoading={isSelecting}
+            isDisabled={!isSelectable || isSelecting}
+            loadingText="選択中..."
+          >
+            この商品を選択
+          </Button>
+        )}
+      </VStack>
+    );
+  };
+
+  return (
+    <Modal
+      isOpen={isOpen}
+      onClose={handleClose}
+      size="lg"
+      scrollBehavior="inside"
+      preserveScrollBarGap
+      blockScrollOnMount={false}
+    >
+      <ModalOverlay />
+      <ModalContent>
+        <ModalHeader>
+          <HStack justify="space-between" align="center">
+            <HStack>
+              {viewMode === "detail" && (
+                <IconButton
+                  aria-label="リストに戻る"
+                  icon={<FaArrowLeft />}
+                  size="sm"
+                  variant="ghost"
+                  onClick={handleBackToList}
+                />
+              )}
+              <Text>
+                {viewMode === "list"
+                  ? isCurrentUserSeller
+                    ? `${partnerName}さんの商品から交換商品を選択`
+                    : `${partnerName}さんの商品一覧`
+                  : "商品詳細"}
+              </Text>
+            </HStack>
+          </HStack>
+        </ModalHeader>
+        <ModalCloseButton />
+        <ModalBody pb={6} overflowY="auto">
+          {viewMode === "list" ? renderListView() : renderDetailView()}
+        </ModalBody>
+      </ModalContent>
+    </Modal>
   );
 };
 

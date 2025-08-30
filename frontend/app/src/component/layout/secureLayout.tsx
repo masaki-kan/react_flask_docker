@@ -27,7 +27,7 @@ const SecureLayout: FC = () => {
       </Box>
 
       {/* ヘッダーの高さ分のスペーサー */}
-      <Box height="90px" flexShrink={0} />
+      <Box height={{ base: "90px", md: "50px" }} flexShrink={0} />
 
       {/* メインコンテンツ（スクロール可能） */}
       <Box
@@ -53,6 +53,7 @@ const SecureLayout: FC = () => {
           },
           "-webkit-overflow-scrolling": "touch",
         }}
+        pb={10}
       >
         <Container
           maxW="container.xl"

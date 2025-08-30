@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, MouseEvent } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Modal,
   ModalOverlay,
@@ -241,10 +241,23 @@ const PaymentMethodModal: React.FC<PaymentMethodModalProps> = ({
 
   const fetchPaymentMethods = useCallback(async () => {
     setIsLoading(true);
-    const data = await getPaymentMethods(memorizeProfile.profile.id);
-    setPaymentMethods(data.payment_methods);
+    const paymentResponse = await getPaymentMethods(memorizeProfile.profile.id);
+
+    if (paymentResponse.success) {
+      setPaymentMethods(paymentResponse.data.payment_methods);
+    } else {
+      console.error("Payment methods fetch error:", paymentResponse.error);
+      toast({
+        title: "エラー",
+        description: paymentResponse.error,
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
+    }
+
     setIsLoading(false);
-  }, [memorizeProfile.profile.id]);
+  }, [memorizeProfile.profile.id, toast]);
 
   useEffect(() => {
     if (isOpen) {

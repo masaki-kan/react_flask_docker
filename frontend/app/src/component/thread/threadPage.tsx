@@ -331,6 +331,8 @@ const ThreadPage: React.FC = () => {
         mb={2}
         zIndex={100}
         borderRadius="md"
+        w="100%"
+        overflowX="hidden"
       >
         <Tabs
           variant="soft-rounded"
@@ -356,7 +358,7 @@ const ThreadPage: React.FC = () => {
         borderWidth={1}
         borderColor="#edf2f7"
         bg="white"
-        h={{ base: "calc(100vh - 180px)", md: "calc(100vh - 280px)" }}
+        h={{ base: "calc(100vh - 200px)", md: "calc(100vh - 200px)" }}
         minH={{ base: "400px", md: "500px" }}
         display="flex"
         flexDirection="column"

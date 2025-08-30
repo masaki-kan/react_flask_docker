@@ -4,9 +4,10 @@ import { RiLogoutBoxRLine } from "react-icons/ri";
 import useMyProfile from "../../hooks/useProfile";
 import useAlert from "../../hooks/useAlert";
 import useLog from "../../hooks/useLog";
-import { errorSweetalert2 } from "../../utils/alert/sweetalert2";
+import { useToast } from "@chakra-ui/react";
 
 const Withdrawal: FC = () => {
+  const toast = useToast();
   const { tradeAlert } = useAlert();
   const { logOutHandler } = useLog();
   const { cancellationProcess } = useMyProfile();
@@ -16,8 +17,13 @@ const Withdrawal: FC = () => {
     const response = await cancellationProcess();
     console.log(response);
     if (response?.success === false) {
-      errorSweetalert2(response.message);
-
+      toast({
+        title: "退会処理エラー",
+        description: response.message,
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
       return;
     }
 
@@ -29,7 +35,7 @@ const Withdrawal: FC = () => {
         }
       });
     }
-  }, [cancellationProcess, logOutHandler, tradeAlert]);
+  }, [cancellationProcess, logOutHandler, tradeAlert, toast]);
 
   return (
     <Button

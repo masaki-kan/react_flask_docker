@@ -40,7 +40,6 @@ import axios from "axios";
 import useLog from "../../hooks/useLog";
 import { errorSweetalert2 } from "../../utils/alert/sweetalert2";
 import { useNavigate } from "react-router-dom";
-import { route } from "../../route/routeConst";
 import useCredit from "../../hooks/useCredit";
 
 // 決済フォームのコンテンツ
@@ -329,8 +328,11 @@ const CheckReactivationStatus: FC = () => {
     const checkStatus = async () => {
       if (!memorizeProfile?.profile?.id) return;
 
-      if (memorizeProfile?.profile.is_deleted === 0)
-        return navigate(route.profile);
+      if (memorizeProfile?.profile.is_deleted === 0) {
+        // アクティブなアカウントの場合は通常の画面へ戻る
+        setIsLoading(false);
+        return;
+      }
 
       try {
         const response = await checkReactivationStatus(
@@ -390,8 +392,9 @@ const CheckReactivationStatus: FC = () => {
   };
 
   const handleSuccess = useCallback(() => {
-    navigate(route.profile);
-  }, [navigate]);
+    // 再有効化成功時はリロードして最新の状態を反映
+    window.location.reload();
+  }, []);
 
   if (isLoading) {
     return (

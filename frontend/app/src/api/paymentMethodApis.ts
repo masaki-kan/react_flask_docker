@@ -1,4 +1,5 @@
 import axios from "axios";
+import { createErrorResponse, ApiResponse } from "../utils/alert/sweetalert2";
 
 export interface PaymentMethod {
   id: string;
@@ -18,39 +19,39 @@ export interface PaymentMethodsResponse {
 // 支払い方法一覧を取得
 export const getPaymentMethods = async (
   userId: string
-): Promise<PaymentMethodsResponse> => {
+): Promise<ApiResponse<PaymentMethodsResponse>> => {
   try {
     const response = await axios.post(
       `${import.meta.env.VITE_API_URL}/api/payment-methods`,
       { user_id: userId }
     );
-    // console.log("getPaymentMethods response.data;", response.data);
-    return response.data;
-  } catch (error) {
-    // console.error("Error fetching payment methods:", error);
     return {
-      payment_methods: [],
-      default_payment_method: null,
+      success: true,
+      data: response.data
     };
+  } catch (error) {
+    return createErrorResponse(error, "支払い方法の取得に失敗しました");
   }
 };
 
 // SetupIntentを作成（新しいカード追加用）
 export const createSetupIntent = async (
   userId: string
-): Promise<{
+): Promise<ApiResponse<{
   clientSecret: string;
   setupIntentId: string;
-} | null> => {
+}>> => {
   try {
     const response = await axios.post(
       `${import.meta.env.VITE_API_URL}/api/create-setup-intent`,
       { user_id: userId }
     );
-    return response.data;
+    return {
+      success: true,
+      data: response.data
+    };
   } catch (error) {
-    // console.error("Error creating setup intent:", error);
-    return null;
+    return createErrorResponse(error, "カード登録の準備に失敗しました");
   }
 };
 
@@ -58,16 +59,18 @@ export const createSetupIntent = async (
 export const updateDefaultPaymentMethod = async (
   userId: string,
   paymentMethodId: string
-): Promise<boolean> => {
+): Promise<ApiResponse<{ result: boolean }>> => {
   try {
     const response = await axios.post(
       `${import.meta.env.VITE_API_URL}/api/set-default-payment-method`,
       { user_id: userId, payment_method_id: paymentMethodId }
     );
-    return response.data.result;
+    return {
+      success: true,
+      data: response.data
+    };
   } catch (error) {
-    // console.error("Error updating default payment method:", error);
-    return false;
+    return createErrorResponse(error, "デフォルト支払い方法の更新に失敗しました");
   }
 };
 
@@ -75,18 +78,18 @@ export const updateDefaultPaymentMethod = async (
 export const deletePaymentMethod = async (
   userId: string,
   paymentMethodId: string
-): Promise<{ success: boolean; error?: string }> => {
+): Promise<ApiResponse<{ result: boolean }>> => {
   try {
     const response = await axios.post(
       `${import.meta.env.VITE_API_URL}/api/delete-payment-method`,
       { user_id: userId, payment_method_id: paymentMethodId }
     );
-    return { success: response.data.result };
+    return {
+      success: true,
+      data: response.data
+    };
   } catch (error) {
-    if (axios.isAxiosError(error) && error.response?.data?.error) {
-      return { success: false, error: error.response.data.error };
-    }
-    return { success: false, error: "削除に失敗しました" };
+    return createErrorResponse(error, "支払い方法の削除に失敗しました");
   }
 };
 

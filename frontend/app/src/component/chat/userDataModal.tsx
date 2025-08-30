@@ -167,7 +167,7 @@ const UserDataModal: FC<UserDataModalType> = ({
 
               <Box>
                 <Text fontSize="sm" fontWeight="bold" mb={2}>
-                  古着にハマったキッカケ
+                  自己紹介
                 </Text>
                 <Text fontSize="sm" color="gray.600">
                   {selectedUser === "seller"

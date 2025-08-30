@@ -1,4 +1,4 @@
-import { FC } from "react";
+import { FC, useCallback } from "react";
 import {
   Modal,
   ModalOverlay,
@@ -22,22 +22,32 @@ import { chatItemDataType } from "../../types/chatType";
 interface ItemDetailModalProps {
   isOpen: boolean;
   onClose: () => void;
-  itemData?: chatItemDataType; // 実際の型に置き換えてください
+  itemData?: chatItemDataType;
+  onPartnerItemsOpen?: () => void;
 }
 
 const ItemDetailModal: FC<ItemDetailModalProps> = ({
   isOpen,
   onClose,
   itemData,
+  onPartnerItemsOpen,
 }) => {
+  const itemDetailClose = useCallback(() => {
+    if (onPartnerItemsOpen) {
+      onPartnerItemsOpen();
+    }
+    onClose();
+  }, [onClose, onPartnerItemsOpen]);
   if (!itemData) return null;
 
   return (
     <Modal
       isOpen={isOpen}
-      onClose={onClose}
-      size="full"
+      onClose={itemDetailClose}
       scrollBehavior={"inside"}
+      size={"lg"}
+      preserveScrollBarGap
+      blockScrollOnMount={false}
     >
       <ModalOverlay />
       <ModalContent>

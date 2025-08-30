@@ -10,6 +10,7 @@ import {
   Skeleton,
   useColorModeValue,
   Badge,
+  useToast,
 } from "@chakra-ui/react";
 import { FaCreditCard, FaEdit } from "react-icons/fa";
 import { PaymentMethod, getPaymentMethods } from "../../api/paymentMethodApis";
@@ -18,6 +19,7 @@ import useMyProfile from "../../hooks/useProfile";
 
 const CreditCardSection: React.FC = () => {
   const { memorizeProfile } = useMyProfile();
+  const toast = useToast();
   const [defaultCard, setDefaultCard] = useState<PaymentMethod | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -28,11 +30,27 @@ const CreditCardSection: React.FC = () => {
 
   const fetchDefaultCard = useCallback(async () => {
     setIsLoading(true);
-    const data = await getPaymentMethods(memorizeProfile.profile.id);
-    const defaultMethod = data.payment_methods.find((m) => m.is_default);
-    setDefaultCard(defaultMethod || null);
+    const paymentResponse = await getPaymentMethods(memorizeProfile.profile.id);
+
+    if (paymentResponse.success) {
+      const defaultMethod = paymentResponse.data.payment_methods.find(
+        (m) => m.is_default
+      );
+      setDefaultCard(defaultMethod || null);
+    } else {
+      console.error("Payment methods fetch error:", paymentResponse.error);
+      toast({
+        title: "エラー",
+        description: paymentResponse.error,
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
+      setDefaultCard(null);
+    }
+
     setIsLoading(false);
-  }, [memorizeProfile.profile.id]);
+  }, [memorizeProfile.profile.id, toast]);
 
   useEffect(() => {
     fetchDefaultCard();

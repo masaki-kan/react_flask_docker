@@ -108,7 +108,7 @@ const Home: FC = () => {
     <>
       <Box
         position="fixed"
-        top={{ base: "110px", md: "110px" }} // ヘッダーの高さに合わせて調整
+        top={{ base: "110px", md: "80px" }} // ヘッダーの高さに合わせて調整
         left={0}
         right={0}
         zIndex={999}
@@ -185,7 +185,7 @@ const Home: FC = () => {
         </Container>
       </Box>
 
-      <Box h={{ base: "50px", md: isSearchOpen ? "300px" : "80px" }} />
+      <Box h={{ base: "60px", md: isSearchOpen ? "300px" : "80px" }} />
 
       {/* コンテンツエリア */}
       <Box pb={24}>

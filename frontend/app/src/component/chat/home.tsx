@@ -437,7 +437,7 @@ const Home: FC = () => {
 
   return (
     <>
-      <Box pt={24}>
+      <Box h="100vh">
         {/* ヘッダー部分：ユーザーアバターとステータス */}
         <Box bg="white" borderRadius="lg" boxShadow="sm" p={4}>
           <Flex
@@ -661,17 +661,20 @@ const Home: FC = () => {
                 </VStack>
               )}
 
-              {!hasSellerSelectedItem && (
-                <Button
-                  colorScheme="red"
-                  variant="outline"
-                  size={{ base: "sm", md: "sm" }}
-                  onClick={handleCancelTransaction}
-                  w={{ base: "100%", md: "auto" }}
-                >
-                  取引をキャンセル
-                </Button>
-              )}
+              {/* 取引キャンセルボタン：商品未選択かつどちらも未発送の場合のみ表示 */}
+              {!hasSellerSelectedItem &&
+                !hasUserShipped &&
+                !hasPartnerShipped && (
+                  <Button
+                    colorScheme="red"
+                    variant="outline"
+                    size={{ base: "sm", md: "sm" }}
+                    onClick={handleCancelTransaction}
+                    w={{ base: "100%", md: "auto" }}
+                  >
+                    取引をキャンセル
+                  </Button>
+                )}
             </VStack>
           </Flex>
 
@@ -730,8 +733,6 @@ const Home: FC = () => {
           isCurrentUserSeller={isCurrentUserSeller}
           userId={userIdNumber || ""}
           onItemSelected={() => {
-            // getChatPageData(memorizeChatItemData.trade_id);
-            // setHasSellerSelectedItem(true);
             window.location.reload();
           }}
         />

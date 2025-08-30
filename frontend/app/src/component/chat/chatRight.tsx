@@ -32,12 +32,12 @@ const ChatLayout: FC = () => {
   const [messages, setMessages] = useState<messagesType[]>([]);
 
   // 自動スクロール
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
+  // const scrollToBottom = () => {
+  //   messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  // };
 
   useEffect(() => {
-    scrollToBottom();
+    // scrollToBottom();
   }, [messages]);
 
   useEffectOnce(() => {
@@ -165,7 +165,7 @@ const ChatLayout: FC = () => {
       borderWidth={1}
       borderColor="#edf2f7"
       bg="white"
-      h={{ base: "calc(100vh - 350px)", md: "calc(100vh - 280px)" }}
+      h={{ base: "calc(100vh - 400px)", md: "calc(100vh - 280px)" }}
       minH={{ base: "400px", md: "500px" }}
       display="flex"
       flexDirection="column"

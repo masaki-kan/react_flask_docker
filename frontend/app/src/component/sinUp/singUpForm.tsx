@@ -112,7 +112,7 @@ const SingUpForm: FC = memo(() => {
           paymentType: response.type,
         });
       }
-    } catch (error) {
+    } catch {
       toast({
         title: "エラー",
         description: "決済の準備に失敗しました",

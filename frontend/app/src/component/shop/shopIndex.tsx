@@ -48,7 +48,6 @@ const ShopIndex: FC = () => {
   const { changeLoading } = useLaoding();
   const [followCheck, setFollowCheck] = useState<boolean>(false);
   const myProfile = useSelector((state: RootState) => state.profile);
-  console.log("memorizeuserProfile", memorizeuserProfile);
 
   // カラーモード対応
   const bgColor = useColorModeValue("white", "gray.800");
@@ -198,7 +197,7 @@ const ShopIndex: FC = () => {
               {/* アバターとメイン情報 */}
               <VStack spacing={6}>
                 <Box position="relative">
-                  {memorizeuserProfile.profile.image.length > 0 ? (
+                  {memorizeuserProfile.profile.image !== null ? (
                     <Avatar
                       size="2xl"
                       src={memorizeuserProfile.profile.image}
@@ -280,21 +279,19 @@ const ShopIndex: FC = () => {
               </Box>
 
               {/* 好きなジャンル */}
-              {memorizeuserProfile.profile.tag.length > 0 && (
-                <Box
-                  bg={bgColor}
-                  borderRadius="xl"
-                  p={6}
-                  boxShadow="sm"
-                  border="1px solid"
-                  borderColor={borderColor}
-                >
-                  <Heading size="md" mb={4}>
-                    好きなジャンル
-                  </Heading>
-                  {tagsViewRender()}
-                </Box>
-              )}
+              <Box
+                bg={bgColor}
+                borderRadius="xl"
+                p={6}
+                boxShadow="sm"
+                border="1px solid"
+                borderColor={borderColor}
+              >
+                <Heading size="md" mb={4}>
+                  好きなジャンル
+                </Heading>
+                {tagsViewRender()}
+              </Box>
 
               {/* お気に入りの店 */}
               {memorizeuserProfile.profile.favoriteShop.name && (
@@ -314,7 +311,7 @@ const ShopIndex: FC = () => {
                 </Box>
               )}
 
-              {/* 古着にハマったきっかけ */}
+              {/* 自己紹介 */}
               {memorizeuserProfile.profile.reasen && (
                 <Box
                   bg={bgColor}
@@ -326,7 +323,7 @@ const ShopIndex: FC = () => {
                 >
                   <InfoItem
                     icon={FaComment}
-                    label="古着にハマったきっかけ"
+                    label="自己紹介"
                     value={
                       <Text lineHeight="tall" color={textMuted}>
                         {memorizeuserProfile.profile.reasen}

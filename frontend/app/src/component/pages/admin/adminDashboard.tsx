@@ -1,7 +1,6 @@
 // pages/admin/AdminDashboard.tsx
 import { FC, useEffect, useState } from "react";
 import {
-  Box,
   Container,
   Heading,
   Grid,
@@ -27,7 +26,7 @@ import {
   LineElement,
   PointElement,
 } from "chart.js";
-import { Bar, Pie, Line } from "react-chartjs-2";
+import { Bar, Pie } from "react-chartjs-2";
 import axios from "axios";
 
 ChartJS.register(

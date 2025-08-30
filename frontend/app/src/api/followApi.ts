@@ -1,10 +1,10 @@
 import axios from "axios";
-import { errorSweetalert2 } from "../utils/alert/sweetalert2";
+import { createErrorResponse, ApiResponse } from "../utils/alert/sweetalert2";
 
 export const userFollewApi = async (
   user_id: string,
   my_user_id: string
-): Promise<{ result: boolean; action: string } | undefined> => {
+): Promise<ApiResponse<{ result: boolean; action: string }>> => {
   try {
     const response = await axios.post(
       `${import.meta.env.VITE_API_URL}/api/userFollow`,
@@ -15,17 +15,13 @@ export const userFollewApi = async (
     );
 
     return {
-      result: response.data.result,
-      action: response.data.action,
+      success: true,
+      data: {
+        result: response.data.result,
+        action: response.data.action,
+      }
     };
   } catch (error: unknown) {
-    let errorMessage = "予期しないエラーが発生しました";
-
-    if (axios.isAxiosError(error) && error.response?.data?.error) {
-      errorMessage = error.response.data.error;
-    }
-
-    errorSweetalert2(errorMessage);
-    return;
+    return createErrorResponse(error, "フォロー操作に失敗しました");
   }
 };

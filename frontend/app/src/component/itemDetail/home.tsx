@@ -344,7 +344,7 @@ const Home: FC = () => {
                     navigate(`${route.shopPage}?user=${itemDetailData.userId}`);
                   }}
                 >
-                  {itemDetailData.profImage.length > 0 ? (
+                  {itemDetailData.profImage !== null ? (
                     <Avatar
                       size={"md"}
                       name={itemDetailData.uesrname}
