@@ -275,7 +275,15 @@ const WithdrawalModal: React.FC<WithdrawalModalProps> = ({
 export const WithdrawalButton: React.FC = () => {
   const { memorizeProfile } = useMyProfile();
   const { isOpen, onOpen, onClose } = useDisclosure();
-  const [subscriptionInfo, setSubscriptionInfo] = useState<any>(null);
+  const [subscriptionInfo, setSubscriptionInfo] = useState<{
+    cancel_at_period_end: boolean;
+    current_period_end: number;
+    days_until_trial_end: number;
+    has_subscription: boolean;
+    plan_type: "monthly" | "yearly" | undefined;
+    status: string;
+    trial_end: number;
+  } | null>(null);
   const [isLoadingInfo, setIsLoadingInfo] = useState(false);
   const navigate = useNavigate();
   const { logout } = useAuth();

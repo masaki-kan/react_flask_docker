@@ -76,7 +76,6 @@ export const getLoginErrorMessage = (error: unknown): string => {
 export const singupApi = async (
   formdata: sinupFormType
 ): Promise<ApiResponse<{ result: boolean; message: string }>> => {
-  console.log("formdata", formdata);
   try {
     const response = await axios.post(
       `${import.meta.env.VITE_API_URL}/api/singUp`,

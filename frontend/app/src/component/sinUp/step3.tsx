@@ -112,7 +112,7 @@ const CheckoutFormContent: FC<{
               paymentType: "setup",
             });
 
-            if (response?.result) {
+            if (response.success === true) {
               await sweetSuccessTextOverAlert(
                 "登録しました。30日間の無料期間後、月額500円が課金されます。"
               );
@@ -147,7 +147,7 @@ const CheckoutFormContent: FC<{
               paymentType: "payment",
             });
 
-            if (response?.result) {
+            if (response?.success === true) {
               await sweetSuccessTextOverAlert(
                 "登録しました。年額5,500円のお支払いが完了しました。"
               );

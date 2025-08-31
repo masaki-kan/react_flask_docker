@@ -118,6 +118,7 @@ export const getSubscriptionInfo = async (userID: string) => {
       { user_id: userID }
     );
 
+    console.log(response);
     return response.data;
   } catch (error) {
     console.error("Failed to get subscription info:", error);
@@ -150,7 +151,6 @@ export const withdrawalApi = async (
   result: boolean;
   message?: string;
 } | null> => {
-  console.log("userID", userID);
   try {
     const response = await axios.post(
       `${import.meta.env.VITE_API_URL}/api/withdraw`,

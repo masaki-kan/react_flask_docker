@@ -40,9 +40,6 @@ const Step2: FC<Step2Type> = ({
           <Text color="gray.600">
             お好きなプランを選んで、今すぐスタートしましょう！
           </Text>
-          <Text fontSize="sm" color="orange.600" mt={1}>
-            初月はどちらのプランも無料でご利用いただけます
-          </Text>
         </Box>
 
         <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>

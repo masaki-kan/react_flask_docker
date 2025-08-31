@@ -145,10 +145,11 @@ const AddCardForm: React.FC<{
         });
         onSuccess();
       }
-    } catch (error: any) {
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "カードの追加に失敗しました";
       toast({
         title: "エラー",
-        description: error.message || "カードの追加に失敗しました",
+        description: errorMessage,
         status: "error",
         duration: 5000,
         isClosable: true,

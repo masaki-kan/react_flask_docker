@@ -110,8 +110,6 @@ const useMyProfile = (): useMyProfileReturn => {
         })
       );
     }
-
-    console.log("responseActive", responseActive);
     if (responseActive) {
       dispatch(setProfileArchives(responseActive.archives));
     }
