@@ -10,7 +10,6 @@ import {
   HStack,
   Box,
   Text,
-  Badge,
   Icon,
   useColorModeValue,
   Spinner,
@@ -63,7 +62,7 @@ const ExchangeArchiveModal: FC<ExchangeArchiveModalProps> = ({
   const [selectedItem, setSelectedItem] = useState<SelectedItemDetail | null>(
     null
   );
-  
+
   // ビューモードの状態管理
   const [viewMode, setViewMode] = useState<ViewMode>("list");
 
@@ -75,6 +74,7 @@ const ExchangeArchiveModal: FC<ExchangeArchiveModalProps> = ({
   useEffect(() => {
     if (isOpen) {
       setLoading(true);
+      console.log("memorizeuserProfileArchives", memorizeuserProfileArchives);
       if (
         memorizeuserProfileArchives &&
         memorizeuserProfileArchives.length > 0
@@ -164,16 +164,14 @@ const ExchangeArchiveModal: FC<ExchangeArchiveModalProps> = ({
                     交換完了日: {formatDate(archive.completed_date)}
                   </Text>
                 </HStack>
-                <Badge
+                {/* <Badge
                   colorScheme={
                     archive.user_role === "seller" ? "blue" : "green"
                   }
                   fontSize="xs"
                 >
-                  {archive.user_role === "seller"
-                    ? "交換受理者"
-                    : "交換申請者"}
-                </Badge>
+                  {archive.user_role === "seller" ? "交換受理者" : "交換申請者"}
+                </Badge> */}
               </HStack>
 
               {/* 交換内容（クリック可能） */}
@@ -334,11 +332,12 @@ const ExchangeArchiveModal: FC<ExchangeArchiveModalProps> = ({
   // 詳細ビューのレンダリング
   const renderDetailView = () => {
     if (!selectedItem || !selectedItem.archiveData) return null;
+    console.log("selectedItem", selectedItem);
 
     const archive = selectedItem.archiveData;
 
     return (
-      <VStack spacing={4} align="stretch">
+      <VStack spacing={4} align="stretch" px={1}>
         {/* 交換情報のヘッダー */}
         <Box bg="blue.50" p={3} borderRadius="md">
           <HStack justify="space-between" mb={2}>
@@ -348,15 +347,16 @@ const ExchangeArchiveModal: FC<ExchangeArchiveModalProps> = ({
                 交換完了日: {formatDate(archive.completed_date)}
               </Text>
             </HStack>
-            <Badge
+            {/* <Badge
               colorScheme={archive.user_role === "seller" ? "blue" : "green"}
               fontSize="sm"
             >
               {archive.user_role === "seller" ? "交換受理者" : "交換申請者"}
-            </Badge>
+            </Badge> */}
           </HStack>
           <Text fontSize="xs" color="gray.600">
-            {selectedItem.itemRole === "buyer" ? "交換申請者" : "交換受理者"}の商品詳細
+            {selectedItem.itemRole === "buyer" ? "交換申請者" : "交換受理者"}
+            の商品詳細
           </Text>
         </Box>
 
@@ -383,7 +383,10 @@ const ExchangeArchiveModal: FC<ExchangeArchiveModalProps> = ({
               所有者
             </Heading>
             <Text fontSize="sm" color="gray.600">
-              {selectedItem.itemRole === "buyer" ? archive.buyer_name : archive.seller_name}さん
+              {selectedItem.itemRole === "buyer"
+                ? archive.buyer_name
+                : archive.seller_name}
+              さん
             </Text>
           </Box>
 
@@ -426,13 +429,18 @@ const ExchangeArchiveModal: FC<ExchangeArchiveModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={handleClose}
-      size="2xl"
+      size={{ base: "full", md: "2xl" }}
       scrollBehavior="inside"
       preserveScrollBarGap
       blockScrollOnMount={false}
     >
       <ModalOverlay />
-      <ModalContent maxH="90vh">
+      <ModalContent
+        maxH={{ base: "100vh", md: "90vh" }}
+        h={{ base: "100vh", md: "auto" }}
+        display="flex"
+        flexDirection="column"
+      >
         <ModalHeader>
           <HStack justify="space-between" align="center">
             <HStack>
@@ -445,14 +453,23 @@ const ExchangeArchiveModal: FC<ExchangeArchiveModalProps> = ({
                   onClick={handleBackToList}
                 />
               )}
-              <Text>
-                {viewMode === "list" ? "交換履歴" : "商品詳細"}
-              </Text>
+              <Text>{viewMode === "list" ? "交換履歴" : "商品詳細"}</Text>
             </HStack>
           </HStack>
         </ModalHeader>
         <ModalCloseButton />
-        <ModalBody pb={6} overflowY="auto">
+        <ModalBody
+          pb={6}
+          overflowY="auto"
+          flex="1"
+          css={{
+            // スマホでのスムーズスクロール対応
+            "-webkit-overflow-scrolling": "touch",
+            "overflow-scrolling": "touch",
+            // 自然なスクロールのための設定
+            "min-height": "0",
+          }}
+        >
           {viewMode === "list" ? renderListView() : renderDetailView()}
         </ModalBody>
       </ModalContent>

@@ -25,7 +25,7 @@ export const loginCheckApi = async (formdata: {
       success: true,
       data: {
         result: response.data.result,
-      }
+      },
     };
   } catch (error: unknown) {
     return createErrorResponse(error, "メールアドレスの確認に失敗しました");
@@ -48,7 +48,7 @@ export const loginApi = async (formdata: {
         token: response.data.access_token,
         username: response.data.username,
         userId: response.data.user_id,
-      }
+      },
     };
   } catch (error: unknown) {
     return createErrorResponse(error, "ログインに失敗しました");
@@ -87,7 +87,7 @@ export const singupApi = async (
       data: {
         result: response.data.result,
         message: response.data.message,
-      }
+      },
     };
   } catch (error: unknown) {
     return createErrorResponse(error, "ユーザー登録に失敗しました");

@@ -89,8 +89,12 @@ const LoginForm: FC = () => {
     try {
       // ログインAPI実行
       const response = await loginApi(form);
-      if (response && response.token) {
-        login(response.username, response.token, response.userId);
+      if (response && response.success) {
+        login(
+          response.data.username,
+          response.data.token,
+          response.data.userId
+        );
         navigate(route.profile);
         return;
       } else {

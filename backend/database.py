@@ -14,7 +14,7 @@ def create_users_table(cursor):
             reasen TEXT,
             stripe_customer_id VARCHAR(255),
             plan VARCHAR(1) DEFAULT '1',
-            status INT DEFAULT 1,
+            status INT DEFAULT 1, -- 必要ないカラムあとで削除
             type INT DEFAULT 1, -- 0 : 管理者, 1 : 利用者
             is_deleted BOOLEAN DEFAULT FALSE COMMENT '論理削除フラグ',
             deleted_at TIMESTAMP NULL COMMENT '削除日時',

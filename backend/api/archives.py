@@ -2,6 +2,7 @@ from flask import Blueprint, jsonify, request
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from utils.db_utils import get_db_connection
 import mysql.connector
+import json
 
 archives_bp = Blueprint('archives', __name__, url_prefix='/api')
 
@@ -29,6 +30,7 @@ def get_exchange_archive():
                     -- メイン商品
                     main_item.title as main_item_title,
                     main_item.description as main_item_description,
+                    main_item.type as main_item_type,
                     main_item.brand as main_item_brand,
                     -- seller交換商品
                     CASE 
@@ -36,6 +38,16 @@ def get_exchange_archive():
                         THEN seller_item.title 
                         ELSE NULL 
                     END as seller_item_title,
+                    CASE 
+                        WHEN at.seller_exchange_item_archive_id IS NOT NULL 
+                        THEN seller_item.description 
+                        ELSE NULL 
+                    END as seller_item_description,
+                    CASE 
+                        WHEN at.seller_exchange_item_archive_id IS NOT NULL 
+                        THEN seller_item.type 
+                        ELSE NULL 
+                    END as seller_item_type,
                     CASE 
                         WHEN at.seller_exchange_item_archive_id IS NOT NULL 
                         THEN seller_item.brand 
@@ -47,6 +59,16 @@ def get_exchange_archive():
                         THEN buyer_item.title 
                         ELSE NULL 
                     END as buyer_item_title,
+                    CASE 
+                        WHEN at.buyer_exchange_item_archive_id IS NOT NULL 
+                        THEN buyer_item.description 
+                        ELSE NULL 
+                    END as buyer_item_description,
+                    CASE 
+                        WHEN at.buyer_exchange_item_archive_id IS NOT NULL 
+                        THEN buyer_item.type 
+                        ELSE NULL 
+                    END as buyer_item_type,
                     CASE 
                         WHEN at.buyer_exchange_item_archive_id IS NOT NULL 
                         THEN buyer_item.brand 
@@ -155,7 +177,7 @@ def get_exchange_archive():
                 trade['user_role'] = 'seller' if trade['seller_id'] == user_id else 'buyer'
                 
                 # JSONフィールドをパース
-                for field in ['main_item_brand', 'seller_item_brand', 'buyer_item_brand']:
+                for field in ['main_item_type', 'main_item_brand', 'seller_item_type', 'seller_item_brand', 'buyer_item_type', 'buyer_item_brand']:
                     if trade.get(field):
                         try:
                             trade[field] = json.loads(trade[field])
