@@ -74,7 +74,6 @@ const ExchangeArchiveModal: FC<ExchangeArchiveModalProps> = ({
   useEffect(() => {
     if (isOpen) {
       setLoading(true);
-      console.log("memorizeuserProfileArchives", memorizeuserProfileArchives);
       if (
         memorizeuserProfileArchives &&
         memorizeuserProfileArchives.length > 0
@@ -332,7 +331,6 @@ const ExchangeArchiveModal: FC<ExchangeArchiveModalProps> = ({
   // 詳細ビューのレンダリング
   const renderDetailView = () => {
     if (!selectedItem || !selectedItem.archiveData) return null;
-    console.log("selectedItem", selectedItem);
 
     const archive = selectedItem.archiveData;
 
@@ -340,20 +338,6 @@ const ExchangeArchiveModal: FC<ExchangeArchiveModalProps> = ({
       <VStack spacing={4} align="stretch" px={1}>
         {/* 交換情報のヘッダー */}
         <Box bg="blue.50" p={3} borderRadius="md">
-          <HStack justify="space-between" mb={2}>
-            <HStack spacing={1}>
-              <Icon as={FaCalendarAlt} color="blue.500" boxSize={4} />
-              <Text fontSize="sm" fontWeight="medium">
-                交換完了日: {formatDate(archive.completed_date)}
-              </Text>
-            </HStack>
-            {/* <Badge
-              colorScheme={archive.user_role === "seller" ? "blue" : "green"}
-              fontSize="sm"
-            >
-              {archive.user_role === "seller" ? "交換受理者" : "交換申請者"}
-            </Badge> */}
-          </HStack>
           <Text fontSize="xs" color="gray.600">
             {selectedItem.itemRole === "buyer" ? "交換申請者" : "交換受理者"}
             の商品詳細
@@ -368,7 +352,7 @@ const ExchangeArchiveModal: FC<ExchangeArchiveModalProps> = ({
         )}
 
         {/* 商品詳細情報 */}
-        <Stack divider={<StackDivider />} spacing={4}>
+        <Stack divider={<StackDivider />} spacing={2}>
           <Box>
             <Heading size="xs" textTransform="uppercase" mb={2}>
               商品名
@@ -389,17 +373,6 @@ const ExchangeArchiveModal: FC<ExchangeArchiveModalProps> = ({
               さん
             </Text>
           </Box>
-
-          {selectedItem.itemType && (
-            <Box>
-              <Heading size="xs" textTransform="uppercase" mb={2}>
-                アイテム種類
-              </Heading>
-              <Text fontSize="sm" color="gray.600">
-                {selectedItem.itemType}
-              </Text>
-            </Box>
-          )}
 
           {selectedItem.itemBrand && (
             <Box>
@@ -429,17 +402,17 @@ const ExchangeArchiveModal: FC<ExchangeArchiveModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={handleClose}
-      size={{ base: "full", md: "2xl" }}
+      size={{ base: "md", md: "2xl" }}
       scrollBehavior="inside"
       preserveScrollBarGap
       blockScrollOnMount={false}
     >
       <ModalOverlay />
       <ModalContent
-        maxH={{ base: "100vh", md: "90vh" }}
-        h={{ base: "100vh", md: "auto" }}
-        display="flex"
-        flexDirection="column"
+      // maxH={{ base: "100vh", md: "90vh" }}
+      // h={{ base: "100vh", md: "auto" }}
+      // display="flex"
+      // flexDirection="column"
       >
         <ModalHeader>
           <HStack justify="space-between" align="center">
@@ -460,8 +433,8 @@ const ExchangeArchiveModal: FC<ExchangeArchiveModalProps> = ({
         <ModalCloseButton />
         <ModalBody
           pb={6}
-          overflowY="auto"
-          flex="1"
+          // overflowY="auto"
+          // flex="1"
           css={{
             // スマホでのスムーズスクロール対応
             "-webkit-overflow-scrolling": "touch",

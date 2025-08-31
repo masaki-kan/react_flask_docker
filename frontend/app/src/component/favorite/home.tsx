@@ -3,12 +3,12 @@ import { useEffectOnce } from "react-use";
 import {
   Box,
   Center,
-  Container,
-  HStack,
+  // Container,
+  // HStack,
   Spinner,
   Text,
-  useColorModeValue,
-  VStack,
+  // useColorModeValue,
+  // VStack,
 } from "@chakra-ui/react";
 import useItems from "../../hooks/useItems";
 import RebderItem from "../render/renderItem";
@@ -31,10 +31,10 @@ const Home: FC = () => {
     loadMoreItems,
   } = useItems();
   const { memorizeProfile } = useMyProfile();
-  const shadowColor = useColorModeValue(
-    "0 4px 12px rgba(0, 0, 0, 0.08)",
-    "0 4px 12px rgba(0, 0, 0, 0.3)"
-  );
+  // const shadowColor = useColorModeValue(
+  //   "0 4px 12px rgba(0, 0, 0, 0.08)",
+  //   "0 4px 12px rgba(0, 0, 0, 0.3)"
+  // );
 
   const likedFilterList = useMemo(() => {
     return memorizeItemList.filter((item) =>
@@ -78,7 +78,7 @@ const Home: FC = () => {
 
   return (
     <>
-      <Box px={4}>
+      {/* <Box px={4}>
         <Container maxW="container.xl" px={{ base: 2, md: 4 }}>
           <VStack
             px={2}
@@ -89,16 +89,14 @@ const Home: FC = () => {
             boxShadow={shadowColor}
             borderRadius="md"
           >
-            {/* 検索フォームヘッダー */}
             <HStack width="full" justify="space-between" align="center">
               <Box fontSize="sm" fontWeight="medium" color="gray.600">
                 お気に入り
               </Box>
             </HStack>
-            {/* 検索フォームの内容 */}
           </VStack>
         </Container>
-      </Box>
+      </Box> */}
 
       <Box pb={24} pt={4}>
         <AnimatePresence mode="wait">

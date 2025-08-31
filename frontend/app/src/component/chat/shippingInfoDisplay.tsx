@@ -88,12 +88,7 @@ const ShippingInfoDisplay: FC<ShippingInfoDisplayProps> = ({
             <Text fontSize="xs" color="gray.600">
               追跡番号:
             </Text>
-            <Text
-              fontSize="xs"
-              fontWeight="medium"
-              color="blue.600"
-              wordBreak={"break-all"}
-            >
+            <Text fontSize="xs" fontWeight="medium" wordBreak={"break-all"}>
               {shipping.tracking_number}
             </Text>
           </VStack>
