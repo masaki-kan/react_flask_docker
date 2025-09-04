@@ -98,7 +98,7 @@ const SingUpForm: FC = memo(() => {
       const planStatus = formData.plan === "0" ? 0 : 1;
 
       const response = await getCreatePaymentIntent(
-        formData.plan === "0" ? "500" : "5500",
+        formData.plan === "0" ? "550" : "5500",
         planStatus
       );
 
@@ -150,7 +150,7 @@ const SingUpForm: FC = memo(() => {
     {
       id: "0",
       name: "月額プラン",
-      price: "¥500",
+      price: "¥550",
       period: "/月",
       description: "毎月のお支払い",
       badge: "初月無料",

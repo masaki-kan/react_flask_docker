@@ -36,7 +36,7 @@ def get_or_create_price(plan_type='monthly'):
         # 開発環境または価格IDが設定されていない場合は動的作成
         if plan_type == 'monthly':
             price = stripe.Price.create(
-                unit_amount=500,
+                unit_amount=550,
                 currency='jpy',
                 recurring={"interval": "month"},
                 product_data={"name": "僕らのヴィンテージ 月額プラン"}
@@ -87,7 +87,7 @@ def create_payment():
             }
         )
         
-        if plan_status == 0:  # 月額プラン（500円、初月無料）
+        if plan_status == 0:  # 月額プラン（550円、初月無料）
             price = get_or_create_price('monthly')
             
             # サブスクリプションを作成（30日間の無料トライアル付き）
@@ -119,7 +119,7 @@ def create_payment():
                 'plan': 'monthly',
                 'trialEnd': (datetime.now() + timedelta(days=30)).isoformat(),
                 'nextBillingDate': (datetime.now() + timedelta(days=30)).isoformat(),
-                'nextBillingAmount': 500
+                'nextBillingAmount': 550
             })
             
         else:  # 年額プラン（5500円、即時決済）
@@ -1000,7 +1000,7 @@ def reactivate_account():
                     "subscription_id": subscription_id,
                     "plan_type": "monthly" if plan_type == 0 else "yearly",
                     "next_billing_date": next_billing_date,
-                    "amount": 500 if plan_type == 0 else 5500
+                    "amount": 550 if plan_type == 0 else 5500
                 })
                 
             except stripe.error.CardError as e:

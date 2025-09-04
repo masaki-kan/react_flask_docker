@@ -98,7 +98,7 @@ const ReactivationForm: FC<{
         if (response === "OK") {
           await sweetSuccessTextOverAlert(
             planType === "monthly"
-              ? "アカウントを再開しました。月額500円が課金されます。"
+              ? "アカウントを再開しました。月額550円が課金されます。"
               : "アカウントを再開しました。年額5,500円のお支払いが完了しました。"
           );
           onSuccess();
@@ -208,7 +208,7 @@ const ReactivationForm: FC<{
           </Box>
           <Box textAlign="right">
             <Text fontSize="2xl" fontWeight="bold" color="orange.600">
-              {planType === "monthly" ? "¥500" : "¥5,500"}
+              {planType === "monthly" ? "¥550" : "¥5,500"}
               <Text as="span" fontSize="sm" fontWeight="normal">
                 {planType === "monthly" ? "/月" : "/年"}
               </Text>
@@ -439,7 +439,7 @@ const CheckReactivationStatus: FC = () => {
                       <Text fontWeight="bold">月額プラン</Text>
                     </HStack>
                     <Text fontSize="sm" color="gray.600">
-                      ¥500/月
+                      ¥550/月
                     </Text>
                   </Box>
                 </Radio>

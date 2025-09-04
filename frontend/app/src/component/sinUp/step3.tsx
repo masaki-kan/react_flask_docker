@@ -411,7 +411,7 @@ const Step3: FC<Step3Props> = memo(
           const planStatus = formData.plan === "0" ? 0 : 1;
 
           const response = await getCreatePaymentIntent(
-            formData.plan === "0" ? "500" : "5500",
+            formData.plan === "0" ? "550" : "5500",
             planStatus
           );
 
