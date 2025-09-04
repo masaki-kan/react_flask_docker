@@ -41,6 +41,7 @@ import useLog from "../../hooks/useLog";
 import { errorSweetalert2 } from "../../utils/alert/sweetalert2";
 import { useNavigate } from "react-router-dom";
 import useCredit from "../../hooks/useCredit";
+import { route } from "../../route/routeConst";
 
 // 決済フォームのコンテンツ
 const ReactivationForm: FC<{
@@ -392,9 +393,8 @@ const CheckReactivationStatus: FC = () => {
   };
 
   const handleSuccess = useCallback(() => {
-    // 再有効化成功時はリロードして最新の状態を反映
-    window.location.reload();
-  }, []);
+    navigate(route.profile);
+  }, [navigate]);
 
   if (isLoading) {
     return (
