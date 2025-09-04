@@ -42,8 +42,8 @@ const SecureLayout: FC = () => {
         className="main-scroll-container"
         css={{
           // スマホでのスムーズスクロール対応
-          "-webkit-overflow-scrolling": "touch",
-          "overflow-scrolling": "touch",
+          WebkitOverflowScrolling: "touch",
+          overflowScrolling: "touch",
           // スクロールバー非表示（モバイル）
           "&::-webkit-scrollbar": {
             width: "0px",
@@ -70,7 +70,7 @@ const SecureLayout: FC = () => {
           // iOS Safari 固有の問題対応
           "@supports (-webkit-touch-callout: none)": {
             transform: "translate3d(0,0,0)",
-            "will-change": "transform",
+            willChange: "transform",
           },
         }}
       >

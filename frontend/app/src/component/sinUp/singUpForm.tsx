@@ -78,7 +78,7 @@ const SingUpForm: FC = memo(() => {
           newErrors.password = "パスワードは半角英数字のみ使用できます";
         } else {
           const response = await loginCheckApi(formData);
-          if (response?.result) {
+          if (response.success === true) {
             newErrors.email =
               "このメールアドレスはすでに登録されております。別のアドレスで登録してください。";
           }

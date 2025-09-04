@@ -785,6 +785,7 @@ def create_reactivation_payment_intent():
                     # 新規Customer作成
                     customer = stripe.Customer.create(
                         email=user['email'],
+                        name=user['name'], 
                         metadata={
                             "user_id": str(user_id),
                             "reactivated": "true"
@@ -801,6 +802,7 @@ def create_reactivation_payment_intent():
                 # 新規Customer作成
                 customer = stripe.Customer.create(
                     email=user['email'],
+                    name=user['name'], 
                     metadata={
                         "user_id": str(user_id),
                         "reactivated": "true"

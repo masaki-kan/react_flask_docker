@@ -118,7 +118,6 @@ export const getSubscriptionInfo = async (userID: string) => {
       { user_id: userID }
     );
 
-    console.log(response);
     return response.data;
   } catch (error) {
     console.error("Failed to get subscription info:", error);

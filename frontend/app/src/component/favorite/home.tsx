@@ -77,65 +77,64 @@ const Home: FC = () => {
   }, [isLoading, hasMore, loadMoreItems]);
 
   return (
-    <>
-      {/* <Box px={4}>
-        <Container maxW="container.xl" px={{ base: 2, md: 4 }}>
-          <VStack
-            px={2}
-            py={3}
-            spacing={2}
-            width="100%"
-            bgColor="white"
-            boxShadow={shadowColor}
-            borderRadius="md"
-          >
-            <HStack width="full" justify="space-between" align="center">
-              <Box fontSize="sm" fontWeight="medium" color="gray.600">
-                お気に入り
-              </Box>
-            </HStack>
-          </VStack>
-        </Container>
-      </Box> */}
+    <Box pb={24} pt={4}>
+      <MotionBox
+        key="item-list"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.2 }}
+        w="full"
+      >
+        <RebderItem
+          itemList={likedFilterList}
+          avatar={false}
+          navigate={itemDetailHandler}
+        />
+      </MotionBox>
 
-      <Box pb={24} pt={4}>
-        <AnimatePresence mode="wait">
-          <MotionBox
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.2 }}
-            w="full"
+      <AnimatePresence>
+        {isLoading && (
+          <motion.div
+            key="loading"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
           >
-            <RebderItem
-              itemList={likedFilterList}
-              avatar={false}
-              navigate={itemDetailHandler}
-            />
-          </MotionBox>
-
-          {isLoading && (
             <Center py={4}>
               <Spinner size="lg" />
             </Center>
-          )}
+          </motion.div>
+        )}
 
-          {!hasMore && likedFilterList.length > 0 && (
+        {!hasMore && likedFilterList.length > 0 && (
+          <motion.div
+            key="all-loaded"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
             <Center py={4}>
               <Text color="gray.500">すべての商品を読み込みました</Text>
             </Center>
-          )}
+          </motion.div>
+        )}
 
-          {likedFilterList.length === 0 && !isLoading && (
+        {likedFilterList.length === 0 && !isLoading && (
+          <motion.div
+            key="no-items"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
             <Center py={8}>
               <Text color="gray.500" fontSize="lg">
                 お気に入りの商品はありません
               </Text>
             </Center>
-          )}
-        </AnimatePresence>
-      </Box>
-    </>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </Box>
   );
 };
 
