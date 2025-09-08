@@ -234,6 +234,51 @@ const Home: FC = () => {
     };
   }, [tradeIdNumber, memorizeChatItemData.status, isCurrentUserSeller]);
 
+  // 取引完了状況を監視（買い手用）
+  useEffect(() => {
+    const checkTransactionStatus = async () => {
+      if (tradeIdNumber && !isCurrentUserSeller && memorizeChatItemData.status === "shipped") {
+        try {
+          // チャットページデータを再取得して最新のステータスをチェック
+          await getChatPageData(tradeIdNumber);
+          
+          // ステータスが変更されているかチェックは次のレンダリングで行われる
+        } catch (error) {
+          console.error("取引状況の取得エラー:", error);
+        }
+      }
+    };
+
+    let statusInterval: NodeJS.Timeout | undefined;
+
+    if (!isCurrentUserSeller && memorizeChatItemData.status === "shipped") {
+      statusInterval = setInterval(checkTransactionStatus, 3000); // 3秒ごとにチェック
+    }
+
+    return () => {
+      if (statusInterval) {
+        clearInterval(statusInterval);
+      }
+    };
+  }, [tradeIdNumber, isCurrentUserSeller, memorizeChatItemData.status, getChatPageData]);
+
+  // 取引完了時の自動リダイレクト
+  useEffect(() => {
+    if (memorizeChatItemData.status === "completed") {
+      toast({
+        title: "交換完了",
+        description: "取引が完了しました。取引履歴に移動します。",
+        status: "success",
+        duration: 3000,
+        isClosable: true,
+      });
+      
+      setTimeout(() => {
+        navigate(route.saved);
+      }, 1000);
+    }
+  }, [memorizeChatItemData.status, navigate, toast]);
+
   const checkExchangeItems = useCallback(async () => {
     if (tradeIdNumber) {
       try {

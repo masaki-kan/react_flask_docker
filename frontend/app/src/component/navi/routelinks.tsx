@@ -25,6 +25,7 @@ import { useEffectOnce } from "react-use";
 const RenderRouteLinks: FC = () => {
   const { memorizeProfile } = useMyProfile();
   const profile = useMemo(() => memorizeProfile, [memorizeProfile]);
+  console.log(profile);
   const navigate = useNavigate();
 
   const { savedList, getSavedListHandler } = useSaved();
@@ -70,6 +71,23 @@ const RenderRouteLinks: FC = () => {
     getSavedListHandler();
   });
 
+  const naviFilter = useCallback(
+    (path: string) => {
+      if (path !== route.thread) {
+        if (profile.items.length === 0) {
+          alert("登録アイテムがありません。アイテムを登録してください。");
+
+          navigate(route.myItem);
+
+          return;
+        }
+      }
+
+      navigate(path);
+    },
+    [navigate, profile.items.length]
+  );
+
   return (
     <>
       <Container maxW="container.xl">
@@ -82,8 +100,9 @@ const RenderRouteLinks: FC = () => {
                 fontSize={"sm"}
                 color="#181411"
                 fontWeight="medium"
-                href={menu.route}
-                onClick={() => {}}
+                onClick={() => {
+                  naviFilter(menu.route);
+                }}
                 position={"relative"}
                 mr={2}
               >
