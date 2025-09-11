@@ -21,11 +21,12 @@ import useMyProfile from "../../hooks/useProfile";
 import useSaved from "../../hooks/useSaved";
 import { FaUserCircle } from "react-icons/fa";
 import { useEffectOnce } from "react-use";
+import useAlert from "../../hooks/useAlert";
 
 const RenderRouteLinks: FC = () => {
+  const { warningToast } = useAlert();
   const { memorizeProfile } = useMyProfile();
   const profile = useMemo(() => memorizeProfile, [memorizeProfile]);
-  console.log(profile);
   const navigate = useNavigate();
 
   const { savedList, getSavedListHandler } = useSaved();
@@ -75,17 +76,18 @@ const RenderRouteLinks: FC = () => {
     (path: string) => {
       if (path !== route.thread) {
         if (profile.items.length === 0) {
-          alert("登録アイテムがありません。アイテムを登録してください。");
+          warningToast(
+            "登録アイテムがありません。アイテムを登録してください。"
+          );
 
           navigate(route.myItem);
-
           return;
         }
       }
 
       navigate(path);
     },
-    [navigate, profile.items.length]
+    [navigate, profile.items.length, warningToast]
   );
 
   return (

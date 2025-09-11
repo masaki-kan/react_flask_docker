@@ -1,5 +1,5 @@
 import { FC, useEffect, useState } from "react";
-import { Box, Center, Text } from "@chakra-ui/react";
+import { Box, Center, Text, Image } from "@chakra-ui/react";
 import VintageLandingPage from "./vintageLandingPage";
 import { AnimatePresence, motion } from "framer-motion";
 import SplashBackground from "./splashBackground";
@@ -75,7 +75,7 @@ const Home: FC = () => {
                       animationDelay: "1.5s",
                     }}
                   >
-                    <Box
+                    {/* <Box
                       as="span"
                       display="inline-block"
                       overflow="hidden"
@@ -84,7 +84,15 @@ const Home: FC = () => {
                       whiteSpace="nowrap"
                     >
                       僕らのヴィンテージ
-                    </Box>
+                    </Box> */}
+                    <Image
+                      src={"/ロゴ.svg"}
+                      height="35px"
+                      overflow="hidden"
+                      display="inline-block"
+                      maxW="0"
+                      animation={`${typewriter} 1.5s steps(10) 0.8s forwards`}
+                    />
                   </Text>
                 </motion.div>
 
@@ -95,14 +103,19 @@ const Home: FC = () => {
                   transition={{ duration: 0.6, delay: 2 }}
                   style={{ marginTop: "8px" }}
                 >
-                  <Text
+                  {/* <Text
                     fontSize={{ base: "md", md: "sm" }}
                     color="rgba(255,255,255,0.8)"
                     letterSpacing="widest"
                     textTransform="uppercase"
                   >
                     僕らのヴィンテージ
-                  </Text>
+                  </Text> */}
+                  <Image
+                    src={"/ロゴ.svg"}
+                    height="35px"
+                    textTransform="uppercase"
+                  />
                 </motion.div>
 
                 {/* 装飾的な要素 */}

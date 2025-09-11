@@ -4,10 +4,9 @@ import Swal, { SweetAlertResult } from "sweetalert2";
 type useAlertReturn = {
   errorAlert: (text: string) => void;
   defaultAlert: (status: boolean) => void;
-  successAlert: (text: string) => void;
   defaultToast: (text: string) => void;
+  warningToast: (text: string) => void;
   tradeAlert: (text: string) => Promise<SweetAlertResult<unknown>>;
-  sweetSuccessOverAlert: (title: string) => Promise<SweetAlertResult<unknown>>;
   sweetSuccessTextOverAlert: (
     text: string
   ) => Promise<SweetAlertResult<unknown>>;
@@ -45,10 +44,10 @@ const useAlert = (): useAlertReturn => {
     });
   };
 
-  const successAlert = (text: string) => {
+  const warningToast = (text: string) => {
     toast({
       title: text,
-      status: "success",
+      status: "warning",
       duration: 2000,
       isClosable: true,
     });
@@ -79,14 +78,6 @@ const useAlert = (): useAlertReturn => {
     });
   };
 
-  const sweetSuccessOverAlert = (title: string) => {
-    return Swal.fire({
-      title,
-      icon: "success",
-      draggable: true,
-    });
-  };
-
   const sweetErrorOverAlert = () => {
     return Swal.fire({
       title: "システムエラーが発生しました。",
@@ -106,12 +97,11 @@ const useAlert = (): useAlertReturn => {
   };
 
   return {
-    successAlert,
     errorAlert,
     defaultAlert,
+    warningToast,
     defaultToast,
     tradeAlert,
-    sweetSuccessOverAlert,
     sweetSuccessTextOverAlert,
     sweetErrorOverAlert,
     sweetStripeErrorOverAlert,

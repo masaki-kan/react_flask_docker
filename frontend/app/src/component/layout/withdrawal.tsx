@@ -15,7 +15,6 @@ const Withdrawal: FC = () => {
   // 退会処理
   const pushCancellationProcess = useCallback(async () => {
     const response = await cancellationProcess();
-    console.log(response);
     if (response?.success === false) {
       toast({
         title: "退会処理エラー",

@@ -1,4 +1,4 @@
-import { Text, Button, Stack, HStack } from "@chakra-ui/react";
+import { Image, Button, Stack, HStack } from "@chakra-ui/react";
 import { type FC } from "react";
 
 type HeaderPropsType = {
@@ -20,18 +20,9 @@ const Header: FC<HeaderPropsType> = ({ loginSwitch }) => {
           gap="4"
           borderBottom={1}
           borderBottomColor={"#f4f2f0"}
+          py={2}
         >
-          <HStack justifyContent={"start"} alignItems={"center"} py={2}>
-            <Text
-              size={"md"}
-              color="#734e30"
-              fontWeight="bold"
-              ml={2}
-              letterSpacing="-0.015em"
-            >
-              僕らのヴィンテージ
-            </Text>
-          </HStack>
+          <Image src={"/ロゴ.svg"} height="35px" />
           <HStack justifyContent={"end"} alignItems={"center"} mr={2}>
             <Button
               minW="80px"

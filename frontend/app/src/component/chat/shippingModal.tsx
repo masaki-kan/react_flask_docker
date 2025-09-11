@@ -73,7 +73,7 @@ const ShippingModal: FC<ShippingOpenType> = ({
               </FormControl>
 
               <Button
-                colorScheme="green"
+                colorScheme="gray"
                 width="full"
                 onClick={handleShipping}
                 isDisabled={

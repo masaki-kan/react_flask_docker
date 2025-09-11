@@ -237,11 +237,15 @@ const Home: FC = () => {
   // 取引完了状況を監視（買い手用）
   useEffect(() => {
     const checkTransactionStatus = async () => {
-      if (tradeIdNumber && !isCurrentUserSeller && memorizeChatItemData.status === "shipped") {
+      if (
+        tradeIdNumber &&
+        !isCurrentUserSeller &&
+        memorizeChatItemData.status === "shipped"
+      ) {
         try {
           // チャットページデータを再取得して最新のステータスをチェック
           await getChatPageData(tradeIdNumber);
-          
+
           // ステータスが変更されているかチェックは次のレンダリングで行われる
         } catch (error) {
           console.error("取引状況の取得エラー:", error);
@@ -260,7 +264,12 @@ const Home: FC = () => {
         clearInterval(statusInterval);
       }
     };
-  }, [tradeIdNumber, isCurrentUserSeller, memorizeChatItemData.status, getChatPageData]);
+  }, [
+    tradeIdNumber,
+    isCurrentUserSeller,
+    memorizeChatItemData.status,
+    getChatPageData,
+  ]);
 
   // 取引完了時の自動リダイレクト
   useEffect(() => {
@@ -272,7 +281,7 @@ const Home: FC = () => {
         duration: 3000,
         isClosable: true,
       });
-      
+
       setTimeout(() => {
         navigate(route.saved);
       }, 1000);
@@ -569,7 +578,7 @@ const Home: FC = () => {
                         <Icon
                           as={FaCheckCircle}
                           color={
-                            hasSellerSelectedItem ? "green.500" : "gray.400"
+                            hasSellerSelectedItem ? "orange.500" : "orange.400"
                           }
                         />
                         <Text fontSize="sm">
@@ -625,7 +634,7 @@ const Home: FC = () => {
                 (!isCurrentUserSeller || hasSellerSelectedItem) && (
                   <Button
                     leftIcon={<FaTruck />}
-                    colorScheme="green"
+                    colorScheme="gray"
                     size={{ base: "sm", md: "sm" }}
                     onClick={onShippingOpen}
                     w={{ base: "100%", md: "auto" }}

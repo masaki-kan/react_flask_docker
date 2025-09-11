@@ -21,6 +21,7 @@ import {
   Stack,
   StackDivider,
 } from "@chakra-ui/react";
+import Swal from "sweetalert2";
 import { FaCheckCircle, FaTimesCircle, FaArrowLeft } from "react-icons/fa";
 import useChat from "../../hooks/useChat";
 import { chatItemDataType } from "../../types/chatType";
@@ -86,10 +87,27 @@ const PartnerItemsModal: FC<PartnerItemsModalProps> = ({
   // 交換商品として選択
   const handleSelectExchangeItem = useCallback(
     async (itemId: string) => {
-      const confirm = window.confirm(
-        "この商品でよろしいですか？選択後取引キャンセルすることができません。"
-      );
-      if (!confirm) return;
+      // SweetAlert2のz-indexを一時的に設定
+
+      const result = await Swal.fire({
+        title: "商品選択の確認",
+        text: "この商品でよろしいですか？選択後取引キャンセルすることができません。",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#3085d6",
+        cancelButtonColor: "#d33",
+        confirmButtonText: "選択する",
+        cancelButtonText: "キャンセル",
+        didOpen: () => {
+          const swalContainer = document.querySelector(
+            ".swal2-container"
+          ) as HTMLElement;
+          if (swalContainer) {
+            swalContainer.style.zIndex = "10000";
+          }
+        },
+      });
+      if (!result.isConfirmed) return;
 
       if (!isCurrentUserSeller) {
         toast({
@@ -333,7 +351,7 @@ const PartnerItemsModal: FC<PartnerItemsModalProps> = ({
         {isCurrentUserSeller && isSelectable && (
           <Button
             size="md"
-            colorScheme="blue"
+            colorScheme="gray"
             width="full"
             onClick={() =>
               handleSelectExchangeItem(String(selectedItem.item_id))

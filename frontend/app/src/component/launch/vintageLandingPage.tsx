@@ -9,6 +9,7 @@ import {
   Text,
   Link,
   VStack,
+  Image,
 } from "@chakra-ui/react";
 import { keyframes } from "@emotion/react";
 import { FaInstagram } from "react-icons/fa";
@@ -125,7 +126,12 @@ const VintageLandingPage: FC = () => {
               textShadow="0 4px 20px rgba(0,0,0,0.3)"
               mb={4}
             >
-              僕らのヴィンテージ
+              <Image
+                src={"/ロゴ.svg"}
+                height="82px"
+                mx={"auto"}
+                textTransform="uppercase"
+              />
             </Heading>
           </motion.div>
 
