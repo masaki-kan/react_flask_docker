@@ -7,7 +7,6 @@ import {
   VStack,
   HStack,
   Link,
-  useColorModeValue,
   Badge,
   SimpleGrid,
   Icon,
@@ -20,6 +19,7 @@ import {
   ListItem,
   ListIcon,
 } from "@chakra-ui/react";
+import { useAppColors, getColorModeValue } from "../../utils/theme/colorModeUtils";
 import {
   FiMail,
   FiPhone,
@@ -36,12 +36,7 @@ import {
 import { IconType } from "react-icons";
 
 const TokushohoPage: React.FC = () => {
-  const bgColor = useColorModeValue("gray.50", "gray.900");
-  const cardBg = useColorModeValue("white", "gray.800");
-  const borderColor = useColorModeValue("gray.200", "gray.700");
-  const accentColor = useColorModeValue("blue.500", "blue.300");
-  const textColor = useColorModeValue("gray.700", "gray.300");
-  const headingColor = useColorModeValue("gray.800", "gray.100");
+  const { pageBg, cardBg, borderColor, accentColor, textColor, headingColor, infoBg, infoBorder, successBg, successBorder } = useAppColors();
 
   // ここに実際の事業者情報を設定してください
   const businessInfo = {
@@ -113,7 +108,7 @@ const TokushohoPage: React.FC = () => {
   );
 
   return (
-    <Box bg={bgColor} minH="100vh" py={8}>
+    <Box bg={pageBg} minH="100vh" py={8}>
       <Container maxW="container.xl">
         <VStack spacing={8} align="stretch">
           {/* ヘッダー */}
@@ -234,9 +229,9 @@ const TokushohoPage: React.FC = () => {
                   <Box
                     p={4}
                     borderRadius="lg"
-                    bg={useColorModeValue("blue.50", "blue.900")}
+                    bg={infoBg}
                     borderWidth="1px"
-                    borderColor={useColorModeValue("blue.200", "blue.700")}
+                    borderColor={infoBorder}
                   >
                     <HStack justify="space-between" mb={2}>
                       <Badge colorScheme="blue" fontSize="sm">
@@ -258,9 +253,9 @@ const TokushohoPage: React.FC = () => {
                   <Box
                     p={4}
                     borderRadius="lg"
-                    bg={useColorModeValue("green.50", "green.900")}
+                    bg={successBg}
                     borderWidth="1px"
-                    borderColor={useColorModeValue("green.200", "green.700")}
+                    borderColor={successBorder}
                   >
                     <HStack justify="space-between" mb={2}>
                       <Badge colorScheme="green" fontSize="sm">
@@ -431,11 +426,11 @@ const TokushohoPage: React.FC = () => {
 
           {/* その他の費用 */}
           <Box
-            bg={useColorModeValue("blue.50", "blue.900")}
+            bg={infoBg}
             p={6}
             borderRadius="xl"
             borderWidth="1px"
-            borderColor={useColorModeValue("blue.200", "blue.700")}
+            borderColor={infoBorder}
           >
             <HStack mb={3}>
               <Icon as={FiDollarSign} boxSize={5} color="blue.500" />

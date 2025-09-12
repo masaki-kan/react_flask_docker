@@ -1,5 +1,4 @@
 import {
-  useColorModeValue,
   Box,
   VStack,
   HStack,
@@ -7,15 +6,15 @@ import {
   Flex,
 } from "@chakra-ui/react";
 import { FC } from "react";
+import { useAppColors, getColorModeValue } from "../../utils/theme/colorModeUtils";
 
 type MinimalHeaderType = {
   title: string;
 };
 
 const ComponentHeader: FC<MinimalHeaderType> = ({ title }) => {
-  const bgColor = useColorModeValue("white", "gray.800");
-  const borderColor = useColorModeValue("gray.200", "gray.700");
-  const shadowColor = useColorModeValue(
+  const { bgColor, borderColor } = useAppColors();
+  const shadowColor = getColorModeValue(
     "0 4px 12px rgba(0, 0, 0, 0.08)",
     "0 4px 12px rgba(0, 0, 0, 0.3)"
   );

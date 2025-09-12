@@ -13,7 +13,6 @@ import {
   GridItem,
   Image,
   IconButton,
-  useColorModeValue,
   AspectRatio,
   Icon,
   FormErrorMessage,
@@ -34,6 +33,7 @@ import useAlert from "../../hooks/useAlert";
 import useLoading from "../../hooks/useLaoding";
 import CustomTypeSelect from "../select/customTypeSelect";
 import { renderSrc } from "../../utils/views/viewItem";
+import { useAppColors } from "../../utils/theme/colorModeUtils";
 
 type ItemFormProps = {
   profileItem?: itemListType;
@@ -48,10 +48,7 @@ const ItemForm: FC<ItemFormProps> = ({ profileItem, ItemNumver }) => {
   const location = useLocation();
 
   // カラーモード対応
-  const bgColor = useColorModeValue("white", "gray.800");
-  const borderColor = useColorModeValue("gray.200", "gray.700");
-  // const errorColor = useColorModeValue("red.500", "red.300");
-  const hoverBg = useColorModeValue("gray.50", "gray.700");
+  const { bgColor, borderColor, hoverBg } = useAppColors();
 
   const [formValues, setFormValues] = useState<{
     title: string;
@@ -478,7 +475,7 @@ const ItemForm: FC<ItemFormProps> = ({ profileItem, ItemNumver }) => {
           <Button
             leftIcon={<FaSave />}
             isLoading={memorizeLoading}
-            colorScheme="blue"
+            colorScheme="blackAlpha"
             size="md"
             onClick={storeItemsHandler}
             loadingText="登録中..."

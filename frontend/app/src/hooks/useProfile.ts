@@ -22,6 +22,7 @@ import {
 } from "../types/archiveTradeType";
 import useLog from "./useLog";
 import { systemErrorLogoutAlert } from "../utils/alert/sweetalert2";
+import { useToast } from "@chakra-ui/react";
 
 type useMyProfileReturn = {
   memorizeProfile: {
@@ -36,13 +37,7 @@ type useMyProfileReturn = {
   getMyProfile: () => Promise<void>;
   getProfile: (userNumver: number, myUserNumber: number) => Promise<void>;
   favoriteUpdateHandler: (itemId: string, userId: string) => Promise<void>;
-  cancellationProcess: () => Promise<
-    | {
-        success: boolean;
-        message: string;
-      }
-    | undefined
-  >;
+  cancellationProcess: () => Promise<void>;
   getArchiveDetailHandler: (archiveId: string) => Promise<
     | {
         archiveData: archiveTradeType;
@@ -56,7 +51,8 @@ type useMyProfileReturn = {
 const useMyProfile = (): useMyProfileReturn => {
   const { logOutHandler } = useLog();
   const dispatch = useDispatch();
-  const { favoriteAlert } = useAlert();
+  const toast = useToast();
+  const { favoriteAlert, tradeAlert } = useAlert();
   const profile = useSelector((state: RootState) => state.profile);
 
   const memorizeProfile = useMemo(() => {
@@ -203,9 +199,27 @@ const useMyProfile = (): useMyProfileReturn => {
     const userId = memorizeProfile.profile.id;
     const response = await cancellationProcessApi(userId);
     if (response !== undefined) {
-      return response;
+      if (response?.success === false) {
+        toast({
+          title: "退会処理エラー",
+          description: response.message,
+          status: "error",
+          duration: 5000,
+          isClosable: true,
+        });
+        return;
+      }
+
+      if (response !== undefined && response.success) {
+        tradeAlert(response.message).then((result) => {
+          if (result.isConfirmed) {
+            // OK 押下時の処理
+            logOutHandler();
+          }
+        });
+      }
     }
-  }, [memorizeProfile.profile.id]);
+  }, [logOutHandler, memorizeProfile.profile.id, toast, tradeAlert]);
 
   return {
     memorizeuserProfileArchives,

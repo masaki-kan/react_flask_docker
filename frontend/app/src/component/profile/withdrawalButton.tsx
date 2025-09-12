@@ -172,9 +172,8 @@ const WithdrawalModal: React.FC<WithdrawalModalProps> = ({
                 <Alert status="info" borderRadius="md">
                   <AlertIcon />
                   <Text fontSize="sm">
-                    {isTrialing
-                      ? "無料トライアル期間中のため、料金は発生しません。"
-                      : "お支払い済みの期間までサービスをご利用いただけます。"}
+                    {isTrialing &&
+                      "無料トライアル期間中のため、料金は発生しません。"}
                     退会後も同じメールアドレスで再登録が可能ですが、
                     削除されたデータは復元できません。
                   </Text>
