@@ -252,7 +252,7 @@ const ChatLayout: FC = () => {
             maxLength={500}
           />
           <Button
-            colorScheme="blue"
+            colorScheme="orange"
             onClick={sendMessage}
             isDisabled={!message.trim()}
           >

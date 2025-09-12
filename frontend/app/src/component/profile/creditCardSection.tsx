@@ -1,4 +1,3 @@
-// components/profile/CreditCardSection.tsx
 import React, { useState, useEffect, useCallback } from "react";
 import {
   Box,
@@ -93,9 +92,9 @@ const CreditCardSection: React.FC = () => {
           </Text>
           <Button
             size="sm"
+            colorScheme="orange"
             leftIcon={<FaEdit />}
             onClick={() => setIsModalOpen(true)}
-            variant="outline"
           >
             管理
           </Button>

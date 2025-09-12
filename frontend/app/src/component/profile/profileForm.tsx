@@ -252,7 +252,7 @@ const ProfileForm: FC<ProfileFormProps> = ({
                   aria-label="Upload photo"
                   icon={<FaCamera />}
                   size="sm"
-                  colorScheme="blue"
+                  colorScheme="orange"
                   position="absolute"
                   bottom={0}
                   right={0}
@@ -518,7 +518,7 @@ const ProfileForm: FC<ProfileFormProps> = ({
               <Button
                 size="lg"
                 isLoading={memorizeLoading}
-                colorScheme="blue"
+                colorScheme="orange"
                 onClick={storeFormDataHandler}
                 leftIcon={<FaSave />}
               >

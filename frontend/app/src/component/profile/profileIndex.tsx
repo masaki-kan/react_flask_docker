@@ -194,7 +194,7 @@ const ProfileIndex: FC<profileIndexType> = ({ editFormSwitch }) => {
                 aria-label="Edit profile"
                 icon={<FaEdit />}
                 size="sm"
-                colorScheme="blue"
+                colorScheme="orange"
                 position="absolute"
                 bottom={0}
                 right={0}
@@ -242,6 +242,7 @@ const ProfileIndex: FC<profileIndexType> = ({ editFormSwitch }) => {
               w="full"
               variant={"solid"}
               size="md"
+              colorScheme="orange"
               onClick={editFormSwitch}
               leftIcon={<FaEdit />}
             >
@@ -370,6 +371,7 @@ const ProfileIndex: FC<profileIndexType> = ({ editFormSwitch }) => {
               <Heading size="md">登録商品</Heading>
               <Button
                 size={"sm"}
+                colorScheme="orange"
                 hidden={memorizeProfile.items.length === 5}
                 leftIcon={<MdOutlineShoppingBag />}
                 onClick={toItemPushHandler}

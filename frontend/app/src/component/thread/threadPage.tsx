@@ -524,7 +524,7 @@ const ThreadPage: React.FC = () => {
             <IconButton
               aria-label="送信"
               icon={<IoSend />}
-              colorScheme="blue"
+              colorScheme="orange"
               size="md"
               onClick={handleSubmit}
               isLoading={posting}

@@ -388,6 +388,7 @@ const Home: FC = () => {
                     <Button
                       w="full"
                       size="lg"
+                      colorScheme="orange"
                       variant="solid"
                       onClick={tradeHandler}
                       _hover={{
