@@ -146,7 +146,8 @@ const AddCardForm: React.FC<{
         onSuccess();
       }
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "カードの追加に失敗しました";
+      const errorMessage =
+        error instanceof Error ? error.message : "カードの追加に失敗しました";
       toast({
         title: "エラー",
         description: errorMessage,
@@ -209,7 +210,7 @@ const AddCardForm: React.FC<{
         </Button>
         <Button
           type="submit"
-          colorScheme="blue"
+          colorScheme="orange"
           isLoading={isLoading}
           isDisabled={!stripe || !clientSecret}
           loadingText="処理中..."

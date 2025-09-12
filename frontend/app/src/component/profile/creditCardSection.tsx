@@ -133,7 +133,7 @@ const CreditCardSection: React.FC = () => {
             </Text>
             <Button
               size="sm"
-              colorScheme="blue"
+              colorScheme="orange"
               onClick={() => setIsModalOpen(true)}
             >
               カードを追加
