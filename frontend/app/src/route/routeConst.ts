@@ -6,6 +6,14 @@ export const route = {
   privacy: "/privacy", // プライバシーポリシー
   terms: "/terms", // 利用規約
 
+  // 管理者用
+  adminLogin: "/admin/login", // 管理者用 ログイン
+  adminDashboard: "/admin/dashboard", // 管理者ダッシュボード
+  adminUsers: "/admin/users", // ユーザー
+  adminUserItem: "admin/users/item", // アイテム
+  adminUserChat: "admin/users/chat", // チャット
+  adminThread: "admin/users/thread", //スレッド
+
   users: "/users",
   items: "/items",
   itemDetail: "/user/item",
@@ -24,6 +32,7 @@ export const route = {
 
 // パブリックルートのリスト（認証不要）
 export const PUBLIC_ROUTES = [
+  route.adminLogin,
   route.top,
   route.tokushoho,
   route.privacy,

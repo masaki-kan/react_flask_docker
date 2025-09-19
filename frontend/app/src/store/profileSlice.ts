@@ -4,6 +4,12 @@ import { itemListType } from "../types/itemType";
 import { exchangeArchive } from "../types/archiveTradeType";
 
 type initialStateType = {
+  adminProfile: {
+    id: string;
+    name: string;
+    email: string;
+    type: 0;
+  };
   profile: profileType;
   items: itemListType[];
   archive: exchangeArchive[];
@@ -15,6 +21,12 @@ type initialStateType = {
   };
 };
 const initialState: initialStateType = {
+  adminProfile: {
+    id: "",
+    name: "",
+    email: "",
+    type: 0,
+  },
   profile: {
     id: "",
     image: "",
@@ -69,12 +81,25 @@ export const profileSlice = createSlice({
       state.profile = initialState.profile; // 初期プロフィールにリセット
       state.items = initialState.items; // 初期アイテムリストにリセット
     },
+    deleteAdminProfile: (state) => {
+      state.adminProfile = initialState.adminProfile; // 初期プロフィールにリセット
+    },
     setLoginAfterProfile: (
       state,
       action: PayloadAction<{ profile: { id: string; name: string } }>
     ) => {
       state.profile = {
         ...state.profile,
+        id: action.payload.profile.id,
+        name: action.payload.profile.name,
+      };
+    },
+    setLoginAdminAfterProfile: (
+      state,
+      action: PayloadAction<{ profile: { id: string; name: string } }>
+    ) => {
+      state.adminProfile = {
+        ...state.adminProfile,
         id: action.payload.profile.id,
         name: action.payload.profile.name,
       };
@@ -94,6 +119,8 @@ export const {
   deleteProfile,
   setLoginAfterProfile,
   setProfileArchives,
+  setLoginAdminAfterProfile,
+  deleteAdminProfile,
   setUserArchives,
 } = profileSlice.actions;
 

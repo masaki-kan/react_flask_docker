@@ -2,15 +2,26 @@ import { createContext, useContext } from "react";
 
 interface AuthContextType {
   isLoggedIn: boolean;
-  login: (user: string, token: string, userId: string) => void;
+  isAdminLoggedIn: boolean;
+  login: (user: string, token: string, userId: string, type: string) => void;
+  adminLogin: (
+    user: string,
+    token: string,
+    userId: string,
+    type: string
+  ) => void;
   logout: () => void;
+  adminLogout: () => void;
 }
 
 // 初期値を設定して AuthContext を作成
 const AuthContext = createContext<AuthContextType>({
   isLoggedIn: false,
+  isAdminLoggedIn: false,
+  adminLogin: () => {},
   login: () => {},
   logout: () => {},
+  adminLogout: () => {},
 });
 
 // Context を使用するためのカスタムフック

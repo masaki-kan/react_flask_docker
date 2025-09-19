@@ -475,7 +475,7 @@ const ItemForm: FC<ItemFormProps> = ({ profileItem, ItemNumver }) => {
           <Button
             leftIcon={<FaSave />}
             isLoading={memorizeLoading}
-            colorScheme="blackAlpha"
+            colorScheme="orange"
             size="md"
             onClick={storeItemsHandler}
             loadingText="登録中..."

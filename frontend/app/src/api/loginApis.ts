@@ -6,6 +6,8 @@ export interface LoginSuccessResponse {
   token: string;
   username: string;
   userId: string;
+  email: string;
+  type: string;
 }
 
 export interface LoginErrorResponse {
@@ -48,6 +50,8 @@ export const loginApi = async (formdata: {
         token: response.data.access_token,
         username: response.data.username,
         userId: response.data.user_id,
+        email: response.data.email,
+        type: response.data.type,
       },
     };
   } catch (error: unknown) {

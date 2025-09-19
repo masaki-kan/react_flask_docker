@@ -151,11 +151,7 @@ const ProfileIndex: FC<profileIndexType> = ({ editFormSwitch }) => {
   }, [navigate]);
 
   return (
-    <Grid
-      templateColumns={{ base: "1fr", lg: "350px 1fr" }}
-      gap={4}
-      pb={"50px"}
-    >
+    <Grid templateColumns={{ base: "1fr", lg: "350px 1fr" }} gap={2}>
       {/* 左サイドバー - プロフィール情報 */}
       <GridItem>
         <Box

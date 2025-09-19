@@ -1,11 +1,12 @@
 import { FC } from "react";
-import MainHeader from "../layout/mainHeader";
+import MainAdminHeader from "./mainAdminHeader";
 import { Outlet, useLocation } from "react-router-dom";
 import { Box, Container } from "@chakra-ui/react";
-import Footer from "../layout/footer";
+import Footer from "./footer";
 import { route } from "../../route/routeConst";
+// import { useAuth } from "../../provider/authContext";
 
-const SecureLayout: FC = () => {
+const SecureAdminLayout: FC = () => {
   const location = useLocation();
 
   return (
@@ -28,7 +29,7 @@ const SecureLayout: FC = () => {
         borderBottom="1px solid"
         borderColor="gray.200"
       >
-        <MainHeader />
+        <MainAdminHeader />
       </Box>
 
       {/* メインコンテンツ（スクロール可能） */}
@@ -92,7 +93,7 @@ const SecureLayout: FC = () => {
       </Box>
 
       {/* フッター（プロフィールページのみ固定表示） */}
-      {location.pathname === route.profile && (
+      {location.pathname === route.adminDashboard && (
         <Box
           position="fixed"
           bottom={0}
@@ -111,4 +112,4 @@ const SecureLayout: FC = () => {
   );
 };
 
-export default SecureLayout;
+export default SecureAdminLayout;

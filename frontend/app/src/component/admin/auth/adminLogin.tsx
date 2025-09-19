@@ -8,9 +8,7 @@ import {
   Text,
   Box,
   HStack,
-  Divider,
   Button,
-  Link,
   Alert,
   AlertIcon,
   AlertDescription,
@@ -19,10 +17,10 @@ import {
   Container,
 } from "@chakra-ui/react";
 import { motion } from "framer-motion";
-import { route } from "../../route/routeConst";
+import { route } from "../../../route/routeConst";
 import { useNavigate } from "react-router-dom";
-import { loginApi, getLoginErrorMessage } from "../../api/loginApis";
-import { useAuth } from "../../provider/authContext";
+import { loginApi, getLoginErrorMessage } from "../../../api/loginApis";
+import { useAuth } from "../../../provider/authContext";
 
 interface ErrorState {
   emailError: string;
@@ -34,8 +32,8 @@ interface loginFormType {
   password: string;
 }
 
-const LoginForm: FC = () => {
-  const { isLoggedIn, login } = useAuth();
+const AdminLogin: FC = () => {
+  const { isAdminLoggedIn, adminLogin } = useAuth();
   const navigate = useNavigate();
 
   const [isLoading, setIsLoading] = useState(false);
@@ -50,11 +48,13 @@ const LoginForm: FC = () => {
     password: "",
   });
 
+  console.log("isAdminLoggedIn", isAdminLoggedIn);
+
   useEffect(() => {
-    if (isLoggedIn) {
-      navigate(route.profile);
+    if (isAdminLoggedIn) {
+      navigate(route.adminDashboard);
     }
-  }, [isLoggedIn, navigate]);
+  }, [isAdminLoggedIn, navigate]);
 
   // ログインエラーが設定されたら表示する
   useEffect(() => {
@@ -90,13 +90,13 @@ const LoginForm: FC = () => {
       // ログインAPI実行
       const response = await loginApi(form);
       if (response && response.success) {
-        login(
+        adminLogin(
           response.data.username,
           response.data.token,
           response.data.userId,
           response.data.type
         );
-        navigate(route.profile);
+        navigate(route.adminDashboard);
         return;
       } else {
         // ログイン失敗（401エラーなど）
@@ -109,7 +109,7 @@ const LoginForm: FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [form, login, navigate]);
+  }, [form, adminLogin, navigate]);
 
   const validatePassword = (password: string): boolean => {
     return /^[a-zA-Z0-9]+$/.test(password) && password.length <= 16;
@@ -192,11 +192,8 @@ const LoginForm: FC = () => {
                 fontWeight="bold"
                 textAlign="center"
               >
-                おかえりなさい
+                管理者専用
               </Heading>
-              <Text color="gray.600" fontSize="sm" textAlign="center">
-                僕らのヴィンテージへようこそ
-              </Text>
             </VStack>
 
             <Box w={{ md: "100%", base: "90%" }} px={6} margin="auto">
@@ -344,53 +341,6 @@ const LoginForm: FC = () => {
                     ログイン
                   </Button>
                 </Box>
-
-                <VStack spacing={3} pt={2}>
-                  {/* <Link
-                color="#887563"
-                fontSize="sm"
-                _hover={{
-                  color: "#76654f",
-                  textDecoration: "underline",
-                }}
-                transition="color 0.2s"
-              >
-                パスワードをお忘れですか？
-              </Link> */}
-
-                  <Divider borderColor="gray.200" />
-
-                  {/* <Text fontSize="sm" color="gray.600">
-                    アカウントをお持ちでない方は{" "}
-                    <Button
-                      variant="link"
-                      colorScheme="orange"
-                      size="sm"
-                      onClick={() => {
-                        navigate(route.singUp);
-                      }}
-                    >
-                      新規登録へ
-                    </Button>
-                  </Text> */}
-                  <Text fontSize="sm" color="gray.600">
-                    <Link
-                      color="#887563"
-                      fontWeight="medium"
-                      ml={1}
-                      _hover={{
-                        color: "#76654f",
-                        textDecoration: "underline",
-                      }}
-                      onClick={() => {
-                        navigate(route.top);
-                      }}
-                      transition="color 0.2s"
-                    >
-                      戻る
-                    </Link>
-                  </Text>
-                </VStack>
               </VStack>
             </Box>
           </VStack>
@@ -400,4 +350,4 @@ const LoginForm: FC = () => {
   );
 };
 
-export default LoginForm;
+export default AdminLogin;

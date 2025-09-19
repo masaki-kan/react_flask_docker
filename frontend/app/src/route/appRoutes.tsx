@@ -23,6 +23,9 @@ import Login from "../component/login/loginForm";
 import SingUp from "../component/sinUp/singUpForm";
 import { useAuth } from "../provider/authContext";
 import CheckReactivationstatus from "../component/checkReactivationstatus/checkReactivationstatus";
+import AdminLogin from "../component/admin/auth/adminLogin";
+import AdminDashboard from "../component/admin/dashboard/Dashboard";
+import SecureAdminLayout from "../component/layout/secureAdminLayout";
 
 // 認証が必要なルートのラッパーコンポーネント
 const ProtectedLayout = () => {
@@ -35,6 +38,21 @@ const ProtectedLayout = () => {
   }
 
   return <SecureLayout />;
+};
+
+// 管理者用 認証が必要なルートのラッパーコンポーネント
+const AdminProtectedLayout = () => {
+  const { isAdminLoggedIn } = useAuth();
+  const location = useLocation();
+
+  // 未ログインの場合はログインページへリダイレクト
+  if (!isAdminLoggedIn) {
+    return (
+      <Navigate to={route.adminLogin} state={{ from: location }} replace />
+    );
+  }
+
+  return <SecureAdminLayout />;
 };
 
 const AppRoutes: FC = () => {
@@ -52,11 +70,16 @@ const AppRoutes: FC = () => {
       <Routes>
         {/* パブリックルート */}
         <Route element={<PublicLayout />}>
+          <Route path={route.adminLogin} element={<AdminLogin />} />
           <Route path={route.top} element={<Top />} />
           <Route path={route.login} element={<Login />} />
           <Route path={route.singUp} element={<SingUp />} />
           <Route path={route.tokushoho} element={<TokushohoPage />} />
-          {/* 他の公開ページもここに追加できます */}
+        </Route>
+
+        {/** 管理者用認証ルート */}
+        <Route element={<AdminProtectedLayout />}>
+          <Route path={route.adminDashboard} element={<AdminDashboard />} />
         </Route>
 
         {/* 認証が必要なルート（プロテクテッドルート） */}

@@ -1,9 +1,10 @@
 from flask import Blueprint, jsonify, request
-from flask_jwt_extended import create_access_token
+from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity, get_jwt
 from werkzeug.security import generate_password_hash, check_password_hash
 from utils.db_utils import get_db_connection
 from utils.email_utils import send_welcome_email
 import mysql.connector
+from datetime import datetime, timedelta
 
 auth_bp = Blueprint('auth', __name__, url_prefix='/api')
 
@@ -147,3 +148,155 @@ def sign_up():
             "error": "アカウント登録中にエラーが発生しました",
             "result": False
         }), 500
+
+# トークンリフレッシュ
+@auth_bp.route('/auth/refresh', methods=['POST'])
+@jwt_required()
+def refresh_token():
+    """
+    ユーザートークンをリフレッシュする
+    """
+    try:
+        current_user_email = get_jwt_identity()
+        current_claims = get_jwt()
+        
+        # データベースからユーザー情報を再取得して有効性を確認
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT user_id, name, email, type, is_deleted
+                FROM users 
+                WHERE email = %s
+            """, (current_user_email,))
+            user_data = cursor.fetchone()
+            
+            # ユーザーが存在しない、または退会済みの場合
+            if not user_data or user_data[4]:
+                return jsonify({
+                    'success': False,
+                    'message': 'ユーザーが無効です'
+                }), 401
+            
+            # 新しいアクセストークンを生成
+            new_access_token = create_access_token(
+                identity=current_user_email,
+                additional_claims={
+                    'user_id': user_data[0],
+                    'user_type': user_data[3],
+                    'refresh_time': datetime.utcnow().isoformat()
+                }
+            )
+            
+            return jsonify({
+                'success': True,
+                'data': {
+                    'token': new_access_token,
+                    'user_id': user_data[0],
+                    'username': user_data[1],
+                    'email': user_data[2],
+                    'type': user_data[3]
+                }
+            }), 200
+            
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': 'トークンリフレッシュに失敗しました'
+        }), 500
+
+# 管理者トークンリフレッシュ
+@auth_bp.route('/admin/auth/refresh', methods=['POST'])
+@jwt_required()
+def refresh_admin_token():
+    """
+    管理者トークンをリフレッシュする
+    """
+    try:
+        current_user_email = get_jwt_identity()
+        current_claims = get_jwt()
+        
+        # データベースから管理者情報を再取得して有効性を確認
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT user_id, name, email, type, is_deleted
+                FROM users 
+                WHERE email = %s AND type = 'admin'
+            """, (current_user_email,))
+            admin_data = cursor.fetchone()
+            
+            # 管理者が存在しない、退会済み、または管理者権限がない場合
+            if not admin_data or admin_data[4] or admin_data[3] != 'admin':
+                return jsonify({
+                    'success': False,
+                    'message': '管理者権限が無効です'
+                }), 401
+            
+            # 新しい管理者アクセストークンを生成
+            new_access_token = create_access_token(
+                identity=current_user_email,
+                additional_claims={
+                    'user_id': admin_data[0],
+                    'user_type': 'admin',
+                    'refresh_time': datetime.utcnow().isoformat()
+                }
+            )
+            
+            return jsonify({
+                'success': True,
+                'data': {
+                    'token': new_access_token,
+                    'user_id': admin_data[0],
+                    'username': admin_data[1],
+                    'email': admin_data[2],
+                    'type': admin_data[3]
+                }
+            }), 200
+            
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': '管理者トークンリフレッシュに失敗しました'
+        }), 500
+
+# トークン検証エンドポイント
+@auth_bp.route('/auth/verify', methods=['POST'])
+@jwt_required()
+def verify_token():
+    """
+    トークンの有効性を検証する
+    """
+    try:
+        current_user_email = get_jwt_identity()
+        current_claims = get_jwt()
+        
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT user_id, name, email, type, is_deleted
+                FROM users 
+                WHERE email = %s
+            """, (current_user_email,))
+            user_data = cursor.fetchone()
+            
+            if not user_data or user_data[4]:
+                return jsonify({
+                    'valid': False,
+                    'message': 'ユーザーが無効です'
+                }), 401
+            
+            return jsonify({
+                'valid': True,
+                'user': {
+                    'user_id': user_data[0],
+                    'username': user_data[1],
+                    'email': user_data[2],
+                    'type': user_data[3]
+                }
+            }), 200
+            
+    except Exception as e:
+        return jsonify({
+            'valid': False,
+            'message': 'トークン検証に失敗しました'
+        }), 401

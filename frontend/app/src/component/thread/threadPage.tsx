@@ -327,7 +327,7 @@ const ThreadPage: React.FC = () => {
         bg={bgColor}
         borderBottom="1px"
         borderColor={borderColor}
-        p={3}
+        p={1}
         mb={2}
         zIndex={100}
         borderRadius="md"
@@ -367,7 +367,7 @@ const ThreadPage: React.FC = () => {
           ref={scrollContainerRef}
           flex="1"
           overflowY="auto"
-          p={4}
+          p={2}
           bg="gray.50"
           css={{
             "&::-webkit-scrollbar": {
@@ -392,7 +392,7 @@ const ThreadPage: React.FC = () => {
                   <Box
                     key={msg.thread_message_id}
                     bg={bgColor}
-                    p={3}
+                    p={1}
                     borderRadius="lg"
                     boxShadow="sm"
                   >
