@@ -48,8 +48,6 @@ const AdminLogin: FC = () => {
     password: "",
   });
 
-  console.log("isAdminLoggedIn", isAdminLoggedIn);
-
   useEffect(() => {
     if (isAdminLoggedIn) {
       navigate(route.adminDashboard);

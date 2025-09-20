@@ -72,6 +72,7 @@ def login():
                     'error': 'メールアドレスまたはパスワードが正しくありません'
                 }), 200
        
+            # ここでemailをトークンに埋め込む
             access_token = create_access_token(identity=email)
             response = jsonify({
                 'login': True,
@@ -79,7 +80,7 @@ def login():
                 "user_id": user_data[0],
                 "username": user_data[1],
                 "email": user_data[3],
-                "type": user_data[4]  # 管理者判定用
+                "type": 'admin' if user_data[4] == 0 else 'user'  # INT型を文字列に変換
             })
             response.set_cookie('access_token', access_token, httponly=True, secure=True)
 
@@ -151,12 +152,13 @@ def sign_up():
 
 # トークンリフレッシュ
 @auth_bp.route('/auth/refresh', methods=['POST'])
-@jwt_required()
+@jwt_required()  # ← ここでトークンをデコード
 def refresh_token():
     """
     ユーザートークンをリフレッシュする
     """
     try:
+        # get_jwt_identity()はトークンのpayload.subを取得
         current_user_email = get_jwt_identity()
         current_claims = get_jwt()
         
@@ -194,7 +196,7 @@ def refresh_token():
                     'user_id': user_data[0],
                     'username': user_data[1],
                     'email': user_data[2],
-                    'type': user_data[3]
+                    'type': 'admin' if user_data[3] == 0 else 'user'  # INT型を文字列に変換
                 }
             }), 200
             
@@ -221,12 +223,12 @@ def refresh_admin_token():
             cursor.execute("""
                 SELECT user_id, name, email, type, is_deleted
                 FROM users 
-                WHERE email = %s AND type = 'admin'
+                WHERE email = %s AND type = 0
             """, (current_user_email,))
             admin_data = cursor.fetchone()
             
             # 管理者が存在しない、退会済み、または管理者権限がない場合
-            if not admin_data or admin_data[4] or admin_data[3] != 'admin':
+            if not admin_data or admin_data[4] or admin_data[3] != 0:
                 return jsonify({
                     'success': False,
                     'message': '管理者権限が無効です'
@@ -249,7 +251,7 @@ def refresh_admin_token():
                     'user_id': admin_data[0],
                     'username': admin_data[1],
                     'email': admin_data[2],
-                    'type': admin_data[3]
+                    'type': 'admin' if admin_data[3] == 0 else 'user'  # INT型を文字列に変換
                 }
             }), 200
             
@@ -300,3 +302,9 @@ def verify_token():
             'valid': False,
             'message': 'トークン検証に失敗しました'
         }), 401
+
+# ユーザープロフィール取得は profile.py に移動済み
+# このエンドポイントは重複を避けるため削除
+
+# 管理者プロフィール取得は profile.py に移動済み
+# このエンドポイントは重複を避けるため削除

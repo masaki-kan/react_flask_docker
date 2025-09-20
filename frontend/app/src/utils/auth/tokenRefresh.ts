@@ -1,8 +1,8 @@
-import { TokenManager, getTokenTimeRemaining } from './tokenUtils';
+import { TokenManager, getTokenTimeRemaining } from "./tokenUtils";
 
 /**
  * トークンリフレッシュ機能
- * ※バックエンドのリフレッシュAPI実装が必要
+ *
  */
 
 // リフレッシュAPIレスポンスの型
@@ -20,36 +20,33 @@ interface RefreshResponse {
  */
 export async function refreshUserToken(): Promise<boolean> {
   try {
-    const { token } = TokenManager.getUserTokens();
+    const token = TokenManager.getUserToken();
     if (!token) return false;
 
     // TODO: バックエンドのリフレッシュAPIエンドポイントを実装
-    const response = await fetch('/api/auth/refresh', {
-      method: 'POST',
+    const response = await fetch("/api/auth/refresh", {
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
       },
     });
 
     if (!response.ok) {
-      throw new Error('Token refresh failed');
+      throw new Error("Token refresh failed");
     }
 
     const data: RefreshResponse = await response.json();
 
     if (data.success && data.data?.token) {
-      // 新しいトークンで既存の情報を更新
-      const { username, userId } = TokenManager.getUserTokens();
-      if (username && userId) {
-        TokenManager.saveUserTokens(username, data.data.token, userId, 'user');
-        return true;
-      }
+      // 新しいトークンを保存
+      TokenManager.saveUserToken(data.data.token);
+      return true;
     }
 
     return false;
   } catch (error) {
-    console.error('Token refresh error:', error);
+    console.error("Token refresh error:", error);
     return false;
   }
 }
@@ -59,36 +56,33 @@ export async function refreshUserToken(): Promise<boolean> {
  */
 export async function refreshAdminToken(): Promise<boolean> {
   try {
-    const { token } = TokenManager.getAdminTokens();
+    const token = TokenManager.getAdminToken();
     if (!token) return false;
 
     // TODO: バックエンドの管理者リフレッシュAPIエンドポイントを実装
-    const response = await fetch('/api/admin/auth/refresh', {
-      method: 'POST',
+    const response = await fetch("/api/admin/auth/refresh", {
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
       },
     });
 
     if (!response.ok) {
-      throw new Error('Admin token refresh failed');
+      throw new Error("Admin token refresh failed");
     }
 
     const data: RefreshResponse = await response.json();
 
     if (data.success && data.data?.token) {
-      // 新しいトークンで既存の情報を更新
-      const { username, userId } = TokenManager.getAdminTokens();
-      if (username && userId) {
-        TokenManager.saveAdminTokens(username, data.data.token, userId, 'admin');
-        return true;
-      }
+      // 新しい管理者トークンを保存
+      TokenManager.saveAdminToken(data.data.token);
+      return true;
     }
 
     return false;
   } catch (error) {
-    console.error('Admin token refresh error:', error);
+    console.error("Admin token refresh error:", error);
     return false;
   }
 }
@@ -106,7 +100,7 @@ export function shouldRefreshToken(token: string): boolean {
  * ユーザートークンの自動リフレッシュ
  */
 export async function autoRefreshUserToken(): Promise<boolean> {
-  const { token } = TokenManager.getUserTokens();
+  const token = TokenManager.getUserToken();
   if (!token) return false;
 
   if (shouldRefreshToken(token)) {
@@ -120,7 +114,7 @@ export async function autoRefreshUserToken(): Promise<boolean> {
  * 管理者トークンの自動リフレッシュ
  */
 export async function autoRefreshAdminToken(): Promise<boolean> {
-  const { token } = TokenManager.getAdminTokens();
+  const token = TokenManager.getAdminToken();
   if (!token) return false;
 
   if (shouldRefreshToken(token)) {

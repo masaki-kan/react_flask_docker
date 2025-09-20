@@ -6,10 +6,164 @@ import json
 from utils.image_utils import s3_client ,upload_image_to_s3
 from werkzeug.utils import secure_filename
 import uuid
+from flask_jwt_extended import jwt_required, get_jwt_identity
 
 UPLOAD_FOLDER = os.path.join(os.getcwd(), 'uploads') 
 
 profile_bp = Blueprint('profile', __name__, url_prefix='/api')
+
+# JWT認証済みユーザープロフィール取得
+@profile_bp.route('/user/profile', methods=['GET'])
+@jwt_required()
+def get_authenticated_user_profile():
+    """
+    JWT認証済みユーザーのプロフィール情報を取得
+    """
+    try:
+        current_user_email = get_jwt_identity()
+        
+        with get_db_connection() as conn:
+            cursor = conn.cursor(dictionary=True)
+            cursor.execute("""
+                SELECT user_id, name, email, type, plan, location, age, old, shop_name, shop_url, reasen, created_at, is_deleted
+                FROM users 
+                WHERE email = %s
+            """, (current_user_email,))
+            user_data = cursor.fetchone()
+            
+            if not user_data or user_data['is_deleted']:
+                return jsonify({
+                    'success': False,
+                    'message': 'ユーザーが見つかりません'
+                }), 404
+            
+            # プロフィール画像を取得
+            cursor.execute("""
+                SELECT image_url 
+                FROM profile_images 
+                WHERE user_id = %s 
+                ORDER BY uploaded_at DESC 
+                LIMIT 1
+            """, (user_data['user_id'],))
+            image_data = cursor.fetchone()
+            
+            # タグを取得
+            cursor.execute("""
+                SELECT tag 
+                FROM tags 
+                WHERE user_id = %s
+            """, (user_data['user_id'],))
+            tag_data = cursor.fetchone()
+            
+            # レスポンス用データ構築
+            profile_data = {
+                'user_id': user_data['user_id'],
+                'name': user_data['name'],
+                'email': user_data['email'],
+                'type': 'admin' if user_data['type'] == 0 else 'user',  # INT型を文字列に変換
+                'plan': user_data['plan'],
+                'location': user_data['location'],
+                'age': user_data['age'],
+                'old': user_data['old'],
+                'shop_name': user_data['shop_name'],
+                'shop_url': user_data['shop_url'],
+                'reasen': user_data['reasen'],
+                'profile_image': image_data['image_url'] if image_data else None,
+                'created_at': user_data['created_at'].isoformat() if user_data['created_at'] else None,
+            }
+            
+            # タグの処理
+            if tag_data and tag_data['tag']:
+                try:
+                    profile_data['tags'] = json.loads(tag_data['tag'])
+                except:
+                    profile_data['tags'] = []
+            else:
+                profile_data['tags'] = []
+            
+            return jsonify({
+                'success': True,
+                'profile': profile_data
+            }), 200
+            
+    except mysql.connector.Error as err:
+        return jsonify({
+            'success': False,
+            'message': 'データベースエラーが発生しました'
+        }), 500
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': 'プロフィール取得に失敗しました'
+        }), 500
+
+# JWT認証済み管理者プロフィール取得
+@profile_bp.route('/admin/profile', methods=['GET'])
+@jwt_required()
+def get_authenticated_admin_profile():
+    """
+    JWT認証済み管理者のプロフィール情報を取得
+    """
+    try:
+        current_user_email = get_jwt_identity()
+        
+        with get_db_connection() as conn:
+            cursor = conn.cursor(dictionary=True)
+            cursor.execute("""
+                SELECT user_id, name, email, type, plan, location, age, old, shop_name, shop_url, reasen, created_at, is_deleted
+                FROM users 
+                WHERE email = %s AND type = 0
+            """, (current_user_email,))
+            admin_data = cursor.fetchone()
+            
+            if not admin_data or admin_data['is_deleted'] or admin_data['type'] != 0:
+                return jsonify({
+                    'success': False,
+                    'message': '管理者が見つかりません'
+                }), 404
+            
+            # プロフィール画像を取得
+            cursor.execute("""
+                SELECT image_url 
+                FROM profile_images 
+                WHERE user_id = %s 
+                ORDER BY uploaded_at DESC 
+                LIMIT 1
+            """, (admin_data['user_id'],))
+            image_data = cursor.fetchone()
+            
+            # レスポンス用データ構築
+            profile_data = {
+                'user_id': admin_data['user_id'],
+                'name': admin_data['name'],
+                'email': admin_data['email'],
+                'type': 'admin' if admin_data['type'] == 0 else 'user',  # INT型を文字列に変換
+                'plan': admin_data['plan'],
+                'location': admin_data['location'],
+                'age': admin_data['age'],
+                'old': admin_data['old'],
+                'shop_name': admin_data['shop_name'],
+                'shop_url': admin_data['shop_url'],
+                'reasen': admin_data['reasen'],
+                'profile_image': image_data['image_url'] if image_data else None,
+                'created_at': admin_data['created_at'].isoformat() if admin_data['created_at'] else None,
+            }
+            
+            return jsonify({
+                'success': True,
+                'profile': profile_data
+            }), 200
+            
+    except mysql.connector.Error as err:
+        return jsonify({
+            'success': False,
+            'message': 'データベースエラーが発生しました'
+        }), 500
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': '管理者プロフィール取得に失敗しました'
+        }), 500
 
 # プロフィール取得
 @profile_bp.route('/getProfile', methods=['GET'])

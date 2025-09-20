@@ -8,62 +8,70 @@ import {
   deleteAdminProfile,
 } from "../store/profileSlice";
 import { TokenManager } from "../utils/auth/tokenUtils";
+import { useUserProfile } from "../hooks/useUserProfile";
 
 const AuthProvider: FC<{ children: React.ReactNode }> = ({ children }) => {
   const dispatch = useDispatch();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isAdminLoggedIn, setAdminIsLoggedIn] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const { autoFetchProfile, resetProfile } = useUserProfile();
 
   // 初回マウント時にトークンをチェック
   useEffect(() => {
-    // 通常ユーザーのトークンチェック（有効性も含めて）
-    if (TokenManager.isValidUserToken()) {
-      const { token, username, userId } = TokenManager.getUserTokens();
-      if (token && username && userId) {
+    const initializeAuth = async () => {
+      // 通常ユーザーのトークンチェック（有効性も含めて）
+      if (TokenManager.isValidUserToken()) {
         setIsLoggedIn(true);
-        dispatch(
-          setLoginAfterProfile({
-            profile: {
-              id: userId,
-              name: username,
-            },
-          })
-        );
+        // プロフィール情報はAPIから取得
+        const profile = await autoFetchProfile();
+        if (profile) {
+          dispatch(
+            setLoginAfterProfile({
+              profile: {
+                id: profile.user_id.toString(),
+                name: profile.name,
+              },
+            })
+          );
+        }
+      } else {
+        // 無効なトークンは削除
+        TokenManager.clearUserToken();
       }
-    } else {
-      // 無効なトークンは削除
-      TokenManager.clearUserTokens();
-    }
 
-    // 管理者のトークンチェック（有効性も含めて）
-    if (TokenManager.isValidAdminToken()) {
-      const { token, username, userId } = TokenManager.getAdminTokens();
-      if (token && username && userId) {
+      // 管理者のトークンチェック（有効性も含めて）
+      if (TokenManager.isValidAdminToken()) {
         setAdminIsLoggedIn(true);
-        dispatch(
-          setLoginAdminAfterProfile({
-            profile: {
-              id: userId,
-              name: username,
-            },
-          })
-        );
+        // 管理者プロフィール情報はAPIから取得
+        const adminProfile = await autoFetchProfile();
+        if (adminProfile) {
+          dispatch(
+            setLoginAdminAfterProfile({
+              profile: {
+                id: adminProfile.user_id.toString(),
+                name: adminProfile.name,
+              },
+            })
+          );
+        }
+      } else {
+        // 無効なトークンは削除
+        TokenManager.clearAdminToken();
       }
-    } else {
-      // 無効なトークンは削除
-      TokenManager.clearAdminTokens();
-    }
 
-    setIsLoading(false);
-  }, [dispatch]);
+      setIsLoading(false);
+    };
+
+    initializeAuth();
+  }, [dispatch, autoFetchProfile]);
 
   const login = useCallback(
-    (user: string, token: string, userId: string, type: string) => {
-      // セキュアストレージに保存
-      TokenManager.saveUserTokens(user, token, userId, type);
+    async (user: string, token: string, userId: string) => {
+      // トークンのみ保存
+      TokenManager.saveUserToken(token);
 
-      // Reduxストアに保存
+      // Reduxストアに基本情報保存
       dispatch(
         setLoginAfterProfile({
           profile: {
@@ -75,16 +83,19 @@ const AuthProvider: FC<{ children: React.ReactNode }> = ({ children }) => {
 
       // ログイン状態を更新
       setIsLoggedIn(true);
+
+      // プロフィール情報をAPIから取得
+      await autoFetchProfile();
     },
-    [dispatch]
+    [dispatch, autoFetchProfile]
   );
 
   const adminLogin = useCallback(
-    (user: string, token: string, userId: string, type: string) => {
-      // セキュアストレージに保存
-      TokenManager.saveAdminTokens(user, token, userId, type);
+    async (user: string, token: string, userId: string) => {
+      // 管理者トークンのみ保存
+      TokenManager.saveAdminToken(token);
 
-      // Reduxストアに保存
+      // Reduxストアに基本情報保存
       dispatch(
         setLoginAdminAfterProfile({
           profile: {
@@ -96,31 +107,40 @@ const AuthProvider: FC<{ children: React.ReactNode }> = ({ children }) => {
 
       // ログイン状態を更新
       setAdminIsLoggedIn(true);
+
+      // 管理者プロフィール情報をAPIから取得
+      await autoFetchProfile();
     },
-    [dispatch]
+    [dispatch, autoFetchProfile]
   );
 
   const logout = useCallback(() => {
-    // セキュアストレージから削除
-    TokenManager.clearUserTokens();
+    // トークンを削除
+    TokenManager.clearUserToken();
+
+    // プロフィール情報をリセット
+    resetProfile();
 
     // Reduxストアから削除
     dispatch(deleteProfile());
 
     // ログイン状態を更新
     setIsLoggedIn(false);
-  }, [dispatch]);
+  }, [dispatch, resetProfile]);
 
   const adminLogout = useCallback(() => {
-    // セキュアストレージから削除
-    TokenManager.clearAdminTokens();
+    // 管理者トークンを削除
+    TokenManager.clearAdminToken();
+
+    // プロフィール情報をリセット
+    resetProfile();
 
     // Reduxストアから削除
     dispatch(deleteAdminProfile());
 
     // ログイン状態を更新
     setAdminIsLoggedIn(false);
-  }, [dispatch]);
+  }, [dispatch, resetProfile]);
 
   // ローディング中は何も表示しない
   if (isLoading) {
