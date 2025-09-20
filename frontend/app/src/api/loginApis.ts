@@ -44,18 +44,61 @@ export const loginApi = async (formdata: {
       formdata
     );
 
-    return {
-      success: true,
-      data: {
-        token: response.data.access_token,
-        username: response.data.username,
-        userId: response.data.user_id,
-        email: response.data.email,
-        type: response.data.type,
-      },
-    };
+    // バックエンドのloginフィールドをチェック
+    if (response.data.login === true) {
+      return {
+        success: true,
+        data: {
+          token: response.data.access_token,
+          username: response.data.username,
+          userId: response.data.user_id,
+          email: response.data.email,
+          type: response.data.type,
+        },
+      };
+    } else {
+      // ログイン失敗の場合
+      return {
+        success: false,
+        error: response.data.error || "ログインに失敗しました",
+      };
+    }
   } catch (error: unknown) {
     return createErrorResponse(error, "ログインに失敗しました");
+  }
+};
+
+export const adminLoginApi = async (formdata: {
+  email: string;
+  password: string;
+}): Promise<ApiResponse<LoginSuccessResponse>> => {
+  try {
+    const response = await axios.post(
+      `${import.meta.env.VITE_API_URL}/api/admin/login`,
+      formdata
+    );
+
+    // バックエンドのloginフィールドをチェック
+    if (response.data.login === true) {
+      return {
+        success: true,
+        data: {
+          token: response.data.access_token,
+          username: response.data.username,
+          userId: response.data.user_id,
+          email: response.data.email,
+          type: response.data.type,
+        },
+      };
+    } else {
+      // ログイン失敗の場合
+      return {
+        success: false,
+        error: response.data.error || "管理者ログインに失敗しました",
+      };
+    }
+  } catch (error: unknown) {
+    return createErrorResponse(error, "管理者ログインに失敗しました");
   }
 };
 

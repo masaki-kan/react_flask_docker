@@ -19,7 +19,7 @@ import {
 import { motion } from "framer-motion";
 import { route } from "../../../route/routeConst";
 import { useNavigate } from "react-router-dom";
-import { loginApi, getLoginErrorMessage } from "../../../api/loginApis";
+import { adminLoginApi, getLoginErrorMessage } from "../../../api/loginApis";
 import { useAuth } from "../../../provider/authContext";
 
 interface ErrorState {
@@ -85,8 +85,8 @@ const AdminLogin: FC = () => {
     }
 
     try {
-      // ログインAPI実行
-      const response = await loginApi(form);
+      // 管理者ログインAPI実行
+      const response = await adminLoginApi(form);
       if (response && response.success) {
         adminLogin(
           response.data.username,
@@ -97,8 +97,8 @@ const AdminLogin: FC = () => {
         navigate(route.adminDashboard);
         return;
       } else {
-        // ログイン失敗（401エラーなど）
-        setLoginError("メールアドレスまたはパスワードが正しくありません");
+        // ログイン失敗（バックエンドからのエラーメッセージを使用）
+        setLoginError(response?.error || "メールアドレスまたはパスワードが正しくありません");
       }
     } catch (error) {
       // APIエラーメッセージを取得

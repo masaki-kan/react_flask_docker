@@ -34,7 +34,57 @@ def login_check():
             "result": False
         }), 500
 
-# ログイン
+# 管理者ログイン
+@auth_bp.route('/admin/login', methods=['POST'])
+def admin_login():
+    email = request.json.get('email', None)
+    password = request.json.get('password', None)
+
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT user_id, name, password, email, type
+                FROM users 
+                WHERE email = %s AND type = 0
+            """, (email,))
+            admin_data = cursor.fetchone()
+            
+            # 管理者が存在しない場合
+            if not admin_data:
+                return jsonify({
+                    'login': False,
+                    'error': 'メールアドレスまたはパスワードが正しくありません'
+                }), 200
+
+            # パスワードの確認
+            if not check_password_hash(admin_data[2], password):
+                return jsonify({
+                    'login': False,
+                    'error': 'メールアドレスまたはパスワードが正しくありません'
+                }), 200
+       
+            # 管理者用トークン生成
+            access_token = create_access_token(identity=email)
+            response = jsonify({
+                'login': True,
+                "access_token": access_token,
+                "user_id": admin_data[0],
+                "username": admin_data[1],
+                "email": admin_data[3],
+                "type": "admin"
+            })
+            response.set_cookie('access_token', access_token, httponly=True, secure=True)
+
+            return response, 200
+
+    except mysql.connector.Error as err:
+        return jsonify({
+            "error": "管理者ログイン中にエラーが発生しました",
+            "result": False
+        }), 500
+
+# ユーザーログイン
 @auth_bp.route('/login', methods=['POST'])
 def login():
     email = request.json.get('email', None)
@@ -46,7 +96,7 @@ def login():
             cursor.execute("""
                 SELECT user_id, name, password, email, type
                 FROM users 
-                WHERE email = %s
+                WHERE email = %s AND type = 1
             """, (email,))
             user_data = cursor.fetchone()
             
@@ -80,7 +130,7 @@ def login():
                 "user_id": user_data[0],
                 "username": user_data[1],
                 "email": user_data[3],
-                "type": 'admin' if user_data[4] == 0 else 'user'  # INT型を文字列に変換
+                "type": "user"  # 一般ユーザーのみログイン可能
             })
             response.set_cookie('access_token', access_token, httponly=True, secure=True)
 
