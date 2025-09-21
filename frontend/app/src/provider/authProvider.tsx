@@ -15,7 +15,7 @@ const AuthProvider: FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isAdminLoggedIn, setAdminIsLoggedIn] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const { autoFetchProfile, resetProfile } = useUserProfile();
+  const { fetchProfile, fetchAdminProfile, resetProfile } = useUserProfile();
 
   // 初回マウント時にトークンをチェック
   useEffect(() => {
@@ -23,8 +23,8 @@ const AuthProvider: FC<{ children: React.ReactNode }> = ({ children }) => {
       // 通常ユーザーのトークンチェック（有効性も含めて）
       if (TokenManager.isValidUserToken()) {
         setIsLoggedIn(true);
-        // プロフィール情報はAPIから取得
-        const profile = await autoFetchProfile();
+        // ユーザープロフィール情報をAPIから取得
+        const profile = await fetchProfile();
         if (profile) {
           dispatch(
             setLoginAfterProfile({
@@ -43,8 +43,8 @@ const AuthProvider: FC<{ children: React.ReactNode }> = ({ children }) => {
       // 管理者のトークンチェック（有効性も含めて）
       if (TokenManager.isValidAdminToken()) {
         setAdminIsLoggedIn(true);
-        // 管理者プロフィール情報はAPIから取得
-        const adminProfile = await autoFetchProfile();
+        // 管理者プロフィール情報をAPIから取得
+        const adminProfile = await fetchAdminProfile();
         if (adminProfile) {
           dispatch(
             setLoginAdminAfterProfile({
@@ -64,11 +64,18 @@ const AuthProvider: FC<{ children: React.ReactNode }> = ({ children }) => {
     };
 
     initializeAuth();
-  }, [dispatch, autoFetchProfile]);
+  }, [dispatch, fetchProfile, fetchAdminProfile]);
 
   const login = useCallback(
     async (user: string, token: string, userId: string) => {
-      // トークンのみ保存
+      // 管理者でログイン中の場合は管理者ログアウト
+      if (isAdminLoggedIn) {
+        TokenManager.clearAdminToken();
+        dispatch(deleteAdminProfile());
+        setAdminIsLoggedIn(false);
+      }
+
+      // ユーザートークンを保存
       TokenManager.saveUserToken(token);
 
       // Reduxストアに基本情報保存
@@ -85,14 +92,21 @@ const AuthProvider: FC<{ children: React.ReactNode }> = ({ children }) => {
       setIsLoggedIn(true);
 
       // プロフィール情報をAPIから取得
-      await autoFetchProfile();
+      await fetchProfile();
     },
-    [dispatch, autoFetchProfile]
+    [dispatch, fetchProfile, isAdminLoggedIn]
   );
 
   const adminLogin = useCallback(
     async (user: string, token: string, userId: string) => {
-      // 管理者トークンのみ保存
+      // ユーザーでログイン中の場合はユーザーログアウト
+      if (isLoggedIn) {
+        TokenManager.clearUserToken();
+        dispatch(deleteProfile());
+        setIsLoggedIn(false);
+      }
+
+      // 管理者トークンを保存
       TokenManager.saveAdminToken(token);
 
       // Reduxストアに基本情報保存
@@ -109,9 +123,9 @@ const AuthProvider: FC<{ children: React.ReactNode }> = ({ children }) => {
       setAdminIsLoggedIn(true);
 
       // 管理者プロフィール情報をAPIから取得
-      await autoFetchProfile();
+      await fetchAdminProfile();
     },
-    [dispatch, autoFetchProfile]
+    [dispatch, fetchAdminProfile, isLoggedIn]
   );
 
   const logout = useCallback(() => {

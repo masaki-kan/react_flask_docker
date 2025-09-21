@@ -9,17 +9,11 @@ import {
   Box,
   HStack,
   Button,
-  Alert,
-  AlertIcon,
-  AlertDescription,
-  CloseButton,
-  Collapse,
   Container,
 } from "@chakra-ui/react";
-import { motion } from "framer-motion";
 import { route } from "../../../route/routeConst";
 import { useNavigate } from "react-router-dom";
-import { adminLoginApi, getLoginErrorMessage } from "../../../api/loginApis";
+import { adminLoginApi } from "../../../api/loginApis";
 import { useAuth } from "../../../provider/authContext";
 
 interface ErrorState {
@@ -37,8 +31,6 @@ const AdminLogin: FC = () => {
   const navigate = useNavigate();
 
   const [isLoading, setIsLoading] = useState(false);
-  const [loginError, setLoginError] = useState<string>("");
-  const [showError, setShowError] = useState(false);
   const [error, setError] = useState<ErrorState>({
     emailError: "",
     passwordError: "",
@@ -54,18 +46,9 @@ const AdminLogin: FC = () => {
     }
   }, [isAdminLoggedIn, navigate]);
 
-  // ログインエラーが設定されたら表示する
-  useEffect(() => {
-    if (loginError) {
-      setShowError(true);
-    }
-  }, [loginError]);
-
   const loginClick = useCallback(async () => {
     const { email, password } = form;
     setIsLoading(true);
-    setLoginError(""); // 前回のエラーをクリア
-    setShowError(false);
 
     // バリデーションチェック
     const emailValid = validateEmail(email);
@@ -85,7 +68,7 @@ const AdminLogin: FC = () => {
     }
 
     try {
-      // 管理者ログインAPI実行
+      // 管理者ログインAPI実行（エラーは自動でトースト表示）
       const response = await adminLoginApi(form);
       if (response && response.success) {
         adminLogin(
@@ -95,15 +78,11 @@ const AdminLogin: FC = () => {
           response.data.type
         );
         navigate(route.adminDashboard);
-        return;
-      } else {
-        // ログイン失敗（バックエンドからのエラーメッセージを使用）
-        setLoginError(response?.error || "メールアドレスまたはパスワードが正しくありません");
       }
+      // エラーハンドリングは自動（createErrorResponseで処理済み）
     } catch (error) {
-      // APIエラーメッセージを取得
-      const errorMessage = getLoginErrorMessage(error);
-      setLoginError(errorMessage);
+      // 予期しないエラーのみキャッチ（通常は発生しない）
+      console.error("Unexpected login error:", error);
     } finally {
       setIsLoading(false);
     }
@@ -118,10 +97,6 @@ const AdminLogin: FC = () => {
   };
 
   const formErrorCheckHanler = useCallback((value: string, type: string) => {
-    // エラーメッセージをクリア
-    setLoginError("");
-    setShowError(false);
-
     if (type === "password") {
       if (!value) {
         setError((prev) => ({
@@ -196,42 +171,7 @@ const AdminLogin: FC = () => {
 
             <Box w={{ md: "100%", base: "90%" }} px={6} margin="auto">
               <VStack spacing={5}>
-                {/* ログインエラーメッセージ */}
-                <Collapse
-                  in={showError}
-                  animateOpacity
-                  style={{ width: "100%" }}
-                >
-                  <motion.div
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3 }}
-                  >
-                    <Alert
-                      status="error"
-                      borderRadius="md"
-                      mb={4}
-                      fontSize="sm"
-                      bg="red.50"
-                      border="1px solid"
-                      borderColor="red.200"
-                    >
-                      <AlertIcon color="red.500" />
-                      <AlertDescription flex="1" color="red.700">
-                        {loginError}
-                      </AlertDescription>
-                      <CloseButton
-                        size="sm"
-                        onClick={() => {
-                          setShowError(false);
-                          setLoginError("");
-                        }}
-                        color="red.500"
-                        _hover={{ color: "red.700" }}
-                      />
-                    </Alert>
-                  </motion.div>
-                </Collapse>
+                {/* エラー表示は新しいトーストシステムで自動処理 */}
 
                 <FormControl id="email" isInvalid={!!error.emailError}>
                   <FormLabel

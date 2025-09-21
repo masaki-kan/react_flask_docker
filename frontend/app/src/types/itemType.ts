@@ -2,16 +2,11 @@ export interface itemListType {
   itemId: string;
   title: string;
   description: string;
-  type: string;
+  images: { image_url: string }[];
   brand: { key: string; name: string };
-  images: string[];
+  type: string;
   uploaded_at: Date;
-  profile_image: string;
-  user_id: number;
-  user_name: string;
-  likes?: number[];
   tradeStatusFlag: number;
-  tradeApprovalsFlag?: number;
 }
 
 export interface itemDetailType {

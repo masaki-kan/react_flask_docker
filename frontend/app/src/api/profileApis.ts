@@ -1,17 +1,16 @@
 import axios from "axios";
+import { apiRetuenProfileType, profileType } from "../types/profileType";
+import { ApiResponse, createErrorResponse } from "../utils/alert/sweetalert2";
 import {
-  apiRetuenProfileType,
-  profileType,
-  // profileItemType,
-} from "../types/profileType";
-import { errorSweetalert2 } from "../utils/alert/sweetalert2";
-import { archiveDetailResponse } from "./../types/archiveTradeType";
+  archiveDetailResponse,
+  exchangeArchive,
+} from "./../types/archiveTradeType";
 
 // プロフ取得
 export const getProfileApi = async (
   id: number,
   myId?: number
-): Promise<apiRetuenProfileType | undefined> => {
+): Promise<ApiResponse<apiRetuenProfileType>> => {
   try {
     const response = await axios.get(
       `${import.meta.env.VITE_API_URL}/api/getProfile`,
@@ -50,21 +49,33 @@ export const getProfileApi = async (
     const items = response.data.items;
 
     return {
-      profile,
-      items,
+      success: true,
+      data: {
+        profile,
+        items,
+      },
     };
   } catch (error: unknown) {
-    let errorMessage = "予期しないエラーが発生しました";
-    if (axios.isAxiosError(error) && error.response?.data?.error) {
-      errorMessage = error.response.data.error;
-    }
-
-    errorSweetalert2(errorMessage);
-    return;
+    return createErrorResponse(error, "プロフィール取得に失敗しました");
   }
 };
 
-export const getProfileItemsApi = async (id: number) => {
+export const getProfileItemsApi = async (
+  id: number
+): Promise<
+  ApiResponse<{
+    items: {
+      itemId: string;
+      title: string;
+      description: string;
+      images: { image_url: string }[];
+      brand: { key: string; name: string };
+      type: string;
+      uploaded_at: Date;
+      tradeStatusFlag: number;
+    }[];
+  }>
+> => {
   try {
     const response = await axios.get(
       `${import.meta.env.VITE_API_URL}/api/getProfileItems`,
@@ -82,8 +93,6 @@ export const getProfileItemsApi = async (id: number) => {
         description: string;
         images: { image_url: string }[];
         brand: { key: string; name: string };
-        price: string;
-        curr: string;
         type: string;
         uploaded_at: Date;
         trade_status_flag: number;
@@ -93,9 +102,7 @@ export const getProfileItemsApi = async (id: number) => {
           title: items.title,
           description: items.description,
           images: items.images,
-          price: items.price,
           type: items.type,
-          curr: items.curr,
           brand: items.brand,
           uploaded_at: items.uploaded_at,
           tradeStatusFlag: items.trade_status_flag,
@@ -103,8 +110,13 @@ export const getProfileItemsApi = async (id: number) => {
       }
     );
 
+    console.log(items);
+
     return {
-      items,
+      success: true,
+      data: {
+        items,
+      },
     };
   } catch (error: unknown) {
     let errorMessage = "予期しないエラーが発生しました";
@@ -112,13 +124,19 @@ export const getProfileItemsApi = async (id: number) => {
       errorMessage = error.response.data.error;
     }
 
-    errorSweetalert2(errorMessage);
-    return;
+    return createErrorResponse(error, errorMessage);
   }
 };
 
 // 自分のプロフ更新
-export const postStoreProfileApi = async (formData: profileType) => {
+export const postStoreProfileApi = async (
+  formData: profileType
+): Promise<
+  ApiResponse<{
+    message: string;
+    status: boolean;
+  }>
+> => {
   try {
     const response = await axios.post(
       `${import.meta.env.VITE_API_URL}/api/postStoreProfile`,
@@ -128,8 +146,11 @@ export const postStoreProfileApi = async (formData: profileType) => {
     );
 
     return {
-      message: response.data.message,
-      status: response.data.result,
+      success: true,
+      data: {
+        message: response.data.message,
+        status: response.data.result,
+      },
     };
   } catch (error: unknown) {
     let errorMessage = "予期しないエラーが発生しました";
@@ -138,8 +159,7 @@ export const postStoreProfileApi = async (formData: profileType) => {
       errorMessage = error.response.data.error;
     }
 
-    errorSweetalert2(errorMessage);
-    return;
+    return createErrorResponse(error, errorMessage);
   }
 };
 
@@ -167,8 +187,7 @@ export const postStoreProfileItemApi = async (formData: FormData) => {
       errorMessage = error.response.data.error;
     }
 
-    errorSweetalert2(errorMessage);
-    return;
+    return createErrorResponse(error, errorMessage);
   }
 };
 
@@ -224,22 +243,29 @@ export const deleteUserItemApi = async (
       errorMessage = error.response.data.error;
     }
 
-    errorSweetalert2(errorMessage);
-    return;
+    return createErrorResponse(error, errorMessage);
   }
 };
 
 // アーカイブ詳細を取得
 export const fetchArchiveDetailApi = async (
   archiveTradeId: string
-): Promise<archiveDetailResponse | undefined> => {
+): Promise<ApiResponse<archiveDetailResponse>> => {
   try {
     const response = await axios.get(
       `${import.meta.env.VITE_API_URL}/api/getArchiveDetail?archive_trade_id=${archiveTradeId}`
     );
 
     if (response.data.result) {
-      return response.data;
+      return {
+        success: true,
+        data: response.data,
+      };
+    } else {
+      return createErrorResponse(
+        new Error("Archive detail not found"),
+        "アーカイブの詳細が見つかりませんでした"
+      );
     }
   } catch (error: unknown) {
     let errorMessage = "予期しないエラーが発生しました";
@@ -248,13 +274,20 @@ export const fetchArchiveDetailApi = async (
       errorMessage = error.response.data.error;
     }
 
-    errorSweetalert2(errorMessage);
-    return;
+    return createErrorResponse(error, errorMessage);
   }
 };
 
 // 交換履歴
-export const exchangeArchiveApi = async (user_id: number) => {
+export const exchangeArchiveApi = async (
+  user_id: number
+): Promise<
+  ApiResponse<{
+    status: boolean;
+    archives: exchangeArchive[];
+    total: number;
+  }>
+> => {
   try {
     const response = await axios.post(
       `${import.meta.env.VITE_API_URL}/api/getexchangeArchive`,
@@ -264,9 +297,12 @@ export const exchangeArchiveApi = async (user_id: number) => {
     );
 
     return {
-      status: response.data.result,
-      archives: response.data.archives,
-      total: response.data.total,
+      success: true,
+      data: {
+        status: response.data.result,
+        archives: response.data.archives,
+        total: response.data.total,
+      },
     };
   } catch (error: unknown) {
     let errorMessage = "予期しないエラーが発生しました";
@@ -275,7 +311,6 @@ export const exchangeArchiveApi = async (user_id: number) => {
       errorMessage = error.response.data.error;
     }
 
-    errorSweetalert2(errorMessage);
-    return;
+    return createErrorResponse(error, errorMessage);
   }
 };

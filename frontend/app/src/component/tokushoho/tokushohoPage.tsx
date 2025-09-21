@@ -19,7 +19,7 @@ import {
   ListItem,
   ListIcon,
 } from "@chakra-ui/react";
-import { useAppColors, getColorModeValue } from "../../utils/theme/colorModeUtils";
+import { useAppColors } from "../../utils/theme/colorModeUtils";
 import {
   FiMail,
   FiPhone,
@@ -36,7 +36,18 @@ import {
 import { IconType } from "react-icons";
 
 const TokushohoPage: React.FC = () => {
-  const { pageBg, cardBg, borderColor, accentColor, textColor, headingColor, infoBg, infoBorder, successBg, successBorder } = useAppColors();
+  const {
+    pageBg,
+    cardBg,
+    borderColor,
+    accentColor,
+    textColor,
+    headingColor,
+    infoBg,
+    infoBorder,
+    successBg,
+    successBorder,
+  } = useAppColors();
 
   // ここに実際の事業者情報を設定してください
   const businessInfo = {

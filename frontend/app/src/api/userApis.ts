@@ -1,6 +1,6 @@
 import axios from "axios";
 import { followListType, tagType } from "../types/listType";
-import { errorSweetalert2 } from "../utils/alert/sweetalert2";
+import { createErrorResponse, ApiError } from "../utils/alert/sweetalert2";
 
 export const getUsersApi = async (
   myId: string
@@ -9,7 +9,7 @@ export const getUsersApi = async (
       users: followListType[];
       tags: tagType[];
     }
-  | undefined
+  | ApiError
 > => {
   try {
     const response = await axios.post(
@@ -30,8 +30,7 @@ export const getUsersApi = async (
       errorMessage = error.response.data.error;
     }
 
-    errorSweetalert2(errorMessage);
-    return;
+    return createErrorResponse(error, errorMessage);
   }
 };
 
@@ -43,7 +42,7 @@ export const getUserItemApi = async (
       users: followListType[];
       tags: tagType[];
     }
-  | undefined
+  | ApiError
 > => {
   try {
     const response = await axios.post(
@@ -64,7 +63,6 @@ export const getUserItemApi = async (
       errorMessage = error.response.data.error;
     }
 
-    errorSweetalert2(errorMessage);
-    return;
+    return createErrorResponse(error, errorMessage);
   }
 };

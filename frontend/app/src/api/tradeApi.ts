@@ -1,12 +1,12 @@
 import axios from "axios";
 import { savedListType } from "../types/savedType";
-import { errorSweetalert2 } from "../utils/alert/sweetalert2";
+import { ApiError, createErrorResponse } from "../utils/alert/sweetalert2";
 
 export const tradeApi = async (
   item_id: string,
   buyer_id: string,
   seller_id: string
-): Promise<{ result: boolean; message: string } | undefined> => {
+): Promise<{ result: boolean; message: string } | ApiError> => {
   try {
     const response = await axios.post(
       `${import.meta.env.VITE_API_URL}/api/trade`,
@@ -28,8 +28,7 @@ export const tradeApi = async (
       errorMessage = error.response.data.error;
     }
 
-    errorSweetalert2(errorMessage);
-    return;
+    return createErrorResponse(error, errorMessage);
   }
 };
 
@@ -44,7 +43,7 @@ export const getSavedList = async (
         item_title: string;
       }[];
     }
-  | undefined
+  | ApiError
 > => {
   try {
     const response = await axios.post(
@@ -66,15 +65,14 @@ export const getSavedList = async (
       errorMessage = error.response.data.error;
     }
 
-    errorSweetalert2(errorMessage);
-    return;
+    return createErrorResponse(error, errorMessage);
   }
 };
 
 export const trageStatusChange = async (
   trade_id: string,
   status: string
-): Promise<{ trades: savedListType[]; result: string } | undefined> => {
+): Promise<{ trades: savedListType[]; result: string } | ApiError> => {
   try {
     const response = await axios.post(
       `${import.meta.env.VITE_API_URL}/api/trade_status_change`,
@@ -95,7 +93,6 @@ export const trageStatusChange = async (
       errorMessage = error.response.data.error;
     }
 
-    errorSweetalert2(errorMessage);
-    return;
+    return createErrorResponse(error, errorMessage);
   }
 };

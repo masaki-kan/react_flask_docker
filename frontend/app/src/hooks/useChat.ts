@@ -29,7 +29,7 @@ import {
 import { viewDate } from "../utils/date/format";
 import useLoading from "./useLaoding";
 import { trageStatusChange } from "../api/tradeApi";
-import { errorSweetalert2 } from "../utils/alert/sweetalert2";
+import { createErrorResponse } from "../utils/alert/sweetalert2";
 
 type useChatReturn = {
   memorizeChatMessages: messagesType[];
@@ -199,10 +199,10 @@ const useChat = (): useChatReturn => {
         // パートナーアイテムの処理
         if (
           partnerItemsResponse.status === "fulfilled" &&
-          partnerItemsResponse.value
+          partnerItemsResponse.value?.success
         ) {
-          partnerItems = partnerItemsResponse.value.partner_items;
-          sellerUserData = partnerItemsResponse.value.partner_user;
+          partnerItems = partnerItemsResponse.value.data.partner_items;
+          sellerUserData = partnerItemsResponse.value.data.partner_user;
         }
 
         // 発送情報の処理
@@ -236,8 +236,7 @@ const useChat = (): useChatReturn => {
 
         changeLoading(false);
       } catch (error) {
-        console.error("Chat page data fetch error:", error);
-        errorSweetalert2("データの取得に失敗しました");
+        createErrorResponse(error, "データの取得に失敗しました");
       } finally {
         changeLoading(false);
       }

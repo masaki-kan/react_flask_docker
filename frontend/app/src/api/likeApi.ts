@@ -1,12 +1,16 @@
 import axios from "axios";
-import { errorSweetalert2 } from "../utils/alert/sweetalert2";
+import { ApiResponse, createErrorResponse } from "../utils/alert/sweetalert2";
+
+export interface LikeApiResponse {
+  result: boolean;
+  liked: boolean;
+  message: string;
+}
 
 export const itemLikeApi = async (
   item_id: string,
   my_user_id: string
-): Promise<
-  { result: boolean; liked: boolean; message: string } | undefined
-> => {
+): Promise<ApiResponse<LikeApiResponse>> => {
   try {
     const response = await axios.post(
       `${import.meta.env.VITE_API_URL}/api/itemLike`,
@@ -17,18 +21,14 @@ export const itemLikeApi = async (
     );
 
     return {
-      result: response.data.result,
-      liked: response.data.liked,
-      message: response.data.message,
+      success: true,
+      data: {
+        result: response.data.result,
+        liked: response.data.liked,
+        message: response.data.message,
+      },
     };
   } catch (error: unknown) {
-    let errorMessage = "予期しないエラーが発生しました";
-
-    if (axios.isAxiosError(error) && error.response?.data?.error) {
-      errorMessage = error.response.data.error;
-    }
-
-    errorSweetalert2(errorMessage);
-    return;
+    return createErrorResponse(error, "いいね処理に失敗しました");
   }
 };

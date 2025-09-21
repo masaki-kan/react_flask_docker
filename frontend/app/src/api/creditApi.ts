@@ -1,5 +1,5 @@
 import axios from "axios";
-import { errorSweetalert2 } from "../utils/alert/sweetalert2";
+import { ApiError, createErrorResponse } from "../utils/alert/sweetalert2";
 
 // Stripeレスポンスの型定義
 export interface StripePaymentResponse {
@@ -32,7 +32,7 @@ export interface StripeError {
 export const createPaymentIntent = async (
   amount: string,
   status: number
-): Promise<StripePaymentResponse | undefined> => {
+): Promise<StripePaymentResponse | ApiError> => {
   try {
     // 入力値の検証
     if (status !== 0 && status !== 1) {
@@ -96,9 +96,6 @@ export const createPaymentIntent = async (
       }
     }
 
-    // エラーアラートを表示
-    errorSweetalert2(errorMessage);
-
     // エラーログを記録（本番環境では適切なロギングサービスに送信）
     console.error("Payment intent creation error:", {
       message: errorMessage,
@@ -106,7 +103,8 @@ export const createPaymentIntent = async (
       timestamp: new Date().toISOString(),
     });
 
-    return undefined;
+    // エラーアラートを表示
+    return createErrorResponse(error, errorMessage);
   }
 };
 
@@ -121,7 +119,10 @@ export const getSubscriptionInfo = async (userID: string) => {
     return response.data;
   } catch (error) {
     console.error("Failed to get subscription info:", error);
-    return null;
+    return createErrorResponse(
+      error,
+      "サブスクリプション情報取得に失敗しました。"
+    );
   }
 };
 
@@ -136,20 +137,25 @@ export const cancelSubscription = async (userID: string) => {
     return response.data;
   } catch (error) {
     if (axios.isAxiosError(error) && error.response?.data?.error) {
-      errorSweetalert2(error.response.data.error);
+      return createErrorResponse(error, error.response.data.error);
     } else {
-      errorSweetalert2("サブスクリプションのキャンセルに失敗しました");
+      return createErrorResponse(
+        error,
+        "サブスクリプションのキャンセルに失敗しました"
+      );
     }
-    return null;
   }
 };
 
 export const withdrawalApi = async (
   userID: string
-): Promise<{
-  result: boolean;
-  message?: string;
-} | null> => {
+): Promise<
+  | {
+      result: boolean;
+      message?: string;
+    }
+  | ApiError
+> => {
   try {
     const response = await axios.post(
       `${import.meta.env.VITE_API_URL}/api/withdraw`,
@@ -163,10 +169,9 @@ export const withdrawalApi = async (
     return response.data;
   } catch (error) {
     if (axios.isAxiosError(error) && error.response?.data?.error) {
-      errorSweetalert2(error.response.data.error);
+      return createErrorResponse(error, error.response.data.error);
     } else {
-      errorSweetalert2("退会処理に失敗しました");
+      return createErrorResponse(error, "退会処理に失敗しました");
     }
-    return null;
   }
 };

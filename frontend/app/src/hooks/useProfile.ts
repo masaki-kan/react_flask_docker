@@ -72,7 +72,10 @@ const useMyProfile = (): useMyProfileReturn => {
 
   // 自分のプロフィールデータ取得
   const getMyProfile = useCallback(async () => {
-    if (Number(profile.profile.id) === 0) return;
+    if (Number(profile.profile.id) === 0) {
+      console.warn("Early return: profile.profile.id is 0");
+      return;
+    }
 
     const [responseProfile, responseItems, responseActive] = await Promise.all([
       await getProfileApi(Number(profile.profile.id)),
@@ -82,32 +85,45 @@ const useMyProfile = (): useMyProfileReturn => {
 
     // もしプロフィール情報が取得できない場合はログアウトする
     if (responseProfile === undefined) {
+      console.error("Profile API failed - responseProfile is undefined");
+      systemErrorLogoutAlert();
+      logOutHandler();
+      return;
+    }
+
+    // APIレスポンスのsuccessフィールドをチェック
+    if (responseProfile && !responseProfile.success) {
       systemErrorLogoutAlert();
       logOutHandler();
       return;
     }
 
     // プロフィールが取得できたらすぐに更新
-    if (responseProfile) {
+    if (responseProfile && responseProfile.success) {
       dispatch(
         setProfile({
-          profile: responseProfile.profile,
+          profile: responseProfile.data.profile,
           items: [], // 一旦空配列
         })
       );
     }
 
     //商品が取得できたら更新
-    if (responseItems && responseProfile) {
+    if (
+      responseItems &&
+      responseProfile &&
+      responseProfile.success &&
+      responseItems.success
+    ) {
       dispatch(
         setProfile({
-          profile: responseProfile.profile,
-          items: responseItems.items,
+          profile: responseProfile.data.profile,
+          items: responseItems.data.items,
         })
       );
     }
-    if (responseActive) {
-      dispatch(setProfileArchives(responseActive.archives));
+    if (responseActive && responseActive.success) {
+      dispatch(setProfileArchives(responseActive.data.archives));
     }
   }, [dispatch, logOutHandler, profile.profile.id]);
 
@@ -119,21 +135,26 @@ const useMyProfile = (): useMyProfileReturn => {
         getProfileItemsApi(userNumver),
       ]);
 
-      if (responseProfile) {
+      if (responseProfile && responseProfile.success) {
         dispatch(
           setSliceProfile({
-            profile: responseProfile.profile,
+            profile: responseProfile.data.profile,
             items: [],
           })
         );
       }
 
       // // 商品が取得できたら更新
-      if (responseItems && responseProfile) {
+      if (
+        responseItems &&
+        responseProfile &&
+        responseProfile.success &&
+        responseItems.success
+      ) {
         dispatch(
           setSliceProfile({
-            profile: responseProfile.profile,
-            items: responseItems.items,
+            profile: responseProfile.data.profile,
+            items: responseItems.data.items,
           })
         );
       }
@@ -148,23 +169,25 @@ const useMyProfile = (): useMyProfileReturn => {
       if (response !== undefined) {
         const item_id = Number(itemId);
 
-        const newLikes = response.liked
-          ? memorizeProfile.profile.likes.includes(item_id)
-            ? memorizeProfile.profile.likes
-            : [...memorizeProfile.profile.likes, item_id]
-          : memorizeProfile.profile.likes.filter((id) => id !== item_id);
+        if (response.success) {
+          const newLikes = response.data.liked
+            ? memorizeProfile.profile.likes.includes(item_id)
+              ? memorizeProfile.profile.likes
+              : [...memorizeProfile.profile.likes, item_id]
+            : memorizeProfile.profile.likes.filter((id) => id !== item_id);
 
-        dispatch(
-          setProfile({
-            profile: {
-              ...memorizeProfile.profile,
-              likes: newLikes,
-            },
-            items: memorizeProfile.items,
-          })
-        );
+          dispatch(
+            setProfile({
+              profile: {
+                ...memorizeProfile.profile,
+                likes: newLikes,
+              },
+              items: memorizeProfile.items,
+            })
+          );
 
-        favoriteAlert(response.message);
+          favoriteAlert(response.data.message);
+        }
       }
     },
     [dispatch, favoriteAlert, memorizeProfile.items, memorizeProfile.profile]
@@ -183,11 +206,11 @@ const useMyProfile = (): useMyProfileReturn => {
     > => {
       const response = await fetchArchiveDetailApi(archiveId!);
 
-      if (response !== undefined) {
+      if (response.success) {
         return {
-          archiveData: response.trade,
-          messages: response.messages,
-          shippingInfo: response.shipping_info,
+          archiveData: response.data.trade,
+          messages: response.data.messages,
+          shippingInfo: response.data.shipping_info,
         };
       }
     },

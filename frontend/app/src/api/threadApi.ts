@@ -1,6 +1,6 @@
 // api/threadApi.ts
 import axios from "axios";
-import { errorSweetalert2 } from "../utils/alert/sweetalert2";
+import { createErrorResponse } from "../utils/alert/sweetalert2";
 
 export const threadPostApi = async (userId: string, message: string) => {
   try {
@@ -21,7 +21,7 @@ export const threadPostApi = async (userId: string, message: string) => {
     if (axios.isAxiosError(error) && error.response?.data?.error) {
       errorMessage = error.response.data.error;
     }
-    errorSweetalert2(errorMessage);
+    createErrorResponse(error, errorMessage);
     return {
       ok: false,
       error: errorMessage,
@@ -54,7 +54,7 @@ export const fetchThreadMessages = async (
     if (axios.isAxiosError(error) && error.response?.data?.error) {
       errorMessage = error.response.data.error;
     }
-    errorSweetalert2(errorMessage);
+    createErrorResponse(error, errorMessage);
     return {
       ok: false,
       error: errorMessage,
@@ -84,7 +84,7 @@ export const deleteThreadMessageApi = async (
     if (axios.isAxiosError(error) && error.response?.data?.error) {
       errorMessage = error.response.data.error;
     }
-    errorSweetalert2(errorMessage);
+    createErrorResponse(error, errorMessage);
     return {
       ok: false,
       error: errorMessage,

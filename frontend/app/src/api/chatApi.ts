@@ -1,6 +1,6 @@
 import axios from "axios";
 import { chatItemDataType, userDataType } from "../types/chatType";
-import { errorSweetalert2 } from "../utils/alert/sweetalert2";
+import { ApiResponse, createErrorResponse } from "../utils/alert/sweetalert2";
 
 export const getChatItemDetailApi = async (
   trade_id: string
@@ -27,8 +27,7 @@ export const getChatItemDetailApi = async (
       errorMessage = error.response.data.error;
     }
 
-    errorSweetalert2(errorMessage);
-    return;
+    createErrorResponse(error, errorMessage);
   }
 };
 
@@ -57,18 +56,17 @@ export const uploadImageApi = async (
       // Axios エラーで、かつレスポンスが存在する場合
       if (error.response) {
         console.error("Login error:", error.response.data);
-        errorSweetalert2("Error");
+        createErrorResponse(error, "Error");
       } else {
         // レスポンスがない場合はネットワークエラーなど
         console.error(
           "Error: The request was made but no response was received"
         );
-        errorSweetalert2("Error");
+        createErrorResponse(error, "Error");
       }
     } else {
       // それ以外のエラータイプ
-      console.error("Error:", error);
-      errorSweetalert2("Error");
+      createErrorResponse(error, "Error");
     }
   }
 };
@@ -102,8 +100,7 @@ export const getMessagesApi = async (
       errorMessage = error.response.data.error;
     }
 
-    errorSweetalert2(errorMessage);
-    return;
+    createErrorResponse(error, errorMessage);
   }
 };
 
@@ -136,8 +133,7 @@ export const saveShippingInfoApi = async (
       errorMessage = error.response.data.error;
     }
 
-    errorSweetalert2(errorMessage);
-    throw error;
+    return createErrorResponse(error, errorMessage);
   }
 };
 
@@ -162,8 +158,7 @@ export const fetchShippingInfoApi = async (tradeId: string) => {
       errorMessage = error.response.data.error;
     }
 
-    errorSweetalert2(errorMessage);
-    throw error;
+    return createErrorResponse(error, errorMessage);
   }
 };
 
@@ -192,8 +187,7 @@ export const confirmItemReceivedApi = async (
       errorMessage = error.response.data.error;
     }
 
-    errorSweetalert2(errorMessage);
-    throw error;
+    return createErrorResponse(error, errorMessage);
   }
 };
 
@@ -218,17 +212,19 @@ export const fetchConfirmationsApi = async (tradeId: string) => {
       errorMessage = error.response.data.error;
     }
 
-    errorSweetalert2(errorMessage);
-    throw error;
+    return createErrorResponse(error, errorMessage);
   }
 };
 
 // 相手の商品一覧を取得
+export interface PartnerItemsResponse {
+  partner_items: chatItemDataType[];
+  partner_user: userDataType;
+}
+
 export const fetchPartnerItemsApi = async (
   tradeId: string
-): Promise<
-  { partner_items: chatItemDataType[]; partner_user: userDataType } | undefined
-> => {
+): Promise<ApiResponse<PartnerItemsResponse>> => {
   try {
     const response = await axios.post(
       `${import.meta.env.VITE_API_URL}/api/get_partner_items`,
@@ -239,29 +235,30 @@ export const fetchPartnerItemsApi = async (
 
     if (response.data.result) {
       return {
-        partner_items: response.data.partner_items,
-        partner_user: response.data.partner_user,
+        success: true,
+        data: {
+          partner_items: response.data.partner_items,
+          partner_user: response.data.partner_user,
+        },
       };
     }
     throw new Error(response.data.error || "相手商品の取得に失敗しました");
   } catch (error: unknown) {
-    let errorMessage = "相手商品の取得に失敗しました";
-
-    if (axios.isAxiosError(error) && error.response?.data?.error) {
-      errorMessage = error.response.data.error;
-    }
-
-    errorSweetalert2(errorMessage);
-    throw error;
+    return createErrorResponse(error, "相手商品の取得に失敗しました");
   }
 };
 
 // 交換商品選択API
+export interface SelectExchangeResponse {
+  result: boolean;
+  message?: string;
+}
+
 export const selectExchangeItemApi = async (
   tradeId: string,
   selectedItemId: string,
   userId: string
-): Promise<{ result: boolean; message?: string } | undefined> => {
+): Promise<ApiResponse<SelectExchangeResponse>> => {
   try {
     const response = await axios.post(
       `${import.meta.env.VITE_API_URL}/api/select_exchange_item`,
@@ -273,18 +270,14 @@ export const selectExchangeItemApi = async (
     );
 
     if (response.data.result) {
-      return response.data;
+      return {
+        success: true,
+        data: response.data,
+      };
     }
     throw new Error(response.data.error || "商品選択に失敗しました");
   } catch (error: unknown) {
-    let errorMessage = "商品選択に失敗しました";
-
-    if (axios.isAxiosError(error) && error.response?.data?.error) {
-      errorMessage = error.response.data.error;
-    }
-
-    errorSweetalert2(errorMessage);
-    throw error;
+    return createErrorResponse(error, "商品選択に失敗しました");
   }
 };
 
@@ -317,8 +310,7 @@ export const saveShippingInfoWithItemApi = async (
       errorMessage = error.response.data.error;
     }
 
-    errorSweetalert2(errorMessage);
-    throw error;
+    return createErrorResponse(error, errorMessage);
   }
 };
 
@@ -343,8 +335,7 @@ export const fetchExchangeItemsApi = async (tradeId: string) => {
       errorMessage = error.response.data.error;
     }
 
-    errorSweetalert2(errorMessage);
-    throw error;
+    return createErrorResponse(error, errorMessage);
   }
 };
 
@@ -369,8 +360,6 @@ export const completeExchangeApi = async (tradeId: string, userId: string) => {
     if (axios.isAxiosError(error) && error.response?.data?.error) {
       errorMessage = error.response.data.error;
     }
-
-    errorSweetalert2(errorMessage);
-    throw error;
+    return createErrorResponse(error, errorMessage);
   }
 };

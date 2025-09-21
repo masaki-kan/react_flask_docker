@@ -107,9 +107,9 @@ const useItems = (): userItemsReturn => {
 
     const response = await getUserItemsApi(profile.profile.id, 1, 20);
 
-    if (response !== undefined) {
-      const itemList = processItemsResponse(response.items);
-      const itemBrandList = response.brands.map((brand) => ({
+    if (response.success) {
+      const itemList = processItemsResponse(response.data.items);
+      const itemBrandList = response.data.brands.map((brand) => ({
         key: Number(brand.key),
         name: brand.name,
       }));
@@ -118,8 +118,9 @@ const useItems = (): userItemsReturn => {
       dispatch(setOriginalItemsList(itemList));
       dispatch(setItemsTagList(itemBrandList));
       dispatch(setCurrentPage(1));
-      dispatch(setHasMore(response.has_more));
+      dispatch(setHasMore(response.data.has_more));
     }
+    // エラーハンドリングは自動（createErrorResponseでトースト表示済み）
 
     dispatch(setIsLoading(false));
   }, [dispatch, profile.profile.id]);
@@ -133,12 +134,13 @@ const useItems = (): userItemsReturn => {
 
     const response = await getUserItemsApi(profile.profile.id, nextPage, 20);
 
-    if (response !== undefined) {
-      const newItems = processItemsResponse(response.items);
+    if (response.success) {
+      const newItems = processItemsResponse(response.data.items);
       dispatch(appendItemsList(newItems));
       dispatch(setCurrentPage(nextPage));
-      dispatch(setHasMore(response.has_more));
+      dispatch(setHasMore(response.data.has_more));
     }
+    // エラーハンドリングは自動（createErrorResponseでトースト表示済み）
 
     dispatch(setIsLoading(false));
   }, [dispatch, profile.profile.id, currentPage, hasMore, isLoading]);

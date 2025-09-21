@@ -47,10 +47,21 @@ type profileIndexType = {
 
 const ProfileIndex: FC<profileIndexType> = ({ editFormSwitch }) => {
   const navigate = useNavigate();
-  const { memorizeProfile } = useMyProfile();
+  const { memorizeProfile, getMyProfile } = useMyProfile();
   // プロフィール情報は即座に表示
   const profile = useMemo(() => memorizeProfile, [memorizeProfile]);
   const [isArchiveOpen, setIsArchiveOpen] = useState<boolean>(false);
+
+  // プロフィールデータが不完全な場合に再取得
+  useEffect(() => {
+    if (
+      profile.profile.id &&
+      (!profile.profile.plan || profile.profile.plan === "0")
+    ) {
+      console.log("Profile data incomplete, fetching again...");
+      getMyProfile();
+    }
+  }, [profile.profile.id, profile.profile.plan, getMyProfile]);
 
   // カラーモード対応
   const bgColor = useColorModeValue("white", "gray.800");
@@ -139,11 +150,22 @@ const ProfileIndex: FC<profileIndexType> = ({ editFormSwitch }) => {
     return null;
   }, [profile.profile.favoriteShop, accentColor]);
 
-  const planView = () => {
-    const plan = plans
-      .filter((p) => p.planKey === profile.profile.plan)
-      .map((p) => p.planContents);
-    return plan[0];
+  console.log("profile.profile:", profile.profile);
+  console.log("profile.items:", profile.items);
+  const planView = (): {
+    title: string;
+    text: string;
+    option: string;
+    sub: string;
+  } | null => {
+    if (profile.profile.plan) {
+      const plan = plans
+        .filter((p) => p.planKey === profile.profile.plan)
+        .map((p) => p.planContents);
+      return plan[0];
+    }
+
+    return null;
   };
 
   const toItemPushHandler = useCallback(() => {
@@ -212,27 +234,29 @@ const ProfileIndex: FC<profileIndexType> = ({ editFormSwitch }) => {
 
             <Divider />
             {/* プラン情報 */}
-            <Box w="full">
-              <HStack
-                bg={sectionBg}
-                px={4}
-                py={2}
-                borderRadius="lg"
-                justify="space-between"
-              >
-                <HStack>
-                  <Icon as={FaCrown} color="yellow.500" boxSize={5} />
-                  <VStack align="start" spacing={0}>
-                    <Text fontSize="sm" fontWeight="bold">
-                      {planView().title}
-                    </Text>
-                    <Text fontSize="xs" color={textMuted}>
-                      {planView().text}
-                    </Text>
-                  </VStack>
+            {profile.profile.plan && profile.profile.plan !== "0" && (
+              <Box w="full">
+                <HStack
+                  bg={sectionBg}
+                  px={4}
+                  py={2}
+                  borderRadius="lg"
+                  justify="space-between"
+                >
+                  <HStack>
+                    <Icon as={FaCrown} color="yellow.500" boxSize={5} />
+                    <VStack align="start" spacing={0}>
+                      <Text fontSize="sm" fontWeight="bold">
+                        {planView()?.title || "プラン情報"}
+                      </Text>
+                      <Text fontSize="xs" color={textMuted}>
+                        {planView()?.text || ""}
+                      </Text>
+                    </VStack>
+                  </HStack>
                 </HStack>
-              </HStack>
-            </Box>
+              </Box>
+            )}
 
             <Button
               w="full"
