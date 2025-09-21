@@ -5,6 +5,7 @@ import { PersistGate } from "redux-persist/integration/react";
 import { store, persistor } from "./store";
 import AppRoutes from "./route/appRoutes";
 import { Suspense } from "react";
+import ToastContainer from "./component/common/ToastContainer";
 
 function App() {
   return (
@@ -14,6 +15,7 @@ function App() {
           <Suspense fallback={<Spinner />}>
             <BrowserRouter>
               <AppRoutes />
+              <ToastContainer />
             </BrowserRouter>
           </Suspense>
         </PersistGate>
