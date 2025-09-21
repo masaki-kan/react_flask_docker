@@ -110,8 +110,6 @@ export const getProfileItemsApi = async (
       }
     );
 
-    console.log(items);
-
     return {
       success: true,
       data: {
@@ -199,7 +197,6 @@ export const cancellationProcessApi = async (userID: string) => {
       { userID: userID }
     );
 
-    console.log("成功:", response.data);
     return {
       success: true,
       message: response.data.message,
@@ -239,7 +236,6 @@ export const deleteUserItemApi = async (
     let errorMessage = "予期しないエラーが発生しました";
 
     if (axios.isAxiosError(error) && error.response?.data?.error) {
-      console.log(error.response);
       errorMessage = error.response.data.error;
     }
 

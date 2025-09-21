@@ -301,7 +301,7 @@ const CheckoutFormContent: FC<{
               </Text>
               <Text fontSize="xs">
                 登録から30日間は無料でご利用いただけます。
-                31日目から月額500円が自動的に課金されます。
+                31日目から月額550円が自動的に課金されます。
                 いつでも解約可能です。
               </Text>
             </Box>

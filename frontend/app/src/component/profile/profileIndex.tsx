@@ -58,7 +58,6 @@ const ProfileIndex: FC<profileIndexType> = ({ editFormSwitch }) => {
       profile.profile.id &&
       (!profile.profile.plan || profile.profile.plan === "0")
     ) {
-      console.log("Profile data incomplete, fetching again...");
       getMyProfile();
     }
   }, [profile.profile.id, profile.profile.plan, getMyProfile]);
@@ -150,8 +149,6 @@ const ProfileIndex: FC<profileIndexType> = ({ editFormSwitch }) => {
     return null;
   }, [profile.profile.favoriteShop, accentColor]);
 
-  console.log("profile.profile:", profile.profile);
-  console.log("profile.items:", profile.items);
   const planView = (): {
     title: string;
     text: string;

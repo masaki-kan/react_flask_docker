@@ -38,12 +38,7 @@ const CheckoutForm: FC<checkoutFormType> = memo(
         singUpEvent();
         setLoading(true);
 
-        // const result = await stripe.confirmPayment({
-        //   elements,
-        //   redirect: "if_required",
-        // });
         try {
-          // ✅ 必須：まず elements.submit()
           await elements.submit();
 
           // ✅ その後に confirmPayment を実行
@@ -71,7 +66,7 @@ const CheckoutForm: FC<checkoutFormType> = memo(
               intentId: result.paymentIntent.id,
             });
 
-            if (response?.result) {
+            if (response !== undefined) {
               await sweetSuccessTextOverAlert(
                 "登録しました。ログイン画面に移ります。"
               );
@@ -81,7 +76,6 @@ const CheckoutForm: FC<checkoutFormType> = memo(
               loginClick();
             }
           } else {
-            console.log("❌ 支払いが完了していません。");
             await sweetErrorOverAlert();
             loginClick();
           }

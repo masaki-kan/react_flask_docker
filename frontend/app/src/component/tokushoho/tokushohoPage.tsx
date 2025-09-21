@@ -59,7 +59,7 @@ const TokushohoPage: React.FC = () => {
     email: "ourVintageApp@gmail.com",
     serviceType: "ヴィンテージアイテム交換プラットフォームサービス",
     pricing: {
-      monthly: "月額プラン：500円（税込）",
+      monthly: "月額プラン：550円（税込）",
       yearly: "年額プラン：5,500円（税込）",
     },
     paymentMethod: "クレジットカード（Stripe決済）※自動更新",
@@ -253,7 +253,7 @@ const TokushohoPage: React.FC = () => {
                         fontSize="xl"
                         color={headingColor}
                       >
-                        500円
+                        550円
                       </Text>
                     </HStack>
                     <Text fontSize="sm" color={textColor}>

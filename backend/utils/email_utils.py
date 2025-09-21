@@ -44,7 +44,7 @@ def send_welcome_email(user_name, plan_type, to_email):
 
     plan = ""
     if str(plan_type) == "1":
-        plan = "月額プラン ¥500/月"
+        plan = "月額プラン ¥550/月"
     elif str(plan_type) == "2":
         plan = "年額プラン ¥5,500/年"
         
@@ -186,7 +186,7 @@ def reactivation_send_welcome_email(user_name, plan_type, to_email):
 
     plan = ""
     if str(plan_type) == "1":
-        plan = "月額プラン ¥500/月"
+        plan = "月額プラン ¥550/月"
     elif str(plan_type) == "2":
         plan = "年額プラン ¥5,500/年"
         

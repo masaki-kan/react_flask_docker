@@ -774,46 +774,24 @@ def create_reactivation_payment_intent():
                     "result": False
                 }), 400
             
-            # Stripe Customerの確認・作成
-            if user.get('stripe_customer_id'):
-                try:
-                    customer = stripe.Customer.retrieve(user['stripe_customer_id'])
-                    if customer.get('deleted'):
-                        # 削除済みの場合は新規作成
-                        raise stripe.error.InvalidRequestError("Customer deleted")
-                except:
-                    # 新規Customer作成
-                    customer = stripe.Customer.create(
-                        email=user['email'],
-                        name=user['name'], 
-                        metadata={
-                            "user_id": str(user_id),
-                            "reactivated": "true"
-                        }
-                    )
-                    # DBを更新
-                    cursor.execute("""
-                        UPDATE users 
-                        SET stripe_customer_id = %s
-                        WHERE user_id = %s
-                    """, (customer.id, user_id))
-                    conn.commit()
-            else:
-                # 新規Customer作成
-                customer = stripe.Customer.create(
-                    email=user['email'],
-                    name=user['name'], 
-                    metadata={
-                        "user_id": str(user_id),
-                        "reactivated": "true"
-                    }
-                )
-                cursor.execute("""
-                    UPDATE users 
-                    SET stripe_customer_id = %s
-                    WHERE user_id = %s
-                """, (customer.id, user_id))
-                conn.commit()
+            # 退会時にStripe Customer完全削除済みのため、常に新規Customer作成
+            customer = stripe.Customer.create(
+                email=user['email'],
+                name=user['name'],
+                metadata={
+                    "user_id": str(user_id),
+                    "reactivated": "true",
+                    "reactivated_at": datetime.now().isoformat()
+                }
+            )
+
+            # DBにStripe Customer IDを保存
+            cursor.execute("""
+                UPDATE users
+                SET stripe_customer_id = %s
+                WHERE user_id = %s
+            """, (customer.id, user_id))
+            conn.commit()
             
             # SetupIntentを作成（支払い方法の登録のみ）
             setup_intent = stripe.SetupIntent.create(
@@ -1138,13 +1116,14 @@ def withdraw_user():
                         "message": "取引を完了させるか、取引相手と相談の上キャンセルしてから退会手続きを行ってください。"
                     }), 400
 
-                # Stripeサブスクリプションのキャンセル処理
+                # Stripe Customer完全削除処理
                 cancelled_subscriptions = []
                 stripe_errors = []
+                customer_deleted = False
 
                 if user.get('stripe_customer_id'):
                     try:
-                        # アクティブなサブスクリプションを取得
+                        # アクティブなサブスクリプションを取得して個別キャンセル
                         subscriptions = stripe.Subscription.list(
                             customer=user['stripe_customer_id'],
                             status='all',
@@ -1165,8 +1144,19 @@ def withdraw_user():
                                     })
                                     logger.error(f"Failed to cancel subscription {subscription['id']}: {str(e)}")
 
+                        # Stripe Customer完全削除（支払い方法も同時削除）
+                        try:
+                            stripe.Customer.delete(user['stripe_customer_id'])
+                            customer_deleted = True
+                            logger.info(f"Stripe customer {user['stripe_customer_id']} completely deleted for user {user_id}")
+                        except stripe.error.StripeError as e:
+                            stripe_errors.append({
+                                "error": f"顧客削除エラー: {str(e)}"
+                            })
+                            logger.error(f"Failed to delete customer {user['stripe_customer_id']}: {str(e)}")
+
                     except stripe.error.StripeError as e:
-                        logger.error(f"Stripe cancellation error for user {user_id}: {str(e)}")
+                        logger.error(f"Stripe deletion error for user {user_id}: {str(e)}")
                         stripe_errors.append({
                             "error": f"サブスクリプション一覧取得エラー: {str(e)}"
                         })
@@ -1174,14 +1164,15 @@ def withdraw_user():
                 # 現在の日時を取得
                 current_time = datetime.now()
 
-                # 1. ユーザーを論理削除
+                # 1. ユーザーを論理削除（Stripe顧客情報もクリア）
                 cursor.execute("""
-                    UPDATE users 
+                    UPDATE users
                     SET is_deleted = TRUE,
                         deleted_at = %s,
                         updated_at = %s,
                         status = 0,
-                        token = NULL
+                        token = NULL,
+                        stripe_customer_id = NULL
                     WHERE user_id = %s
                 """, (current_time, current_time, user_id))
 
@@ -1263,13 +1254,14 @@ def withdraw_user():
                     "message": "退会処理が完了しました",
                     "details": {
                         "deleted_items": deleted_items,
-                        "cancelled_subscriptions": len(cancelled_subscriptions)
+                        "cancelled_subscriptions": len(cancelled_subscriptions),
+                        "customer_deleted": customer_deleted
                     }
                 }
-                
+
                 # Stripeエラーがあった場合は警告を含める
                 if stripe_errors:
-                    response_data["warnings"] = "一部のサブスクリプションキャンセルに失敗しましたが、退会処理は完了しました"
+                    response_data["warnings"] = "一部のStripe処理に失敗しましたが、退会処理は完了しました"
                     logger.warning(f"Stripe errors during withdrawal: {stripe_errors}")
                 
                 return jsonify(response_data)
