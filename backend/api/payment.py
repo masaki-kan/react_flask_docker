@@ -468,21 +468,61 @@ def get_payment_methods():
 
             user = cursor.fetchone()
 
-            if not user or not user['stripe_customer_id']:
+            if not user:
+                print(f"[DEBUG] User {user_id} not found in database", flush=True)
                 return jsonify({
                     "payment_methods": [],
-                    "default_payment_method": None
+                    "default_payment_method": None,
+                    "debug_info": "user_not_found"
                 })
 
-            # Stripeから支払い方法を取得
-            payment_methods = stripe.PaymentMethod.list(
-                customer=user['stripe_customer_id'],
-                type='card'
-            )
+            if not user['stripe_customer_id']:
+                print(f"[DEBUG] User {user_id} has no stripe_customer_id", flush=True)
+                return jsonify({
+                    "payment_methods": [],
+                    "default_payment_method": None,
+                    "debug_info": "no_stripe_customer_id"
+                })
 
-            # デフォルトの支払い方法を取得
-            customer = stripe.Customer.retrieve(user['stripe_customer_id'])
-            default_payment_method_id = customer.invoice_settings.default_payment_method
+            print(f"[DEBUG] Fetching payment methods for customer: {user['stripe_customer_id']}", flush=True)
+
+            try:
+                # Stripeから支払い方法を取得
+                payment_methods = stripe.PaymentMethod.list(
+                    customer=user['stripe_customer_id'],
+                    type='card'
+                )
+
+                # デフォルトの支払い方法を取得
+                customer = stripe.Customer.retrieve(user['stripe_customer_id'])
+                default_payment_method_id = customer.invoice_settings.default_payment_method
+
+                print(f"[DEBUG] Found {len(payment_methods.data)} payment methods", flush=True)
+
+            except stripe.error.InvalidRequestError as e:
+                print(f"[DEBUG] Stripe InvalidRequestError: {str(e)}", flush=True)
+                if "No such customer" in str(e):
+                    # Customerが削除されている場合、DBのstripe_customer_idをクリア
+                    cursor.execute("""
+                        UPDATE users
+                        SET stripe_customer_id = NULL
+                        WHERE user_id = %s
+                    """, (user_id,))
+                    conn.commit()
+
+                return jsonify({
+                    "payment_methods": [],
+                    "default_payment_method": None,
+                    "debug_info": "stripe_customer_deleted"
+                })
+
+            except stripe.error.StripeError as e:
+                print(f"[DEBUG] Stripe error: {str(e)}", flush=True)
+                return jsonify({
+                    "error": f"Stripe error: {str(e)}",
+                    "payment_methods": [],
+                    "default_payment_method": None
+                }), 500
 
             # 支払い方法の情報を整形
             methods = []
@@ -500,6 +540,22 @@ def get_payment_methods():
 
             # 作成日時で降順ソート（新しいものが上）
             methods.sort(key=lambda x: x['created'], reverse=True)
+
+            # デフォルト支払い方法が設定されていない場合、最新の支払い方法をデフォルトに設定
+            if not default_payment_method_id and methods:
+                latest_method = methods[0]
+                try:
+                    stripe.Customer.modify(
+                        user['stripe_customer_id'],
+                        invoice_settings={
+                            'default_payment_method': latest_method['id']
+                        }
+                    )
+                    latest_method['is_default'] = True
+                    default_payment_method_id = latest_method['id']
+                    print(f"[DEBUG] Set default payment method to: {latest_method['id']}", flush=True)
+                except stripe.error.StripeError as e:
+                    print(f"[DEBUG] Failed to set default payment method: {str(e)}", flush=True)
 
             return jsonify({
                 "payment_methods": methods,

@@ -245,8 +245,35 @@ const PaymentMethodModal: React.FC<PaymentMethodModalProps> = ({
     setIsLoading(true);
     const paymentResponse = await getPaymentMethods(memorizeProfile.profile.id);
 
+    console.log("paymentResponse", paymentResponse);
+
     if (paymentResponse.success) {
       setPaymentMethods(paymentResponse.data.payment_methods);
+
+      // デバッグ情報がある場合は表示
+      if (paymentResponse.data.debug_info) {
+        if (paymentResponse.data.debug_info === "no_stripe_customer_id") {
+          toast({
+            title: "情報",
+            description:
+              "サブスクリプション情報が見つかりません。新しくカードを追加してください。",
+            status: "info",
+            duration: 7000,
+            isClosable: true,
+          });
+        } else if (
+          paymentResponse.data.debug_info === "stripe_customer_deleted"
+        ) {
+          toast({
+            title: "情報",
+            description:
+              "以前の決済情報が無効になっています。新しくカードを追加してください。",
+            status: "warning",
+            duration: 7000,
+            isClosable: true,
+          });
+        }
+      }
     } else {
       console.error("Payment methods fetch error:", paymentResponse.error);
       toast({
@@ -350,7 +377,7 @@ const PaymentMethodModal: React.FC<PaymentMethodModalProps> = ({
               {paymentMethods.length === 0 && !isAddingCard && (
                 <Alert status="info">
                   <AlertIcon />
-                  登録されているカードがありません
+                  登録されているカードがありません。新しいカードを追加してください。
                 </Alert>
               )}
 

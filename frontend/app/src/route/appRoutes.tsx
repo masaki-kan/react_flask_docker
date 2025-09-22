@@ -26,6 +26,7 @@ import CheckReactivationstatus from "../component/checkReactivationstatus/checkR
 import AdminLogin from "../component/admin/auth/adminLogin";
 import AdminDashboard from "../component/admin/dashboard/Dashboard";
 import SecureAdminLayout from "../component/layout/secureAdminLayout";
+import RiyouKiyaku from "../component/riyouKiyaku/riyouKiyaku";
 
 // 認証が必要なルートのラッパーコンポーネント
 const ProtectedLayout = () => {
@@ -75,6 +76,7 @@ const AppRoutes: FC = () => {
           <Route path={route.login} element={<Login />} />
           <Route path={route.singUp} element={<SingUp />} />
           <Route path={route.tokushoho} element={<TokushohoPage />} />
+          <Route path={route.terms} element={<RiyouKiyaku />} />
         </Route>
 
         {/** 管理者用認証ルート */}

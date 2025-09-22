@@ -16,7 +16,7 @@ export interface LoginErrorResponse {
 
 export const loginCheckApi = async (formdata: {
   email: string;
-}): Promise<ApiResponse<{ result: string }>> => {
+}): Promise<ApiResponse<{ result: boolean }>> => {
   try {
     const response = await axios.post(
       `${import.meta.env.VITE_API_URL}/api/loginCheck`,

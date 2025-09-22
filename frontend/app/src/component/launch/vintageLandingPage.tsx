@@ -292,6 +292,16 @@ const VintageLandingPage: FC = () => {
         >
           特定商取引法に基づく表記
         </Text>
+        <Text
+          fontSize={"xs"}
+          color="#A18249"
+          mb={2}
+          onClick={() => {
+            navigate(route.terms);
+          }}
+        >
+          利用規約
+        </Text>
         <Text fontSize="sm" color="#A18249" letterSpacing="wider">
           © 2025 僕らのヴィンテージ
         </Text>

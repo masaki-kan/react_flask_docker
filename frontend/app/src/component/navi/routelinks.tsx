@@ -7,11 +7,6 @@ import {
   Text,
   useColorModeValue,
   Icon,
-  // Menu,
-  // MenuButton,
-  // MenuList,
-  // MenuItem,
-  // MenuDivider,
   Link,
 } from "@chakra-ui/react";
 import { route } from "../../route/routeConst";
@@ -32,10 +27,6 @@ const RenderRouteLinks: FC = () => {
   const { savedList, getSavedListHandler } = useSaved();
   const [readSaveStatus, setReadSaveStatus] = useState<boolean>(false);
 
-  // カラーモード対応
-  // const bgColor = useColorModeValue("white", "gray.800");
-  // const borderColor = useColorModeValue("gray.200", "gray.700");
-  // const hoverBg = useColorModeValue("gray.50", "gray.700");
   const activeColor = useColorModeValue("blue.500", "blue.400");
 
   const readSaveTimestamps = useCallback(() => {
@@ -145,65 +136,6 @@ const RenderRouteLinks: FC = () => {
                 <Icon as={FaUserCircle} boxSize={8} />
               </>
             )}
-            {/* <Menu>
-              <MenuButton
-                as={Box}
-                cursor="pointer"
-                borderRadius="full"
-                _hover={{
-                  transform: "scale(1.05)",
-                }}
-                transition="all 0.2s"
-              >
-                {profile.profile.image.length > 0 ? (
-                  <Avatar
-                    size="md"
-                    src={profile.profile.image}
-                    name={profile.profile.name}
-                    border="2px solid"
-                    borderColor="transparent"
-                    _hover={{
-                      borderColor: activeColor,
-                    }}
-                  />
-                ) : (
-                  <Box
-                    p={2}
-                    borderRadius="full"
-                    bg={hoverBg}
-                    _hover={{
-                      bg: activeColor,
-                      color: "white",
-                    }}
-                    transition="all 0.2s"
-                  >
-                    <Icon as={FaUserCircle} boxSize={7} />
-                  </Box>
-                )}
-              </MenuButton>
-              <MenuList
-                bg={bgColor}
-                borderColor={borderColor}
-                boxShadow="lg"
-                py={2}
-                minW="250px"
-              >
-                <Box px={4} py={3}>
-                  <Text fontWeight="bold" fontSize="md">
-                    {profile.profile.name}
-                  </Text>
-                </Box>
-                <MenuDivider />
-                <MenuItem
-                  icon={<FaUser />}
-                  onClick={() => navigate(route.profile)}
-                  _hover={{ bg: hoverBg }}
-                  py={3}
-                >
-                  マイプロフィール
-                </MenuItem>
-              </MenuList>
-            </Menu> */}
           </HStack>
         </HStack>
       </Container>

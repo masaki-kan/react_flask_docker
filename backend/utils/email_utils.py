@@ -185,9 +185,9 @@ def reactivation_send_welcome_email(user_name, plan_type, to_email):
         return False
 
     plan = ""
-    if str(plan_type) == "1":
+    if str(plan_type) == "0":
         plan = "月額プラン ¥550/月"
-    elif str(plan_type) == "2":
+    elif str(plan_type) == "1":
         plan = "年額プラン ¥5,500/年"
         
     # 現在の日時を取得

@@ -31,11 +31,35 @@ const CreditCardSection: React.FC = () => {
     setIsLoading(true);
     const paymentResponse = await getPaymentMethods(memorizeProfile.profile.id);
 
+    console.log("creditCardSection paymentResponse", paymentResponse);
+
     if (paymentResponse.success) {
       const defaultMethod = paymentResponse.data.payment_methods.find(
         (m) => m.is_default
       );
       setDefaultCard(defaultMethod || null);
+
+      // デバッグ情報の処理
+      if (paymentResponse.data.debug_info) {
+        console.log("creditCardSection debug_info:", paymentResponse.data.debug_info);
+
+        if (paymentResponse.data.debug_info === "no_stripe_customer_id") {
+          console.log("No stripe customer ID found - user needs to set up payment");
+        } else if (paymentResponse.data.debug_info === "stripe_customer_deleted") {
+          console.log("Stripe customer was deleted - user needs to add new card");
+        }
+      }
+
+      // 支払い方法が見つからない場合のログ
+      if (paymentResponse.data.payment_methods.length === 0) {
+        console.log("No payment methods found for user");
+      } else {
+        console.log(`Found ${paymentResponse.data.payment_methods.length} payment methods`);
+        console.log("Payment methods:", paymentResponse.data.payment_methods);
+        if (!defaultMethod) {
+          console.log("No default payment method found");
+        }
+      }
     } else {
       console.error("Payment methods fetch error:", paymentResponse.error);
       toast({
@@ -75,6 +99,8 @@ const CreditCardSection: React.FC = () => {
         return "gray.500";
     }
   };
+
+  console.log("defaultCard", defaultCard);
 
   return (
     <>
@@ -129,7 +155,7 @@ const CreditCardSection: React.FC = () => {
         ) : (
           <VStack align="start" spacing={2}>
             <Text color={textMuted} fontSize="sm">
-              お支払い方法が登録されていません
+              お支払い方法が登録されていません。サブスクリプション決済情報を設定してください。
             </Text>
             <Button
               size="sm"

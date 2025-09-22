@@ -171,9 +171,9 @@ const ShopIndex: FC = () => {
       memorizeuserProfile.profile.id,
       myProfile.profile.id
     );
-    if (response !== undefined && response.result !== false) {
-      defaultToast(response.action);
-      setFollowCheck(response.result ?? false);
+    if (response !== undefined && response.success) {
+      defaultToast(response.data.action);
+      setFollowCheck(response.data.result ?? false);
       return;
     }
   }, [defaultToast, memorizeuserProfile.profile.id, myProfile.profile.id]);

@@ -114,26 +114,39 @@ def initialize_database():
 
 def initialize_app():
     """アプリケーション初期化"""
-    try:
-        # 接続プールの初期化
-        init_db_pool()
-        
-        # S3クライアントの初期化
-        init_s3_client()
-        
-        # SocketIOの初期化（スレッド通知用）
-        init_socketio(socketio)
-        
-        # データベーステーブルの初期化
-        initialize_database()
-        
-        # スケジューラーの起動
-        start_scheduler()
-        
-        logging.info("Application initialized successfully")
-    except Exception as e:
-        logging.error(f"Initialization error: {e}")
-        raise
+    import time
+    max_retries = 30
+    retry_count = 0
+
+    while retry_count < max_retries:
+        try:
+            # 接続プールの初期化（リトライ機能付き）
+            init_db_pool()
+
+            # S3クライアントの初期化
+            init_s3_client()
+
+            # SocketIOの初期化（スレッド通知用）
+            init_socketio(socketio)
+
+            # データベーステーブルの初期化
+            initialize_database()
+
+            # スケジューラーの起動
+            start_scheduler()
+
+            logging.info("Application initialized successfully")
+            return
+
+        except Exception as e:
+            retry_count += 1
+            if "Can't connect to MySQL server" in str(e) and retry_count < max_retries:
+                logging.warning(f"Database connection failed (attempt {retry_count}/{max_retries}). Retrying in 2 seconds...")
+                time.sleep(2)
+                continue
+            else:
+                logging.error(f"Initialization error: {e}")
+                raise
 
 # Flask 2.3以降の初期化方法
 with app.app_context():

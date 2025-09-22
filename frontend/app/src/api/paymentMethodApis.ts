@@ -14,6 +14,7 @@ export interface PaymentMethod {
 export interface PaymentMethodsResponse {
   payment_methods: PaymentMethod[];
   default_payment_method: string | null;
+  debug_info?: string;
 }
 
 // 支払い方法一覧を取得

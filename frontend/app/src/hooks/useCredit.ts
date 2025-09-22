@@ -36,19 +36,23 @@ const useCredit = (): useCreditReturn => {
       status: number
     ): Promise<StripePaymentResponse | undefined> => {
       const response = await createPaymentIntent(amount, status);
-      return response;
+
+      if ('success' in response && response.success === false) {
+        return undefined;
+      }
+      return response as StripePaymentResponse;
     },
     []
   );
 
   const updateDefaultPayment = useCallback(
     async (profileId: string, paymentMethodId: string) => {
-      const success = await updateDefaultPaymentMethod(
+      const response = await updateDefaultPaymentMethod(
         profileId,
         paymentMethodId
       );
 
-      return success;
+      return response.success;
     },
     []
   );
@@ -56,17 +60,23 @@ const useCredit = (): useCreditReturn => {
   // SetupIntentを作成
   const createSetupIntentHandler = useCallback(
     async (paymentMethodId: string) => {
-      const result = await createSetupIntent(paymentMethodId);
+      const response = await createSetupIntent(paymentMethodId);
 
-      return result;
+      if (response.success) {
+        return response.data;
+      }
+      return null;
     },
     []
   );
 
   const checkReactivationStatus = async (userId: number) => {
-    const response = await checkReactivationStatusApi(userId);
-
-    return response.statusText;
+    try {
+      const response = await checkReactivationStatusApi(userId);
+      return response.statusText || "OK";
+    } catch {
+      return "Error";
+    }
   };
 
   const reactivateAccount = async (
@@ -74,12 +84,16 @@ const useCredit = (): useCreditReturn => {
     payment_method_id: string | null | PaymentMethod,
     plan_type: number
   ) => {
-    const response = await reactivateAccountApi(
-      user_id,
-      payment_method_id,
-      plan_type
-    );
-    return response?.statusText;
+    try {
+      const response = await reactivateAccountApi(
+        user_id,
+        payment_method_id,
+        plan_type
+      );
+      return response?.statusText || "OK";
+    } catch {
+      return "Error";
+    }
   };
 
   return {
