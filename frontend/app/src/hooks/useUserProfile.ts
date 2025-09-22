@@ -56,7 +56,7 @@ export const useUserProfile = () => {
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "不明なエラー";
       setError(errorMessage);
-      console.error("Profile fetch error:", err);
+      // console.error("Profile fetch error:", err);
       return null;
     } finally {
       setIsLoading(false);
@@ -104,7 +104,7 @@ export const useUserProfile = () => {
         const errorMessage =
           err instanceof Error ? err.message : "不明なエラー";
         setError(errorMessage);
-        console.error("Admin profile fetch error:", err);
+        // console.error("Admin profile fetch error:", err);
         return null;
       } finally {
         setIsLoading(false);

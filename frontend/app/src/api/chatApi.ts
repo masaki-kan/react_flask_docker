@@ -55,13 +55,13 @@ export const uploadImageApi = async (
     if (axios.isAxiosError(error)) {
       // Axios エラーで、かつレスポンスが存在する場合
       if (error.response) {
-        console.error("Login error:", error.response.data);
+        // console.error("Login error:", error.response.data);
         createErrorResponse(error, "Error");
       } else {
         // レスポンスがない場合はネットワークエラーなど
-        console.error(
-          "Error: The request was made but no response was received"
-        );
+        // console.error(
+        //   "Error: The request was made but no response was received"
+        // );
         createErrorResponse(error, "Error");
       }
     } else {

@@ -97,11 +97,11 @@ export const createPaymentIntent = async (
     }
 
     // エラーログを記録（本番環境では適切なロギングサービスに送信）
-    console.error("Payment intent creation error:", {
-      message: errorMessage,
-      error: error,
-      timestamp: new Date().toISOString(),
-    });
+    // console.error("Payment intent creation error:", {
+    //   message: errorMessage,
+    //   error: error,
+    //   timestamp: new Date().toISOString(),
+    // });
 
     // エラーアラートを表示
     return createErrorResponse(error, errorMessage);
@@ -118,7 +118,7 @@ export const getSubscriptionInfo = async (userID: string) => {
 
     return response.data;
   } catch (error) {
-    console.error("Failed to get subscription info:", error);
+    // console.error("Failed to get subscription info:", error);
     return createErrorResponse(
       error,
       "サブスクリプション情報取得に失敗しました。"

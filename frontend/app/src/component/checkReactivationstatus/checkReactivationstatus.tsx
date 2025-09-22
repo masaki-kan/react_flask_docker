@@ -88,22 +88,42 @@ const ReactivationForm: FC<{
         await sweetStripeErrorOverAlert();
       } else if (result.setupIntent?.status === "succeeded") {
         // 再アクティベーション実行
+        // console.log("Starting reactivation process...");
 
         const paymentMethodId = result.setupIntent.payment_method as string;
+        // console.log("Payment method ID:", paymentMethodId);
+        // console.log("Profile ID:", profile.id);
+        // console.log("Plan type:", planType === "monthly" ? 0 : 1);
+
         const response = await reactivateAccount(
           profile.id,
           paymentMethodId,
           planType === "monthly" ? 0 : 1
         );
 
+        // console.log("Reactivation response:", response);
+
         if (response === "OK") {
+          // console.log("Reactivation successful, showing success alert...");
           await sweetSuccessTextOverAlert(
             planType === "monthly"
               ? "アカウントを再開しました。月額550円が課金されます。"
               : "アカウントを再開しました。年額5,500円のお支払いが完了しました。"
           );
-          onSuccess();
+          // console.log("Success alert closed, calling onSuccess...");
+
+          // プロフィール情報を再取得して最新の状態にする
+          try {
+            // 少し待ってからナビゲーション実行
+            setTimeout(() => {
+              onSuccess();
+            }, 100);
+          } catch (error) {
+            // console.error("Failed to navigate:", error);
+            onSuccess();
+          }
         } else {
+          // console.log("Reactivation failed, response was:", response);
           await sweetErrorOverAlert();
         }
       }
@@ -393,7 +413,10 @@ const CheckReactivationStatus: FC = () => {
   };
 
   const handleSuccess = useCallback(() => {
+    console.log("handleSuccess called, navigating to profile...");
+    console.log("route.profile:", route.profile);
     navigate(route.profile);
+    console.log("Navigation command executed");
   }, [navigate]);
 
   if (isLoading) {

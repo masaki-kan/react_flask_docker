@@ -46,7 +46,7 @@ export async function refreshUserToken(): Promise<boolean> {
 
     return false;
   } catch (error) {
-    console.error("Token refresh error:", error);
+    // console.error("Token refresh error:", error);
     return false;
   }
 }
@@ -82,7 +82,7 @@ export async function refreshAdminToken(): Promise<boolean> {
 
     return false;
   } catch (error) {
-    console.error("Admin token refresh error:", error);
+    // console.error("Admin token refresh error:", error);
     return false;
   }
 }

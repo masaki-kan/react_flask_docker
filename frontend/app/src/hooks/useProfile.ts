@@ -73,7 +73,7 @@ const useMyProfile = (): useMyProfileReturn => {
   // 自分のプロフィールデータ取得
   const getMyProfile = useCallback(async () => {
     if (Number(profile.profile.id) === 0) {
-      console.warn("Early return: profile.profile.id is 0");
+      // console.warn("Early return: profile.profile.id is 0");
       return;
     }
 
@@ -85,7 +85,7 @@ const useMyProfile = (): useMyProfileReturn => {
 
     // もしプロフィール情報が取得できない場合はログアウトする
     if (responseProfile === undefined) {
-      console.error("Profile API failed - responseProfile is undefined");
+      // console.error("Profile API failed - responseProfile is undefined");
       systemErrorLogoutAlert();
       logOutHandler();
       return;

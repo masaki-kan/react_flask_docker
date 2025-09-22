@@ -245,8 +245,6 @@ const PaymentMethodModal: React.FC<PaymentMethodModalProps> = ({
     setIsLoading(true);
     const paymentResponse = await getPaymentMethods(memorizeProfile.profile.id);
 
-    console.log("paymentResponse", paymentResponse);
-
     if (paymentResponse.success) {
       setPaymentMethods(paymentResponse.data.payment_methods);
 
@@ -275,7 +273,7 @@ const PaymentMethodModal: React.FC<PaymentMethodModalProps> = ({
         }
       }
     } else {
-      console.error("Payment methods fetch error:", paymentResponse.error);
+      // console.error("Payment methods fetch error:", paymentResponse.error);
       toast({
         title: "エラー",
         description: paymentResponse.error,

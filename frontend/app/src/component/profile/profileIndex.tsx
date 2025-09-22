@@ -231,29 +231,27 @@ const ProfileIndex: FC<profileIndexType> = ({ editFormSwitch }) => {
 
             <Divider />
             {/* プラン情報 */}
-            {profile.profile.plan && profile.profile.plan !== "0" && (
-              <Box w="full">
-                <HStack
-                  bg={sectionBg}
-                  px={4}
-                  py={2}
-                  borderRadius="lg"
-                  justify="space-between"
-                >
-                  <HStack>
-                    <Icon as={FaCrown} color="yellow.500" boxSize={5} />
-                    <VStack align="start" spacing={0}>
-                      <Text fontSize="sm" fontWeight="bold">
-                        {planView()?.title || "プラン情報"}
-                      </Text>
-                      <Text fontSize="xs" color={textMuted}>
-                        {planView()?.text || ""}
-                      </Text>
-                    </VStack>
-                  </HStack>
+            <Box w="full">
+              <HStack
+                bg={sectionBg}
+                px={4}
+                py={2}
+                borderRadius="lg"
+                justify="space-between"
+              >
+                <HStack>
+                  <Icon as={FaCrown} color="yellow.500" boxSize={5} />
+                  <VStack align="start" spacing={0}>
+                    <Text fontSize="sm" fontWeight="bold">
+                      {planView()?.title || "プラン情報"}
+                    </Text>
+                    <Text fontSize="xs" color={textMuted}>
+                      {planView()?.text || ""}
+                    </Text>
+                  </VStack>
                 </HStack>
-              </Box>
-            )}
+              </HStack>
+            </Box>
 
             <Button
               w="full"

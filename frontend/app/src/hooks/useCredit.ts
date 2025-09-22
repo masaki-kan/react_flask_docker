@@ -37,7 +37,7 @@ const useCredit = (): useCreditReturn => {
     ): Promise<StripePaymentResponse | undefined> => {
       const response = await createPaymentIntent(amount, status);
 
-      if ('success' in response && response.success === false) {
+      if ("success" in response && response.success === false) {
         return undefined;
       }
       return response as StripePaymentResponse;
@@ -90,8 +90,17 @@ const useCredit = (): useCreditReturn => {
         payment_method_id,
         plan_type
       );
-      return response?.statusText || "OK";
-    } catch {
+      // console.log("reactivateAccount API response:", response);
+
+      // レスポンスの内容を確認してステータスを判定
+      if (response?.data?.result === true) {
+        return "OK";
+      } else {
+        // console.error("Reactivation failed:", response?.data);
+        return "Error";
+      }
+    } catch (error) {
+      // console.error("Reactivation API error:", error);
       return "Error";
     }
   };
