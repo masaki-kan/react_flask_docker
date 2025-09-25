@@ -26,7 +26,7 @@ import CheckReactivationstatus from "../component/checkReactivationstatus/checkR
 import AdminLogin from "../component/admin/auth/adminLogin";
 import AdminDashboard from "../component/admin/dashboard/Dashboard";
 import SecureAdminLayout from "../component/layout/secureAdminLayout";
-import RiyouKiyaku from "../component/riyouKiyaku/riyouKiyaku";
+import RiyouKiyaku from "../component/riyoukiyaku/riyouKiyaku";
 
 // 認証が必要なルートのラッパーコンポーネント
 const ProtectedLayout = () => {

@@ -433,14 +433,14 @@ const ExchangeArchiveModal: FC<ExchangeArchiveModalProps> = ({
         <ModalCloseButton />
         <ModalBody
           pb={6}
-          // overflowY="auto"
-          // flex="1"
+          overflowY="auto"
+          flex="1"
           css={{
             // スマホでのスムーズスクロール対応
-            "-webkit-overflow-scrolling": "touch",
-            "overflow-scrolling": "touch",
+            WebkitOverflowScrolling: "touch",
+            overflowScrolling: "touch",
             // 自然なスクロールのための設定
-            "min-height": "0",
+            minHeight: "0",
           }}
         >
           {viewMode === "list" ? renderListView() : renderDetailView()}

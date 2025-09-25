@@ -83,7 +83,7 @@ const ItemForm: FC<ItemFormProps> = ({ profileItem, ItemNumver }) => {
       setFormValues({
         title: profileItem.title,
         description: profileItem.description,
-        images: profileItem.images || [],
+        images: profileItem.images?.map(img => img.image_url) || [],
         type: profileItem.type,
         brand: profileItem.brand,
       });
@@ -183,8 +183,8 @@ const ItemForm: FC<ItemFormProps> = ({ profileItem, ItemNumver }) => {
           profileItem?.itemId,
           Number(profile.profile.id)
         );
-        if (response?.message) {
-          defaultToast(response?.message);
+        if (response?.success) {
+          defaultToast(response?.data.message);
           navigate(route.profile);
         }
       }
@@ -206,47 +206,39 @@ const ItemForm: FC<ItemFormProps> = ({ profileItem, ItemNumver }) => {
 
     if (Object.values(newErrors).some((val) => val)) {
       changeLoading(false);
-      defaultToast("必須項目を入力してください");
       return;
     }
 
-    try {
-      const dateUpChange = ItemNumver !== undefined ? "update" : "insert";
-      const formData = new FormData();
+    const dateUpChange = ItemNumver !== undefined ? "update" : "insert";
+    const formData = new FormData();
 
-      formData.append("itemId", ItemNumver || "");
-      formData.append("userId", profile.profile.id);
-      formData.append("title", formValues.title);
-      formData.append("description", formValues.description);
-      formData.append("type", JSON.stringify(formValues.type));
-      formData.append("brand", JSON.stringify(formValues.brand));
-      formData.append("dateUpChange", dateUpChange);
+    formData.append("itemId", ItemNumver || "");
+    formData.append("userId", profile.profile.id);
+    formData.append("title", formValues.title);
+    formData.append("description", formValues.description);
+    formData.append("type", JSON.stringify(formValues.type));
+    formData.append("brand", JSON.stringify(formValues.brand));
+    formData.append("dateUpChange", dateUpChange);
 
-      // 画像の処理
-      formValues.images.forEach((image, index) => {
-        if (image instanceof File) {
-          // 新しい画像ファイル
-          formData.append("images", image);
-        } else if (typeof image === "string") {
-          // 既存の画像URL（編集時）
-          formData.append(`existing_images[${index}]`, image);
-        }
-      });
-
-      const response = await postStoreProfileItemApi(formData);
-
-      if (response?.status !== false) {
-        defaultToast(response?.message || "登録完了しました");
-        navigate(route.profile);
+    // 画像の処理
+    formValues.images.forEach((image, index) => {
+      if (image instanceof File) {
+        // 新しい画像ファイル
+        formData.append("images", image);
+      } else if (typeof image === "string") {
+        // 既存の画像URL（編集時）
+        formData.append(`existing_images[${index}]`, image);
       }
-      changeLoading(false);
-      return;
-    } catch (error) {
-      console.error("Error:", error);
-      defaultToast("登録中にエラーが発生しました");
-    } finally {
-      changeLoading(false);
+    });
+
+    const response = await postStoreProfileItemApi(formData);
+
+    if (response.success) {
+      defaultToast(response.data.message || "登録完了しました");
+      navigate(route.profile);
     }
+    changeLoading(false);
+    return;
   }, [
     ItemNumver,
     changeLoading,

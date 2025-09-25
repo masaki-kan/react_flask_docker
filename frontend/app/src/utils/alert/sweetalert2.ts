@@ -1,17 +1,4 @@
 import Swal from "sweetalert2";
-import { route } from "../../route/routeConst";
-
-export const errorSweetalert2 = (errorTitle: string) => {
-  Swal.fire({
-    title: "",
-    text: errorTitle,
-    icon: "error",
-  }).then((result) => {
-    if (result.isConfirmed) {
-      window.location.href = route.profile;
-    }
-  });
-};
 
 // 新しいエラーハンドリング: Toast通知用のエラー情報を返す
 export interface ApiError {
@@ -37,8 +24,10 @@ export const createErrorResponse = (
   let statusCode: number | undefined;
   let errorMessage: string;
 
-  if (error && typeof error === 'object' && 'response' in error) {
-    const axiosError = error as { response?: { status?: number; data?: { error?: string } } };
+  if (error && typeof error === "object" && "response" in error) {
+    const axiosError = error as {
+      response?: { status?: number; data?: { error?: string } };
+    };
     statusCode = axiosError.response?.status;
     errorMessage = axiosError.response?.data?.error || defaultMessage;
   } else {
@@ -47,16 +36,16 @@ export const createErrorResponse = (
 
   // トーストを自動表示（オプション）
   if (autoShowToast) {
-    import('../toast/toastManager').then(({ showErrorToast }) => {
+    import("../toast/toastManager").then(({ showErrorToast }) => {
       showErrorToast(errorMessage, statusCode);
     });
   }
-  
+
   return {
     success: false,
     error: errorMessage,
     statusCode,
-    shouldRetry: statusCode ? statusCode >= 500 || statusCode === 408 : false // サーバーエラーまたはタイムアウト
+    shouldRetry: statusCode ? statusCode >= 500 || statusCode === 408 : false, // サーバーエラーまたはタイムアウト
   };
 };
 

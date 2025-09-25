@@ -360,7 +360,7 @@ const LoginForm: FC = () => {
 
                   <Divider borderColor="gray.200" />
 
-                  <Text fontSize="sm" color="gray.600">
+                  {/* <Text fontSize="sm" color="gray.600">
                     アカウントをお持ちでない方は{" "}
                     <Button
                       variant="link"
@@ -372,7 +372,7 @@ const LoginForm: FC = () => {
                     >
                       新規登録へ
                     </Button>
-                  </Text>
+                  </Text> */}
                   <Text fontSize="sm" color="gray.600">
                     <Link
                       color="#887563"

@@ -100,7 +100,7 @@ const useCredit = (): useCreditReturn => {
         return "Error";
       }
     } catch (error) {
-      // console.error("Reactivation API error:", error);
+      console.error("Reactivation API error:", error);
       return "Error";
     }
   };

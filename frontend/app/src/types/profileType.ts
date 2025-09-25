@@ -33,3 +33,11 @@ export interface profileItemType {
   type: string;
   brand: { key: string; name: string };
 }
+
+export interface profileResponse {
+  success: boolean;
+  data: {
+    message: string;
+    status: boolean;
+  };
+}

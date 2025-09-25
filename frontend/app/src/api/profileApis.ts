@@ -129,12 +129,7 @@ export const getProfileItemsApi = async (
 // 自分のプロフ更新
 export const postStoreProfileApi = async (
   formData: profileType
-): Promise<
-  ApiResponse<{
-    message: string;
-    status: boolean;
-  }>
-> => {
+): Promise<ApiResponse<{ message: string; status: boolean }>> => {
   try {
     const response = await axios.post(
       `${import.meta.env.VITE_API_URL}/api/postStoreProfile`,
@@ -151,18 +146,14 @@ export const postStoreProfileApi = async (
       },
     };
   } catch (error: unknown) {
-    let errorMessage = "予期しないエラーが発生しました";
-
-    if (axios.isAxiosError(error) && error.response?.data?.error) {
-      errorMessage = error.response.data.error;
-    }
-
-    return createErrorResponse(error, errorMessage);
+    return createErrorResponse(error, "プロフィール更新に失敗しました");
   }
 };
 
 // 自分のプロフ 商品登録
-export const postStoreProfileItemApi = async (formData: FormData) => {
+export const postStoreProfileItemApi = async (
+  formData: FormData
+): Promise<ApiResponse<{ message: string; status: boolean }>> => {
   try {
     const response = await axios.post(
       `${import.meta.env.VITE_API_URL}/api/postStoreProfileItem`,
@@ -175,8 +166,11 @@ export const postStoreProfileItemApi = async (formData: FormData) => {
     );
 
     return {
-      status: response.data.result,
-      message: response.data.message,
+      success: true,
+      data: {
+        message: response.data.message,
+        status: response.data.result,
+      },
     };
   } catch (error: unknown) {
     let errorMessage = "予期しないエラーが発生しました";
@@ -218,7 +212,7 @@ export const cancellationProcessApi = async (userID: string) => {
 export const deleteUserItemApi = async (
   item_id: string,
   my_user_id: number
-) => {
+): Promise<ApiResponse<{ message: string; status: boolean }>> => {
   try {
     const response = await axios.post(
       `${import.meta.env.VITE_API_URL}/api/deleteUserItem`,
@@ -229,8 +223,11 @@ export const deleteUserItemApi = async (
     );
 
     return {
-      status: response.data.result,
-      message: response.data.message,
+      success: true,
+      data: {
+        status: response.data.result,
+        message: response.data.message,
+      },
     };
   } catch (error: unknown) {
     let errorMessage = "予期しないエラーが発生しました";

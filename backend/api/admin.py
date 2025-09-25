@@ -36,21 +36,53 @@ def admin_dashboard():
             # 総ユーザー数（利用者のみ）
             cursor.execute('SELECT COUNT(*) as count FROM users WHERE type = 1')
             total_users = cursor.fetchone()['count']
+            cursor.execute('SELECT COUNT(*) as count FROM items')
+            item_total = cursor.fetchone()['count']
+            
+            # ユーザーデータ　商品数、ユーザー一覧
+            cursor.execute("""
+                SELECT
+                    u.user_id,
+                    u.name,
+                    u.email,
+                    u.created_at,
+                    u.updated_at,
+                    u.is_deleted,
+                    u.plan,
+                    COALESCE(item_counts.item_count, 0) as item_count
+                FROM users u
+                LEFT JOIN (
+                    SELECT
+                        user_id,
+                        COUNT(*) as item_count
+                    FROM items
+                    GROUP BY user_id
+                ) item_counts ON u.user_id = item_counts.user_id
+                WHERE u.type = 1
+                ORDER BY u.created_at DESC
+            """)
+            users = cursor.fetchall()
             
             # 他の統計データ...
             
             return jsonify({
+                "result": True,
                 "stats": {
+                    "totalItems" : item_total,
                     "totalUsers": total_users,
-                    # 他の統計...
+                    "users": users
                 },
-                "charts": {
-                    # チャートデータ...
-                }
+                "charts": {}
             })
-            
+
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        print(f"[ERROR] Admin dashboard error: {str(e)}", flush=True)
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            "result": False,
+            "error": f"ダッシュボードデータの取得に失敗しました: {str(e)}"
+        }), 500
     
 @admin_bp.route('/admin/cleanup-archives', methods=['POST'])
 def manual_cleanup_archives():

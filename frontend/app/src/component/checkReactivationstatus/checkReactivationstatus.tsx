@@ -38,7 +38,7 @@ import { stripePromise } from "../../consts/stripe";
 import { profileType } from "../../types/profileType";
 import axios from "axios";
 import useLog from "../../hooks/useLog";
-import { errorSweetalert2 } from "../../utils/alert/sweetalert2";
+import { createErrorResponse } from "../../utils/alert/sweetalert2";
 import { useNavigate } from "react-router-dom";
 import useCredit from "../../hooks/useCredit";
 import { route } from "../../route/routeConst";
@@ -119,7 +119,7 @@ const ReactivationForm: FC<{
               onSuccess();
             }, 100);
           } catch (error) {
-            // console.error("Failed to navigate:", error);
+            console.error("Failed to navigate:", error);
             onSuccess();
           }
         } else {
@@ -128,14 +128,10 @@ const ReactivationForm: FC<{
         }
       }
     } catch (error: unknown) {
-      let errorMessage = "予期しないエラーが発生しました";
-
-      if (axios.isAxiosError(error) && error.response?.data?.error) {
-        errorMessage = error.response.data.error;
-      }
-
-      errorSweetalert2(errorMessage);
-      return;
+      return createErrorResponse(
+        error,
+        "アカウント再開中にエラーが発生しました"
+      );
     }
 
     setLoading(false);

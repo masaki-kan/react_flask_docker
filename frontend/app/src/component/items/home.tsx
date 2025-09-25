@@ -56,22 +56,21 @@ const Home: FC = () => {
     getItemListHandler();
   });
 
-  // スクロールでさらに読み込み
+  // スクロールでさらに読み込み（ウィンドウスクロールに変更）
   useEffect(() => {
-    const scrollContainer = document.querySelector(".main-scroll-container");
-    if (!scrollContainer) return;
-
     const handleScroll = () => {
       if (isLoading || !hasMore) return;
 
-      const { scrollTop, scrollHeight, clientHeight } = scrollContainer;
-      if (scrollTop + clientHeight >= scrollHeight - 100) {
+      const { scrollY } = window;
+      const { scrollHeight, clientHeight } = document.documentElement;
+
+      if (scrollY + clientHeight >= scrollHeight - 100) {
         loadMoreItems();
       }
     };
 
-    scrollContainer.addEventListener("scroll", handleScroll);
-    return () => scrollContainer.removeEventListener("scroll", handleScroll);
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
   }, [isLoading, hasMore, loadMoreItems]);
 
   const itemDetailHandler = useCallback(

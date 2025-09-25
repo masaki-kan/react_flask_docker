@@ -18,8 +18,8 @@ const Profile: FC = () => {
   const formStoreEventHandler = useCallback(
     async (formdata: profileType) => {
       const response = await postStoreProfileApi(formdata);
-      if (response?.status !== false) {
-        defaultToast(response?.message);
+      if (response.success) {
+        defaultToast(response.data.message);
         getMyProfile();
       }
     },
