@@ -3,18 +3,7 @@ import { useAppColors } from "../../utils/theme/colorModeUtils";
 import { Box, Container, VStack, Heading, Text } from "@chakra-ui/react";
 
 const RiyouKiyaku: FC = () => {
-  const {
-    pageBg,
-    cardBg,
-    borderColor,
-    accentColor,
-    textColor,
-    headingColor,
-    infoBg,
-    infoBorder,
-    successBg,
-    successBorder,
-  } = useAppColors();
+  const { pageBg, textColor, headingColor } = useAppColors();
 
   const businessInfo = {
     serviceName: "僕らのヴィンテージ",
