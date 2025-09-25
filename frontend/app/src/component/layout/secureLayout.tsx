@@ -9,12 +9,7 @@ const SecureLayout: FC = () => {
   const location = useLocation();
 
   return (
-    <Box
-      minHeight="100vh"
-      display="flex"
-      flexDirection="column"
-      bg="#f5f5f5"
-    >
+    <Box minHeight="100vh" display="flex" flexDirection="column" bg="#f5f5f5">
       {/* ヘッダー固定 */}
       <Box
         position="fixed"
@@ -30,7 +25,7 @@ const SecureLayout: FC = () => {
         <MainHeader />
       </Box>
 
-      {/* メインコンテンツ */}
+      {/* メインコンテンツ  */}
       <Box
         flex="1"
         marginTop={{ base: "90px", md: "60px" }}
