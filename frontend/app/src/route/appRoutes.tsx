@@ -26,6 +26,9 @@ import CheckReactivationstatus from "../component/checkReactivationstatus/checkR
 import AdminLogin from "../component/admin/auth/adminLogin";
 import AdminDashboard from "../component/admin/dashboard/Dashboard";
 import SecureAdminLayout from "../component/layout/secureAdminLayout";
+import NotFound from "../component/pages/notFound";
+import RiyouKiyaku from "../component/riyoukiyaku/riyouKiyaku";
+import PrivacyPolicy from "../component/privacy/privacyPolicy";
 
 // 認証が必要なルートのラッパーコンポーネント
 const ProtectedLayout = () => {
@@ -75,6 +78,8 @@ const AppRoutes: FC = () => {
           <Route path={route.login} element={<Login />} />
           <Route path={route.singUp} element={<SingUp />} />
           <Route path={route.tokushoho} element={<TokushohoPage />} />
+          <Route path={route.terms} element={<RiyouKiyaku />} />
+          <Route path={route.privacy} element={<PrivacyPolicy />} />
         </Route>
 
         {/** 管理者用認証ルート */}
@@ -102,7 +107,7 @@ const AppRoutes: FC = () => {
         </Route>
 
         {/* 404ページ */}
-        <Route path="*" element={<h1>Not Found Page</h1>} />
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </AuthProvider>
   );

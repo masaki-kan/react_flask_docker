@@ -297,6 +297,16 @@ const VintageLandingPage: FC = () => {
           color="#A18249"
           mb={2}
           onClick={() => {
+            navigate(route.privacy);
+          }}
+        >
+          プライバシーポリシー
+        </Text>
+        <Text
+          fontSize={"xs"}
+          color="#A18249"
+          mb={2}
+          onClick={() => {
             navigate(route.terms);
           }}
         >
