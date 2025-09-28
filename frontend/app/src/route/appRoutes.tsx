@@ -65,6 +65,17 @@ const AppRoutes: FC = () => {
   useEffect(() => {
     // pathname 変更のたびに保存（初回除くなら条件追加）
     dispatch(setPreviousUrl(location.pathname));
+
+    // ページトップにスクロール（より確実に）
+    window.scrollTo({
+      top: 0,
+      left: 0,
+      behavior: 'auto'
+    });
+
+    // documentElementとbodyの両方をリセット
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
   }, [dispatch, location.pathname]);
 
   return (

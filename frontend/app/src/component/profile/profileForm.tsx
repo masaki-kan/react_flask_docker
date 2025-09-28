@@ -195,8 +195,6 @@ const ProfileForm: FC<ProfileFormProps> = ({
     changeLoading(false);
   }, [changeLoading, formData, formStoreEvent]);
 
-  window.scrollTo(0, 0);
-
   return (
     <>
       {/* ヘッダー */}

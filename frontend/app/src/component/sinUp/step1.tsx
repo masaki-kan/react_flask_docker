@@ -12,6 +12,8 @@ import {
   InputRightElement,
   Button,
   Text,
+  Checkbox,
+  Link,
 } from "@chakra-ui/react";
 import { FC, useState } from "react";
 import {
@@ -115,11 +117,47 @@ const Step1: FC<Step1Type> = ({ errors, formData, setFormData, nextStep }) => {
         </FormControl>
       </VStack>
 
+      {/* 利用規約同意チェックボックス */}
+      <Box>
+        <Checkbox
+          isChecked={formData.agreeToTerms}
+          onChange={(e) =>
+            setFormData({ ...formData, agreeToTerms: e.target.checked })
+          }
+          colorScheme="orange"
+        >
+          <Text fontSize="sm">
+            <Link
+              href="/terms"
+              color="orange.500"
+              textDecoration="underline"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              利用規約
+            </Link>
+            および
+            <Link
+              href="/privacy"
+              color="orange.500"
+              textDecoration="underline"
+              target="_blank"
+              rel="noopener noreferrer"
+              ml={1}
+            >
+              プライバシーポリシー
+            </Link>
+            に同意します
+          </Text>
+        </Checkbox>
+      </Box>
+
       <Button
         colorScheme="orange"
         size="lg"
         onClick={nextStep}
         rightIcon={<FaChevronRight />}
+        isDisabled={!formData.agreeToTerms}
       >
         次へ進む
       </Button>

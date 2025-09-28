@@ -18,6 +18,7 @@ export interface sinupFormType {
   shopName?: string;
   url?: string;
   reason?: string;
+  agreeToTerms: boolean; // 利用規約同意フラグ
 
   // Stripe関連
   clientSecret?: string;

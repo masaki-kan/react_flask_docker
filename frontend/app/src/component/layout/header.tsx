@@ -36,18 +36,6 @@ const Header: FC<HeaderPropsType> = ({ loginSwitch }) => {
             >
               始める
             </Button>
-            {/* <Button
-              minW="80px"
-              maxW="480px"
-              bg="#e68019"
-              color="#181411"
-              fontSize="xs"
-              fontWeight="bold"
-              size="sm"
-              onClick={singupClick}
-            >
-              Sign up
-            </Button> */}
           </HStack>
         </HStack>
       </Stack>

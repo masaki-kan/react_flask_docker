@@ -42,7 +42,8 @@ const SingUpForm: FC = memo(() => {
     email: "",
     password: "",
     location: "",
-    plan: "1",
+    plan: "0", // "0": 月額プラン（初月無料）, "1": 年額プラン
+    agreeToTerms: false,
     clientSecret: "",
     stripeCustomerId: "",
     intentId: "",
@@ -85,6 +86,18 @@ const SingUpForm: FC = memo(() => {
             }
           }
         }
+
+        // 利用規約同意のチェック
+        if (!formData.agreeToTerms) {
+          toast({
+            title: "利用規約への同意が必要です",
+            description: "利用規約およびプライバシーポリシーに同意してください",
+            status: "warning",
+            duration: 3000,
+            isClosable: true,
+          });
+          return false;
+        }
       }
 
       setErrors(newErrors);
@@ -93,38 +106,6 @@ const SingUpForm: FC = memo(() => {
     [formData]
   );
 
-  const createPaymentIntent = useCallback(async () => {
-    setLoading(true);
-    try {
-      // plan "0" は月額プラン（status 0）、"1" は年額プラン（status 1）
-      const planStatus = formData.plan === "0" ? 0 : 1;
-
-      const response = await getCreatePaymentIntent(
-        formData.plan === "0" ? "550" : "5500",
-        planStatus
-      );
-
-      if (response !== undefined) {
-        setFormData({
-          ...formData,
-          clientSecret: response.clientSecret,
-          stripeCustomerId: response.stripeCustomerId,
-          subscriptionId: response.subscriptionId,
-          intentId: response.intentId,
-          paymentType: response.type,
-        });
-      }
-    } catch {
-      toast({
-        title: "エラー",
-        description: "決済の準備に失敗しました",
-        status: "error",
-        duration: 5000,
-      });
-    } finally {
-      setLoading(false);
-    }
-  }, [formData, getCreatePaymentIntent, toast]);
 
   const prevStep = () => {
     setCurrentStep(currentStep - 1);
@@ -132,12 +113,9 @@ const SingUpForm: FC = memo(() => {
 
   const nextStep = useCallback(async () => {
     if (await validateStep(currentStep)) {
-      if (currentStep === 2) {
-        await createPaymentIntent();
-      }
       setCurrentStep((prevStep) => prevStep + 1);
     }
-  }, [createPaymentIntent, currentStep, validateStep]);
+  }, [currentStep, validateStep]);
 
   const handleFinalSubmit = async () => {
     setShowSuccess(true);
@@ -157,6 +135,7 @@ const SingUpForm: FC = memo(() => {
       description: "毎月のお支払い",
       badge: "初月無料",
       color: "blue",
+      recommended: true, // 月額プランを推奨に変更
       features: [
         "出品・購入・取引が可能",
         "プロフィールカスタマイズ",
@@ -172,7 +151,6 @@ const SingUpForm: FC = memo(() => {
       badge: "お得！",
       save: "¥1,000お得!",
       color: "orange",
-      recommended: true,
       features: [
         "出品・購入・取引が可能",
         "プロフィールカスタマイズ",
