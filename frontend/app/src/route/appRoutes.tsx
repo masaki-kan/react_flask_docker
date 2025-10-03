@@ -27,8 +27,8 @@ import AdminLogin from "../component/admin/auth/adminLogin";
 import AdminDashboard from "../component/admin/dashboard/Dashboard";
 import SecureAdminLayout from "../component/layout/secureAdminLayout";
 import NotFound from "../component/pages/notFound";
-import RiyouKiyaku from "../component/riyoukiyaku/riyouKiyaku";
 import PrivacyPolicy from "../component/privacy/privacyPolicy";
+import RiyouKiyaku from "../component/riyoukiyaku/riyouKiyaku";
 
 // 認証が必要なルートのラッパーコンポーネント
 const ProtectedLayout = () => {
