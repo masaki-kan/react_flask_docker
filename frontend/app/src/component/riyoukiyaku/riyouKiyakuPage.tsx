@@ -16,7 +16,7 @@ import {
   CardBody,
 } from "@chakra-ui/react";
 
-const RiyouKiyaku: FC = () => {
+const RiyouKiyakuPage: FC = () => {
   const { pageBg, cardBg, borderColor, textColor, headingColor, accentColor } =
     useAppColors();
 
@@ -469,4 +469,4 @@ const RiyouKiyaku: FC = () => {
   );
 };
 
-export default RiyouKiyaku;
+export default RiyouKiyakuPage;
