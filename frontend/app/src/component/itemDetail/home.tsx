@@ -66,7 +66,6 @@ const Home: FC = () => {
   });
   // カラーモードに対応した色
   const bgColor = useColorModeValue("white", "gray.800");
-  // const borderColor = useColorModeValue("gray.200", "gray.700");
   const textMuted = useColorModeValue("gray.600", "gray.400");
   const hoverBg = useColorModeValue("gray.50", "gray.700");
 
@@ -123,10 +122,10 @@ const Home: FC = () => {
       );
 
       const setDate = {
-        profImage: filteredItems[0].profile_image,
+        profImage: filteredItems[0].profile_image || "",
         itemId: filteredItems[0].itemId,
-        uesrname: filteredItems[0].user_name,
-        userId: String(filteredItems[0].user_id),
+        uesrname: filteredItems[0].uesrname || "",
+        userId: String(filteredItems[0].userId || 0),
         itemUpdateTime: viewDate(filteredItems[0].uploaded_at),
         title: filteredItems[0].title,
         description: filteredItems[0].description,
@@ -198,8 +197,8 @@ const Home: FC = () => {
       itemDetailData.userId // 商品出品ユーザーID
     );
 
-    if (response !== undefined) {
-      defaultToast(response.message);
+    if (response.success === true) {
+      defaultToast(response.data.message);
       navigate(route.saved);
     }
   }, [

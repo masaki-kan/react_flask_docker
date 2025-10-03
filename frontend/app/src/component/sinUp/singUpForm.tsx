@@ -21,15 +21,13 @@ import Step2 from "./step2";
 import Step3 from "./step3";
 import { FaCheck } from "react-icons/fa";
 import { loginCheckApi } from "../../api/loginApis";
-import useCredit from "../../hooks/useCredit";
 import { useNavigate } from "react-router-dom";
 import { route } from "../../route/routeConst";
+import { plans } from "../../consts/profileConsts";
 
 const SingUpForm: FC = memo(() => {
-  const { getCreatePaymentIntent } = useCredit();
   const navigate = useNavigate();
   const toast = useToast();
-  const [loading, setLoading] = useState(false);
   const [currentStep, setCurrentStep] = useState<number>(1);
   const [showSuccess, setShowSuccess] = useState<boolean>(false);
   const [errors, setErrors] = useState<errorStateType>({
@@ -103,9 +101,8 @@ const SingUpForm: FC = memo(() => {
       setErrors(newErrors);
       return Object.values(newErrors).every((val) => val === "");
     },
-    [formData]
+    [formData, toast]
   );
-
 
   const prevStep = () => {
     setCurrentStep(currentStep - 1);
@@ -124,40 +121,6 @@ const SingUpForm: FC = memo(() => {
       navigate(route.login);
     }, 2000);
   };
-
-  // プラン情報
-  const plans = [
-    {
-      id: "0",
-      name: "月額プラン",
-      price: "¥550",
-      period: "/月",
-      description: "毎月のお支払い",
-      badge: "初月無料",
-      color: "blue",
-      recommended: true, // 月額プランを推奨に変更
-      features: [
-        "出品・購入・取引が可能",
-        "プロフィールカスタマイズ",
-        "優先サポート対応",
-      ],
-    },
-    {
-      id: "1",
-      name: "年額プラン",
-      price: "¥5,500",
-      period: "/年",
-      description: "年間一括払い",
-      badge: "お得！",
-      save: "¥1,000お得!",
-      color: "orange",
-      features: [
-        "出品・購入・取引が可能",
-        "プロフィールカスタマイズ",
-        "優先サポート対応",
-      ],
-    },
-  ];
 
   // プログレスバー
   const ProgressBar = () => (
@@ -230,7 +193,7 @@ const SingUpForm: FC = memo(() => {
                 nextStep={nextStep}
                 plans={plans}
                 prevStep={prevStep}
-                loading={loading}
+                loading={false}
               />
             )}
             {currentStep === 3 && (
@@ -238,7 +201,7 @@ const SingUpForm: FC = memo(() => {
                 plans={plans}
                 formData={formData}
                 prevStep={prevStep}
-                loading={loading}
+                loading={false}
                 handleFinalSubmit={handleFinalSubmit}
                 setFormData={setFormData}
                 onSuccess={handleFinalSubmit}

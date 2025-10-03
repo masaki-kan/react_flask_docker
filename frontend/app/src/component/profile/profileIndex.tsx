@@ -16,6 +16,7 @@ import {
   Divider,
   useColorModeValue,
   IconButton,
+  useToast,
 } from "@chakra-ui/react";
 import MyItems from "./myItems";
 import useMyProfile from "../../hooks/useProfile";
@@ -33,6 +34,7 @@ import {
   FaComment,
   FaCrown,
   FaHistory,
+  FaTrash,
 } from "react-icons/fa";
 import { IconType } from "react-icons";
 import ExchangeArchiveModal from "../archive/exchangeArchiveModal";
@@ -47,6 +49,7 @@ type profileIndexType = {
 
 const ProfileIndex: FC<profileIndexType> = ({ editFormSwitch }) => {
   const navigate = useNavigate();
+  const toast = useToast();
   const { memorizeProfile, getMyProfile } = useMyProfile();
   // プロフィール情報は即座に表示
   const profile = useMemo(() => memorizeProfile, [memorizeProfile]);
@@ -152,14 +155,17 @@ const ProfileIndex: FC<profileIndexType> = ({ editFormSwitch }) => {
   const planView = (): {
     title: string;
     text: string;
-    option: string;
-    sub: string;
+    price: string;
   } | null => {
     if (profile.profile.plan) {
-      const plan = plans
-        .filter((p) => p.planKey === profile.profile.plan)
-        .map((p) => p.planContents);
-      return plan[0];
+      const plan = plans.find((p) => p.id === profile.profile.plan);
+      if (plan) {
+        return {
+          title: plan.name,
+          text: plan.description,
+          price: plan.price,
+        };
+      }
     }
 
     return null;
@@ -168,6 +174,37 @@ const ProfileIndex: FC<profileIndexType> = ({ editFormSwitch }) => {
   const toItemPushHandler = useCallback(() => {
     navigate(route.myItem);
   }, [navigate]);
+
+  const clearCacheHandler = useCallback(async () => {
+    try {
+      toast({
+        title: "キャッシュをクリア中...",
+        description: "データを再取得しています",
+        status: "info",
+        duration: 2000,
+        isClosable: true,
+      });
+
+      // プロフィールデータを再取得
+      await getMyProfile();
+
+      toast({
+        title: "キャッシュクリア完了",
+        description: "プロフィールデータを更新しました",
+        status: "success",
+        duration: 3000,
+        isClosable: true,
+      });
+    } catch {
+      toast({
+        title: "エラー",
+        description: "キャッシュクリアに失敗しました",
+        status: "error",
+        duration: 3000,
+        isClosable: true,
+      });
+    }
+  }, [getMyProfile, toast]);
 
   return (
     <Grid templateColumns={{ base: "1fr", lg: "350px 1fr" }} gap={2}>
@@ -246,6 +283,7 @@ const ProfileIndex: FC<profileIndexType> = ({ editFormSwitch }) => {
                       {planView()?.title || "プラン情報"}
                     </Text>
                     <Text fontSize="xs" color={textMuted}>
+                      {planView()?.price}
                       {planView()?.text || ""}
                     </Text>
                   </VStack>
@@ -410,10 +448,35 @@ const ProfileIndex: FC<profileIndexType> = ({ editFormSwitch }) => {
             <Heading size="md" mb={4}>
               アカウント設定
             </Heading>
-            <HStack justify="space-between">
-              <LogOut />
-              <WithdrawalButton />
-            </HStack>
+            <VStack spacing={4} align="stretch">
+              {/* キャッシュクリアボタン */}
+              <Box>
+                <Text fontSize="sm" color={textMuted} mb={2}>
+                  データの更新
+                </Text>
+                <Button
+                  w="full"
+                  size="md"
+                  colorScheme="gray"
+                  variant="outline"
+                  leftIcon={<FaTrash />}
+                  onClick={clearCacheHandler}
+                >
+                  キャッシュをクリア
+                </Button>
+              </Box>
+
+              {/* ログアウト・退会ボタン */}
+              <Box>
+                <Text fontSize="sm" color={textMuted} mb={2}>
+                  アカウント操作
+                </Text>
+                <HStack justify="space-between">
+                  <LogOut />
+                  <WithdrawalButton />
+                </HStack>
+              </Box>
+            </VStack>
           </Box>
 
           {/* 交換履歴モーダル */}

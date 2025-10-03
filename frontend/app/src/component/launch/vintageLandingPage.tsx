@@ -94,26 +94,19 @@ const VintageLandingPage: FC = () => {
       >
         <Box
           position="relative"
-          overflow="hidden"
-          bgImage="linear-gradient(rgba(28, 22, 12, 0.3), rgba(28, 22, 12, 0.6)), url('https://cdn.usegalileo.ai/sdxl10/e3fe2854-4f36-4375-893a-e081d9b8899a.png')"
-          bgSize="cover"
-          bgPosition="center"
-          bgAttachment="fixed"
+          // overflow="hidden"
+          // bgImage="linear-gradient(rgba(28, 22, 12, 0.3), rgba(28, 22, 12, 0.6)), url('https://cdn.usegalileo.ai/sdxl10/e3fe2854-4f36-4375-893a-e081d9b8899a.png')"
+          bgImage={"/背景.svg"}
+          // bgSize="cover"
+          // bgPosition="center"
+          // bgAttachment="fixed"
           py={24}
           px={4}
           textAlign="center"
-          color="white"
-          _before={{
-            content: '""',
-            position: "absolute",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background:
-              "radial-gradient(circle at center, transparent 0%, rgba(0,0,0,0.4) 100%)",
-            pointerEvents: "none",
-          }}
+          height={"500px"}
+          backgroundPosition={"center"}
+          backgroundRepeat={"no-repeat"}
+          backgroundSize={"cover"}
         >
           <motion.div
             initial={{ opacity: 0, y: 50 }}
@@ -128,14 +121,17 @@ const VintageLandingPage: FC = () => {
             >
               <Image
                 src={"/ロゴ.svg"}
-                height="82px"
-                mx={"auto"}
-                textTransform="uppercase"
+                height={{ base: "60px", md: "82px" }}
+                position={"absolute"}
+                top={"50%"}
+                left={"50%"}
+                transform={"translate(-50%, -50%)"}
+                zIndex={10}
               />
             </Heading>
           </motion.div>
 
-          <motion.div
+          {/* <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.5 }}
@@ -151,7 +147,7 @@ const VintageLandingPage: FC = () => {
               <br />
               ヴィンテージをもっと楽しく, もっと自由に。
             </Text>
-          </motion.div>
+          </motion.div> */}
         </Box>
       </MotionBox>
 

@@ -15,24 +15,37 @@ export const genres = [
   { brandKey: 13, brandName: "BAND T-SHIRTS バンT" },
 ];
 
+// プラン情報
 export const plans = [
   {
-    planKey: "0",
-    planContents: {
-      title: "月額プラン",
-      text: "¥550/月",
-      option: "初月無料",
-      sub: "いつでも解約可能",
-    },
+    id: "0",
+    name: "月額プラン",
+    price: "¥550",
+    period: "/月",
+    description: "毎月のお支払い",
+    badge: "初月無料！",
+    color: "blue",
+    recommended: true, // 月額プランを推奨に変更
+    features: [
+      "出品・購入・取引が可能",
+      "プロフィールカスタマイズ",
+      "優先サポート対応",
+    ],
   },
   {
-    planKey: "1",
-    planContents: {
-      title: "年額プラン",
-      text: "¥5500/年",
-      option: "2ヶ月分無料",
-      sub: "いつでも解約可能",
-    },
+    id: "1",
+    name: "年額プラン",
+    price: "¥5,500",
+    period: "/年",
+    description: "年間一括払い",
+    badge: "お得！",
+    save: "¥1,000お得!",
+    color: "orange",
+    features: [
+      "出品・購入・取引が可能",
+      "プロフィールカスタマイズ",
+      "優先サポート対応",
+    ],
   },
 ];
 

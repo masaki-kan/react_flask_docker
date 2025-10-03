@@ -5,6 +5,19 @@ import { TokenManager, getTokenTimeRemaining } from "./tokenUtils";
  *
  */
 
+// リフレッシュタイミング設定（秒）
+const REFRESH_SETTINGS = {
+  // 残り時間がこの値以下になったらリフレッシュを実行
+  REFRESH_THRESHOLD: 86400, // 1日 (24時間 * 60分 * 60秒)
+
+  // 参考値:
+  // 1時間 = 3600秒
+  // 6時間 = 21600秒
+  // 12時間 = 43200秒
+  // 1日 = 86400秒 (現在の設定)
+  // 7日 = 604800秒
+} as const;
+
 // リフレッシュAPIレスポンスの型
 interface RefreshResponse {
   success: boolean;
@@ -23,7 +36,6 @@ export async function refreshUserToken(): Promise<boolean> {
     const token = TokenManager.getUserToken();
     if (!token) return false;
 
-    // TODO: バックエンドのリフレッシュAPIエンドポイントを実装
     const response = await fetch("/api/auth/refresh", {
       method: "POST",
       headers: {
@@ -45,7 +57,7 @@ export async function refreshUserToken(): Promise<boolean> {
     }
 
     return false;
-  } catch (error) {
+  } catch {
     // console.error("Token refresh error:", error);
     return false;
   }
@@ -81,7 +93,7 @@ export async function refreshAdminToken(): Promise<boolean> {
     }
 
     return false;
-  } catch (error) {
+  } catch {
     // console.error("Admin token refresh error:", error);
     return false;
   }
@@ -89,11 +101,11 @@ export async function refreshAdminToken(): Promise<boolean> {
 
 /**
  * 自動リフレッシュが必要かチェック
- * 残り時間が10分以下の場合にリフレッシュを実行
+ * 残り時間が1日以下の場合にリフレッシュを実行
  */
 export function shouldRefreshToken(token: string): boolean {
   const timeRemaining = getTokenTimeRemaining(token);
-  return timeRemaining <= 600 && timeRemaining > 0; // 10分以下
+  return timeRemaining <= REFRESH_SETTINGS.REFRESH_THRESHOLD && timeRemaining > 0;
 }
 
 /**

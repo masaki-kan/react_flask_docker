@@ -1,7 +1,7 @@
-import { useEffect, useCallback, useRef } from 'react';
-import { useAuth } from '../provider/authContext';
-import { TokenManager, getTokenTimeRemaining } from '../utils/auth/tokenUtils';
-import { useToast } from '@chakra-ui/react';
+import { useEffect, useCallback, useRef } from "react";
+import { useAuth } from "../provider/authContext";
+import { TokenManager, getTokenTimeRemaining } from "../utils/auth/tokenUtils";
+import { useToast } from "@chakra-ui/react";
 
 /**
  * トークン期限切れ監視フック
@@ -13,53 +13,59 @@ export const useTokenExpiry = () => {
   const warningShownRef = useRef(false);
 
   // 期限切れ警告を表示
-  const showExpiryWarning = useCallback((timeRemaining: number) => {
-    if (warningShownRef.current) return;
-    
-    warningShownRef.current = true;
-    const minutes = Math.ceil(timeRemaining / 60);
-    
-    toast({
-      title: "セッション期限警告",
-      description: `あと${minutes}分でログアウトされます`,
-      status: "warning",
-      duration: 10000,
-      isClosable: true,
-      position: "top",
-    });
-  }, [toast]);
+  const showExpiryWarning = useCallback(
+    (timeRemaining: number) => {
+      if (warningShownRef.current) return;
+
+      warningShownRef.current = true;
+      const minutes = Math.ceil(timeRemaining / 60);
+
+      toast({
+        title: "セッション期限警告",
+        description: `あと${minutes}分でログアウトされます`,
+        status: "warning",
+        duration: 10000,
+        isClosable: true,
+        position: "top",
+      });
+    },
+    [toast]
+  );
 
   // 自動ログアウト実行
-  const performAutoLogout = useCallback((userType: 'user' | 'admin') => {
-    toast({
-      title: "セッション期限切れ",
-      description: "自動的にログアウトしました",
-      status: "info",
-      duration: 5000,
-      isClosable: true,
-      position: "top",
-    });
+  const performAutoLogout = useCallback(
+    (userType: "user" | "admin") => {
+      toast({
+        title: "セッション期限切れ",
+        description: "自動的にログアウトしました",
+        status: "info",
+        duration: 5000,
+        isClosable: true,
+        position: "top",
+      });
 
-    if (userType === 'admin') {
-      adminLogout();
-    } else {
-      logout();
-    }
-  }, [toast, logout, adminLogout]);
+      if (userType === "admin") {
+        adminLogout();
+      } else {
+        logout();
+      }
+    },
+    [toast, logout, adminLogout]
+  );
 
   // トークン期限をチェック
   const checkTokenExpiry = useCallback(() => {
     // ユーザートークンチェック
     if (isLoggedIn) {
       if (!TokenManager.isValidUserToken()) {
-        performAutoLogout('user');
+        performAutoLogout("user");
         return;
       }
 
-      const { token } = TokenManager.getUserTokens();
+      const token = TokenManager.getUserToken();
       if (token) {
         const timeRemaining = getTokenTimeRemaining(token);
-        
+
         // 5分前に警告表示
         if (timeRemaining <= 300 && timeRemaining > 0) {
           showExpiryWarning(timeRemaining);
@@ -70,14 +76,14 @@ export const useTokenExpiry = () => {
     // 管理者トークンチェック
     if (isAdminLoggedIn) {
       if (!TokenManager.isValidAdminToken()) {
-        performAutoLogout('admin');
+        performAutoLogout("admin");
         return;
       }
 
-      const { token } = TokenManager.getAdminTokens();
+      const token = TokenManager.getAdminToken();
       if (token) {
         const timeRemaining = getTokenTimeRemaining(token);
-        
+
         // 5分前に警告表示
         if (timeRemaining <= 300 && timeRemaining > 0) {
           showExpiryWarning(timeRemaining);
@@ -94,7 +100,7 @@ export const useTokenExpiry = () => {
     if (isLoggedIn || isAdminLoggedIn) {
       // 即座にチェック実行
       checkTokenExpiry();
-      
+
       // 1分ごとにチェック
       intervalRef.current = setInterval(checkTokenExpiry, 60000);
     } else {
@@ -121,9 +127,9 @@ export const useTokenExpiry = () => {
       }
     };
 
-    window.addEventListener('focus', handleFocus);
+    window.addEventListener("focus", handleFocus);
     return () => {
-      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener("focus", handleFocus);
     };
   }, [isLoggedIn, isAdminLoggedIn, checkTokenExpiry]);
 

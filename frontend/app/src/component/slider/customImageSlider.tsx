@@ -173,7 +173,7 @@ const CustomImageSlider: FC<CustomImageSliderProps> = ({
         </>
       )}
 
-      {/* インジケータードット（複数画像の場合のみ表示） */}
+      {/* インジケータードット（複数画像の場合のみ表示、サムネイルがない場合） */}
       {images.length > 1 && (
         <HStack
           position="absolute"
@@ -186,6 +186,7 @@ const CustomImageSlider: FC<CustomImageSliderProps> = ({
           backdropFilter="blur(8px)"
           borderRadius="full"
           boxShadow="md"
+          display={{ base: "flex", md: images.length > 5 ? "flex" : "none" }}
         >
           {images.map((_, index) => (
             <Box
@@ -228,13 +229,18 @@ const CustomImageSlider: FC<CustomImageSliderProps> = ({
       {images.length > 1 && images.length <= 5 && (
         <HStack
           position="absolute"
-          bottom={0}
+          bottom={{ base: 2, md: 4 }}
           left={0}
           right={0}
           p={{ base: 2, md: 4 }}
           spacing={{ base: 2, md: 3 }}
           justify="center"
           display={{ base: "none", md: "flex" }}
+          bg={buttonBg}
+          backdropFilter="blur(8px)"
+          borderRadius="lg"
+          boxShadow="md"
+          mx={{ base: 4, md: 6 }}
         >
           {images.map((image, index) => (
             <Box
@@ -246,7 +252,7 @@ const CustomImageSlider: FC<CustomImageSliderProps> = ({
               _hover={{ transform: "scale(1.05)" }}
             >
               <Image
-                src={image}
+                src={renderSrc(image)}
                 alt={`サムネイル ${index + 1}`}
                 w="60px"
                 h="60px"

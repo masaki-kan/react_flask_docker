@@ -23,16 +23,16 @@ const TOKEN_KEYS = {
  */
 function base64UrlDecode(str: string): string {
   // Base64URL → Base64変換
+
   str = str.replace(/-/g, "+").replace(/_/g, "/");
 
   // パディング追加
   while (str.length % 4) {
     str += "=";
   }
-
   try {
     return atob(str);
-  } catch (error) {
+  } catch {
     throw new Error("Invalid base64 string");
   }
 }

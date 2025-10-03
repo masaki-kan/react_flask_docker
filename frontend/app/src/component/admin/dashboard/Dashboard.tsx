@@ -66,6 +66,7 @@ const Dashboard: FC = () => {
         console.log("fetchDashboardData", response);
         setStats((prev) => ({
           ...prev,
+          monthlyGrowth: prev.totalUsers,
           totalUsers: response.data.stats.totalUsers,
           totalItems: response.data.stats.totalItems,
         }));

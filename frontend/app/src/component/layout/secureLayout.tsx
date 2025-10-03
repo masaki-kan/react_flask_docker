@@ -28,7 +28,7 @@ const SecureLayout: FC = () => {
       {/* メインコンテンツ  */}
       <Box
         flex="1"
-        marginTop={{ base: "90px", md: "60px" }}
+        marginTop={{ base: "110px", md: "60px" }}
         display="flex"
         flexDirection="column"
       >

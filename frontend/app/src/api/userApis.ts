@@ -1,15 +1,18 @@
 import axios from "axios";
 import { followListType, tagType } from "../types/listType";
-import { createErrorResponse, ApiError } from "../utils/alert/sweetalert2";
+import {
+  createErrorResponse,
+  ApiError,
+  ApiResponse,
+} from "../utils/alert/sweetalert2";
 
 export const getUsersApi = async (
   myId: string
 ): Promise<
-  | {
-      users: followListType[];
-      tags: tagType[];
-    }
-  | ApiError
+  ApiResponse<{
+    users: followListType[];
+    tags: tagType[];
+  }>
 > => {
   try {
     const response = await axios.post(
@@ -20,8 +23,11 @@ export const getUsersApi = async (
     );
 
     return {
-      users: response.data.users,
-      tags: response.data.tags,
+      success: true,
+      data: {
+        users: response.data.users,
+        tags: response.data.tags,
+      },
     };
   } catch (error: unknown) {
     let errorMessage = "予期しないエラーが発生しました";

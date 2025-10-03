@@ -72,3 +72,69 @@ def upload_image_to_s3(file, folder='items'):
     except Exception as e:
         print(f"S3 upload error: {e}")
         raise
+
+def delete_image_from_s3(image_url):
+    """S3から画像を削除"""
+    try:
+        if not image_url or not s3_client:
+            return False
+
+        # URLからS3キーを抽出
+        # 例: https://bucket.s3.region.amazonaws.com/items/uuid.jpg → items/uuid.jpg
+        if '.amazonaws.com/' in image_url:
+            s3_key = image_url.split('.amazonaws.com/')[-1]
+        else:
+            # 直接キーが渡された場合
+            s3_key = image_url
+
+        # S3から削除
+        s3_client.delete_object(
+            Bucket=os.getenv('S3_BUCKET_NAME'),
+            Key=s3_key
+        )
+
+        print(f"✅ Successfully deleted S3 object: {s3_key}")
+        return True
+
+    except Exception as e:
+        print(f"❌ S3 delete error: {e}")
+        return False
+
+def delete_multiple_images_from_s3(image_urls):
+    """複数の画像をS3から一括削除"""
+    try:
+        if not image_urls or not s3_client:
+            return False
+
+        # URLからS3キーのリストを作成
+        delete_objects = []
+        for url in image_urls:
+            if url and '.amazonaws.com/' in url:
+                s3_key = url.split('.amazonaws.com/')[-1]
+                delete_objects.append({'Key': s3_key})
+
+        if not delete_objects:
+            return False
+
+        # 一括削除（最大1000個まで）
+        response = s3_client.delete_objects(
+            Bucket=os.getenv('S3_BUCKET_NAME'),
+            Delete={
+                'Objects': delete_objects,
+                'Quiet': False
+            }
+        )
+
+        deleted_count = len(response.get('Deleted', []))
+        print(f"✅ Successfully deleted {deleted_count} S3 objects")
+
+        # エラーがあった場合はログ出力
+        if response.get('Errors'):
+            for error in response['Errors']:
+                print(f"❌ Delete error: {error}")
+
+        return True
+
+    except Exception as e:
+        print(f"❌ S3 bulk delete error: {e}")
+        return False

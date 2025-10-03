@@ -1,9 +1,10 @@
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import jwt_required
 from utils.db_utils import get_db_connection
-from utils.image_utils import upload_image_to_s3
+from utils.image_utils import upload_image_to_s3, delete_multiple_images_from_s3
 import json
 import mysql.connector
+import os
 
 items_bp = Blueprint('items', __name__, url_prefix='/api')
 
@@ -122,18 +123,29 @@ def deleteUserItem():
         with get_db_connection() as conn:
             cursor = conn.cursor(dictionary=True)
             
-            # 1. まず、削除しようとしているアイテムが本当にそのユーザーのものか確認
+            # 1. まず、削除しようとしているアイテムが本当にそのユーザーのものか確認、画像URLも取得
             cursor.execute('''
-                SELECT user_id FROM items 
+                SELECT user_id, images FROM items
                 WHERE item_id = %s
             ''', (item_id,))
-            item_owner = cursor.fetchone()
+            item_data = cursor.fetchone()
             
-            if not item_owner:
+            if not item_data:
                 return jsonify({"error": "指定されたアイテムが見つかりません"}), 404
-                
-            if int(item_owner['user_id']) != int(my_user_id):
+
+            if int(item_data['user_id']) != int(my_user_id):
                 return jsonify({"error": "他のユーザーのアイテムは削除できません"}), 403
+
+            # 削除対象の画像URLを準備
+            image_urls = []
+            if item_data['images']:
+                try:
+                    images_data = json.loads(item_data['images'])
+                    if isinstance(images_data, list):
+                        image_urls = images_data
+                except (json.JSONDecodeError, TypeError):
+                    # 旧形式または不正なデータの場合は空リストとして処理
+                    pass
             
             # 2. アクティブな取引（pending, purchased, shipped）があるか確認
             cursor.execute('''
@@ -220,11 +232,31 @@ def deleteUserItem():
             
             conn.commit()
 
+            # データベース削除が成功した後に画像ファイルを削除
+            if image_urls:
+                try:
+                    if os.getenv('STORAGE_TYPE') == 's3':
+                        # S3から画像削除
+                        delete_multiple_images_from_s3(image_urls)
+                        print(f"✅ S3から{len(image_urls)}個の画像を削除しました")
+                    else:
+                        # ローカルファイルシステムから画像削除
+                        for url in image_urls:
+                            if url.startswith('/uploads/'):
+                                file_path = os.path.join(os.getcwd(), url.lstrip('/'))
+                                if os.path.exists(file_path):
+                                    os.remove(file_path)
+                                    print(f"✅ ローカルファイルを削除: {file_path}")
+                except Exception as e:
+                    # 画像削除のエラーはログに記録するが、処理は継続
+                    print(f"⚠️ 画像削除エラー: {e}")
+
             return jsonify({
                 "result": True,
                 "message": "アイテムと関連データを削除しました",
                 "item_id": item_id,
-                "deleted_counts": deleted_counts
+                "deleted_counts": deleted_counts,
+                "deleted_images": len(image_urls) if image_urls else 0
             }), 200
         
     except mysql.connector.Error as err:

@@ -1,12 +1,16 @@
 import axios from "axios";
 import { savedListType } from "../types/savedType";
-import { ApiError, createErrorResponse } from "../utils/alert/sweetalert2";
+import {
+  ApiError,
+  ApiResponse,
+  createErrorResponse,
+} from "../utils/alert/sweetalert2";
 
 export const tradeApi = async (
   item_id: string,
   buyer_id: string,
   seller_id: string
-): Promise<{ result: boolean; message: string } | ApiError> => {
+): Promise<ApiResponse<{ result: boolean; message: string }>> => {
   try {
     const response = await axios.post(
       `${import.meta.env.VITE_API_URL}/api/trade`,
@@ -18,8 +22,11 @@ export const tradeApi = async (
     );
 
     return {
-      result: response.data.result,
-      message: response.data.message,
+      success: true,
+      data: {
+        result: response.data.result,
+        message: response.data.message,
+      },
     };
   } catch (error: unknown) {
     let errorMessage = "予期しないエラーが発生しました";
@@ -35,15 +42,14 @@ export const tradeApi = async (
 export const getSavedList = async (
   user_id: string
 ): Promise<
-  | {
-      trades: savedListType[];
-      result: string;
-      cancelled_trades?: {
-        trade_id: string;
-        item_title: string;
-      }[];
-    }
-  | ApiError
+  ApiResponse<{
+    trades: savedListType[];
+    result: string;
+    cancelled_trades?: {
+      trade_id: string;
+      item_title: string;
+    }[];
+  }>
 > => {
   try {
     const response = await axios.post(
@@ -54,9 +60,12 @@ export const getSavedList = async (
     );
 
     return {
-      trades: response.data.trades,
-      result: response.data.result,
-      cancelled_trades: response.data.cancelled_trades,
+      success: true,
+      data: {
+        trades: response.data.trades,
+        result: response.data.result,
+        cancelled_trades: response.data.cancelled_trades,
+      },
     };
   } catch (error: unknown) {
     let errorMessage = "予期しないエラーが発生しました";

@@ -70,7 +70,7 @@ const AppRoutes: FC = () => {
     window.scrollTo({
       top: 0,
       left: 0,
-      behavior: 'auto'
+      behavior: "auto",
     });
 
     // documentElementとbodyの両方をリセット

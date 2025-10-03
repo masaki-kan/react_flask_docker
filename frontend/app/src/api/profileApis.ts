@@ -68,11 +68,14 @@ export const getProfileItemsApi = async (
       itemId: string;
       title: string;
       description: string;
-      images: { image_url: string }[];
+      images: string[];
       brand: { key: string; name: string };
       type: string;
       uploaded_at: Date;
       tradeStatusFlag: number;
+      uesrname: string;
+      userId: number;
+      profile_image: string;
     }[];
   }>
 > => {
@@ -96,16 +99,22 @@ export const getProfileItemsApi = async (
         type: string;
         uploaded_at: Date;
         trade_status_flag: number;
+        seller_name?: string;
+        user_id?: number;
+        profile_image?: string;
       }) => {
         return {
           itemId: items.item_id,
           title: items.title,
           description: items.description,
-          images: items.images,
+          images: items.images.map((img) => img),
           type: items.type,
           brand: items.brand,
           uploaded_at: items.uploaded_at,
           tradeStatusFlag: items.trade_status_flag,
+          uesrname: items.seller_name || "",
+          userId: items.user_id || 0,
+          profile_image: items.profile_image || "",
         };
       }
     );

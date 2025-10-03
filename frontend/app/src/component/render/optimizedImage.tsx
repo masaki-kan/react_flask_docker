@@ -51,11 +51,13 @@ const OptimizedImage: FC<OptimizedImageProps> = ({
     setImageSrc(processedUrl);
   }, [src]);
 
-  // src が空の場合は何も表示しない
+  // src が空の場合はプレースホルダーを表示
   if (!imageSrc || imageSrc === "") {
     return (
       <AspectRatio ratio={aspectRatio}>
-        <Box bg="gray.100" />
+        <Box bg="gray.100" display="flex" alignItems="center" justifyContent="center">
+          <Box bg="gray.300" w="full" h="full" />
+        </Box>
       </AspectRatio>
     );
   }

@@ -75,8 +75,12 @@ const Step2: FC<Step2Type> = ({
               )}
 
               <VStack align="start" spacing={4}>
-                <Badge colorScheme={plan.color}>{plan.badge}</Badge>
-
+                <Badge
+                  colorScheme={plan.color}
+                  fontSize={plan.recommended ? "xl" : "sm"}
+                >
+                  {plan.badge}
+                </Badge>
                 <Box>
                   <Heading size="md">{plan.name}</Heading>
                   <Text fontSize="sm" color="gray.500">

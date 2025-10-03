@@ -21,8 +21,8 @@ const useSaved = (): useSavedReturn => {
   const getSavedListHandler = useCallback(async () => {
     changeLoading(true);
     const response = await getSavedList(profile.profile.id);
-    if (response !== undefined) {
-      const savedData = response.trades.map((trade) => {
+    if (response.success === true) {
+      const savedData = response.data.trades.map((trade) => {
         return {
           image_url: trade.image_url,
           status: trade.status,
@@ -43,8 +43,11 @@ const useSaved = (): useSavedReturn => {
       dispatch(setSaveList(savedData));
 
       // キャンセルされた取引がある場合、トーストで通知
-      if (response.cancelled_trades && response.cancelled_trades.length > 0) {
-        cancelNotification(response.cancelled_trades);
+      if (
+        response.data.cancelled_trades &&
+        response.data.cancelled_trades.length > 0
+      ) {
+        cancelNotification(response.data.cancelled_trades);
       }
     }
     changeLoading(false);

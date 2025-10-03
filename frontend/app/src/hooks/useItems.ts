@@ -162,9 +162,9 @@ const useItems = (): userItemsReturn => {
     }[]
   ): itemListType[] => {
     return items.map((item) => ({
-      user_name: item.seller_name,
+      uesrname: item.seller_name,
       itemId: item.item_id,
-      user_id: item.user_id,
+      userId: item.user_id,
       title: item.title,
       description: item.description,
       type: item.type,

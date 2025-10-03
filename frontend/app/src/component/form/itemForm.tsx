@@ -83,7 +83,7 @@ const ItemForm: FC<ItemFormProps> = ({ profileItem, ItemNumver }) => {
       setFormValues({
         title: profileItem.title,
         description: profileItem.description,
-        images: profileItem.images?.map(img => img.image_url) || [],
+        images: profileItem.images?.map((img) => img) || [],
         type: profileItem.type,
         brand: profileItem.brand,
       });

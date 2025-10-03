@@ -72,8 +72,8 @@ const useUsers = (): useListingReturn => {
     changeLoading(true);
     const response = await getUsersApi(profile.profile.id);
 
-    if (response !== undefined) {
-      const newUserList: followListType[] = response.users.map((user) => ({
+    if (response.success === true) {
+      const newUserList: followListType[] = response.data.users.map((user) => ({
         user_id: user.user_id,
         name: user.name,
         location: user.location,
