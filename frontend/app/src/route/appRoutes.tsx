@@ -28,7 +28,7 @@ import AdminDashboard from "../component/admin/dashboard/Dashboard";
 import SecureAdminLayout from "../component/layout/secureAdminLayout";
 import NotFound from "../component/pages/notFound";
 import PrivacyPolicy from "../component/privacy/privacyPolicy";
-import RiyouKiyaku from "../component/riyoukiyaku/riyouKiyaku";
+import RiyouKiyakuComp from "../component/riyoukiyaku/riyouKiyaku";
 
 // 認証が必要なルートのラッパーコンポーネント
 const ProtectedLayout = () => {
@@ -89,7 +89,7 @@ const AppRoutes: FC = () => {
           <Route path={route.login} element={<Login />} />
           <Route path={route.singUp} element={<SingUp />} />
           <Route path={route.tokushoho} element={<TokushohoPage />} />
-          <Route path={route.terms} element={<RiyouKiyaku />} />
+          <Route path={route.terms} element={<RiyouKiyakuComp />} />
           <Route path={route.privacy} element={<PrivacyPolicy />} />
         </Route>
 
