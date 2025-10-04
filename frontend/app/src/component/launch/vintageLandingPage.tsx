@@ -38,12 +38,12 @@ const VintageLandingPage: FC = () => {
       return (
         <MotionText
           key={index}
-          initial={{ opacity: 0, x: index % 2 === 0 ? -30 : 30 }}
-          whileInView={{ opacity: 1, x: 0 }}
+          // initial={{ opacity: 0, x: index % 2 === 0 ? -30 : 30 }}
+          // whileInView={{ opacity: 1, x: 0 }}
           viewport={{ once: true }}
-          transition={{ duration: 0.6, delay: index * 0.1 }}
+          // transition={{ duration: 0.6, delay: index * 0.1 }}
           textAlign="center"
-          my={3}
+          my={2}
           fontWeight="bold"
           fontSize={{ base: "md", md: "lg" }}
           color="#1C160C"
@@ -73,16 +73,20 @@ const VintageLandingPage: FC = () => {
     [MotionText]
   );
 
+  const headerTextMessages = "古着ってこんなに高かったっけ？";
+
   const textMessages = [
-    "古着ってこんなに高かったっけ？",
+    // "古着ってこんなに高かったっけ？",
     "新品にはない、あの空気感に憧れて",
     "町の古着屋をまわったあの頃。",
     "今は着なくなったあの服も、",
     "誰かのもとでもう一度輝ける。",
     "スーパーなヴィンテージじゃないし、",
-    "買い取りに出しても、二束三文。",
-    "それなら、みんなで着まわす方が絶対楽しい。",
+    "買い取りに出しても、、、",
+    // "それなら、みんなで着まわす方が絶対楽しい。",
   ];
+
+  const bottomTextMessages = ["それなら、みんなで着まわす方が", "絶対楽しい。"];
 
   return (
     <Box bg="#fdfcf8" minH="100vh" display="flex" flexDirection="column">
@@ -103,7 +107,7 @@ const VintageLandingPage: FC = () => {
           py={24}
           px={4}
           textAlign="center"
-          height={"500px"}
+          height={"300px"}
           backgroundPosition={"center"}
           backgroundRepeat={"no-repeat"}
           backgroundSize={"cover"}
@@ -121,40 +125,33 @@ const VintageLandingPage: FC = () => {
             >
               <Image
                 src={"/ロゴ.svg"}
-                height={{ base: "60px", md: "82px" }}
+                height={{ base: "70px", md: "82px" }}
                 position={"absolute"}
-                top={"50%"}
+                top={"45%"}
                 left={"50%"}
                 transform={"translate(-50%, -50%)"}
                 zIndex={10}
               />
+              <Text
+                fontSize={"xs"}
+                color={"#e68019"}
+                fontWeight={"bold"}
+                position={"absolute"}
+                top={"60%"}
+                left={0}
+                right={0}
+              >
+                ヴィンテージをもっと楽しく、もっと自由に。
+              </Text>
             </Heading>
           </motion.div>
-
-          {/* <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.5 }}
-          >
-            <Text
-              mt={2}
-              fontSize={{ base: "md", md: "lg" }}
-              textShadow="0 2px 10px rgba(0,0,0,0.3)"
-              maxW="600px"
-              mx="auto"
-            >
-              2025年秋ローンチ予定。
-              <br />
-              ヴィンテージをもっと楽しく, もっと自由に。
-            </Text>
-          </motion.div> */}
         </Box>
       </MotionBox>
 
       {/* Story Section with stagger animation */}
       <Box
         px={4}
-        py={16}
+        py={4}
         textAlign="center"
         position="relative"
         _before={{
@@ -177,14 +174,73 @@ const VintageLandingPage: FC = () => {
           position="relative"
           zIndex={1}
         >
+          <Text
+            color={"#000000"}
+            fontSize={"xl"}
+            fontWeight={"bold"}
+            my={2}
+            position="relative"
+            _after={{
+              content: '""',
+              position: "absolute",
+              bottom: "-5px",
+              left: "50%",
+              transform: "translateX(-50%)",
+              width: "0%",
+              height: "2px",
+              bg: "#e68019",
+              transition: "width 0.3s ease-in-out",
+            }}
+            _hover={{
+              color: "#e68019",
+              _after: {
+                width: "80%",
+              },
+            }}
+          >
+            {headerTextMessages}
+          </Text>
           {textMessages.map((text, index) => renderTextView(text, index))}
+          {bottomTextMessages.map((text, index) => {
+            return (
+              <>
+                <Text
+                  color={"#000000"}
+                  fontSize={"xl"}
+                  fontWeight={"bold"}
+                  zIndex={index}
+                  my={2}
+                  position="relative"
+                  _after={{
+                    content: '""',
+                    position: "absolute",
+                    bottom: "-5px",
+                    left: "50%",
+                    transform: "translateX(-50%)",
+                    width: "0%",
+                    height: "2px",
+                    bg: "#e68019",
+                    transition: "width 0.3s ease-in-out",
+                  }}
+                  _hover={{
+                    color: "#e68019",
+                    _after: {
+                      width: "80%",
+                    },
+                  }}
+                >
+                  {text}
+                </Text>
+              </>
+            );
+          })}
         </VStack>
       </Box>
 
       {/* Feature Cards with enhanced design */}
       <MotionBox
         bg="linear-gradient(180deg, #f5f1e8 0%, #edeef4 100%)"
-        py={16}
+        py={4}
         px={4}
         position="relative"
         overflow="hidden"
@@ -200,6 +256,17 @@ const VintageLandingPage: FC = () => {
           animation: `${floatAnimation} 20s ease-in-out infinite`,
         }}
       >
+        <Text
+          textAlign={"center"}
+          mb={6}
+          color={"#9b5a37"}
+          fontWeight={"bold"}
+          fontSize={"xl"}
+        >
+          僕らのヴィンテージは、
+          <br />
+          新しい古着交換プラットフォームです。
+        </Text>
         <SimpleGrid
           columns={{ base: 1, md: 3 }}
           spacing={6}
@@ -209,19 +276,19 @@ const VintageLandingPage: FC = () => {
           <FeatureCard
             icon={IoLogInOutline}
             title="古着登録"
-            desc="古着を登録"
+            desc="着なくなった服も、誰かにとればお宝なのかも。"
             index={0}
           />
           <FeatureCard
             icon={IoShieldCheckmarkOutline}
             title="欲しい古着とマッチング"
-            desc="いい感じの古着を探す"
+            desc="古着屋でdigする感覚でアイテムを、<br />チェック。"
             index={1}
           />
           <FeatureCard
             icon={IoSwapHorizontal}
             title="発送・受け取り"
-            desc="チャットで発送方法を登録"
+            desc="チャットで内で発送方法を選択し、<br />アイテムを交換。"
             index={2}
           />
         </SimpleGrid>
@@ -267,7 +334,10 @@ const VintageLandingPage: FC = () => {
             whileHover={{ scale: 1.2, rotate: 360 }}
             transition={{ duration: 0.6 }}
           >
-            <Link href="https://chakra-ui.com" isExternal>
+            <Link
+              href="https://www.instagram.com/bokura_no_vintage?igsh=bmJrczhubzhkYmc2&utm_source=qr"
+              isExternal
+            >
               <Icon
                 as={FaInstagram}
                 boxSize={8}

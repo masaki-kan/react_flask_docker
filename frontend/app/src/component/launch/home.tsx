@@ -1,20 +1,20 @@
 import { FC, useEffect, useState } from "react";
-import { Box, Center, Text, Image } from "@chakra-ui/react";
+import { Box, Center, Image } from "@chakra-ui/react";
 import VintageLandingPage from "./vintageLandingPage";
 import { AnimatePresence, motion } from "framer-motion";
 import SplashBackground from "./splashBackground";
-import { keyframes } from "@emotion/react";
+// import { keyframes } from "@emotion/react";
 
 // タイプライター風のアニメーション
-const typewriter = keyframes`
-  from { width: 0; }
-  to { width: 100%; }
-`;
+// const typewriter = keyframes`
+//   from { width: 0; }
+//   to { width: 100%; }
+// `;
 
-const blink = keyframes`
-  0%, 50% { opacity: 1; }
-  51%, 100% { opacity: 0; }
-`;
+// const blink = keyframes`
+//   0%, 50% { opacity: 1; }
+//   51%, 100% { opacity: 0; }
+// `;
 
 const Home: FC = () => {
   const [showSplash, setShowSplash] = useState(true);
@@ -45,7 +45,7 @@ const Home: FC = () => {
             >
               <Box position="relative">
                 {/* ロゴテキスト */}
-                <motion.div
+                {/* <motion.div
                   initial={{ y: 20, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
                   transition={{
@@ -75,26 +75,16 @@ const Home: FC = () => {
                       animationDelay: "1.5s",
                     }}
                   >
-                    {/* <Box
-                      as="span"
-                      display="inline-block"
-                      overflow="hidden"
-                      animation={`${typewriter} 1.5s steps(10) 0.8s forwards`}
-                      maxW="0"
-                      whiteSpace="nowrap"
-                    >
-                      僕らのヴィンテージ
-                    </Box> */}
                     <Image
                       src={"/ロゴ.svg"}
-                      height="35px"
+                      height="80px"
                       overflow="hidden"
                       display="inline-block"
                       maxW="0"
                       animation={`${typewriter} 1.5s steps(10) 0.8s forwards`}
                     />
                   </Text>
-                </motion.div>
+                </motion.div> */}
 
                 {/* サブテキスト */}
                 <motion.div
@@ -113,13 +103,14 @@ const Home: FC = () => {
                   </Text> */}
                   <Image
                     src={"/ロゴ.svg"}
-                    height="35px"
+                    height="75px"
+                    mb={"220px"}
                     textTransform="uppercase"
                   />
                 </motion.div>
 
                 {/* 装飾的な要素 */}
-                <motion.div
+                {/* <motion.div
                   initial={{ scaleX: 0 }}
                   animate={{ scaleX: 1 }}
                   transition={{ duration: 0.8, delay: 1.8 }}
@@ -132,7 +123,7 @@ const Home: FC = () => {
                     height: "2px",
                     background: "rgba(255,255,255,0.6)",
                   }}
-                />
+                /> */}
               </Box>
             </MotionCenter>
           </Box>

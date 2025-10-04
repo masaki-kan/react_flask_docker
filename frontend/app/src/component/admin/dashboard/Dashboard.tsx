@@ -46,7 +46,8 @@ const Dashboard: FC = () => {
     totalItems: 0, // アイテム数
     activeTrades: 0, // 取引数
     completedTrades: 0, // 取引完了数
-    monthlyGrowth: 0, // 月間比
+    monthlyGrowth: 0, // 月間比ユーザー数
+    monthlyItems: 0, // 月間アイテム数
   });
 
   const [chartData, setChartData] = useState({
@@ -67,6 +68,7 @@ const Dashboard: FC = () => {
         setStats((prev) => ({
           ...prev,
           monthlyGrowth: prev.totalUsers,
+          monthlyItems: prev.monthlyItems,
           totalUsers: response.data.stats.totalUsers,
           totalItems: response.data.stats.totalItems,
         }));
@@ -111,7 +113,11 @@ const Dashboard: FC = () => {
     <Container maxW="container.xl" py={8}>
       <Heading mb={8}>管理者ダッシュボード</Heading>
       {/* 統計カード */}
-      <Grid templateColumns="repeat(4, 1fr)" gap={6} mb={8}>
+      <Grid
+        templateColumns={{ base: "1fr", md: "repeat(2, 1fr)", lg: "repeat(4, 1fr)" }}
+        gap={4}
+        mb={8}
+      >
         <GridItem>
           <Card>
             <CardBody>

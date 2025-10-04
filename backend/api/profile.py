@@ -485,29 +485,26 @@ def deleteUserItem():
         with get_db_connection() as conn:
             cursor = conn.cursor(dictionary=True)
             
-            # 1. まず、削除しようとしているアイテムが本当にそのユーザーのものか確認、画像URLも取得
+            # 1. まず、削除しようとしているアイテムが本当にそのユーザーのものか確認
             cursor.execute('''
-                SELECT user_id, images FROM items
+                SELECT user_id FROM items
                 WHERE item_id = %s
             ''', (item_id,))
             item_data = cursor.fetchone()
-            
+
             if not item_data:
                 return jsonify({"error": "指定されたアイテムが見つかりません"}), 404
 
             if int(item_data['user_id']) != int(my_user_id):
                 return jsonify({"error": "他のユーザーのアイテムは削除できません"}), 403
 
-            # 削除対象の画像URLを準備
-            image_urls = []
-            if item_data['images']:
-                try:
-                    images_data = json.loads(item_data['images'])
-                    if isinstance(images_data, list):
-                        image_urls = images_data
-                except (json.JSONDecodeError, TypeError):
-                    # 旧形式または不正なデータの場合は空リストとして処理
-                    pass
+            # 削除対象の画像URLを取得
+            cursor.execute('''
+                SELECT image_url FROM item_images
+                WHERE item_id = %s
+            ''', (item_id,))
+            image_data = cursor.fetchall()
+            image_urls = [img['image_url'] for img in image_data]
             
             # 2. アクティブな取引（pending, purchased, shipped）があるか確認
             cursor.execute('''

@@ -19,6 +19,8 @@ type FeatureCardType = {
   title: string;
   desc: string;
   index: number;
+  title2?: string;
+  title3?: string;
 };
 const FeatureCard: FC<FeatureCardType> = ({ icon, title, desc, index }) => {
   const MotionFlex = motion.create(Flex);
@@ -71,15 +73,18 @@ const FeatureCard: FC<FeatureCardType> = ({ icon, title, desc, index }) => {
         >
           <Icon as={icon} boxSize={8} color="#e68019" />
         </Box>
-        <Text fontWeight="bold" fontSize="lg" color="#1C160C">
-          {title}
-        </Text>
+        <VStack align="start" spacing={1} position="relative" zIndex={1}>
+          <Text fontWeight="bold" fontSize="lg" color="#1C160C">
+            {title}
+          </Text>
+          <Text
+            fontSize="sm"
+            color="#A18249"
+            lineHeight="1.6"
+            dangerouslySetInnerHTML={{ __html: desc }}
+          />
+        </VStack>
       </HStack>
-      <VStack align="start" spacing={2} position="relative" zIndex={1}>
-        <Text fontSize="sm" color="#A18249" lineHeight="1.6">
-          {desc}
-        </Text>
-      </VStack>
     </MotionFlex>
   );
 };
