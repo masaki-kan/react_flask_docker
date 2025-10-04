@@ -1,7 +1,29 @@
 import { TokenManager } from "../utils/auth/tokenUtils";
 import { createErrorResponse } from "../utils/alert/sweetalert2";
 
-export const getDashboadApi = async () => {
+export const getDashboadApi = async (): Promise<
+  | {
+      success: boolean;
+      data: {
+        stats: {
+          activeTrades: number;
+          completedTrades: number;
+          monthlyActiveTrades: number;
+          monthlyCompletedTrades: number;
+          monthlyGrowth: number;
+          monthlyItems: number;
+          totalItems: number;
+          totalUsers: number;
+        };
+        charts: {
+          itemCategories: any;
+          tradeVolume: [];
+          userRegistrations: Array<{ count: number; month: string }>;
+        };
+      };
+    }
+  | undefined
+> => {
   const token = TokenManager.getAdminToken();
 
   if (!token) {
@@ -22,13 +44,12 @@ export const getDashboadApi = async () => {
     }
 
     const data = await response.json();
-    console.log("data", data);
+    console.log("getDashboadApi", data);
     return {
       success: true,
       data: {
-        result: data.result,
-        stats: data.stats,
-        chart: data.chart,
+        stats: data.data.stats,
+        charts: data.data.charts,
       },
     };
   } catch (error: unknown) {

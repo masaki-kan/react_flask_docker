@@ -462,7 +462,7 @@ const ProfileIndex: FC<profileIndexType> = ({ editFormSwitch }) => {
                   leftIcon={<FaTrash />}
                   onClick={clearCacheHandler}
                 >
-                  キャッシュをクリア
+                  最新に更新
                 </Button>
               </Box>
 

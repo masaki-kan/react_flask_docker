@@ -1,4 +1,4 @@
-import { FC, useEffect, useState } from "react";
+import { FC, useEffect, useState, useCallback } from "react";
 import {
   Container,
   Heading,
@@ -48,37 +48,46 @@ const Dashboard: FC = () => {
     completedTrades: 0, // 取引完了数
     monthlyGrowth: 0, // 月間比ユーザー数
     monthlyItems: 0, // 月間アイテム数
+    monthlyActiveTrades: 0, // 月間取引数
+    monthlyCompletedTrades: 0, // 月間取引完了数
   });
 
-  const [chartData, setChartData] = useState({
+  const [chartData, setChartData] = useState<{
+    userRegistrations: Array<{ month: string; count: number }>;
+    tradeVolume: Array<any>;
+    itemCategories: { [key: string]: number };
+  }>({
     userRegistrations: [],
     tradeVolume: [],
     itemCategories: {},
   });
 
-  useEffect(() => {
-    fetchDashboardData();
-  }, []);
-
-  const fetchDashboardData = async () => {
+  const fetchDashboardData = useCallback(async () => {
     try {
       const response = await getDashboadApi();
-      if (response !== undefined && response.success) {
-        console.log("fetchDashboardData", response);
-        setStats((prev) => ({
-          ...prev,
-          monthlyGrowth: prev.totalUsers,
-          monthlyItems: prev.monthlyItems,
+      if (response !== undefined && response.success === true) {
+        console.log("fetchDashboardData", response.data);
+        setStats({
           totalUsers: response.data.stats.totalUsers,
           totalItems: response.data.stats.totalItems,
-        }));
-        // setStats(response.data.action);
-        // setChartData(response.data.charts);
+          activeTrades: response.data.stats.activeTrades,
+          completedTrades: response.data.stats.completedTrades,
+          monthlyGrowth: response.data.stats.monthlyGrowth,
+          monthlyItems: response.data.stats.monthlyItems,
+          monthlyActiveTrades: response.data.stats.monthlyActiveTrades,
+          monthlyCompletedTrades: response.data.stats.monthlyCompletedTrades,
+        });
+
+        setChartData(response.data.charts);
       }
     } catch (error) {
       console.error("Dashboard data fetch error:", error);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, [fetchDashboardData]);
 
   // 月別ユーザー登録数チャート
   const userChartData = {
@@ -114,7 +123,11 @@ const Dashboard: FC = () => {
       <Heading mb={8}>管理者ダッシュボード</Heading>
       {/* 統計カード */}
       <Grid
-        templateColumns={{ base: "1fr", md: "repeat(2, 1fr)", lg: "repeat(4, 1fr)" }}
+        templateColumns={{
+          base: "1fr",
+          md: "repeat(2, 1fr)",
+          lg: "repeat(4, 1fr)",
+        }}
         gap={4}
         mb={8}
       >
@@ -141,6 +154,12 @@ const Dashboard: FC = () => {
               <Stat>
                 <StatLabel>総アイテム数</StatLabel>
                 <StatNumber>{stats.totalItems}</StatNumber>
+                <StatHelpText>
+                  <StatArrow
+                    type={stats.monthlyItems > 0 ? "increase" : "decrease"}
+                  />
+                  {Math.abs(stats.monthlyItems)}%
+                </StatHelpText>
               </Stat>
             </CardBody>
           </Card>
@@ -152,6 +171,14 @@ const Dashboard: FC = () => {
               <Stat>
                 <StatLabel>進行中の取引</StatLabel>
                 <StatNumber>{stats.activeTrades}</StatNumber>
+                <StatHelpText>
+                  <StatArrow
+                    type={
+                      stats.monthlyActiveTrades > 0 ? "increase" : "decrease"
+                    }
+                  />
+                  {Math.abs(stats.monthlyActiveTrades)}%
+                </StatHelpText>
               </Stat>
             </CardBody>
           </Card>
@@ -163,6 +190,14 @@ const Dashboard: FC = () => {
               <Stat>
                 <StatLabel>完了した取引</StatLabel>
                 <StatNumber>{stats.completedTrades}</StatNumber>
+                <StatHelpText>
+                  <StatArrow
+                    type={
+                      stats.monthlyCompletedTrades > 0 ? "increase" : "decrease"
+                    }
+                  />
+                  {Math.abs(stats.monthlyCompletedTrades)}%
+                </StatHelpText>
               </Stat>
             </CardBody>
           </Card>
@@ -170,7 +205,7 @@ const Dashboard: FC = () => {
       </Grid>
 
       {/* チャート */}
-      <Grid templateColumns="repeat(2, 1fr)" gap={6}>
+      <Grid templateColumns={{ base: "1fr", lg: "repeat(2, 1fr)" }} gap={6}>
         <GridItem>
           <Card>
             <CardHeader>

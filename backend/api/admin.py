@@ -31,14 +31,57 @@ def admin_dashboard():
     try:
         with get_db_connection() as conn:
             cursor = conn.cursor(dictionary=True)
-            
+
+            # 現在の日付
+            now = datetime.now()
+            current_month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+            previous_month_start = (current_month_start - timedelta(days=1)).replace(day=1)
+
             # 統計データ取得
             # 総ユーザー数（利用者のみ）
             cursor.execute('SELECT COUNT(*) as count FROM users WHERE type = 1')
             total_users = cursor.fetchone()['count']
+
+            # 前月のユーザー数
+            cursor.execute('SELECT COUNT(*) as count FROM users WHERE type = 1 AND created_at < %s', (current_month_start,))
+            previous_month_users = cursor.fetchone()['count']
+
+            # 総アイテム数
             cursor.execute('SELECT COUNT(*) as count FROM items')
-            item_total = cursor.fetchone()['count']
-            
+            total_items = cursor.fetchone()['count']
+
+            # 前月のアイテム数
+            cursor.execute('SELECT COUNT(*) as count FROM items WHERE uploaded_at < %s', (current_month_start,))
+            previous_month_items = cursor.fetchone()['count']
+
+            # 進行中の取引数（tradesテーブルの全件数）
+            cursor.execute("SELECT COUNT(*) as count FROM trades")
+            active_trades = cursor.fetchone()['count']
+
+            # 前月の進行中取引数
+            cursor.execute("SELECT COUNT(*) as count FROM trades WHERE created_at < %s", (current_month_start,))
+            previous_month_active_trades = cursor.fetchone()['count']
+
+            # 完了した取引数（archived_tradesテーブルの件数）
+            cursor.execute("SELECT COUNT(*) as count FROM archived_trades")
+            completed_trades = cursor.fetchone()['count']
+
+            # 前月の完了取引数
+            cursor.execute("SELECT COUNT(*) as count FROM archived_trades WHERE archived_at < %s", (current_month_start,))
+            previous_month_completed_trades = cursor.fetchone()['count']
+
+            # 今月の新規データを計算
+            current_month_users = total_users - previous_month_users
+            current_month_items = total_items - previous_month_items
+            current_month_active_trades = active_trades - previous_month_active_trades
+            current_month_completed_trades = completed_trades - previous_month_completed_trades
+
+            # 月間成長率を計算（前月がゼロの場合は100%とする）
+            monthly_growth = (current_month_users / previous_month_users * 100) if previous_month_users > 0 else (100 if current_month_users > 0 else 0)
+            monthly_items_growth = (current_month_items / previous_month_items * 100) if previous_month_items > 0 else (100 if current_month_items > 0 else 0)
+            monthly_active_trades_growth = (current_month_active_trades / previous_month_active_trades * 100) if previous_month_active_trades > 0 else (100 if current_month_active_trades > 0 else 0)
+            monthly_completed_trades_growth = (current_month_completed_trades / previous_month_completed_trades * 100) if previous_month_completed_trades > 0 else (100 if current_month_completed_trades > 0 else 0)
+
             # ユーザーデータ　商品数、ユーザー一覧
             cursor.execute("""
                 SELECT
@@ -62,17 +105,57 @@ def admin_dashboard():
                 ORDER BY u.created_at DESC
             """)
             users = cursor.fetchall()
-            
-            # 他の統計データ...
-            
+
+            # チャートデータ: 月別ユーザー登録数（過去12ヶ月）
+            cursor.execute("""
+                SELECT
+                    DATE_FORMAT(created_at, '%Y-%m') as month,
+                    COUNT(*) as count
+                FROM users
+                WHERE type = 1
+                AND created_at >= DATE_SUB(NOW(), INTERVAL 12 MONTH)
+                GROUP BY DATE_FORMAT(created_at, '%Y-%m')
+                ORDER BY month ASC
+            """)
+            user_registrations = cursor.fetchall()
+
+            # チャートデータ: カテゴリ別アイテム数
+            cursor.execute("""
+                SELECT
+                    JSON_UNQUOTE(JSON_EXTRACT(type, '$[0].name')) as category,
+                    COUNT(*) as count
+                FROM items
+                WHERE JSON_VALID(type) = 1
+                AND JSON_LENGTH(type) > 0
+                GROUP BY JSON_UNQUOTE(JSON_EXTRACT(type, '$[0].name'))
+                HAVING category IS NOT NULL
+                ORDER BY count DESC
+                LIMIT 10
+            """)
+            item_categories_data = cursor.fetchall()
+            item_categories = {item['category']: item['count'] for item in item_categories_data if item['category']}
+
             return jsonify({
                 "result": True,
-                "stats": {
-                    "totalItems" : item_total,
-                    "totalUsers": total_users,
-                    "users": users
-                },
-                "charts": {}
+                "success": True,
+                "data": {
+                    "stats": {
+                        "totalItems": total_items,
+                        "totalUsers": total_users,
+                        "activeTrades": active_trades,
+                        "completedTrades": completed_trades,
+                        "monthlyGrowth": round(monthly_growth, 2),
+                        "monthlyItems": round(monthly_items_growth, 2),
+                        "monthlyActiveTrades": round(monthly_active_trades_growth, 2),
+                        "monthlyCompletedTrades": round(monthly_completed_trades_growth, 2),
+                        "users": users
+                    },
+                    "charts": {
+                        "userRegistrations": user_registrations,
+                        "tradeVolume": [],  # 必要に応じて後で実装
+                        "itemCategories": item_categories
+                    }
+                }
             })
 
     except Exception as e:
