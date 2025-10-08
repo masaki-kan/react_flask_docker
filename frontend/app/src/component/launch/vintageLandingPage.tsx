@@ -99,7 +99,6 @@ const VintageLandingPage: FC = () => {
         <Box
           position="relative"
           // overflow="hidden"
-          // bgImage="linear-gradient(rgba(28, 22, 12, 0.3), rgba(28, 22, 12, 0.6)), url('https://cdn.usegalileo.ai/sdxl10/e3fe2854-4f36-4375-893a-e081d9b8899a.png')"
           bgImage={"/背景.svg"}
           // bgSize="cover"
           // bgPosition="center"
@@ -112,39 +111,33 @@ const VintageLandingPage: FC = () => {
           backgroundRepeat={"no-repeat"}
           backgroundSize={"cover"}
         >
-          <motion.div
-            initial={{ opacity: 0, y: 50 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.3 }}
+          <Heading
+            fontSize={{ base: "4xl", md: "6xl" }}
+            fontWeight="black"
+            textShadow="0 4px 20px rgba(0,0,0,0.3)"
+            mb={4}
           >
-            <Heading
-              fontSize={{ base: "4xl", md: "6xl" }}
-              fontWeight="black"
-              textShadow="0 4px 20px rgba(0,0,0,0.3)"
-              mb={4}
+            <Image
+              src={"/ロゴ.svg"}
+              height={{ base: "70px", md: "82px" }}
+              position={"absolute"}
+              top={"45%"}
+              left={"50%"}
+              transform={"translate(-50%, -50%)"}
+              zIndex={10}
+            />
+            <Text
+              fontSize={"xs"}
+              color={"#e68019"}
+              fontWeight={"bold"}
+              position={"absolute"}
+              top={"60%"}
+              left={0}
+              right={0}
             >
-              <Image
-                src={"/ロゴ.svg"}
-                height={{ base: "70px", md: "82px" }}
-                position={"absolute"}
-                top={"45%"}
-                left={"50%"}
-                transform={"translate(-50%, -50%)"}
-                zIndex={10}
-              />
-              <Text
-                fontSize={"xs"}
-                color={"#e68019"}
-                fontWeight={"bold"}
-                position={"absolute"}
-                top={"60%"}
-                left={0}
-                right={0}
-              >
-                ヴィンテージをもっと楽しく、もっと自由に。
-              </Text>
-            </Heading>
-          </motion.div>
+              ヴィンテージをもっと楽しく、もっと自由に。
+            </Text>
+          </Heading>
         </Box>
       </MotionBox>
 
@@ -203,35 +196,34 @@ const VintageLandingPage: FC = () => {
           {textMessages.map((text, index) => renderTextView(text, index))}
           {bottomTextMessages.map((text, index) => {
             return (
-              <>
-                <Text
-                  color={"#000000"}
-                  fontSize={"xl"}
-                  fontWeight={"bold"}
-                  zIndex={index}
-                  my={2}
-                  position="relative"
-                  _after={{
-                    content: '""',
-                    position: "absolute",
-                    bottom: "-5px",
-                    left: "50%",
-                    transform: "translateX(-50%)",
-                    width: "0%",
-                    height: "2px",
-                    bg: "#e68019",
-                    transition: "width 0.3s ease-in-out",
-                  }}
-                  _hover={{
-                    color: "#e68019",
-                    _after: {
-                      width: "80%",
-                    },
-                  }}
-                >
-                  {text}
-                </Text>
-              </>
+              <Text
+                key={index}
+                color={"#000000"}
+                fontSize={"xl"}
+                fontWeight={"bold"}
+                zIndex={index}
+                my={2}
+                position="relative"
+                _after={{
+                  content: '""',
+                  position: "absolute",
+                  bottom: "-5px",
+                  left: "50%",
+                  transform: "translateX(-50%)",
+                  width: "0%",
+                  height: "2px",
+                  bg: "#e68019",
+                  transition: "width 0.3s ease-in-out",
+                }}
+                _hover={{
+                  color: "#e68019",
+                  _after: {
+                    width: "80%",
+                  },
+                }}
+              >
+                {text}
+              </Text>
             );
           })}
         </VStack>

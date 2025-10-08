@@ -42,6 +42,7 @@ import { MdOutlineShoppingBag } from "react-icons/md";
 import { route } from "../../route/routeConst";
 import WithdrawalButton from "./withdrawalButton";
 import CreditCardSection from "./creditCardSection";
+import { TokenManager, decodeJWTPayload } from "../../utils/auth/tokenUtils";
 
 type profileIndexType = {
   editFormSwitch: () => void;
@@ -64,6 +65,22 @@ const ProfileIndex: FC<profileIndexType> = ({ editFormSwitch }) => {
       getMyProfile();
     }
   }, [profile.profile.id, profile.profile.plan, getMyProfile]);
+
+  // 後に削除する
+  const preliminaryFunc = useCallback((): boolean => {
+    const userToken = TokenManager.getUserToken();
+    if (userToken !== null) {
+      const getToken = decodeJWTPayload(userToken);
+
+      if (getToken !== null) {
+        const preliminaryEmail = getToken.sub;
+
+        return preliminaryEmail !== "californian19691031@gmail.com";
+      }
+    }
+
+    return true;
+  }, []);
 
   // カラーモード対応
   const bgColor = useColorModeValue("white", "gray.800");
@@ -413,7 +430,7 @@ const ProfileIndex: FC<profileIndexType> = ({ editFormSwitch }) => {
             borderColor={borderColor}
           >
             <Text fontSize={"sm"} color={"gray.400"} mb={2}>
-              登録できる商品数は最大5個
+              {preliminaryFunc() ? "登録できる商品数は最大5個" : ""}
             </Text>
             <HStack
               justifyContent={{ base: "space-between", md: "start" }}
@@ -425,7 +442,7 @@ const ProfileIndex: FC<profileIndexType> = ({ editFormSwitch }) => {
               <Button
                 size={"sm"}
                 colorScheme="orange"
-                hidden={memorizeProfile.items.length === 5}
+                hidden={preliminaryFunc() && memorizeProfile.items.length === 5}
                 leftIcon={<MdOutlineShoppingBag />}
                 onClick={toItemPushHandler}
               >

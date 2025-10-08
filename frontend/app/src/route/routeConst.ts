@@ -11,8 +11,8 @@ export const route = {
   adminDashboard: "/admin/dashboard", // 管理者ダッシュボード
   adminUsers: "/admin/users", // ユーザー
   adminUserItem: "admin/users/item", // アイテム
-  adminUserChat: "admin/users/chat", // チャット
-  adminThread: "admin/users/thread", //スレッド
+  adminUserTrade: "admin/users/trade", // 取引中一覧
+  adminArchive: "admin/users/archive", //取引完了一覧
 
   users: "/users",
   items: "/items",

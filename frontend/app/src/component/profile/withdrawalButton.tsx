@@ -310,7 +310,7 @@ export const WithdrawalButton: React.FC = () => {
   const handleWithdrawal = async () => {
     const result = await withdrawalApi(memorizeProfile.profile.id);
 
-    if (result?.result) {
+    if (result) {
       toast({
         title: "退会完了",
         description: "退会処理が完了しました。ご利用ありがとうございました。",

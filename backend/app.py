@@ -29,7 +29,7 @@ else:
 try:
     from utils.db_utils import init_db_pool, get_db_connection
     from utils.image_utils import init_s3_client
-    from utils.scheduler_utils import start_scheduler
+    # from utils.scheduler_utils import start_scheduler
     from utils.socketio_events import init_socketio, register_socketio_handlers
 except ImportError as e:
     logging.error(f"Import error for utilities: {e}")
@@ -133,7 +133,7 @@ def initialize_app():
             initialize_database()
 
             # スケジューラーの起動
-            start_scheduler()
+            # start_scheduler()
 
             logging.info("Application initialized successfully")
             return

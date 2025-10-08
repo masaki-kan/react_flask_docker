@@ -1,17 +1,18 @@
 import { FC, useEffect, useState, useCallback } from "react";
 import {
-  Container,
   Heading,
   Grid,
   GridItem,
   Card,
-  CardHeader,
   CardBody,
   Stat,
   StatLabel,
   StatNumber,
   StatHelpText,
   StatArrow,
+  HStack,
+  Box,
+  Button,
 } from "@chakra-ui/react";
 import {
   Chart as ChartJS,
@@ -25,8 +26,12 @@ import {
   LineElement,
   PointElement,
 } from "chart.js";
-import { Bar, Pie } from "react-chartjs-2";
 import { getDashboadApi } from "../../../api/admin";
+import UserRegistrationChart from "./chart/UserRegistrationChart";
+import SubscriptionChart from "./chart/SubscriptionChart";
+import { useNavigate } from "react-router-dom";
+import { route } from "../../../route/routeConst";
+import { CiViewList } from "react-icons/ci";
 
 ChartJS.register(
   CategoryScale,
@@ -41,6 +46,7 @@ ChartJS.register(
 );
 
 const Dashboard: FC = () => {
+  const navigate = useNavigate();
   const [stats, setStats] = useState({
     totalUsers: 0, // ユーザー数
     totalItems: 0, // アイテム数
@@ -50,16 +56,6 @@ const Dashboard: FC = () => {
     monthlyItems: 0, // 月間アイテム数
     monthlyActiveTrades: 0, // 月間取引数
     monthlyCompletedTrades: 0, // 月間取引完了数
-  });
-
-  const [chartData, setChartData] = useState<{
-    userRegistrations: Array<{ month: string; count: number }>;
-    tradeVolume: Array<any>;
-    itemCategories: { [key: string]: number };
-  }>({
-    userRegistrations: [],
-    tradeVolume: [],
-    itemCategories: {},
   });
 
   const fetchDashboardData = useCallback(async () => {
@@ -77,8 +73,6 @@ const Dashboard: FC = () => {
           monthlyActiveTrades: response.data.stats.monthlyActiveTrades,
           monthlyCompletedTrades: response.data.stats.monthlyCompletedTrades,
         });
-
-        setChartData(response.data.charts);
       }
     } catch (error) {
       console.error("Dashboard data fetch error:", error);
@@ -89,37 +83,24 @@ const Dashboard: FC = () => {
     fetchDashboardData();
   }, [fetchDashboardData]);
 
-  // 月別ユーザー登録数チャート
-  const userChartData = {
-    labels: chartData.userRegistrations.map((d) => d.month),
-    datasets: [
-      {
-        label: "ユーザー登録数",
-        data: chartData.userRegistrations.map((d) => d.count),
-        backgroundColor: "rgba(59, 130, 246, 0.5)",
-      },
-    ],
-  };
+  const usersViewHandler = useCallback(() => {
+    navigate(route.adminUsers);
+  }, [navigate]);
 
-  // カテゴリ別アイテム数
-  const categoryChartData = {
-    labels: Object.keys(chartData.itemCategories),
-    datasets: [
-      {
-        data: Object.values(chartData.itemCategories),
-        backgroundColor: [
-          "#EF4444",
-          "#F59E0B",
-          "#10B981",
-          "#3B82F6",
-          "#8B5CF6",
-        ],
-      },
-    ],
-  };
+  const itemsViewHandler = useCallback(() => {
+    navigate(route.adminUserItem);
+  }, [navigate]);
+
+  const tradeViewHandler = useCallback(() => {
+    navigate(route.adminUserTrade);
+  }, [navigate]);
+
+  const archiveViewHandler = useCallback(() => {
+    navigate(route.adminArchive);
+  }, [navigate]);
 
   return (
-    <Container maxW="container.xl" py={8}>
+    <>
       <Heading mb={8}>管理者ダッシュボード</Heading>
       {/* 統計カード */}
       <Grid
@@ -138,10 +119,21 @@ const Dashboard: FC = () => {
                 <StatLabel>総ユーザー数</StatLabel>
                 <StatNumber>{stats.totalUsers}</StatNumber>
                 <StatHelpText>
-                  <StatArrow
-                    type={stats.monthlyGrowth > 0 ? "increase" : "decrease"}
-                  />
-                  {Math.abs(stats.monthlyGrowth)}%
+                  <HStack justifyContent={"space-between"}>
+                    <Box>
+                      <StatArrow
+                        type={stats.monthlyGrowth > 0 ? "increase" : "decrease"}
+                      />
+                      {Math.abs(stats.monthlyGrowth)}%
+                    </Box>
+                    <Button
+                      leftIcon={<CiViewList />}
+                      size={"xs"}
+                      onClick={usersViewHandler}
+                    >
+                      一覧
+                    </Button>
+                  </HStack>
                 </StatHelpText>
               </Stat>
             </CardBody>
@@ -155,10 +147,21 @@ const Dashboard: FC = () => {
                 <StatLabel>総アイテム数</StatLabel>
                 <StatNumber>{stats.totalItems}</StatNumber>
                 <StatHelpText>
-                  <StatArrow
-                    type={stats.monthlyItems > 0 ? "increase" : "decrease"}
-                  />
-                  {Math.abs(stats.monthlyItems)}%
+                  <HStack justifyContent={"space-between"}>
+                    <Box>
+                      <StatArrow
+                        type={stats.monthlyItems > 0 ? "increase" : "decrease"}
+                      />
+                      {Math.abs(stats.monthlyItems)}%
+                    </Box>
+                    <Button
+                      leftIcon={<CiViewList />}
+                      size={"xs"}
+                      onClick={itemsViewHandler}
+                    >
+                      一覧
+                    </Button>
+                  </HStack>
                 </StatHelpText>
               </Stat>
             </CardBody>
@@ -172,12 +175,25 @@ const Dashboard: FC = () => {
                 <StatLabel>進行中の取引</StatLabel>
                 <StatNumber>{stats.activeTrades}</StatNumber>
                 <StatHelpText>
-                  <StatArrow
-                    type={
-                      stats.monthlyActiveTrades > 0 ? "increase" : "decrease"
-                    }
-                  />
-                  {Math.abs(stats.monthlyActiveTrades)}%
+                  <HStack justifyContent={"space-between"}>
+                    <Box>
+                      <StatArrow
+                        type={
+                          stats.monthlyActiveTrades > 0
+                            ? "increase"
+                            : "decrease"
+                        }
+                      />
+                      {Math.abs(stats.monthlyActiveTrades)}%
+                    </Box>
+                    <Button
+                      leftIcon={<CiViewList />}
+                      size={"xs"}
+                      onClick={tradeViewHandler}
+                    >
+                      一覧
+                    </Button>
+                  </HStack>
                 </StatHelpText>
               </Stat>
             </CardBody>
@@ -191,12 +207,25 @@ const Dashboard: FC = () => {
                 <StatLabel>完了した取引</StatLabel>
                 <StatNumber>{stats.completedTrades}</StatNumber>
                 <StatHelpText>
-                  <StatArrow
-                    type={
-                      stats.monthlyCompletedTrades > 0 ? "increase" : "decrease"
-                    }
-                  />
-                  {Math.abs(stats.monthlyCompletedTrades)}%
+                  <HStack justifyContent={"space-between"}>
+                    <Box>
+                      <StatArrow
+                        type={
+                          stats.monthlyCompletedTrades > 0
+                            ? "increase"
+                            : "decrease"
+                        }
+                      />
+                      {Math.abs(stats.monthlyCompletedTrades)}%
+                    </Box>
+                    <Button
+                      leftIcon={<CiViewList />}
+                      size={"xs"}
+                      onClick={archiveViewHandler}
+                    >
+                      一覧
+                    </Button>
+                  </HStack>
                 </StatHelpText>
               </Stat>
             </CardBody>
@@ -205,30 +234,19 @@ const Dashboard: FC = () => {
       </Grid>
 
       {/* チャート */}
-      <Grid templateColumns={{ base: "1fr", lg: "repeat(2, 1fr)" }} gap={6}>
+      <Grid
+        templateColumns={{ base: "1fr", lg: "repeat(2, 1fr)" }}
+        gap={6}
+        mb={10}
+      >
         <GridItem>
-          <Card>
-            <CardHeader>
-              <Heading size="md">月別ユーザー登録数</Heading>
-            </CardHeader>
-            <CardBody>
-              <Bar data={userChartData} />
-            </CardBody>
-          </Card>
+          <UserRegistrationChart />
         </GridItem>
-
         <GridItem>
-          <Card>
-            <CardHeader>
-              <Heading size="md">カテゴリ別アイテム数</Heading>
-            </CardHeader>
-            <CardBody>
-              <Pie data={categoryChartData} />
-            </CardBody>
-          </Card>
+          <SubscriptionChart />
         </GridItem>
       </Grid>
-    </Container>
+    </>
   );
 };
 
