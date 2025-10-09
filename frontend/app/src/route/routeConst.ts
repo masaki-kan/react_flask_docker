@@ -10,10 +10,11 @@ export const route = {
   adminLogin: "/admin/login", // 管理者用 ログイン
   adminDashboard: "/admin/dashboard", // 管理者ダッシュボード
   adminUsers: "/admin/users", // ユーザー
-  adminUserItem: "admin/users/item", // アイテム
-  adminUserTrade: "admin/users/trade", // 取引中一覧
-  adminArchive: "admin/users/archive", //取引完了一覧
+  adminUserItem: "admin/items", // アイテム
+  adminUserTrade: "admin/trades", // 取引中一覧
+  adminArchive: "admin/archives", //取引完了一覧
 
+  // ユーザー
   users: "/users",
   items: "/items",
   itemDetail: "/user/item",

@@ -3,7 +3,6 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from utils.db_utils import get_db_connection
 import mysql.connector
 from datetime import datetime, timedelta
-# from utils.scheduler_utils import cleanup_old_archives
 
 admin_bp = Blueprint('admin', __name__, url_prefix='/api')
 
@@ -85,30 +84,6 @@ def admin_dashboard():
             monthly_active_trades_growth = (current_month_active_trades / previous_month_active_trades * 100) if previous_month_active_trades > 0 else (100 if current_month_active_trades > 0 else 0)
             monthly_completed_trades_growth = (current_month_completed_trades / previous_month_completed_trades * 100) if previous_month_completed_trades > 0 else (100 if current_month_completed_trades > 0 else 0)
 
-            # ユーザーデータ　商品数、ユーザー一覧
-            cursor.execute("""
-                SELECT
-                    u.user_id,
-                    u.name,
-                    u.email,
-                    u.created_at,
-                    u.updated_at,
-                    u.is_deleted,
-                    u.plan,
-                    COALESCE(item_counts.item_count, 0) as item_count
-                FROM users u
-                LEFT JOIN (
-                    SELECT
-                        user_id,
-                        COUNT(*) as item_count
-                    FROM items
-                    GROUP BY user_id
-                ) item_counts ON u.user_id = item_counts.user_id
-                WHERE u.type = 1
-                ORDER BY u.created_at DESC
-            """)
-            users = cursor.fetchall()
-
 
             return jsonify({
                 "result": True,
@@ -123,7 +98,6 @@ def admin_dashboard():
                         "monthlyItems": round(monthly_items_growth, 2),
                         "monthlyActiveTrades": round(monthly_active_trades_growth, 2),
                         "monthlyCompletedTrades": round(monthly_completed_trades_growth, 2),
-                        "users": users
                     }
                 }
             })
@@ -152,9 +126,6 @@ def manual_cleanup_archives():
             
             if not user or user[0] != 0:  # type = 0 が管理者
                 return jsonify({"error": "権限がありません"}), 403
-        
-        # クリーンアップ実行
-        # cleanup_old_archives()
         
         return jsonify({
             "result": True,
@@ -470,3 +441,49 @@ def get_subscription_data():
             "success": False,
             "error": f"サブスクリプションデータの取得に失敗しました: {str(e)}"
         }), 500
+
+@admin_bp.route('/dashboard/users-data', methods=['GET'], endpoint='get_users_data')
+@check_admin()
+def get_users_data():
+    
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor(dictionary=True)
+            # ユーザーデータ　商品数、ユーザー一覧
+            cursor.execute("""
+                SELECT
+                    u.user_id,
+                    u.name,
+                    u.email,
+                    u.created_at,
+                    u.updated_at,
+                    u.is_deleted,
+                    u.plan,
+                    COALESCE(item_counts.item_count, 0) as item_count
+                FROM users u
+                LEFT JOIN (
+                    SELECT
+                        user_id,
+                        COUNT(*) as item_count
+                    FROM items
+                    GROUP BY user_id
+                ) item_counts ON u.user_id = item_counts.user_id
+                WHERE u.type = 1
+                ORDER BY u.created_at DESC
+            """)
+            users = cursor.fetchall()
+        
+            return jsonify({
+                "success": True,
+                "data": {
+                    "users" :users
+                }
+            }), 200
+        
+    except Exception as e:
+        print(f"[ERROR] Subscription data error: {str(e)}", flush=True)
+        return jsonify({
+            "success": False,
+            "error": f"ユーザーデータ取得に失敗しました: {str(e)}"
+        }), 500
+    

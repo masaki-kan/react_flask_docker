@@ -39,14 +39,16 @@ def get_credentials():
 
 def send_welcome_email(user_name, plan_type, to_email):
     """ウェルカムメールを送信"""
-    if not all([user_name, plan_type, to_email]):
+    if not all([user_name, plan_type is not None, to_email]):
         return False
-
+    
     plan = ""
-    if str(plan_type) == "1":
+    if plan_type == "0":
         plan = "月額プラン ¥550/月"
-    elif str(plan_type) == "2":
+    elif plan_type == "1":
         plan = "年額プラン ¥5,500/年"
+    else:
+        plan = "未設定"
         
     # 現在の日時を取得
     current_date = datetime.now().strftime("%Y年%m月%d日")
@@ -185,9 +187,9 @@ def reactivation_send_welcome_email(user_name, plan_type, to_email):
         return False
 
     plan = ""
-    if str(plan_type) == "0":
+    if plan_type == "0":
         plan = "月額プラン ¥550/月"
-    elif str(plan_type) == "1":
+    elif plan_type == "1":
         plan = "年額プラン ¥5,500/年"
         
     # 現在の日時を取得

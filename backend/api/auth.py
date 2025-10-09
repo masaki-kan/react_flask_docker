@@ -185,9 +185,10 @@ def sign_up():
                 "INSERT INTO users (name, email, password, plan, stripe_customer_id) VALUES (%s, %s, %s, %s, %s)", 
                 (username, email, hashed_password, plan, stripe_customer_id)
             )
-            conn.commit()
-            
+
             send_welcome_email(username, plan, email)
+            
+            conn.commit()
             
             return jsonify({
                 "message": "登録しました。ログイン画面に移ります",

@@ -1021,12 +1021,14 @@ def reactivate_account():
                     # ログテーブルがない場合でも処理は続行
                     pass
                 
-                conn.commit()
+     
                 
                 #再開メール
                 reactivation_send_welcome_email(user['name'], plan_type, user['email'])
                 
                 logger.info(f"Account reactivated successfully for user {user_id}")
+                
+                conn.commit()
                 
                 return jsonify({
                     "result": True,
@@ -1227,27 +1229,27 @@ def withdraw_user():
                         deleted_at = %s,
                         updated_at = %s,
                         status = 0,
-                        token = NULL,
                         stripe_customer_id = NULL
                     WHERE user_id = %s
                 """, (current_time, current_time, user_id))
 
-                # 2. 出品中・削除済み・交換済みのアイテムを物理削除
-                # （取引中のアイテムは事前チェックで除外済み）
-                cursor.execute("""
-                    DELETE FROM items 
-                    WHERE user_id = %s 
-                    AND status IN ('available', 'deleted', 'exchanged')
-                """, (user_id,))
-
-                deleted_items = cursor.rowcount
-
-                # 3. アイテム画像を物理削除（アーカイブ済みの画像は保存されている）
+                # 2. アイテム画像を物理削除（アイテムを削除する前に実行）
                 cursor.execute("""
                     DELETE ii FROM item_images ii
                     INNER JOIN items i ON ii.item_id = i.item_id
                     WHERE i.user_id = %s
+                    AND i.status IN ('available', 'deleted', 'exchanged')
                 """, (user_id,))
+
+                # 3. 出品中・削除済み・交換済みのアイテムを物理削除
+                # （取引中のアイテムは事前チェックで除外済み）
+                cursor.execute("""
+                    DELETE FROM items
+                    WHERE user_id = %s
+                    AND status IN ('available', 'deleted', 'exchanged')
+                """, (user_id,))
+
+                deleted_items = cursor.rowcount
 
                 # 4. プロフィール画像を物理削除
                 cursor.execute("""
