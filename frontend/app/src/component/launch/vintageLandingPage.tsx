@@ -10,6 +10,7 @@ import {
   Link,
   VStack,
   Image,
+  Button,
 } from "@chakra-ui/react";
 import { keyframes } from "@emotion/react";
 import { FaInstagram } from "react-icons/fa";
@@ -141,7 +142,6 @@ const VintageLandingPage: FC = () => {
         </Box>
       </MotionBox>
 
-      {/* Story Section with stagger animation */}
       <Box
         px={4}
         py={4}
@@ -320,8 +320,22 @@ const VintageLandingPage: FC = () => {
       </MotionBox>
 
       {/* Footer */}
-      <Box textAlign="center" py={12} bg="#faf8f3">
-        <Flex justify="center" mb={6}>
+      <Box textAlign="center" pt={8} pb={12} bg="#faf8f3">
+        {/* <Button
+          minW="80px"
+          maxW="480px"
+          bg="#e68019"
+          color="#ece9e6ff"
+          fontSize="xs"
+          mb={4}
+          fontWeight="bold"
+          size="sm"
+          boxShadow={"0 10px 30px rgba(161, 130, 73, 0.2)"}
+          onClick={() => navigate(route.login)}
+        >
+          始める
+        </Button> */}
+        <Flex justify="center">
           <motion.div
             whileHover={{ scale: 1.2, rotate: 360 }}
             transition={{ duration: 0.6 }}

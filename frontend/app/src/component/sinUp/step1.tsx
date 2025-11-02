@@ -51,7 +51,7 @@ const Step1: FC<Step1Type> = ({ errors, formData, setFormData, nextStep }) => {
           <FormLabel>
             <HStack spacing={2}>
               <Icon as={FaUser} />
-              <Text>氏名</Text>
+              <Text>ニックネーム</Text>
             </HStack>
           </FormLabel>
           <Input

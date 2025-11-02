@@ -20,7 +20,7 @@ import useAlert from "../../hooks/useAlert";
 
 const RenderRouteLinks: FC = () => {
   const { warningToast } = useAlert();
-  const { memorizeProfile } = useMyProfile();
+  const { memorizeProfile, getMyProfile } = useMyProfile();
   const profile = useMemo(() => memorizeProfile, [memorizeProfile]);
   const navigate = useNavigate();
 
@@ -57,7 +57,8 @@ const RenderRouteLinks: FC = () => {
 
     const isNew = newArray.find((item) => item.isNew === true)?.isNew ?? false;
     setReadSaveStatus(isNew);
-  }, [readSaveTimestamps, savedList, unCompletedList]);
+    getMyProfile();
+  }, [getMyProfile, readSaveTimestamps, savedList, unCompletedList]);
 
   useEffectOnce(() => {
     getSavedListHandler();
@@ -67,9 +68,7 @@ const RenderRouteLinks: FC = () => {
     (path: string) => {
       if (path !== route.thread) {
         if (profile.items.length === 0) {
-          warningToast(
-            "登録アイテムがありません。アイテムを登録してください。"
-          );
+          warningToast("アイテムを最低1点登録してください。");
 
           navigate(route.myItem);
           return;
@@ -78,7 +77,7 @@ const RenderRouteLinks: FC = () => {
 
       navigate(path);
     },
-    [navigate, profile.items.length, warningToast]
+    [navigate, profile, warningToast]
   );
 
   return (

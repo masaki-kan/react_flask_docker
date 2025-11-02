@@ -442,15 +442,139 @@ def get_subscription_data():
             "error": f"サブスクリプションデータの取得に失敗しました: {str(e)}"
         }), 500
 
-@admin_bp.route('/dashboard/users-data', methods=['GET'], endpoint='get_users_data')
+@admin_bp.route('/dashboard/user-detail', methods=['GET'], endpoint='get_user_detail')
 @check_admin()
-def get_users_data():
-    
+def get_user_detail():
+    """特定ユーザーの詳細情報を取得"""
+    user_id = int(request.args.get('user_id', ""))
     try:
         with get_db_connection() as conn:
             cursor = conn.cursor(dictionary=True)
-            # ユーザーデータ　商品数、ユーザー一覧
+
+            # ユーザープロフィール情報
             cursor.execute("""
+                SELECT
+                    user_id,
+                    name,
+                    email,
+                    plan,
+                    created_at,
+                    updated_at,
+                    is_deleted,
+                    type
+                FROM users
+                WHERE user_id = %s AND type = 1
+            """, (user_id,))
+            user_profile = cursor.fetchone()
+
+            if not user_profile:
+                return jsonify({
+                    "success": False,
+                    "error": "ユーザーが見つかりません"
+                }), 404
+
+            # ユーザーの商品データ
+            cursor.execute("""
+                SELECT
+                    item_id,
+                    title,
+                    status,
+                    uploaded_at
+                FROM items
+                WHERE user_id = %s
+                ORDER BY uploaded_at DESC
+            """, (user_id,))
+            user_items = cursor.fetchall()
+
+            # 現在取引中のデータ
+            cursor.execute("""
+                SELECT
+                    t.trade_id,
+                    t.item_id,
+                    t.created_at,
+                    t.status,
+                    i.title,
+                    seller.name as seller_name,
+                    buyer.name as buyer_name
+                FROM trades t
+                INNER JOIN items i ON t.item_id = i.item_id
+                INNER JOIN users seller ON i.user_id = seller.user_id
+                INNER JOIN users buyer ON t.buyer_id = buyer.user_id
+                WHERE i.user_id = %s OR t.buyer_id = %s
+                ORDER BY t.created_at DESC
+            """, (user_id, user_id))
+            active_trades = cursor.fetchall()
+
+            return jsonify({
+                "success": True,
+                "data": {
+                    "profile": user_profile,
+                    "items": user_items,
+                    "trades": active_trades
+                }
+            }), 200
+
+    except Exception as e:
+        print(f"[ERROR] User detail error: {str(e)}", flush=True)
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            "success": False,
+            "error": f"ユーザー詳細データの取得に失敗しました: {str(e)}"
+        }), 500
+
+@admin_bp.route('/dashboard/users-data', methods=['GET'], endpoint='get_users_data')
+@check_admin()
+def get_users_data():
+    try:
+        # クエリパラメータを取得
+        page = int(request.args.get('page', 1))
+        limit = int(request.args.get('limit', 100))
+        name_filter = request.args.get('name', '')
+        email_filter = request.args.get('email', '')
+        plan_filter = request.args.get('plan', '')
+        item_count_filter = request.args.get('item_count', '')
+        deleted_filter = request.args.get('deleted', '')
+
+        # オフセット計算
+        offset = (page - 1) * limit
+
+        with get_db_connection() as conn:
+            cursor = conn.cursor(dictionary=True)
+
+            # WHERE句の条件を構築
+            conditions = ["u.type = 1"]
+            params = []
+
+            if name_filter:
+                conditions.append("u.name LIKE %s")
+                params.append(f"%{name_filter}%")
+
+            if email_filter:
+                conditions.append("u.email LIKE %s")
+                params.append(f"%{email_filter}%")
+
+            if plan_filter:
+                conditions.append("u.plan = %s")
+                params.append(plan_filter)
+                
+            if deleted_filter:
+                conditions.append("u.is_deleted = %s")
+                params.append(deleted_filter)
+
+            where_clause = " AND ".join(conditions)
+
+            # 総件数を取得
+            count_query = f"""
+                SELECT COUNT(*) as total
+                FROM users u
+                WHERE {where_clause}
+            """
+            cursor.execute(count_query, params)
+            total_count = cursor.fetchone()['total']
+
+            # ユーザーデータを取得（ページネーション適用）
+            user_query = f"""
                 SELECT
                     u.user_id,
                     u.name,
@@ -468,22 +592,252 @@ def get_users_data():
                     FROM items
                     GROUP BY user_id
                 ) item_counts ON u.user_id = item_counts.user_id
-                WHERE u.type = 1
-                ORDER BY u.created_at DESC
-            """)
+                WHERE {where_clause}
+            """
+
+            # item_count でフィルタリング（HAVING句を使用）
+            if item_count_filter:
+                user_query += f" HAVING item_count >= %s"
+                params.append(int(item_count_filter))
+
+            user_query += " ORDER BY u.created_at DESC LIMIT %s OFFSET %s"
+            params.extend([limit, offset])
+
+            cursor.execute(user_query, params)
             users = cursor.fetchall()
-        
+
             return jsonify({
                 "success": True,
                 "data": {
-                    "users" :users
+                    "users": users,
+                    "total": total_count,
+                    "page": page,
+                    "limit": limit
                 }
             }), 200
-        
+
     except Exception as e:
-        print(f"[ERROR] Subscription data error: {str(e)}", flush=True)
+        print(f"[ERROR] Users data error: {str(e)}", flush=True)
+        import traceback
+        traceback.print_exc()
         return jsonify({
             "success": False,
             "error": f"ユーザーデータ取得に失敗しました: {str(e)}"
         }), 500
-    
+
+@admin_bp.route('/dashboard/items-data', methods=['GET'], endpoint='get_items_data')
+@check_admin()
+def get_items_data():
+    """商品一覧データを取得（検索・ページネーション対応）"""
+    try:
+        # クエリパラメータを取得
+        page = int(request.args.get('page', 1))
+        limit = int(request.args.get('limit', 100))
+        user_name_filter = request.args.get('user_name', '')
+        item_id_filter = request.args.get('item_id', '')
+        title_filter = request.args.get('title', '')
+        type_filter = request.args.get('type', '')
+        brand_filter = request.args.get('brand', '')
+
+        # オフセット計算
+        offset = (page - 1) * limit
+
+        with get_db_connection() as conn:
+            cursor = conn.cursor(dictionary=True)
+
+            # WHERE句の条件を構築
+            conditions = []
+            params = []
+
+            if user_name_filter:
+                conditions.append("u.name LIKE %s")
+                params.append(f"%{user_name_filter}%")
+
+            if item_id_filter:
+                conditions.append("i.item_id = %s")
+                params.append(item_id_filter)
+
+            if title_filter:
+                conditions.append("i.title LIKE %s")
+                params.append(f"%{title_filter}%")
+
+            if type_filter:
+                conditions.append("i.type LIKE %s")
+                params.append(f"%{type_filter}%")
+
+            if brand_filter:
+                conditions.append("i.brand LIKE %s")
+                params.append(f"%{brand_filter}%")
+
+            where_clause = " AND ".join(conditions) if conditions else "1=1"
+
+            # 総件数を取得
+            count_query = f"""
+                SELECT COUNT(*) as total
+                FROM items i
+                INNER JOIN users u ON i.user_id = u.user_id
+                WHERE {where_clause}
+            """
+            cursor.execute(count_query, params)
+            total_count = cursor.fetchone()['total']
+
+            # 商品データを取得（ページネーション適用）
+            items_query = f"""
+                SELECT
+                    i.item_id,
+                    i.user_id,
+                    u.name as user_name,
+                    i.title,
+                    i.type,
+                    i.brand,
+                    i.uploaded_at,
+                    i.status
+                FROM items i
+                INNER JOIN users u ON i.user_id = u.user_id
+                WHERE {where_clause}
+                ORDER BY i.uploaded_at DESC
+                LIMIT %s OFFSET %s
+            """
+            params.extend([limit, offset])
+
+            cursor.execute(items_query, params)
+            items = cursor.fetchall()
+
+            return jsonify({
+                "success": True,
+                "data": {
+                    "items": items,
+                    "total": total_count,
+                    "page": page,
+                    "limit": limit
+                }
+            }), 200
+
+    except Exception as e:
+        print(f"[ERROR] Items data error: {str(e)}", flush=True)
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            "success": False,
+            "error": f"商品データ取得に失敗しました: {str(e)}"
+        }), 500
+
+@admin_bp.route('/dashboard/item-delete', methods=['DELETE'], endpoint='delete_item')
+@check_admin()
+def delete_item():
+    """商品を削除"""
+    try:
+        item_id = request.args.get('item_id')
+
+        if not item_id:
+            return jsonify({
+                "success": False,
+                "error": "item_idが指定されていません"
+            }), 400
+
+        with get_db_connection() as conn:
+            cursor = conn.cursor(dictionary=True)
+
+            # 商品が存在するか確認
+            cursor.execute("""
+                SELECT item_id, user_id FROM items
+                WHERE item_id = %s
+            """, (item_id,))
+            item = cursor.fetchone()
+
+            if not item:
+                return jsonify({
+                    "success": False,
+                    "error": "商品が見つかりません"
+                }), 404
+
+            # アクティブな取引があるか確認
+            cursor.execute("""
+                SELECT trade_id, status FROM trades
+                WHERE (item_id = %s OR seller_exchange_item_id = %s OR buyer_exchange_item_id = %s)
+                AND status IN ('pending', 'purchased', 'shipped')
+            """, (item_id, item_id, item_id))
+            active_trades = cursor.fetchall()
+
+            if active_trades:
+                return jsonify({
+                    "success": False,
+                    "error": "進行中の取引があるため削除できません",
+                    "active_trades": active_trades
+                }), 400
+
+            # 関連する全ての取引IDを取得
+            cursor.execute("""
+                SELECT DISTINCT trade_id FROM trades
+                WHERE item_id = %s OR seller_exchange_item_id = %s OR buyer_exchange_item_id = %s
+            """, (item_id, item_id, item_id))
+            related_trades = cursor.fetchall()
+            trade_ids = [t['trade_id'] for t in related_trades]
+
+            # 関連データの削除
+            if trade_ids:
+                # trade_exchanges の削除
+                cursor.execute("""
+                    DELETE FROM trade_exchanges
+                    WHERE offered_item_id = %s OR received_item_id = %s
+                """, (item_id, item_id))
+
+                # trade_messages の削除
+                placeholders = ','.join(['%s'] * len(trade_ids))
+                cursor.execute(f"""
+                    DELETE FROM trade_messages
+                    WHERE trade_id IN ({placeholders})
+                """, trade_ids)
+
+                # trade_confirmations の削除
+                cursor.execute(f"""
+                    DELETE FROM trade_confirmations
+                    WHERE trade_id IN ({placeholders})
+                """, trade_ids)
+
+                # shipping_info の削除
+                cursor.execute(f"""
+                    DELETE FROM shipping_info
+                    WHERE trade_id IN ({placeholders})
+                """, trade_ids)
+
+                # trades の削除
+                cursor.execute("""
+                    DELETE FROM trades
+                    WHERE item_id = %s OR seller_exchange_item_id = %s OR buyer_exchange_item_id = %s
+                """, (item_id, item_id, item_id))
+
+            # likes の削除
+            cursor.execute("""
+                DELETE FROM likes
+                WHERE item_id = %s
+            """, (item_id,))
+
+            # item_images の削除
+            cursor.execute("""
+                DELETE FROM item_images
+                WHERE item_id = %s
+            """, (item_id,))
+
+            # items の削除
+            cursor.execute("""
+                DELETE FROM items
+                WHERE item_id = %s
+            """, (item_id,))
+
+            conn.commit()
+
+            return jsonify({
+                "success": True,
+                "message": "商品を削除しました",
+                "item_id": item_id
+            }), 200
+
+    except Exception as e:
+        print(f"[ERROR] Item delete error: {str(e)}", flush=True)
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            "success": False,
+            "error": f"商品削除に失敗しました: {str(e)}"
+        }), 500

@@ -29,7 +29,9 @@ import SecureAdminLayout from "../component/layout/secureAdminLayout";
 import NotFound from "../component/pages/notFound";
 import PrivacyPolicy from "../component/privacy/privacyPolicy";
 import RiyouKiyakuPage from "../component/riyoukiyaku/riyouKiyakuPage";
-import AdminUsers from "../component/admin/adminUsers";
+import AdminUsers from "../component/admin/user/adminUsers";
+import AdminUserDetail from "../component/admin/user/adminUserDetail";
+import AdminItems from "../component/admin/item/adminItems";
 
 // 認証が必要なルートのラッパーコンポーネント
 const ProtectedLayout = () => {
@@ -98,6 +100,8 @@ const AppRoutes: FC = () => {
         <Route element={<AdminProtectedLayout />}>
           <Route path={route.adminDashboard} element={<AdminDashboard />} />
           <Route path={route.adminUsers} element={<AdminUsers />} />
+          <Route path={route.adminUserDetail} element={<AdminUserDetail />} />
+          <Route path={route.adminUserItem} element={<AdminItems />} />
         </Route>
 
         {/* 認証が必要なルート（プロテクテッドルート） */}
