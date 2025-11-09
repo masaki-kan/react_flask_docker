@@ -1,5 +1,6 @@
 import { FC, useCallback } from "react";
 import FeatureCard from "../checkReactivationstatus/featureCard";
+import HowItWorksSection from "./HowItWorksSection";
 import {
   Box,
   Heading,
@@ -10,7 +11,6 @@ import {
   Link,
   VStack,
   Image,
-  Button,
 } from "@chakra-ui/react";
 import { keyframes } from "@emotion/react";
 import { FaInstagram } from "react-icons/fa";
@@ -285,6 +285,9 @@ const VintageLandingPage: FC = () => {
           />
         </SimpleGrid>
       </MotionBox>
+
+      {/* How it Works Section */}
+      <HowItWorksSection />
 
       {/* CTA Section */}
       <MotionBox

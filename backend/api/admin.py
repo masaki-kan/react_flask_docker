@@ -722,6 +722,82 @@ def get_items_data():
             "error": f"商品データ取得に失敗しました: {str(e)}"
         }), 500
 
+@admin_bp.route('/dashboard/item-detail', methods=['GET'], endpoint='get_item_detail')
+@check_admin()
+def get_item_detail():
+    """商品詳細情報を取得"""
+    item_id = int(request.args.get('item_id', ""))
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor(dictionary=True)
+
+            # 商品情報を取得
+            cursor.execute("""
+                SELECT
+                    i.item_id,
+                    i.user_id,
+                    i.title,
+                    i.description,
+                    i.type,
+                    i.brand,
+                    i.uploaded_at,
+                    i.status,
+                    u.name as user_name,
+                    u.email as user_email
+                FROM items i
+                INNER JOIN users u ON i.user_id = u.user_id
+                WHERE i.item_id = %s
+            """, (item_id,))
+            item_info = cursor.fetchone()
+
+            if not item_info:
+                return jsonify({
+                    "success": False,
+                    "error": "商品が見つかりません"
+                }), 404
+
+            # 商品画像を取得
+            cursor.execute("""
+                SELECT image_url
+                FROM item_images
+                WHERE item_id = %s
+                ORDER BY uploaded_at ASC
+            """, (item_id,))
+            images = cursor.fetchall()
+            item_info['images'] = [img['image_url'] for img in images]
+
+            # いいねしているユーザー情報を取得
+            cursor.execute("""
+                SELECT
+                    l.user_id,
+                    u.name as user_name,
+                    u.email as user_email,
+                    l.created_at as liked_at
+                FROM likes l
+                INNER JOIN users u ON l.user_id = u.user_id
+                WHERE l.item_id = %s
+                ORDER BY l.created_at DESC
+            """, (item_id,))
+            liked_users = cursor.fetchall()
+
+            return jsonify({
+                "success": True,
+                "data": {
+                    "item": item_info,
+                    "liked_users": liked_users,
+                    "like_count": len(liked_users)
+                }
+            }), 200
+
+    except Exception as e:
+        print(f"[ERROR] Item detail error: {str(e)}", flush=True)
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            "success": False,
+            "error": f"商品詳細データの取得に失敗しました: {str(e)}"
+        }), 500
+
 @admin_bp.route('/dashboard/item-delete', methods=['DELETE'], endpoint='delete_item')
 @check_admin()
 def delete_item():

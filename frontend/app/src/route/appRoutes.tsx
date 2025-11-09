@@ -32,6 +32,7 @@ import RiyouKiyakuPage from "../component/riyoukiyaku/riyouKiyakuPage";
 import AdminUsers from "../component/admin/user/adminUsers";
 import AdminUserDetail from "../component/admin/user/adminUserDetail";
 import AdminItems from "../component/admin/item/adminItems";
+import AdminItemDetail from "../component/admin/item/adminItemDetail";
 
 // 認証が必要なルートのラッパーコンポーネント
 const ProtectedLayout = () => {
@@ -102,6 +103,7 @@ const AppRoutes: FC = () => {
           <Route path={route.adminUsers} element={<AdminUsers />} />
           <Route path={route.adminUserDetail} element={<AdminUserDetail />} />
           <Route path={route.adminUserItem} element={<AdminItems />} />
+          <Route path={route.adminItemDetail} element={<AdminItemDetail />} />
         </Route>
 
         {/* 認証が必要なルート（プロテクテッドルート） */}

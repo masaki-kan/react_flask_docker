@@ -1,4 +1,3 @@
-// renderItem.tsx の改善版
 import { FC, useCallback, useState, memo, useMemo } from "react";
 import {
   Grid,

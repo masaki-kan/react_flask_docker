@@ -2,6 +2,7 @@ import { FC, useState } from "react";
 import { getItemsDataApi, deleteItemApi } from "../../../api/admin";
 import { ItemsDataType } from "../../../types/adminTypes";
 import { useEffectOnce } from "react-use";
+import { useNavigate } from "react-router-dom";
 import {
   TableContainer,
   Table,
@@ -22,6 +23,9 @@ import {
 } from "@tanstack/react-table";
 import PagerComponent from "../parts/pagerComponent";
 import Swal from "sweetalert2";
+import { itemParts } from "../../../consts/itemConsts";
+import { brandList } from "../../../consts/brandListi";
+import { route } from "../../../route/routeConst";
 
 interface SearchFilters {
   user_name: string;
@@ -34,6 +38,7 @@ interface SearchFilters {
 const columnHelper = createColumnHelper<ItemsDataType>();
 
 const AdminItems: FC = () => {
+  const navigate = useNavigate();
   const [data, setData] = useState<ItemsDataType[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -165,27 +170,24 @@ const AdminItems: FC = () => {
   };
 
   const formatType = (typeString: string) => {
-    try {
-      const parsed = JSON.parse(typeString);
-      if (Array.isArray(parsed)) {
-        return parsed.map((item) => item.name || item).join(", ");
+    const parsed = JSON.parse(typeString);
+    if (typeString === "") return "設定なし";
+    return itemParts.map((list: { key: number; name: string }) => {
+      if (Number(parsed) === list.key) {
+        return list.name;
       }
-      return parsed.name || typeString;
-    } catch {
-      return typeString;
-    }
+    });
   };
 
   const formatBrand = (brandString: string) => {
-    try {
-      const parsed = JSON.parse(brandString);
-      if (Array.isArray(parsed)) {
-        return parsed.map((item) => item.name || item).join(", ");
+    const parsed = JSON.parse(brandString);
+    // 配列の場合は各要素のnameを結合
+    if (parsed.key === "" && parsed.name === "") return "設定なし";
+    return brandList.map((list: { key: number; name: string }) => {
+      if (parsed.key === list.key) {
+        return list.name;
       }
-      return parsed.name || brandString;
-    } catch {
-      return brandString;
-    }
+    });
   };
 
   const columns = [
@@ -248,7 +250,7 @@ const AdminItems: FC = () => {
         <h1
           style={{ fontSize: "24px", fontWeight: "bold", marginBottom: "10px" }}
         >
-          Item Management
+          アイテム一覧
         </h1>
         <p style={{ color: "#666" }}>
           Total: {totalCount} / Displaying: {data.length}
@@ -267,7 +269,7 @@ const AdminItems: FC = () => {
         <h2
           style={{ fontSize: "18px", fontWeight: "bold", marginBottom: "15px" }}
         >
-          Search Filters
+          検索フィルター
         </h2>
         <div
           style={{
@@ -365,19 +367,26 @@ const AdminItems: FC = () => {
             >
               Type
             </label>
-            <input
-              type="text"
+            <select
               value={filters.type}
               onChange={(e) => setFilters({ ...filters, type: e.target.value })}
-              placeholder="Search..."
               style={{
                 width: "100%",
                 padding: "8px 12px",
                 border: "1px solid #ddd",
                 borderRadius: "4px",
                 fontSize: "14px",
+                backgroundColor: "white",
+                cursor: "pointer",
               }}
-            />
+            >
+              <option value="">全て</option>
+              {itemParts.map((item) => (
+                <option key={item.key} value={item.key}>
+                  {item.name}
+                </option>
+              ))}
+            </select>
           </div>
           <div>
             <label
@@ -389,21 +398,28 @@ const AdminItems: FC = () => {
             >
               Brand Name
             </label>
-            <input
-              type="text"
+            <select
               value={filters.brand}
               onChange={(e) =>
                 setFilters({ ...filters, brand: e.target.value })
               }
-              placeholder="Search..."
               style={{
                 width: "100%",
                 padding: "8px 12px",
                 border: "1px solid #ddd",
                 borderRadius: "4px",
                 fontSize: "14px",
+                backgroundColor: "white",
+                cursor: "pointer",
               }}
-            />
+            >
+              <option value="">全て</option>
+              {brandList.map((brand) => (
+                <option key={brand.key} value={brand.name}>
+                  {brand.name}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
         <div style={{ display: "flex", gap: "10px" }}>
@@ -536,6 +552,12 @@ const AdminItems: FC = () => {
                     _hover={{
                       bg: "#e3f2fd",
                       transition: "background-color 0.2s ease",
+                      cursor: "pointer",
+                    }}
+                    onClick={() => {
+                      navigate(
+                        `${route.adminItemDetail}?item_id=${row.original.item_id}`
+                      );
                     }}
                   >
                     {row.getVisibleCells().map((cell) => (

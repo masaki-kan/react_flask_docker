@@ -11,8 +11,10 @@ export const route = {
   adminDashboard: "/admin/dashboard", // 管理者ダッシュボード
   adminUsers: "/admin/users", // ユーザー
   adminUserDetail: "/admin/user/detail", // ユーザー詳細
-  adminUserItem: "/admin/items", // アイテム
-  adminUserItemDetail: "/admin/item/detail", // アイテム詳細
+  adminItems: "/admin/items", // アイテム一覧
+  adminItemDetail: "/admin/item/detail", // アイテム詳細
+  adminUserItem: "/admin/items", // アイテム (後方互換性のため残す)
+  adminUserItemDetail: "/admin/item/detail", // アイテム詳細 (後方互換性のため残す)
   adminUserTrade: "/admin/trades", // 取引中一覧
   adminUserTradeDetail: "/admin/trade/detail", // 取引詳細
   adminArchive: "/admin/archives", //取引完了一覧

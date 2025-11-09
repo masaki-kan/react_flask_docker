@@ -358,6 +358,69 @@ export const getItemsDataApi = async (params?: {
   }
 };
 
+export const getItemDetailApi = async (
+  itemId: number
+): Promise<
+  | {
+      success: boolean;
+      data: {
+        item: {
+          item_id: number;
+          user_id: number;
+          title: string;
+          description: string;
+          type: string;
+          brand: string;
+          uploaded_at: string;
+          status: string;
+          user_name: string;
+          user_email: string;
+          images: string[];
+        };
+        liked_users: Array<{
+          user_id: number;
+          user_name: string;
+          user_email: string;
+          liked_at: string;
+        }>;
+        like_count: number;
+      };
+    }
+  | undefined
+> => {
+  const token = TokenManager.getAdminToken();
+  if (!token) {
+    createErrorResponse("Error");
+    return;
+  }
+
+  try {
+    const response = await fetch(
+      `/api/dashboard/item-detail?item_id=${itemId}`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: データ取得失敗`);
+    }
+
+    const data = await response.json();
+    console.log("getItemDetailApi", data);
+    return {
+      success: true,
+      data: data.data,
+    };
+  } catch (error: unknown) {
+    createErrorResponse(error, "Error");
+  }
+};
+
 export const deleteItemApi = async (
   itemId: number
 ): Promise<
