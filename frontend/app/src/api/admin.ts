@@ -421,6 +421,124 @@ export const getItemDetailApi = async (
   }
 };
 
+export const getTradesDataApi = async (params?: {
+  page?: number;
+  limit?: number;
+  buyer_name?: string;
+  seller_name?: string;
+  item_title?: string;
+  status?: string;
+  start_date?: string;
+  end_date?: string;
+}): Promise<
+  | {
+      success: boolean;
+      data: {
+        trades: Array<{
+          trade_id: number;
+          item_id: number;
+          buyer_id: number;
+          seller_id: number;
+          created_at: string;
+          status: string;
+          item_title: string;
+          seller_name: string;
+          buyer_name: string;
+        }>;
+        total: number;
+      };
+    }
+  | undefined
+> => {
+  const token = TokenManager.getAdminToken();
+  if (!token) {
+    createErrorResponse("Error");
+    return;
+  }
+
+  try {
+    // Build query parameters
+    const queryParams = new URLSearchParams();
+    if (params?.page) queryParams.append("page", params.page.toString());
+    if (params?.limit) queryParams.append("limit", params.limit.toString());
+    if (params?.buyer_name) queryParams.append("buyer_name", params.buyer_name);
+    if (params?.seller_name)
+      queryParams.append("seller_name", params.seller_name);
+    if (params?.item_title) queryParams.append("item_title", params.item_title);
+    if (params?.status) queryParams.append("status", params.status);
+    if (params?.start_date) queryParams.append("start_date", params.start_date);
+    if (params?.end_date) queryParams.append("end_date", params.end_date);
+
+    const url = `/api/dashboard/trades-data${queryParams.toString() ? `?${queryParams.toString()}` : ""}`;
+
+    const response = await fetch(url, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: データ取得失敗`);
+    }
+
+    const data = await response.json();
+    console.log("getTradesDataApi", data);
+    return {
+      success: true,
+      data: {
+        trades: data.data.trades,
+        total: data.data.total || data.data.trades.length,
+      },
+    };
+  } catch (error: unknown) {
+    createErrorResponse(error, "Error");
+  }
+};
+
+export const getUsersListApi = async (): Promise<
+  | {
+      success: boolean;
+      data: {
+        users: Array<{
+          user_id: number;
+          name: string;
+        }>;
+      };
+    }
+  | undefined
+> => {
+  const token = TokenManager.getAdminToken();
+  if (!token) {
+    createErrorResponse("Error");
+    return;
+  }
+
+  try {
+    const response = await fetch("/api/dashboard/users-list", {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: データ取得失敗`);
+    }
+
+    const data = await response.json();
+    console.log("getUsersListApi", data);
+    return {
+      success: true,
+      data: data.data,
+    };
+  } catch (error: unknown) {
+    createErrorResponse(error, "Error");
+  }
+};
+
 export const deleteItemApi = async (
   itemId: number
 ): Promise<

@@ -20,6 +20,18 @@ export interface ItemsDataType {
   status: string;
 }
 
+export interface TradesDataType {
+  trade_id: number;
+  item_id: number;
+  buyer_id: number;
+  seller_id: number;
+  created_at: string;
+  status: string;
+  item_title: string;
+  seller_name: string;
+  buyer_name: string;
+}
+
 export interface columnHelperItemsType {
   key:
     | "user_id"

@@ -798,6 +798,143 @@ def get_item_detail():
             "error": f"商品詳細データの取得に失敗しました: {str(e)}"
         }), 500
 
+@admin_bp.route('/dashboard/trades-data', methods=['GET'], endpoint='get_trades_data')
+@check_admin()
+def get_trades_data():
+    """進行中の取引一覧データを取得（検索・ページネーション対応）"""
+    try:
+        # クエリパラメータを取得
+        page = int(request.args.get('page', 1))
+        limit = int(request.args.get('limit', 100))
+        buyer_name_filter = request.args.get('buyer_name', '')
+        seller_name_filter = request.args.get('seller_name', '')
+        item_title_filter = request.args.get('item_title', '')
+        status_filter = request.args.get('status', '')
+        start_date = request.args.get('start_date', '')
+        end_date = request.args.get('end_date', '')
+
+        # オフセット計算
+        offset = (page - 1) * limit
+
+        with get_db_connection() as conn:
+            cursor = conn.cursor(dictionary=True)
+
+            # WHERE句の条件を構築
+            conditions = []
+            params = []
+
+            if buyer_name_filter:
+                conditions.append("buyer.name LIKE %s")
+                params.append(f"%{buyer_name_filter}%")
+
+            if seller_name_filter:
+                conditions.append("seller.name LIKE %s")
+                params.append(f"%{seller_name_filter}%")
+
+            if item_title_filter:
+                conditions.append("i.title LIKE %s")
+                params.append(f"%{item_title_filter}%")
+
+            if status_filter:
+                conditions.append("t.status = %s")
+                params.append(status_filter)
+
+            if start_date:
+                conditions.append("DATE(t.created_at) >= %s")
+                params.append(start_date)
+
+            if end_date:
+                conditions.append("DATE(t.created_at) <= %s")
+                params.append(end_date)
+
+            where_clause = " AND ".join(conditions) if conditions else "1=1"
+
+            # 総件数を取得
+            count_query = f"""
+                SELECT COUNT(*) as total
+                FROM trades t
+                INNER JOIN items i ON t.item_id = i.item_id
+                INNER JOIN users seller ON i.user_id = seller.user_id
+                INNER JOIN users buyer ON t.buyer_id = buyer.user_id
+                WHERE {where_clause}
+            """
+            cursor.execute(count_query, params)
+            total_count = cursor.fetchone()['total']
+
+            # 取引データを取得（ページネーション適用）
+            trades_query = f"""
+                SELECT
+                    t.trade_id,
+                    t.item_id,
+                    t.buyer_id,
+                    t.created_at,
+                    t.status,
+                    i.title as item_title,
+                    i.user_id as seller_id,
+                    seller.name as seller_name,
+                    buyer.name as buyer_name
+                FROM trades t
+                INNER JOIN items i ON t.item_id = i.item_id
+                INNER JOIN users seller ON i.user_id = seller.user_id
+                INNER JOIN users buyer ON t.buyer_id = buyer.user_id
+                WHERE {where_clause}
+                ORDER BY t.created_at DESC
+                LIMIT %s OFFSET %s
+            """
+            params.extend([limit, offset])
+
+            cursor.execute(trades_query, params)
+            trades = cursor.fetchall()
+
+            return jsonify({
+                "success": True,
+                "data": {
+                    "trades": trades,
+                    "total": total_count,
+                    "page": page,
+                    "limit": limit
+                }
+            }), 200
+
+    except Exception as e:
+        print(f"[ERROR] Trades data error: {str(e)}", flush=True)
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            "success": False,
+            "error": f"取引データ取得に失敗しました: {str(e)}"
+        }), 500
+
+@admin_bp.route('/dashboard/users-list', methods=['GET'], endpoint='get_users_list')
+@check_admin()
+def get_users_list():
+    """ユーザー名リストを取得（フィルター用）"""
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor(dictionary=True)
+
+            cursor.execute("""
+                SELECT DISTINCT user_id, name
+                FROM users
+                WHERE type = 1
+                ORDER BY name ASC
+            """)
+            users = cursor.fetchall()
+
+            return jsonify({
+                "success": True,
+                "data": {
+                    "users": users
+                }
+            }), 200
+
+    except Exception as e:
+        print(f"[ERROR] Users list error: {str(e)}", flush=True)
+        return jsonify({
+            "success": False,
+            "error": f"ユーザーリスト取得に失敗しました: {str(e)}"
+        }), 500
+
 @admin_bp.route('/dashboard/item-delete', methods=['DELETE'], endpoint='delete_item')
 @check_admin()
 def delete_item():
