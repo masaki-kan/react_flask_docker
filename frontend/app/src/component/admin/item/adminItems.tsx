@@ -26,6 +26,7 @@ import Swal from "sweetalert2";
 import { itemParts } from "../../../consts/itemConsts";
 import { brandList } from "../../../consts/brandListi";
 import { route } from "../../../route/routeConst";
+import { formatType, formatBrand } from "../../admin/common/formatViews";
 
 interface SearchFilters {
   user_name: string;
@@ -68,7 +69,6 @@ const AdminItems: FC = () => {
         ...searchFilters,
       });
 
-      console.log("items", response);
       if (response && response.success) {
         const newItems = response.data.items;
         setData(isLoadMore ? [...data, ...newItems] : newItems);
@@ -167,27 +167,6 @@ const AdminItems: FC = () => {
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleString("ja-JP");
-  };
-
-  const formatType = (typeString: string) => {
-    const parsed = JSON.parse(typeString);
-    if (typeString === "") return "設定なし";
-    return itemParts.map((list: { key: number; name: string }) => {
-      if (Number(parsed) === list.key) {
-        return list.name;
-      }
-    });
-  };
-
-  const formatBrand = (brandString: string) => {
-    const parsed = JSON.parse(brandString);
-    // 配列の場合は各要素のnameを結合
-    if (parsed.key === "" && parsed.name === "") return "設定なし";
-    return brandList.map((list: { key: number; name: string }) => {
-      if (parsed.key === list.key) {
-        return list.name;
-      }
-    });
   };
 
   const columns = [

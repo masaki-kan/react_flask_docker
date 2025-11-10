@@ -2,6 +2,7 @@ import { FC, useState } from "react";
 import { getTradesDataApi, getUsersListApi } from "../../../api/admin";
 import { TradesDataType } from "../../../types/adminTypes";
 import { useEffectOnce } from "react-use";
+import { useNavigate } from "react-router-dom";
 import {
   TableContainer,
   Table,
@@ -11,6 +12,7 @@ import {
   Tr,
   Th,
 } from "@chakra-ui/react";
+import { route } from "../../../route/routeConst";
 import {
   flexRender,
   getCoreRowModel,
@@ -38,6 +40,7 @@ interface UserOption {
 const columnHelper = createColumnHelper<TradesDataType>();
 
 const AdminTrades: FC = () => {
+  const navigate = useNavigate();
   const [data, setData] = useState<TradesDataType[]>([]);
   const [usersList, setUsersList] = useState<UserOption[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
@@ -222,219 +225,240 @@ const AdminTrades: FC = () => {
         {/* 検索フィルター */}
         <div
           style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-            gap: "15px",
-            marginBottom: "15px",
+            backgroundColor: "#f8f9fa",
+            padding: "20px",
+            borderRadius: "8px",
+            marginBottom: "20px",
+            border: "1px solid #e0e0e0",
           }}
         >
-          <div>
-            <label
-              style={{
-                display: "block",
-                marginBottom: "5px",
-                fontWeight: "500",
-              }}
-            >
-              申請者（Buyer）
-            </label>
-            <select
-              value={filters.buyer_name}
-              onChange={(e) =>
-                setFilters({ ...filters, buyer_name: e.target.value })
-              }
-              style={{
-                width: "100%",
-                padding: "8px 12px",
-                border: "1px solid #ddd",
-                borderRadius: "4px",
-                fontSize: "14px",
-                backgroundColor: "white",
-                cursor: "pointer",
-              }}
-            >
-              <option value="">全て</option>
-              {usersList.map((user) => (
-                <option key={user.user_id} value={user.name}>
-                  {user.name}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label
-              style={{
-                display: "block",
-                marginBottom: "5px",
-                fontWeight: "500",
-              }}
-            >
-              申請を受けた人（Seller）
-            </label>
-            <select
-              value={filters.seller_name}
-              onChange={(e) =>
-                setFilters({ ...filters, seller_name: e.target.value })
-              }
-              style={{
-                width: "100%",
-                padding: "8px 12px",
-                border: "1px solid #ddd",
-                borderRadius: "4px",
-                fontSize: "14px",
-                backgroundColor: "white",
-                cursor: "pointer",
-              }}
-            >
-              <option value="">全て</option>
-              {usersList.map((user) => (
-                <option key={user.user_id} value={user.name}>
-                  {user.name}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label
-              style={{
-                display: "block",
-                marginBottom: "5px",
-                fontWeight: "500",
-              }}
-            >
-              商品名
-            </label>
-            <input
-              type="text"
-              value={filters.item_title}
-              onChange={(e) =>
-                setFilters({ ...filters, item_title: e.target.value })
-              }
-              placeholder="Search..."
-              style={{
-                width: "100%",
-                padding: "8px 12px",
-                border: "1px solid #ddd",
-                borderRadius: "4px",
-                fontSize: "14px",
-              }}
-            />
-          </div>
-          <div>
-            <label
-              style={{
-                display: "block",
-                marginBottom: "5px",
-                fontWeight: "500",
-              }}
-            >
-              ステータス
-            </label>
-            <select
-              value={filters.status}
-              onChange={(e) =>
-                setFilters({ ...filters, status: e.target.value })
-              }
-              style={{
-                width: "100%",
-                padding: "8px 12px",
-                border: "1px solid #ddd",
-                borderRadius: "4px",
-                fontSize: "14px",
-                backgroundColor: "white",
-                cursor: "pointer",
-              }}
-            >
-              <option value="">全て</option>
-              <option value="pending">取引中</option>
-              <option value="purchased">取引中</option>
-              <option value="shipped">発送済</option>
-              <option value="completed">完了</option>
-              <option value="cancelled">キャンセル</option>
-            </select>
-          </div>
-          <div>
-            <label
-              style={{
-                display: "block",
-                marginBottom: "5px",
-                fontWeight: "500",
-              }}
-            >
-              開始日
-            </label>
-            <input
-              type="date"
-              value={filters.start_date}
-              onChange={(e) =>
-                setFilters({ ...filters, start_date: e.target.value })
-              }
-              style={{
-                width: "100%",
-                padding: "8px 12px",
-                border: "1px solid #ddd",
-                borderRadius: "4px",
-                fontSize: "14px",
-              }}
-            />
-          </div>
-          <div>
-            <label
-              style={{
-                display: "block",
-                marginBottom: "5px",
-                fontWeight: "500",
-              }}
-            >
-              終了日
-            </label>
-            <input
-              type="date"
-              value={filters.end_date}
-              onChange={(e) =>
-                setFilters({ ...filters, end_date: e.target.value })
-              }
-              style={{
-                width: "100%",
-                padding: "8px 12px",
-                border: "1px solid #ddd",
-                borderRadius: "4px",
-                fontSize: "14px",
-              }}
-            />
-          </div>
-        </div>
-        <div style={{ display: "flex", gap: "10px" }}>
-          <button
-            onClick={handleSearch}
+          <h2
             style={{
-              padding: "10px 20px",
-              backgroundColor: "#007bff",
-              color: "white",
-              border: "none",
-              borderRadius: "4px",
-              cursor: "pointer",
-              fontSize: "14px",
-              fontWeight: "500",
+              fontSize: "18px",
+              fontWeight: "bold",
+              marginBottom: "15px",
             }}
           >
-            Search
-          </button>
-          <button
-            onClick={handleReset}
+            検索フィルター
+          </h2>
+
+          <div
             style={{
-              padding: "10px 20px",
-              backgroundColor: "#6c757d",
-              color: "white",
-              border: "none",
-              borderRadius: "4px",
-              cursor: "pointer",
-              fontSize: "14px",
-              fontWeight: "500",
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+              gap: "15px",
+              marginBottom: "15px",
             }}
           >
-            Reset
-          </button>
+            <div>
+              <label
+                style={{
+                  display: "block",
+                  marginBottom: "5px",
+                  fontWeight: "500",
+                }}
+              >
+                申請者（Buyer）
+              </label>
+              <select
+                value={filters.buyer_name}
+                onChange={(e) =>
+                  setFilters({ ...filters, buyer_name: e.target.value })
+                }
+                style={{
+                  width: "100%",
+                  padding: "8px 12px",
+                  border: "1px solid #ddd",
+                  borderRadius: "4px",
+                  fontSize: "14px",
+                  backgroundColor: "white",
+                  cursor: "pointer",
+                }}
+              >
+                <option value="">全て</option>
+                {usersList.map((user) => (
+                  <option key={user.user_id} value={user.name}>
+                    {user.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label
+                style={{
+                  display: "block",
+                  marginBottom: "5px",
+                  fontWeight: "500",
+                }}
+              >
+                申請を受けた人（Seller）
+              </label>
+              <select
+                value={filters.seller_name}
+                onChange={(e) =>
+                  setFilters({ ...filters, seller_name: e.target.value })
+                }
+                style={{
+                  width: "100%",
+                  padding: "8px 12px",
+                  border: "1px solid #ddd",
+                  borderRadius: "4px",
+                  fontSize: "14px",
+                  backgroundColor: "white",
+                  cursor: "pointer",
+                }}
+              >
+                <option value="">全て</option>
+                {usersList.map((user) => (
+                  <option key={user.user_id} value={user.name}>
+                    {user.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label
+                style={{
+                  display: "block",
+                  marginBottom: "5px",
+                  fontWeight: "500",
+                }}
+              >
+                商品名
+              </label>
+              <input
+                type="text"
+                value={filters.item_title}
+                onChange={(e) =>
+                  setFilters({ ...filters, item_title: e.target.value })
+                }
+                placeholder="Search..."
+                style={{
+                  width: "100%",
+                  padding: "8px 12px",
+                  border: "1px solid #ddd",
+                  borderRadius: "4px",
+                  fontSize: "14px",
+                }}
+              />
+            </div>
+            <div>
+              <label
+                style={{
+                  display: "block",
+                  marginBottom: "5px",
+                  fontWeight: "500",
+                }}
+              >
+                ステータス
+              </label>
+              <select
+                value={filters.status}
+                onChange={(e) =>
+                  setFilters({ ...filters, status: e.target.value })
+                }
+                style={{
+                  width: "100%",
+                  padding: "8px 12px",
+                  border: "1px solid #ddd",
+                  borderRadius: "4px",
+                  fontSize: "14px",
+                  backgroundColor: "white",
+                  cursor: "pointer",
+                }}
+              >
+                <option value="">全て</option>
+                <option value="pending">取引中</option>
+                <option value="purchased">取引中</option>
+                <option value="shipped">発送済</option>
+                <option value="completed">完了</option>
+                <option value="cancelled">キャンセル</option>
+              </select>
+            </div>
+            <div>
+              <label
+                style={{
+                  display: "block",
+                  marginBottom: "5px",
+                  fontWeight: "500",
+                }}
+              >
+                開始日
+              </label>
+              <input
+                type="date"
+                value={filters.start_date}
+                onChange={(e) =>
+                  setFilters({ ...filters, start_date: e.target.value })
+                }
+                style={{
+                  width: "100%",
+                  padding: "8px 12px",
+                  border: "1px solid #ddd",
+                  borderRadius: "4px",
+                  fontSize: "14px",
+                }}
+              />
+            </div>
+            <div>
+              <label
+                style={{
+                  display: "block",
+                  marginBottom: "5px",
+                  fontWeight: "500",
+                }}
+              >
+                終了日
+              </label>
+              <input
+                type="date"
+                value={filters.end_date}
+                onChange={(e) =>
+                  setFilters({ ...filters, end_date: e.target.value })
+                }
+                style={{
+                  width: "100%",
+                  padding: "8px 12px",
+                  border: "1px solid #ddd",
+                  borderRadius: "4px",
+                  fontSize: "14px",
+                }}
+              />
+            </div>
+          </div>
+
+          <div style={{ display: "flex", gap: "10px" }}>
+            <button
+              onClick={handleSearch}
+              style={{
+                padding: "10px 20px",
+                backgroundColor: "#007bff",
+                color: "white",
+                border: "none",
+                borderRadius: "4px",
+                cursor: "pointer",
+                fontSize: "14px",
+                fontWeight: "500",
+              }}
+            >
+              Search
+            </button>
+            <button
+              onClick={handleReset}
+              style={{
+                padding: "10px 20px",
+                backgroundColor: "#6c757d",
+                color: "white",
+                border: "none",
+                borderRadius: "4px",
+                cursor: "pointer",
+                fontSize: "14px",
+                fontWeight: "500",
+              }}
+            >
+              Reset
+            </button>
+          </div>
         </div>
       </div>
 
@@ -526,6 +550,12 @@ const AdminTrades: FC = () => {
                     _hover={{
                       bg: "#e3f2fd",
                       transition: "background-color 0.2s ease",
+                      cursor: "pointer",
+                    }}
+                    onClick={() => {
+                      navigate(
+                        `${route.adminTradeDetail}?trade_id=${row.original.trade_id}`
+                      );
                     }}
                   >
                     {row.getVisibleCells().map((cell) => (

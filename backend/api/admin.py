@@ -935,6 +935,181 @@ def get_users_list():
             "error": f"ユーザーリスト取得に失敗しました: {str(e)}"
         }), 500
 
+@admin_bp.route('/dashboard/trade-detail', methods=['GET'], endpoint='get_trade_detail')
+@check_admin()
+def get_trade_detail():
+    """取引詳細情報を取得（商品情報、メッセージ、発送情報など）"""
+    trade_id_str = request.args.get('trade_id')
+    if not trade_id_str:
+        return jsonify({
+            "success": False,
+            "error": "trade_idが指定されていません"
+        }), 400
+
+    try:
+        trade_id = int(trade_id_str)
+    except ValueError:
+        return jsonify({
+            "success": False,
+            "error": "trade_idは数値である必要があります"
+        }), 400
+
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor(dictionary=True)
+
+            # 取引基本情報を取得
+            cursor.execute("""
+                SELECT
+                    t.trade_id,
+                    t.item_id,
+                    t.buyer_id,
+                    t.seller_exchange_item_id,
+                    t.buyer_exchange_item_id,
+                    t.created_at,
+                    t.status,
+                    i.title as seller_item_title,
+                    i.description as seller_item_description,
+                    i.type as seller_item_type,
+                    i.brand as seller_item_brand,
+                    i.user_id as seller_id,
+                    seller.name as seller_name,
+                    seller.email as seller_email,
+                    buyer.name as buyer_name,
+                    buyer.email as buyer_email
+                FROM trades t
+                INNER JOIN items i ON t.item_id = i.item_id
+                INNER JOIN users seller ON i.user_id = seller.user_id
+                INNER JOIN users buyer ON t.buyer_id = buyer.user_id
+                WHERE t.trade_id = %s
+            """, (trade_id,))
+            trade_info = cursor.fetchone()
+
+            if not trade_info:
+                return jsonify({
+                    "success": False,
+                    "error": "取引が見つかりません"
+                }), 404
+
+            # 売り手の商品画像を取得
+            cursor.execute("""
+                SELECT image_url
+                FROM item_images
+                WHERE item_id = %s
+                ORDER BY uploaded_at ASC
+            """, (trade_info['item_id'],))
+            seller_images = cursor.fetchall()
+            trade_info['seller_item_images'] = [img['image_url'] for img in seller_images]
+
+            # 買い手が申請した商品情報を取得
+            buyer_item_id = trade_info.get('buyer_exchange_item_id')
+            if buyer_item_id:
+                cursor.execute("""
+                    SELECT
+                        item_id,
+                        title,
+                        description,
+                        type,
+                        brand
+                    FROM items
+                    WHERE item_id = %s
+                """, (buyer_item_id,))
+                buyer_item = cursor.fetchone()
+
+                if buyer_item:
+                    # 買い手商品の画像を取得
+                    cursor.execute("""
+                        SELECT image_url
+                        FROM item_images
+                        WHERE item_id = %s
+                        ORDER BY uploaded_at ASC
+                    """, (buyer_item_id,))
+                    buyer_images = cursor.fetchall()
+                    buyer_item['images'] = [img['image_url'] for img in buyer_images]
+                    trade_info['buyer_item'] = buyer_item
+                else:
+                    trade_info['buyer_item'] = None
+            else:
+                trade_info['buyer_item'] = None
+
+            # 売り手が選択した交換商品情報を取得
+            seller_exchange_item_id = trade_info.get('seller_exchange_item_id')
+            if seller_exchange_item_id:
+                cursor.execute("""
+                    SELECT
+                        item_id,
+                        title,
+                        description,
+                        type,
+                        brand
+                    FROM items
+                    WHERE item_id = %s
+                """, (seller_exchange_item_id,))
+                seller_exchange_item = cursor.fetchone()
+
+                if seller_exchange_item:
+                    # 売り手の交換商品の画像を取得
+                    cursor.execute("""
+                        SELECT image_url
+                        FROM item_images
+                        WHERE item_id = %s
+                        ORDER BY uploaded_at ASC
+                    """, (seller_exchange_item_id,))
+                    seller_exchange_images = cursor.fetchall()
+                    seller_exchange_item['images'] = [img['image_url'] for img in seller_exchange_images]
+                    trade_info['seller_exchange_item'] = seller_exchange_item
+                else:
+                    trade_info['seller_exchange_item'] = None
+            else:
+                trade_info['seller_exchange_item'] = None
+
+            # メッセージ履歴を取得
+            cursor.execute("""
+                SELECT
+                    tm.message_id,
+                    tm.sender_id,
+                    tm.message,
+                    tm.created_at,
+                    u.name as sender_name
+                FROM trade_messages tm
+                INNER JOIN users u ON tm.sender_id = u.user_id
+                WHERE tm.trade_id = %s
+                ORDER BY tm.created_at ASC
+            """, (trade_id,))
+            messages = cursor.fetchall()
+
+            # 発送情報を取得
+            cursor.execute("""
+                SELECT
+                    shipping_id,
+                    sender_user_id as sender_id,
+                    tracking_number,
+                    shipping_company,
+                    created_at
+                FROM shipping_info
+                WHERE trade_id = %s
+                ORDER BY created_at DESC
+            """, (trade_id,))
+            shipping_info = cursor.fetchall()
+
+            return jsonify({
+                "success": True,
+                "data": {
+                    "trade": trade_info,
+                    "messages": messages,
+                    "shipping_info": shipping_info
+                }
+            }), 200
+
+    except Exception as e:
+        print(f"[ERROR] Trade detail error: {str(e)}", flush=True)
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            "success": False,
+            "error": f"取引詳細データの取得に失敗しました: {str(e)}"
+        }), 500
+
 @admin_bp.route('/dashboard/item-delete', methods=['DELETE'], endpoint='delete_item')
 @check_admin()
 def delete_item():

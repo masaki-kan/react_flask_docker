@@ -345,7 +345,7 @@ export const getItemsDataApi = async (params?: {
     }
 
     const data = await response.json();
-    console.log("getItemsDataApi", data);
+    // console.log("getItemsDataApi", data);
     return {
       success: true,
       data: {
@@ -411,7 +411,7 @@ export const getItemDetailApi = async (
     }
 
     const data = await response.json();
-    console.log("getItemDetailApi", data);
+    // console.log("getItemDetailApi", data);
     return {
       success: true,
       data: data.data,
@@ -484,7 +484,7 @@ export const getTradesDataApi = async (params?: {
     }
 
     const data = await response.json();
-    console.log("getTradesDataApi", data);
+    // console.log("getTradesDataApi", data);
     return {
       success: true,
       data: {
@@ -529,7 +529,99 @@ export const getUsersListApi = async (): Promise<
     }
 
     const data = await response.json();
-    console.log("getUsersListApi", data);
+    // console.log("getUsersListApi", data);
+    return {
+      success: true,
+      data: data.data,
+    };
+  } catch (error: unknown) {
+    createErrorResponse(error, "Error");
+  }
+};
+
+export const getTradeDetailApi = async (
+  tradeId: number
+): Promise<
+  | {
+      success: boolean;
+      data: {
+        trade: {
+          trade_id: number;
+          item_id: number;
+          buyer_id: number;
+          seller_id: number;
+          seller_exchange_item_id: number | null;
+          buyer_exchange_item_id: number | null;
+          created_at: string;
+          status: string;
+          seller_item_title: string;
+          seller_item_description: string;
+          seller_item_type: string;
+          seller_item_brand: string;
+          seller_item_images: string[];
+          seller_name: string;
+          seller_email: string;
+          buyer_name: string;
+          buyer_email: string;
+          buyer_item: {
+            item_id: number;
+            title: string;
+            description: string;
+            type: string;
+            brand: string;
+            images: string[];
+          } | null;
+          seller_exchange_item: {
+            item_id: number;
+            title: string;
+            description: string;
+            type: string;
+            brand: string;
+            images: string[];
+          } | null;
+        };
+        messages: Array<{
+          message_id: number;
+          sender_id: number;
+          sender_name: string;
+          message: string;
+          created_at: string;
+        }>;
+        shipping_info: Array<{
+          shipping_id: number;
+          sender_id: number;
+          tracking_number: string;
+          shipping_company: string;
+          created_at: string;
+        }>;
+      };
+    }
+  | undefined
+> => {
+  const token = TokenManager.getAdminToken();
+  if (!token) {
+    createErrorResponse("Error");
+    return;
+  }
+
+  try {
+    const response = await fetch(
+      `/api/dashboard/trade-detail?trade_id=${tradeId}`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: データ取得失敗`);
+    }
+
+    const data = await response.json();
+    console.log("getTradeDetailApi", data);
     return {
       success: true,
       data: data.data,

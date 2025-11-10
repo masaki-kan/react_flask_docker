@@ -14,10 +14,11 @@ export const route = {
   adminItems: "/admin/items", // アイテム一覧
   adminItemDetail: "/admin/item/detail", // アイテム詳細
   adminTrades: "/admin/trades", // 取引中一覧
+  adminTradeDetail: "/admin/trade/detail", // 取引詳細
   adminUserItem: "/admin/items", // アイテム (後方互換性のため残す)
   adminUserItemDetail: "/admin/item/detail", // アイテム詳細 (後方互換性のため残す)
   adminUserTrade: "/admin/trades", // 取引中一覧 (後方互換性のため残す)
-  adminUserTradeDetail: "/admin/trade/detail", // 取引詳細
+  adminUserTradeDetail: "/admin/trade/detail", // 取引詳細 (後方互換性のため残す)
   adminArchive: "/admin/archives", //取引完了一覧
 
   // ユーザー
