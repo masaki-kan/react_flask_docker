@@ -20,6 +20,7 @@ export const route = {
   adminUserTrade: "/admin/trades", // 取引中一覧 (後方互換性のため残す)
   adminUserTradeDetail: "/admin/trade/detail", // 取引詳細 (後方互換性のため残す)
   adminArchive: "/admin/archives", //取引完了一覧
+  adminArchiveDetail: "/admin/archive/detail", //取引完了詳細
 
   // ユーザー
   users: "/users",

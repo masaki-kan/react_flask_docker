@@ -138,7 +138,7 @@ def create_trades_table(cursor):
             seller_exchange_item_id INT DEFAULT NULL,
             buyer_exchange_item_id INT DEFAULT NULL,
             # 🔥 オプション変更: 'approved'を追加する場合はコメントアウトを解除
-            # status ENUM('pending', 'approved', 'purchased','shipped','completed','cancelled') DEFAULT 'pending',
+            # status ENUM('pending', 'approved', 'purchased','shipped','cancelled') DEFAULT 'pending',
             status ENUM('pending', 'purchased','shipped','completed','cancelled') DEFAULT 'pending',
             is_buyer_confirmed BOOLEAN DEFAULT FALSE,
             is_seller_confirmed BOOLEAN DEFAULT FALSE,

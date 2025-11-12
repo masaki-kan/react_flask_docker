@@ -1110,6 +1110,301 @@ def get_trade_detail():
             "error": f"取引詳細データの取得に失敗しました: {str(e)}"
         }), 500
 
+@admin_bp.route('/dashboard/archives-data', methods=['GET'], endpoint='get_archives_data')
+@check_admin()
+def get_archives_data():
+    """完了した取引一覧データを取得（アーカイブテーブルから・検索・ページネーション対応）"""
+    try:
+        # クエリパラメータを取得
+        page = int(request.args.get('page', 1))
+        limit = int(request.args.get('limit', 100))
+        buyer_name_filter = request.args.get('buyer_name', '')
+        seller_name_filter = request.args.get('seller_name', '')
+        item_title_filter = request.args.get('item_title', '')
+        start_date = request.args.get('start_date', '')
+        end_date = request.args.get('end_date', '')
+
+        # オフセット計算
+        offset = (page - 1) * limit
+
+        with get_db_connection() as conn:
+            cursor = conn.cursor(dictionary=True)
+
+            # WHERE句の条件を構築
+            conditions = []
+            params = []
+
+            if buyer_name_filter:
+                conditions.append("at.buyer_name LIKE %s")
+                params.append(f"%{buyer_name_filter}%")
+
+            if seller_name_filter:
+                conditions.append("at.seller_name LIKE %s")
+                params.append(f"%{seller_name_filter}%")
+
+            if item_title_filter:
+                conditions.append("ai.title LIKE %s")
+                params.append(f"%{item_title_filter}%")
+
+            if start_date:
+                conditions.append("DATE(at.trade_created_at) >= %s")
+                params.append(start_date)
+
+            if end_date:
+                conditions.append("DATE(at.trade_created_at) <= %s")
+                params.append(end_date)
+
+            where_clause = " AND ".join(conditions) if conditions else "1=1"
+
+            # 総件数を取得
+            count_query = f"""
+                SELECT COUNT(*) as total
+                FROM archived_trades at
+                INNER JOIN archived_items ai ON at.item_archive_id = ai.archive_id
+                WHERE {where_clause}
+            """
+            cursor.execute(count_query, params)
+            total_count = cursor.fetchone()['total']
+
+            # アーカイブ取引データを取得（ページネーション適用）
+            archives_query = f"""
+                SELECT
+                    at.archive_trade_id,
+                    at.original_trade_id as trade_id,
+                    at.seller_id,
+                    at.buyer_id,
+                    at.trade_created_at as created_at,
+                    at.trade_completed_at as updated_at,
+                    at.final_status as status,
+                    at.seller_name,
+                    at.buyer_name,
+                    ai.title as item_title
+                FROM archived_trades at
+                INNER JOIN archived_items ai ON at.item_archive_id = ai.archive_id
+                WHERE {where_clause}
+                ORDER BY at.trade_completed_at DESC
+                LIMIT %s OFFSET %s
+            """
+            params.extend([limit, offset])
+
+            cursor.execute(archives_query, params)
+            archives = cursor.fetchall()
+
+            return jsonify({
+                "success": True,
+                "data": {
+                    "trades": archives,
+                    "total": total_count,
+                    "page": page,
+                    "limit": limit
+                }
+            }), 200
+
+    except Exception as e:
+        print(f"[ERROR] Archives data error: {str(e)}", flush=True)
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            "success": False,
+            "error": f"完了取引データ取得に失敗しました: {str(e)}"
+        }), 500
+
+@admin_bp.route('/dashboard/archive-detail', methods=['GET'], endpoint='get_archive_detail')
+@check_admin()
+def get_archive_detail():
+    """アーカイブされた取引の詳細情報を取得"""
+    archive_trade_id_str = request.args.get('archive_trade_id')
+    if not archive_trade_id_str:
+        return jsonify({
+            "success": False,
+            "error": "archive_trade_idが指定されていません"
+        }), 400
+
+    try:
+        archive_trade_id = int(archive_trade_id_str)
+    except ValueError:
+        return jsonify({
+            "success": False,
+            "error": "archive_trade_idは数値である必要があります"
+        }), 400
+
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor(dictionary=True)
+
+            # アーカイブ取引基本情報を取得
+            cursor.execute("""
+                SELECT
+                    at.archive_trade_id,
+                    at.original_trade_id,
+                    at.item_archive_id,
+                    at.seller_id,
+                    at.buyer_id,
+                    at.seller_exchange_item_archive_id,
+                    at.buyer_exchange_item_archive_id,
+                    at.final_status as status,
+                    at.trade_created_at as created_at,
+                    at.trade_completed_at as updated_at,
+                    at.seller_name,
+                    at.seller_email,
+                    at.buyer_name,
+                    at.buyer_email
+                FROM archived_trades at
+                WHERE at.archive_trade_id = %s
+            """, (archive_trade_id,))
+            archive_info = cursor.fetchone()
+
+            if not archive_info:
+                return jsonify({
+                    "success": False,
+                    "error": "アーカイブ取引が見つかりません"
+                }), 404
+
+            # 申請を受けた人の出品商品情報を取得（item_archive_id）
+            cursor.execute("""
+                SELECT
+                    ai.archive_id,
+                    ai.original_item_id,
+                    ai.title,
+                    ai.description,
+                    ai.type,
+                    ai.brand
+                FROM archived_items ai
+                WHERE ai.archive_id = %s
+            """, (archive_info['item_archive_id'],))
+            seller_item = cursor.fetchone()
+
+            if seller_item:
+                # 出品商品の画像を取得
+                cursor.execute("""
+                    SELECT image_url
+                    FROM archived_item_images
+                    WHERE archive_id = %s
+                    ORDER BY image_order ASC
+                """, (archive_info['item_archive_id'],))
+                seller_item_images = cursor.fetchall()
+                archive_info['seller_item_title'] = seller_item['title']
+                archive_info['seller_item_description'] = seller_item['description']
+                archive_info['seller_item_type'] = seller_item['type']
+                archive_info['seller_item_brand'] = seller_item['brand']
+                archive_info['seller_item_images'] = [img['image_url'] for img in seller_item_images]
+            else:
+                archive_info['seller_item_title'] = ""
+                archive_info['seller_item_description'] = ""
+                archive_info['seller_item_type'] = ""
+                archive_info['seller_item_brand'] = ""
+                archive_info['seller_item_images'] = []
+
+            # Buyerが選択した交換商品情報を取得
+            buyer_exchange_archive_id = archive_info.get('buyer_exchange_item_archive_id')
+            if buyer_exchange_archive_id:
+                cursor.execute("""
+                    SELECT
+                        ai.archive_id,
+                        ai.title,
+                        ai.description,
+                        ai.type,
+                        ai.brand
+                    FROM archived_items ai
+                    WHERE ai.archive_id = %s
+                """, (buyer_exchange_archive_id,))
+                buyer_item = cursor.fetchone()
+
+                if buyer_item:
+                    # Buyer商品の画像を取得
+                    cursor.execute("""
+                        SELECT image_url
+                        FROM archived_item_images
+                        WHERE archive_id = %s
+                        ORDER BY image_order ASC
+                    """, (buyer_exchange_archive_id,))
+                    buyer_images = cursor.fetchall()
+                    buyer_item['images'] = [img['image_url'] for img in buyer_images]
+                    archive_info['buyer_item'] = buyer_item
+                else:
+                    archive_info['buyer_item'] = None
+            else:
+                archive_info['buyer_item'] = None
+
+            # Sellerが選択した交換商品情報を取得
+            seller_exchange_archive_id = archive_info.get('seller_exchange_item_archive_id')
+            if seller_exchange_archive_id:
+                cursor.execute("""
+                    SELECT
+                        ai.archive_id,
+                        ai.title,
+                        ai.description,
+                        ai.type,
+                        ai.brand
+                    FROM archived_items ai
+                    WHERE ai.archive_id = %s
+                """, (seller_exchange_archive_id,))
+                seller_exchange_item = cursor.fetchone()
+
+                if seller_exchange_item:
+                    # Seller交換商品の画像を取得
+                    cursor.execute("""
+                        SELECT image_url
+                        FROM archived_item_images
+                        WHERE archive_id = %s
+                        ORDER BY image_order ASC
+                    """, (seller_exchange_archive_id,))
+                    seller_exchange_images = cursor.fetchall()
+                    seller_exchange_item['images'] = [img['image_url'] for img in seller_exchange_images]
+                    archive_info['seller_exchange_item'] = seller_exchange_item
+                else:
+                    archive_info['seller_exchange_item'] = None
+            else:
+                archive_info['seller_exchange_item'] = None
+
+            # 元の取引IDを使ってメッセージ履歴を取得
+            original_trade_id = archive_info['original_trade_id']
+            cursor.execute("""
+                SELECT
+                    tm.message_id,
+                    tm.sender_id,
+                    tm.message,
+                    tm.created_at,
+                    u.name as sender_name
+                FROM trade_messages tm
+                INNER JOIN users u ON tm.sender_id = u.user_id
+                WHERE tm.trade_id = %s
+                ORDER BY tm.created_at ASC
+            """, (original_trade_id,))
+            messages = cursor.fetchall()
+
+            # 元の取引IDを使って発送情報を取得
+            cursor.execute("""
+                SELECT
+                    shipping_id,
+                    sender_user_id as sender_id,
+                    tracking_number,
+                    shipping_company,
+                    created_at
+                FROM shipping_info
+                WHERE trade_id = %s
+                ORDER BY created_at DESC
+            """, (original_trade_id,))
+            shipping_info = cursor.fetchall()
+
+            return jsonify({
+                "success": True,
+                "data": {
+                    "trade": archive_info,
+                    "messages": messages,
+                    "shipping_info": shipping_info
+                }
+            }), 200
+
+    except Exception as e:
+        print(f"[ERROR] Archive detail error: {str(e)}", flush=True)
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            "success": False,
+            "error": f"アーカイブ取引詳細データの取得に失敗しました: {str(e)}"
+        }), 500
+
 @admin_bp.route('/dashboard/item-delete', methods=['DELETE'], endpoint='delete_item')
 @check_admin()
 def delete_item():

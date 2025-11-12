@@ -35,6 +35,8 @@ import AdminItems from "../component/admin/item/adminItems";
 import AdminItemDetail from "../component/admin/item/adminItemDetail";
 import AdminTrades from "../component/admin/trade/adminTrades";
 import AdminTradeDetail from "../component/admin/trade/adminTradeDetail";
+import AdminArchives from "../component/admin/trade/adminArchives";
+import AdminArchiveDetail from "../component/admin/trade/adminArchiveDetail";
 
 // 認証が必要なルートのラッパーコンポーネント
 const ProtectedLayout = () => {
@@ -108,6 +110,8 @@ const AppRoutes: FC = () => {
           <Route path={route.adminItemDetail} element={<AdminItemDetail />} />
           <Route path={route.adminTrades} element={<AdminTrades />} />
           <Route path={route.adminTradeDetail} element={<AdminTradeDetail />} />
+          <Route path={route.adminArchive} element={<AdminArchives />} />
+          <Route path={route.adminArchiveDetail} element={<AdminArchiveDetail />} />
         </Route>
 
         {/* 認証が必要なルート（プロテクテッドルート） */}

@@ -621,7 +621,176 @@ export const getTradeDetailApi = async (
     }
 
     const data = await response.json();
-    console.log("getTradeDetailApi", data);
+    // console.log("getTradeDetailApi", data);
+    return {
+      success: true,
+      data: data.data,
+    };
+  } catch (error: unknown) {
+    createErrorResponse(error, "Error");
+  }
+};
+
+export const getArchivesDataApi = async (params?: {
+  page?: number;
+  limit?: number;
+  buyer_name?: string;
+  seller_name?: string;
+  item_title?: string;
+  start_date?: string;
+  end_date?: string;
+}): Promise<
+  | {
+      success: boolean;
+      data: {
+        trades: Array<{
+          trade_id: number;
+          item_id: number;
+          buyer_id: number;
+          seller_id: number;
+          created_at: string;
+          updated_at: string;
+          status: string;
+          item_title: string;
+          seller_name: string;
+          buyer_name: string;
+        }>;
+        total: number;
+      };
+    }
+  | undefined
+> => {
+  const token = TokenManager.getAdminToken();
+  if (!token) {
+    createErrorResponse("Error");
+    return;
+  }
+
+  try {
+    // Build query parameters
+    const queryParams = new URLSearchParams();
+    if (params?.page) queryParams.append("page", params.page.toString());
+    if (params?.limit) queryParams.append("limit", params.limit.toString());
+    if (params?.buyer_name) queryParams.append("buyer_name", params.buyer_name);
+    if (params?.seller_name)
+      queryParams.append("seller_name", params.seller_name);
+    if (params?.item_title) queryParams.append("item_title", params.item_title);
+    if (params?.start_date) queryParams.append("start_date", params.start_date);
+    if (params?.end_date) queryParams.append("end_date", params.end_date);
+
+    const url = `/api/dashboard/archives-data${queryParams.toString() ? `?${queryParams.toString()}` : ""}`;
+
+    const response = await fetch(url, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: データ取得失敗`);
+    }
+
+    const data = await response.json();
+    // console.log("getArchivesDataApi", data);
+    return {
+      success: true,
+      data: {
+        trades: data.data.trades,
+        total: data.data.total || data.data.trades.length,
+      },
+    };
+  } catch (error: unknown) {
+    createErrorResponse(error, "Error");
+  }
+};
+
+export const getArchiveDetailApi = async (
+  archiveTradeId: number
+): Promise<
+  | {
+      success: boolean;
+      data: {
+        trade: {
+          archive_trade_id: number;
+          original_trade_id: number;
+          item_archive_id: number;
+          seller_id: number;
+          buyer_id: number;
+          seller_exchange_item_archive_id: number | null;
+          buyer_exchange_item_archive_id: number | null;
+          status: string;
+          created_at: string;
+          updated_at: string;
+          seller_name: string;
+          seller_email: string;
+          buyer_name: string;
+          buyer_email: string;
+          seller_item_title: string;
+          seller_item_description: string;
+          seller_item_type: string;
+          seller_item_brand: string;
+          seller_item_images: string[];
+          buyer_item: {
+            archive_id: number;
+            title: string;
+            description: string;
+            type: string;
+            brand: string;
+            images: string[];
+          } | null;
+          seller_exchange_item: {
+            archive_id: number;
+            title: string;
+            description: string;
+            type: string;
+            brand: string;
+            images: string[];
+          } | null;
+        };
+        messages: Array<{
+          message_id: number;
+          sender_id: number;
+          sender_name: string;
+          message: string;
+          created_at: string;
+        }>;
+        shipping_info: Array<{
+          shipping_id: number;
+          sender_id: number;
+          tracking_number: string;
+          shipping_company: string;
+          created_at: string;
+        }>;
+      };
+    }
+  | undefined
+> => {
+  const token = TokenManager.getAdminToken();
+  if (!token) {
+    createErrorResponse("Error");
+    return;
+  }
+
+  try {
+    const response = await fetch(
+      `/api/dashboard/archive-detail?archive_trade_id=${archiveTradeId}`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: データ取得失敗`);
+    }
+
+    const data = await response.json();
+    // console.log("getArchiveDetailApi", data);
     return {
       success: true,
       data: data.data,
@@ -663,7 +832,7 @@ export const deleteItemApi = async (
     }
 
     const data = await response.json();
-    console.log("deleteItemApi", data);
+    // console.log("deleteItemApi", data);
     return {
       success: true,
       message: data.message || "商品を削除しました",

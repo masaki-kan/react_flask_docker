@@ -95,8 +95,6 @@ const AdminUserDetail: FC = () => {
     fetchUserDetail();
   }, [userId]);
 
-  console.log(items);
-
   const getPlanLabel = (plan: string) => {
     return plan === "1" ? "年払 5500円" : "月額 550円";
   };
@@ -111,6 +109,7 @@ const AdminUserDetail: FC = () => {
   };
 
   const formatDate = (dateString: string) => {
+    if (dateString === undefined) return "---";
     return new Date(dateString).toLocaleString("ja-JP");
   };
 
