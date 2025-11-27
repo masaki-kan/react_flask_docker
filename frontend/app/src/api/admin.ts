@@ -86,7 +86,7 @@ export const getUserRegistrationDataApi = async (
     }
 
     const data = await response.json();
-    console.log("getUserRegistrationDataApi", data);
+    // console.log("getUserRegistrationDataApi", data);
     return {
       success: true,
       data: data.data,
@@ -133,7 +133,7 @@ export const getSubscriptionDataApi = async (
     }
 
     const data = await response.json();
-    console.log("getSubscriptionDataApi", data);
+    // console.log("getSubscriptionDataApi", data);
     return {
       success: true,
       data: data.data,
@@ -204,7 +204,7 @@ export const getUserDetailApi = async (
     }
 
     const data = await response.json();
-    console.log("getUserDetailApi", data);
+    // console.log("getUserDetailApi", data);
     return {
       success: true,
       data: data.data,
@@ -273,7 +273,7 @@ export const getUsersDataApi = async (params?: {
     }
 
     const data = await response.json();
-    console.log("getUsersDataApi", data);
+    // console.log("getUsersDataApi", data);
     return {
       success: true,
       data: {

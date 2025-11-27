@@ -62,7 +62,7 @@ const Dashboard: FC = () => {
     try {
       const response = await getDashboadApi();
       if (response !== undefined && response.success === true) {
-        console.log("fetchDashboardData", response.data);
+        // console.log("fetchDashboardData", response.data);
         setStats({
           totalUsers: response.data.stats.totalUsers,
           totalItems: response.data.stats.totalItems,
