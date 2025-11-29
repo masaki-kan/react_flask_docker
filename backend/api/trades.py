@@ -251,23 +251,32 @@ def save_shipping_info():
     sender_user_id = data.get('sender_user_id')
     tracking_number = data.get('tracking_number')
     shipping_company = data.get('shipping_company')
-    
+
     try:
         with get_db_connection() as conn:
             cursor = conn.cursor(dictionary=True)
-            
+
+            # 取引情報を取得
+            cursor.execute('''
+                SELECT * FROM trades WHERE trade_id = %s
+            ''', (trade_id,))
+            trade = cursor.fetchone()
+
+            if not trade:
+                return jsonify({"error": "取引が見つかりません"}), 404
+
             # 既存の発送情報があるかチェック
             cursor.execute('''
-                SELECT shipping_id FROM shipping_info 
+                SELECT shipping_id FROM shipping_info
                 WHERE trade_id = %s AND sender_user_id = %s
             ''', (trade_id, sender_user_id))
-            
+
             existing = cursor.fetchone()
-            
+
             if existing:
                 # 更新
                 cursor.execute('''
-                    UPDATE shipping_info 
+                    UPDATE shipping_info
                     SET tracking_number = %s, shipping_company = %s
                     WHERE trade_id = %s AND sender_user_id = %s
                 ''', (tracking_number, shipping_company, trade_id, sender_user_id))
@@ -277,30 +286,42 @@ def save_shipping_info():
                     INSERT INTO shipping_info (trade_id, sender_user_id, tracking_number, shipping_company)
                     VALUES (%s, %s, %s, %s)
                 ''', (trade_id, sender_user_id, tracking_number, shipping_company))
-                
+
                 # チャットに発送メッセージを自動送信
                 cursor.execute('''
                     INSERT INTO trade_messages (trade_id, sender_id, message)
                     VALUES (%s, %s, %s)
                 ''', (trade_id, sender_user_id, f"商品を発送しました。\n配送会社: {shipping_company}\n追跡番号: {tracking_number}"))
-            
-            # 両者が発送情報を入力したかチェック
-            cursor.execute('''
-                SELECT COUNT(DISTINCT sender_user_id) as count 
-                FROM shipping_info 
-                WHERE trade_id = %s
-            ''', (trade_id,))
-            
-            count_result = cursor.fetchone()
-            
-            # 両者が発送したらステータスを更新
-            if count_result['count'] == 2:
+
+            # 取引タイプに応じて発送完了判定を変える
+            if trade.get('trade_type') == 'purchase':
+                # 購入フローの場合: Seller(seller_id)が発送したら即座にshippedステータスへ
+                if int(sender_user_id) == int(trade['seller_id']):
+                    cursor.execute('''
+                        UPDATE trades
+                        SET status = 'shipped'
+                        WHERE trade_id = %s
+                    ''', (trade_id,))
+                    print(f"✅ 購入フロー: Sellerが発送完了 → status='shipped'")
+            else:
+                # 交換フローの場合: 両者が発送情報を入力したかチェック
                 cursor.execute('''
-                    UPDATE trades 
-                    SET status = 'shipped' 
+                    SELECT COUNT(DISTINCT sender_user_id) as count
+                    FROM shipping_info
                     WHERE trade_id = %s
                 ''', (trade_id,))
-            
+
+                count_result = cursor.fetchone()
+
+                # 両者が発送したらステータスを更新
+                if count_result['count'] == 2:
+                    cursor.execute('''
+                        UPDATE trades
+                        SET status = 'shipped'
+                        WHERE trade_id = %s
+                    ''', (trade_id,))
+                    print(f"✅ 交換フロー: 両者が発送完了 → status='shipped'")
+
             conn.commit()
 
             return jsonify({'result': True, 'message': '発送情報を保存しました'})
@@ -615,7 +636,7 @@ def select_exchange_item():
             # 交換商品として記録
             cursor.execute('''
                 UPDATE trades 
-                SET seller_exchange_item_id = %s 
+                SET seller_exchange_item_id = %s , status = "purchased"
                 WHERE trade_id = %s
             ''', (selected_item_id, trade_id))
             
@@ -647,32 +668,32 @@ def save_shipping_info_with_item():
     sender_user_id = data.get('sender_user_id')
     tracking_number = data.get('tracking_number')
     shipping_company = data.get('shipping_company')
-    
+
     try:
         with get_db_connection() as conn:
             cursor = conn.cursor(dictionary=True)
-            
+
             # 取引情報を取得
             cursor.execute('''
                 SELECT * FROM trades WHERE trade_id = %s
             ''', (trade_id,))
             trade = cursor.fetchone()
-            
+
             if not trade:
                 return jsonify({"error": "取引が見つかりません"}), 404
-            
+
             # 既存の発送情報があるかチェック
             cursor.execute('''
-                SELECT shipping_id FROM shipping_info 
+                SELECT shipping_id FROM shipping_info
                 WHERE trade_id = %s AND sender_user_id = %s
             ''', (trade_id, sender_user_id))
-            
+
             existing = cursor.fetchone()
-            
+
             if existing:
                 # 更新
                 cursor.execute('''
-                    UPDATE shipping_info 
+                    UPDATE shipping_info
                     SET tracking_number = %s, shipping_company = %s
                     WHERE trade_id = %s AND sender_user_id = %s
                 ''', (tracking_number, shipping_company, trade_id, sender_user_id))
@@ -682,30 +703,42 @@ def save_shipping_info_with_item():
                     INSERT INTO shipping_info (trade_id, sender_user_id, tracking_number, shipping_company)
                     VALUES (%s, %s, %s, %s)
                 ''', (trade_id, sender_user_id, tracking_number, shipping_company))
-                
+
                 # チャットに発送メッセージを自動送信
                 cursor.execute('''
                     INSERT INTO trade_messages (trade_id, sender_id, message)
                     VALUES (%s, %s, %s)
                 ''', (trade_id, sender_user_id, f"商品を発送しました。\n配送会社: {shipping_company}\n追跡番号: {tracking_number}"))
-            
-            # 両者が発送情報を入力したかチェック
-            cursor.execute('''
-                SELECT COUNT(DISTINCT sender_user_id) as count 
-                FROM shipping_info 
-                WHERE trade_id = %s
-            ''', (trade_id,))
-            
-            count_result = cursor.fetchone()
-            
-            # 両者が発送したらステータスを更新
-            if count_result['count'] == 2:
+
+            # 取引タイプに応じて発送完了判定を変える
+            if trade.get('trade_type') == 'purchase':
+                # 購入フローの場合: Seller(seller_id)が発送したら即座にshippedステータスへ
+                if int(sender_user_id) == int(trade['seller_id']):
+                    cursor.execute('''
+                        UPDATE trades
+                        SET status = 'shipped'
+                        WHERE trade_id = %s
+                    ''', (trade_id,))
+                    print(f"✅ 購入フロー: Sellerが発送完了 → status='shipped'")
+            else:
+                # 交換フローの場合: 両者が発送情報を入力したかチェック
                 cursor.execute('''
-                    UPDATE trades 
-                    SET status = 'shipped' 
+                    SELECT COUNT(DISTINCT sender_user_id) as count
+                    FROM shipping_info
                     WHERE trade_id = %s
                 ''', (trade_id,))
-            
+
+                count_result = cursor.fetchone()
+
+                # 両者が発送したらステータスを更新
+                if count_result['count'] == 2:
+                    cursor.execute('''
+                        UPDATE trades
+                        SET status = 'shipped'
+                        WHERE trade_id = %s
+                    ''', (trade_id,))
+                    print(f"✅ 交換フロー: 両者が発送完了 → status='shipped'")
+
             conn.commit()
    
             # 交換商品情報を含めて返す
@@ -925,11 +958,16 @@ def get_chat_item_detail():
             cursor = conn.cursor(dictionary=True)
             # 取引情報と商品の基本情報を取得
             cursor.execute('''
-                SELECT 
+                SELECT
                     trades.trade_id,
                     trades.status,
                     trades.buyer_id,
                     trades.seller_id,
+                    trades.trade_type,
+                    trades.purchase_price,
+                    trades.is_price_agreed_seller,
+                    trades.is_price_agreed_buyer,
+                    trades.is_buyer_confirmed,
                     items.item_id,
                     items.title,
                     items.description,
@@ -958,8 +996,16 @@ def get_chat_item_detail():
                 "type": trade_data["type"],
                 "brand": trade_data["brand"],
                 "uploaded_at": trade_data["uploaded_at"],
-                "user_id": trade_data["user_id"]
+                "user_id": trade_data["user_id"],
+                # 購入フロー用のフィールド
+                "trade_type": trade_data["trade_type"],
+                "purchase_price": float(trade_data["purchase_price"]) if trade_data["purchase_price"] else None,
+                "is_price_agreed_seller": trade_data["is_price_agreed_seller"],
+                "is_price_agreed_buyer": trade_data["is_price_agreed_buyer"],
+                "is_buyer_confirmed": trade_data["is_buyer_confirmed"],
             }
+
+            print(f"📦 getChatItemDetail: trade_id={trade_id}, trade_type={item_data['trade_type']}, status={item_data['status']}, price={item_data['purchase_price']}")
 
             # 商品の画像をすべて取得
             cursor.execute('''

@@ -125,7 +125,7 @@ export const singupApi = async (
 ): Promise<ApiResponse<{ result: boolean; message: string }>> => {
   try {
     const response = await axios.post(
-      `${import.meta.env.VITE_API_URL}/api/singUp`,
+      `${import.meta.env.VITE_API_URL}/api/signUp`,
       formdata
     );
     return {

@@ -38,6 +38,7 @@ import {
 } from "react-icons/fa";
 import { IconType } from "react-icons";
 import ExchangeArchiveModal from "../archive/exchangeArchiveModal";
+import PurchaseArchiveModal from "../archive/purchaseArchiveModal";
 import { MdOutlineShoppingBag } from "react-icons/md";
 import { route } from "../../route/routeConst";
 import WithdrawalButton from "./withdrawalButton";
@@ -55,6 +56,8 @@ const ProfileIndex: FC<profileIndexType> = ({ editFormSwitch }) => {
   // プロフィール情報は即座に表示
   const profile = useMemo(() => memorizeProfile, [memorizeProfile]);
   const [isArchiveOpen, setIsArchiveOpen] = useState<boolean>(false);
+  const [isPurchaseArchiveOpen, setIsPurchaseArchiveOpen] =
+    useState<boolean>(false);
 
   // プロフィールデータが不完全な場合に再取得
   useEffect(() => {
@@ -420,6 +423,17 @@ const ProfileIndex: FC<profileIndexType> = ({ editFormSwitch }) => {
             交換履歴を見る
           </Button>
 
+          <Button
+            w="full"
+            colorScheme="purple"
+            variant="outline"
+            size="lg"
+            onClick={() => setIsPurchaseArchiveOpen(true)}
+            leftIcon={<FaHistory />}
+          >
+            購入履歴を見る
+          </Button>
+
           {/* マイアイテム */}
           <Box
             bg={bgColor}
@@ -500,6 +514,12 @@ const ProfileIndex: FC<profileIndexType> = ({ editFormSwitch }) => {
           <ExchangeArchiveModal
             isOpen={isArchiveOpen}
             onClose={() => setIsArchiveOpen(false)}
+          />
+
+          {/* 購入履歴モーダル */}
+          <PurchaseArchiveModal
+            isOpen={isPurchaseArchiveOpen}
+            onClose={() => setIsPurchaseArchiveOpen(false)}
           />
         </VStack>
       </GridItem>

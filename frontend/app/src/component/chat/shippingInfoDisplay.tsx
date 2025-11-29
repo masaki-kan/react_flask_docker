@@ -13,9 +13,10 @@ import { FaTruck, FaBox } from "react-icons/fa";
 
 interface ShippingInfoDisplayProps {
   sellerShipping: shippingInfoType;
-  buyerShipping: shippingInfoType;
+  buyerShipping?: shippingInfoType;
   sellerName: string;
   buyerName: string;
+  isPurchaseFlow?: boolean;
 }
 
 const ShippingInfoDisplay: FC<ShippingInfoDisplayProps> = ({
@@ -23,8 +24,13 @@ const ShippingInfoDisplay: FC<ShippingInfoDisplayProps> = ({
   buyerShipping,
   sellerName,
   buyerName,
+  isPurchaseFlow = false,
 }) => {
-  const renderShippingInfo = (shipping: shippingInfoType, label: string) => {
+  const renderShippingInfo = (
+    shipping: shippingInfoType,
+    label: string,
+    fullWidth: boolean = false
+  ) => {
     if (!shipping) {
       return (
         <Box
@@ -34,7 +40,7 @@ const ShippingInfoDisplay: FC<ShippingInfoDisplayProps> = ({
           borderColor="gray.200"
           bg="gray.50"
           flex={1}
-          width={"50%"}
+          width={fullWidth ? "100%" : "50%"}
         >
           <HStack mb={2}>
             <Icon as={FaBox} color="gray.400" />
@@ -62,7 +68,7 @@ const ShippingInfoDisplay: FC<ShippingInfoDisplayProps> = ({
         borderColor="green.200"
         bg="green.50"
         flex={1}
-        width={"50%"}
+        width={fullWidth ? "100%" : "50%"}
       >
         <HStack mb={2}>
           <Icon as={FaTruck} color="green.500" />
@@ -100,17 +106,35 @@ const ShippingInfoDisplay: FC<ShippingInfoDisplayProps> = ({
   return (
     <Box w="100%" mt={4}>
       <VStack spacing={3}>
-        <HStack w="100%" spacing={3} align="stretch">
-          {renderShippingInfo(buyerShipping, buyerName || "交換申請した人")}
-          {renderShippingInfo(sellerShipping, sellerName || "交換を受ける人")}
-        </HStack>
-
-        {sellerShipping && buyerShipping && (
+        {isPurchaseFlow ? (
+          // 購入フローの場合: Sellerの発送情報のみ表示
+          <Box w="100%">
+            {renderShippingInfo(sellerShipping, sellerName || "出品者", true)}
+          </Box>
+        ) : (
+          // 交換フローの場合: 両者の発送情報を表示
           <>
-            <Divider />
-            <Badge colorScheme="purple" fontSize="xs">
-              両者とも発送完了
-            </Badge>
+            <HStack w="100%" spacing={3} align="stretch">
+              {renderShippingInfo(
+                buyerShipping,
+                buyerName || "交換申請した人",
+                false
+              )}
+              {renderShippingInfo(
+                sellerShipping,
+                sellerName || "交換を受ける人",
+                false
+              )}
+            </HStack>
+
+            {sellerShipping && buyerShipping && (
+              <>
+                <Divider />
+                <Badge colorScheme="purple" fontSize="xs">
+                  両者とも発送完了
+                </Badge>
+              </>
+            )}
           </>
         )}
       </VStack>

@@ -139,6 +139,30 @@ export interface exchangeArchive {
   buyer_item_images?: string[];
 }
 
+// 購入履歴一覧の型
+export interface purchaseArchive {
+  archive_trade_id: number;
+  original_trade_id: number;
+  seller_id: number;
+  buyer_id: number;
+  purchase_price: number;
+  payment_intent_id: string | null;
+  paid_at: string;
+  buyer_received_at: string | null;
+  trade_date: string;
+  completed_date: string;
+  seller_name: string;
+  buyer_name: string;
+  seller_image: string;
+  buyer_image: string;
+  user_role: "seller" | "buyer";
+  item_title: string;
+  item_description: string;
+  item_type: string;
+  item_brand: brandType;
+  item_images: string[];
+}
+
 export interface ArchiveItemDetailType {
   title?: string;
   itemTitle?: string;

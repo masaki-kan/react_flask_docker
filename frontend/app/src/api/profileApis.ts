@@ -4,6 +4,7 @@ import { ApiResponse, createErrorResponse } from "../utils/alert/sweetalert2";
 import {
   archiveDetailResponse,
   exchangeArchive,
+  purchaseArchive,
 } from "./../types/archiveTradeType";
 
 // プロフ取得
@@ -293,6 +294,43 @@ export const exchangeArchiveApi = async (
   try {
     const response = await axios.post(
       `${import.meta.env.VITE_API_URL}/api/getexchangeArchive`,
+      {
+        user_id,
+      }
+    );
+
+    return {
+      success: true,
+      data: {
+        status: response.data.result,
+        archives: response.data.archives,
+        total: response.data.total,
+      },
+    };
+  } catch (error: unknown) {
+    let errorMessage = "予期しないエラーが発生しました";
+
+    if (axios.isAxiosError(error) && error.response?.data?.error) {
+      errorMessage = error.response.data.error;
+    }
+
+    return createErrorResponse(error, errorMessage);
+  }
+};
+
+// 購入履歴
+export const purchaseArchiveApi = async (
+  user_id: number
+): Promise<
+  ApiResponse<{
+    status: boolean;
+    archives: purchaseArchive[];
+    total: number;
+  }>
+> => {
+  try {
+    const response = await axios.post(
+      `${import.meta.env.VITE_API_URL}/api/getPurchaseArchive`,
       {
         user_id,
       }

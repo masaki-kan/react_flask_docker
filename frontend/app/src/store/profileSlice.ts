@@ -1,7 +1,10 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { profileType } from "../types/profileType";
 import { itemListType } from "../types/itemType";
-import { exchangeArchive } from "../types/archiveTradeType";
+import {
+  exchangeArchive,
+  purchaseArchive,
+} from "../types/archiveTradeType";
 
 type initialStateType = {
   adminProfile: {
@@ -13,6 +16,7 @@ type initialStateType = {
   profile: profileType;
   items: itemListType[];
   archive: exchangeArchive[];
+  archivePurchase: purchaseArchive[];
   userArchive: exchangeArchive[];
   loading: {
     profile: boolean;
@@ -49,6 +53,7 @@ const initialState: initialStateType = {
   },
   items: [],
   archive: [],
+  archivePurchase: [],
   userArchive: [],
   loading: {
     profile: false,
@@ -107,6 +112,12 @@ export const profileSlice = createSlice({
     setProfileArchives: (state, action: PayloadAction<exchangeArchive[]>) => {
       state.archive = action.payload;
     },
+    setProfilePurchaseArchives: (
+      state,
+      action: PayloadAction<purchaseArchive[]>
+    ) => {
+      state.archivePurchase = action.payload;
+    },
     setUserArchives: (state, action: PayloadAction<exchangeArchive[]>) => {
       state.userArchive = action.payload;
     },
@@ -119,6 +130,7 @@ export const {
   deleteProfile,
   setLoginAfterProfile,
   setProfileArchives,
+  setProfilePurchaseArchives,
   setLoginAdminAfterProfile,
   deleteAdminProfile,
   setUserArchives,

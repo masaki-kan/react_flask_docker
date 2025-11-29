@@ -78,7 +78,8 @@ def get_exchange_archive():
                 JOIN archived_items main_item ON at.item_archive_id = main_item.archive_id
                 LEFT JOIN archived_items seller_item ON at.seller_exchange_item_archive_id = seller_item.archive_id
                 LEFT JOIN archived_items buyer_item ON at.buyer_exchange_item_archive_id = buyer_item.archive_id
-                WHERE at.seller_id = %s OR at.buyer_id = %s
+                WHERE (at.seller_id = %s OR at.buyer_id = %s)
+                AND (at.trade_type = 'exchange' OR at.trade_type IS NULL)
                 ORDER BY at.trade_completed_at DESC
             ''', (user_id, user_id))
 
@@ -201,9 +202,122 @@ def get_exchange_archive():
             "error": "交換履歴取得中にエラーが発生しました",
             "result": False
         }), 500
-        
-        
-        
+
+
+# 購入履歴を取得
+@archives_bp.route('/getPurchaseArchive', methods=['POST'])
+def get_purchase_archive():
+    data = request.get_json()
+    user_id = data.get('user_id')
+
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor(dictionary=True)
+
+            # 購入アーカイブテーブルから取得
+            cursor.execute('''
+                SELECT
+                    at.archive_trade_id,
+                    at.original_trade_id,
+                    at.seller_id,
+                    at.buyer_id,
+                    at.purchase_price,
+                    at.payment_intent_id,
+                    at.paid_at,
+                    at.buyer_received_at,
+                    at.trade_created_at as trade_date,
+                    at.trade_completed_at as completed_date,
+                    at.seller_name,
+                    at.buyer_name,
+                    -- 購入された商品
+                    main_item.title as item_title,
+                    main_item.description as item_description,
+                    main_item.type as item_type,
+                    main_item.brand as item_brand
+                FROM archived_trades at
+                JOIN archived_items main_item ON at.item_archive_id = main_item.archive_id
+                WHERE (at.seller_id = %s OR at.buyer_id = %s)
+                AND at.trade_type = 'purchase'
+                ORDER BY at.trade_completed_at DESC
+            ''', (user_id, user_id))
+
+            trades = cursor.fetchall()
+
+            # 各取引の詳細情報を構築
+            for trade in trades:
+                # プロフィール画像を取得
+                cursor.execute('''
+                    SELECT image_url FROM profile_images
+                    WHERE user_id = %s
+                    ORDER BY uploaded_at DESC
+                    LIMIT 1
+                ''', (trade['seller_id'],))
+                seller_img = cursor.fetchone()
+                trade['seller_image'] = seller_img['image_url'] if seller_img else ""
+
+                cursor.execute('''
+                    SELECT image_url FROM profile_images
+                    WHERE user_id = %s
+                    ORDER BY uploaded_at DESC
+                    LIMIT 1
+                ''', (trade['buyer_id'],))
+                buyer_img = cursor.fetchone()
+                trade['buyer_image'] = buyer_img['image_url'] if buyer_img else ""
+
+                # 商品画像（アーカイブから）
+                cursor.execute('''
+                    SELECT ai.archive_id
+                    FROM archived_trades at
+                    JOIN archived_items ai ON at.item_archive_id = ai.archive_id
+                    WHERE at.archive_trade_id = %s
+                ''', (trade['archive_trade_id'],))
+                item_archive = cursor.fetchone()
+
+                if item_archive:
+                    cursor.execute('''
+                        SELECT image_url FROM archived_item_images
+                        WHERE archive_id = %s
+                        ORDER BY archive_image_id ASC
+                    ''', (item_archive['archive_id'],))
+                    item_images = cursor.fetchall()
+                    trade['item_images'] = [img['image_url'] for img in item_images]
+                else:
+                    trade['item_images'] = []
+
+                # 現在のユーザーの立場を判定
+                trade['user_role'] = 'seller' if trade['seller_id'] == user_id else 'buyer'
+
+                # JSONフィールドをパース
+                for field in ['item_type', 'item_brand']:
+                    if trade.get(field):
+                        try:
+                            trade[field] = json.loads(trade[field])
+                        except:
+                            trade[field] = []
+
+                # 日付をISO形式に変換
+                if trade.get('trade_date'):
+                    trade['trade_date'] = trade['trade_date'].isoformat()
+                if trade.get('completed_date'):
+                    trade['completed_date'] = trade['completed_date'].isoformat()
+                if trade.get('paid_at'):
+                    trade['paid_at'] = trade['paid_at'].isoformat()
+                if trade.get('buyer_received_at'):
+                    trade['buyer_received_at'] = trade['buyer_received_at'].isoformat()
+
+            return jsonify({
+                "archives": trades,
+                "total": len(trades),
+                "result": True
+            }), 200
+
+    except mysql.connector.Error as err:
+        return jsonify({
+            "error": "購入履歴取得中にエラーが発生しました",
+            "result": False
+        }), 500
+
+
 # アーカイブ取引詳細を取得
 @archives_bp.route('/getArchiveDetail', methods=['GET'])
 def get_archive_detail():

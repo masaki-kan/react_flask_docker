@@ -95,7 +95,7 @@ const AppRoutes: FC = () => {
           <Route path={route.adminLogin} element={<AdminLogin />} />
           <Route path={route.top} element={<Top />} />
           <Route path={route.login} element={<Login />} />
-          <Route path={route.singUp} element={<SingUp />} />
+          <Route path={route.signUp} element={<SingUp />} />
           <Route path={route.tokushoho} element={<TokushohoPage />} />
           <Route path={route.terms} element={<RiyouKiyakuPage />} />
           <Route path={route.privacy} element={<PrivacyPolicy />} />

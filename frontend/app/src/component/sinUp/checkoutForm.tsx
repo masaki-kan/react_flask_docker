@@ -10,13 +10,13 @@ import { sinupFormType } from "../../types/loginType";
 import { singupApi } from "../../api/loginApis";
 
 type checkoutFormType = {
-  singUpEvent: () => Promise<void>;
+  signUpEvent: () => Promise<void>;
   form: sinupFormType;
   loginClick: () => void;
 };
 
 const CheckoutForm: FC<checkoutFormType> = memo(
-  ({ singUpEvent, form, loginClick }) => {
+  ({ signUpEvent, form, loginClick }) => {
     const { sweetSuccessTextOverAlert, sweetErrorOverAlert } = useAlert();
     const stripe = useStripe();
     const elements = useElements();
@@ -35,7 +35,7 @@ const CheckoutForm: FC<checkoutFormType> = memo(
         }
         if (responseResult) return;
 
-        singUpEvent();
+        signUpEvent();
         setLoading(true);
 
         try {
@@ -91,7 +91,7 @@ const CheckoutForm: FC<checkoutFormType> = memo(
         form,
         loginClick,
         responseResult,
-        singUpEvent,
+        signUpEvent,
         stripe,
         sweetErrorOverAlert,
         sweetSuccessTextOverAlert,

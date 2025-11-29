@@ -47,6 +47,7 @@ try:
     from api.payment import payment_bp
     from api.saves import saves_bp
     from api.admin import admin_bp
+    from api.purchase_flow import purchase_bp
 except ImportError as e:
     logging.error(f"Import error for blueprints: {e}")
     raise
@@ -91,6 +92,7 @@ app.register_blueprint(archives_bp)
 app.register_blueprint(saves_bp)
 app.register_blueprint(payment_bp)
 app.register_blueprint(admin_bp)
+app.register_blueprint(purchase_bp)
 
 # === WebSocketハンドラーの登録 ===
 register_socketio_handlers(socketio)
@@ -101,7 +103,7 @@ def initialize_database():
         # database.pyが存在しない場合の仮実装
         from database import create_table
         with get_db_connection() as conn:
-            cursor = conn.cursor()
+            cursor = conn.cursor(dictionary=True)
             try:
                 create_table(cursor)
                 conn.commit()

@@ -20,6 +20,12 @@ export interface chatItemDataType {
   user_name: string;
   status: string;
   trade_status_flag: number;
+  // 購入フロー用のフィールド
+  trade_type?: 'exchange' | 'purchase';
+  purchase_price?: number;
+  is_price_agreed_seller?: boolean;
+  is_price_agreed_buyer?: boolean;
+  is_buyer_confirmed?: boolean;
 }
 
 export interface shippingInfoType {

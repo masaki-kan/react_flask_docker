@@ -137,9 +137,25 @@ def create_trades_table(cursor):
             buyer_id INT NOT NULL,
             seller_exchange_item_id INT DEFAULT NULL,
             buyer_exchange_item_id INT DEFAULT NULL,
-            # 🔥 オプション変更: 'approved'を追加する場合はコメントアウトを解除
-            # status ENUM('pending', 'approved', 'purchased','shipped','cancelled') DEFAULT 'pending',
-            status ENUM('pending', 'purchased','shipped','completed','cancelled') DEFAULT 'pending',
+            status ENUM(
+                'pending',
+                'purchased',
+                'shipped',
+                'completed',
+                'cancelled',
+                'price_proposed',
+                'price_agreed',
+                'paid',
+                'buyer_received'
+            ) DEFAULT 'pending',
+            trade_type ENUM('exchange', 'purchase') DEFAULT 'exchange' COMMENT '取引の種類',
+            purchase_price DECIMAL(10, 2) DEFAULT NULL COMMENT '購入金額（円）',
+            price_proposed_by INT DEFAULT NULL COMMENT '金額を提案したユーザーID',
+            is_price_agreed_seller BOOLEAN DEFAULT FALSE COMMENT 'Sellerが金額に合意したか',
+            is_price_agreed_buyer BOOLEAN DEFAULT FALSE COMMENT 'Buyerが金額に合意したか',
+            payment_intent_id VARCHAR(255) DEFAULT NULL COMMENT 'Stripe PaymentIntent ID',
+            paid_at TIMESTAMP NULL COMMENT '決済完了日時',
+            buyer_received_at TIMESTAMP NULL COMMENT 'Buyer受取確認日時',
             is_buyer_confirmed BOOLEAN DEFAULT FALSE,
             is_seller_confirmed BOOLEAN DEFAULT FALSE,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -150,9 +166,10 @@ def create_trades_table(cursor):
             FOREIGN KEY (seller_exchange_item_id) REFERENCES items(item_id),
             FOREIGN KEY (buyer_exchange_item_id) REFERENCES items(item_id),
             UNIQUE (item_id, buyer_id),
-            # 🔥 追加: パフォーマンス向上のためのインデックス
             INDEX idx_trade_status (trade_id, status),
-            INDEX idx_exchange_items (seller_exchange_item_id, buyer_exchange_item_id)
+            INDEX idx_exchange_items (seller_exchange_item_id, buyer_exchange_item_id),
+            INDEX idx_trade_type (trade_type),
+            INDEX idx_payment_intent (payment_intent_id)
         );
     ''')
 
@@ -352,6 +369,129 @@ def create_archive_tables(cursor):
     create_archived_item_images_table(cursor)
     create_archived_trades_table(cursor)
 
+# ================================================================================
+# マイグレーション: 購入フロー用のカラムを追加
+# ================================================================================
+def migrate_add_purchase_flow_columns(cursor):
+    """
+    既存のtradesテーブルに購入フロー用のカラムを追加するマイグレーション
+    作成日: 2025-11-19
+    """
+    try:
+        # カラムが既に存在するかチェック
+        cursor.execute("""
+            SELECT COUNT(*) as count
+            FROM information_schema.COLUMNS
+            WHERE TABLE_SCHEMA = DATABASE()
+            AND TABLE_NAME = 'trades'
+            AND COLUMN_NAME = 'trade_type'
+        """)
+        result = cursor.fetchone()
+
+        if result['count'] > 0:
+            print("✓ 購入フロー用のカラムは既に存在します")
+            return
+
+        print("購入フロー用のカラムを追加中...")
+
+        # tradesテーブルに購入フロー用のカラムを追加
+        cursor.execute("""
+            ALTER TABLE trades
+            ADD COLUMN trade_type ENUM('exchange', 'purchase') DEFAULT 'exchange'
+                COMMENT '取引の種類: exchange=交換, purchase=購入' AFTER status,
+            ADD COLUMN purchase_price DECIMAL(10, 2) DEFAULT NULL
+                COMMENT '購入金額（円）' AFTER trade_type,
+            ADD COLUMN price_proposed_by INT DEFAULT NULL
+                COMMENT '金額を提案したユーザーID' AFTER purchase_price,
+            ADD COLUMN is_price_agreed_seller BOOLEAN DEFAULT FALSE
+                COMMENT 'Sellerが金額に合意したか' AFTER price_proposed_by,
+            ADD COLUMN is_price_agreed_buyer BOOLEAN DEFAULT FALSE
+                COMMENT 'Buyerが金額に合意したか' AFTER is_price_agreed_seller,
+            ADD COLUMN payment_intent_id VARCHAR(255) DEFAULT NULL
+                COMMENT 'Stripe PaymentIntent ID' AFTER is_price_agreed_buyer,
+            ADD COLUMN paid_at TIMESTAMP NULL
+                COMMENT '決済完了日時' AFTER payment_intent_id,
+            ADD COLUMN buyer_received_at TIMESTAMP NULL
+                COMMENT 'Buyer受取確認日時' AFTER paid_at
+        """)
+
+        # ステータスに新しい値を追加
+        cursor.execute("""
+            ALTER TABLE trades
+            MODIFY COLUMN status ENUM(
+                'pending',
+                'purchased',
+                'shipped',
+                'completed',
+                'cancelled',
+                'price_proposed',
+                'price_agreed',
+                'paid',
+                'buyer_received'
+            ) DEFAULT 'pending'
+        """)
+
+        # インデックスを追加
+        cursor.execute("""
+            CREATE INDEX idx_trade_type ON trades(trade_type)
+        """)
+
+        cursor.execute("""
+            CREATE INDEX idx_payment_intent ON trades(payment_intent_id)
+        """)
+
+        print("✓ 購入フロー用のカラム追加完了")
+
+    except Exception as e:
+        print(f"✗ マイグレーションエラー: {e}")
+        raise
+
+# ================================================================================
+# マイグレーション: アーカイブテーブルに購入フロー用のカラムを追加
+# ================================================================================
+def migrate_add_purchase_flow_to_archives(cursor):
+    """
+    archived_tradesテーブルに購入フロー用のカラムを追加するマイグレーション
+    作成日: 2025-11-29
+    """
+    try:
+        # カラムが既に存在するかチェック
+        cursor.execute("""
+            SELECT COUNT(*) as count
+            FROM information_schema.COLUMNS
+            WHERE TABLE_SCHEMA = DATABASE()
+            AND TABLE_NAME = 'archived_trades'
+            AND COLUMN_NAME = 'trade_type'
+        """)
+        result = cursor.fetchone()
+
+        if result['count'] > 0:
+            print("✓ アーカイブテーブルの購入フロー用カラムは既に存在します")
+            return
+
+        print("アーカイブテーブルに購入フロー用のカラムを追加中...")
+
+        # archived_tradesテーブルに購入フロー用のカラムを追加
+        cursor.execute("""
+            ALTER TABLE archived_trades
+            ADD COLUMN trade_type ENUM('exchange', 'purchase') DEFAULT 'exchange'
+                COMMENT 'アーカイブ時の取引種類' AFTER final_status,
+            ADD COLUMN purchase_price DECIMAL(10, 2) DEFAULT NULL
+                COMMENT '購入金額（購入フローの場合）' AFTER trade_type,
+            ADD COLUMN payment_intent_id VARCHAR(255) DEFAULT NULL
+                COMMENT 'Stripe PaymentIntent ID' AFTER purchase_price,
+            ADD COLUMN paid_at TIMESTAMP NULL
+                COMMENT '決済完了日時' AFTER payment_intent_id,
+            ADD COLUMN buyer_received_at TIMESTAMP NULL
+                COMMENT 'Buyer受取確認日時' AFTER paid_at
+        """)
+
+        print("✓ アーカイブテーブルへの購入フロー用カラム追加完了")
+
+    except Exception as e:
+        print(f"✗ アーカイブテーブルのマイグレーションエラー: {e}")
+        raise
+
 def create_table(cursor):
     create_users_table(cursor)
     create_follows_table(cursor)
@@ -362,10 +502,14 @@ def create_table(cursor):
     create_likes_table(cursor)
     create_trades_table(cursor)
     create_trade_messages_table(cursor)
-    create_shipping_info_table(cursor) 
+    create_shipping_info_table(cursor)
     create_trade_confirmations_table(cursor)
     create_trade_exchanges_table(cursor)
     create_archive_tables(cursor)
     create_thread_messages_table(cursor)
-    create_cleanup_logs_table(cursor) 
+    create_cleanup_logs_table(cursor)
     create_withdrawal_logs_table(cursor)
+
+    # 購入フローのマイグレーションを実行
+    migrate_add_purchase_flow_columns(cursor)
+    migrate_add_purchase_flow_to_archives(cursor)

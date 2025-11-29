@@ -14,7 +14,7 @@ import {
   Badge,
   Icon,
 } from "@chakra-ui/react";
-import { FaBox, FaTruck, FaUserCircle, FaCheckCircle } from "react-icons/fa";
+import { FaBox, FaTruck, FaUserCircle, FaCheckCircle, FaHourglassHalf } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import { route } from "../../route/routeConst";
 import { useEffectOnce } from "react-use";
@@ -34,6 +34,11 @@ import { shippingInfoType, ShippingInfo } from "../../types/chatType";
 import UserDataModal from "./userDataModal";
 import ShippingModal from "./shippingModal";
 import SelectItems from "./selectItems";
+import PurchaseFlowToggle from "./PurchaseFlowToggle";
+import PriceAgreement from "./PriceAgreement";
+import PaymentModal from "./PaymentModal";
+import PurchaseReceivedConfirmation from "./PurchaseReceivedConfirmation";
+import PurchaseCompleteButton from "./PurchaseCompleteButton";
 
 const Home: FC = () => {
   const navigate = useNavigate();
@@ -86,6 +91,12 @@ const Home: FC = () => {
     isOpen: isShippingOpen,
     onOpen: onShippingOpen,
     onClose: onShippingClose,
+  } = useDisclosure();
+
+  const {
+    isOpen: isPaymentOpen,
+    onOpen: onPaymentOpen,
+    onClose: onPaymentClose,
   } = useDisclosure();
 
   // 状態管理
@@ -233,6 +244,53 @@ const Home: FC = () => {
       }
     };
   }, [tradeIdNumber, memorizeChatItemData.status, isCurrentUserSeller]);
+
+  // 購入フローのステータスを監視（両者）
+  useEffect(() => {
+    const checkPurchaseStatus = async () => {
+      if (tradeIdNumber) {
+        console.log("🔄 購入フローポーリング実行:", {
+          trade_type: memorizeChatItemData.trade_type,
+          status: memorizeChatItemData.status,
+        });
+
+        try {
+          // チャットページデータを再取得して最新のステータスをチェック
+          await getChatPageData(tradeIdNumber);
+        } catch (error) {
+          console.error("購入フロー状況の取得エラー:", error);
+        }
+      }
+    };
+
+    let purchaseInterval: NodeJS.Timeout | undefined;
+
+    // 購入フロー中、または金額提案待ちの場合は定期的にチェック
+    const shouldPoll =
+      memorizeChatItemData.trade_type === "purchase" ||
+      memorizeChatItemData.status === "pending" ||
+      ["price_proposed", "price_agreed", "paid", "shipped", "buyer_received"].includes(
+        memorizeChatItemData.status
+      );
+
+    if (shouldPoll && tradeIdNumber) {
+      console.log("✅ ポーリング開始");
+      checkPurchaseStatus(); // 初回実行
+      purchaseInterval = setInterval(checkPurchaseStatus, 3000); // 3秒ごとにチェック
+    }
+
+    return () => {
+      if (purchaseInterval) {
+        console.log("⏹️ ポーリング停止");
+        clearInterval(purchaseInterval);
+      }
+    };
+  }, [
+    tradeIdNumber,
+    memorizeChatItemData.trade_type,
+    memorizeChatItemData.status,
+    getChatPageData,
+  ]);
 
   // 取引完了状況を監視（買い手用）
   useEffect(() => {
@@ -429,7 +487,15 @@ const Home: FC = () => {
 
   // 発送処理を更新
   const handleShipping = useCallback(async () => {
-    if (isCurrentUserSeller && sellerSelectedItemId === null) return;
+    // 交換フローの場合のみ、Sellerが商品を選択済みかチェック
+    if (
+      memorizeChatItemData.trade_type !== "purchase" &&
+      isCurrentUserSeller &&
+      sellerSelectedItemId === null
+    ) {
+      return;
+    }
+
     try {
       await saveShippingInfoWithItemApi(
         memorizeChatItemData.trade_id,
@@ -468,6 +534,7 @@ const Home: FC = () => {
     }
   }, [
     memorizeChatItemData.trade_id,
+    memorizeChatItemData.trade_type,
     userIdNumber,
     shippingInfo,
     onShippingClose,
@@ -569,6 +636,7 @@ const Home: FC = () => {
 
               {/* 発送状況表示 */}
               {(memorizeChatItemData.status === "pending" ||
+                memorizeChatItemData.status === "purchased" ||
                 memorizeChatItemData.status === "shipped") && (
                 <VStack align="stretch" spacing={2}>
                   {/* sellerの交換商品選択状態 */}
@@ -629,7 +697,7 @@ const Home: FC = () => {
                   </Button>
                 )}
 
-              {memorizeChatItemData.status === "pending" &&
+              {memorizeChatItemData.status === "purchased" &&
                 !hasUserShipped &&
                 (!isCurrentUserSeller || hasSellerSelectedItem) && (
                   <Button
@@ -715,40 +783,288 @@ const Home: FC = () => {
                 </VStack>
               )}
 
-              {/* 取引キャンセルボタン：商品未選択かつどちらも未発送の場合のみ表示 */}
-              {!hasSellerSelectedItem &&
-                !hasUserShipped &&
-                !hasPartnerShipped && (
-                  <Button
-                    colorScheme="red"
-                    variant="outline"
-                    size={{ base: "sm", md: "sm" }}
-                    onClick={handleCancelTransaction}
-                    w={{ base: "100%", md: "auto" }}
-                  >
-                    取引をキャンセル
-                  </Button>
-                )}
+              {/* 取引キャンセルボタン */}
+              {(() => {
+                // 購入フローの場合: 金額合意以降はキャンセル不可
+                if (memorizeChatItemData.trade_type === "purchase") {
+                  const canCancelPurchase =
+                    memorizeChatItemData.status === "pending" ||
+                    memorizeChatItemData.status === "price_proposed";
+                  if (!canCancelPurchase) return null;
+                }
+
+                // 交換フローの場合: 商品未選択かつどちらも未発送の場合のみキャンセル可
+                const canCancelExchange =
+                  !hasSellerSelectedItem &&
+                  !hasUserShipped &&
+                  !hasPartnerShipped;
+
+                if (
+                  memorizeChatItemData.trade_type === "purchase" ||
+                  canCancelExchange
+                ) {
+                  return (
+                    <Button
+                      colorScheme="red"
+                      variant="outline"
+                      size={{ base: "sm", md: "sm" }}
+                      onClick={handleCancelTransaction}
+                      w={{ base: "100%", md: "auto" }}
+                    >
+                      取引をキャンセル
+                    </Button>
+                  );
+                }
+                return null;
+              })()}
             </VStack>
           </Flex>
 
           {/* 交換商品表示 Buyerの交換商品  交換商品表示 Sellerの交換商品  */}
-          <SelectItems
-            buyerSelectedItemId={buyerSelectedItemId}
-            hasSellerSelectedItem={hasSellerSelectedItem}
-            memorizeBuyerUserData={memorizeBuyerUserData}
-            memorizeSellerUserData={memorizeSellerUserData}
-            memorizeChatItemData={memorizeChatItemData}
-            onItemOpen={onItemOpen}
-            onSellerItemOpen={onSellerItemOpen}
-            selectedSellerItem={selectedSellerItem}
-          />
+          {memorizeChatItemData.trade_type !== "purchase" && (
+            <SelectItems
+              buyerSelectedItemId={buyerSelectedItemId}
+              hasSellerSelectedItem={hasSellerSelectedItem}
+              memorizeBuyerUserData={memorizeBuyerUserData}
+              memorizeSellerUserData={memorizeSellerUserData}
+              memorizeChatItemData={memorizeChatItemData}
+              onItemOpen={onItemOpen}
+              onSellerItemOpen={onSellerItemOpen}
+              selectedSellerItem={selectedSellerItem}
+            />
+          )}
 
+          {/* 購入フロー: 申請された側（Seller）が購入を提案 */}
+          {memorizeChatItemData.trade_type !== "purchase" &&
+            isCurrentUserSeller &&
+            memorizeChatItemData.status === "pending" &&
+            !hasSellerSelectedItem && (
+              <PurchaseFlowToggle
+                tradeId={Number(memorizeChatItemData.trade_id)}
+                tradeType={memorizeChatItemData.trade_type || "exchange"}
+                status={memorizeChatItemData.status}
+                isBuyer={false}
+                onSuccess={() => getChatPageData(tradeIdNumber!)}
+              />
+            )}
+
+          {/* 購入フロー: 金額合意 */}
+          {(() => {
+            const shouldShowPriceAgreement =
+              memorizeChatItemData.trade_type === "purchase" &&
+              (memorizeChatItemData.status === "price_proposed" ||
+                memorizeChatItemData.status === "price_agreed");
+
+            console.log("💰 金額合意UI表示判定:", {
+              trade_type: memorizeChatItemData.trade_type,
+              status: memorizeChatItemData.status,
+              shouldShow: shouldShowPriceAgreement,
+            });
+
+            if (shouldShowPriceAgreement) {
+              return (
+                <PriceAgreement
+                  tradeId={Number(memorizeChatItemData.trade_id)}
+                  purchasePrice={memorizeChatItemData.purchase_price || 0}
+                  isPriceAgreedSeller={
+                    memorizeChatItemData.is_price_agreed_seller || false
+                  }
+                  isPriceAgreedBuyer={
+                    memorizeChatItemData.is_price_agreed_buyer || false
+                  }
+                  isSeller={isCurrentUserSeller}
+                  status={memorizeChatItemData.status}
+                  onSuccess={() => getChatPageData(tradeIdNumber!)}
+                />
+              );
+            }
+            return null;
+          })()}
+
+          {/* 購入フロー: 決済ボタン */}
+          {memorizeChatItemData.trade_type === "purchase" &&
+            memorizeChatItemData.status === "price_agreed" &&
+            !isCurrentUserSeller && (
+              <Box mt={3}>
+                <Button
+                  colorScheme="purple"
+                  size="lg"
+                  width="100%"
+                  onClick={onPaymentOpen}
+                >
+                  決済に進む
+                </Button>
+              </Box>
+            )}
+
+          {/* 購入フロー: 決済完了後の待機表示（Seller） */}
+          {memorizeChatItemData.trade_type === "purchase" &&
+            memorizeChatItemData.status === "price_agreed" &&
+            isCurrentUserSeller && (
+              <Box
+                mt={3}
+                p={4}
+                bg="blue.50"
+                borderRadius="md"
+                borderWidth={2}
+                borderColor="blue.200"
+              >
+                <HStack spacing={3}>
+                  <Icon as={FaBox} color="blue.500" boxSize={5} />
+                  <VStack align="start" spacing={1}>
+                    <Text fontSize="sm" fontWeight="bold" color="blue.700">
+                      購入者の決済待ち
+                    </Text>
+                    <Text fontSize="xs" color="gray.600">
+                      購入者が決済を完了するまでお待ちください
+                    </Text>
+                  </VStack>
+                </HStack>
+              </Box>
+            )}
+
+          {/* 購入フロー: 発送ボタン（Seller） */}
+          {memorizeChatItemData.trade_type === "purchase" &&
+            memorizeChatItemData.status === "paid" &&
+            isCurrentUserSeller &&
+            !sellerShippingData && (
+              <Box mt={3}>
+                <Button
+                  leftIcon={<FaTruck />}
+                  colorScheme="green"
+                  size="lg"
+                  width="100%"
+                  onClick={onShippingOpen}
+                >
+                  商品を発送する
+                </Button>
+                <Box
+                  mt={2}
+                  p={3}
+                  bg="green.50"
+                  borderRadius="md"
+                >
+                  <Text fontSize="xs" color="gray.600">
+                    💰 決済が完了しました。商品を発送してください。
+                  </Text>
+                </Box>
+              </Box>
+            )}
+
+          {/* 購入フロー: 発送待ち表示（Buyer） */}
+          {memorizeChatItemData.trade_type === "purchase" &&
+            memorizeChatItemData.status === "paid" &&
+            !isCurrentUserSeller && (
+              <Box
+                mt={3}
+                p={4}
+                bg="blue.50"
+                borderRadius="md"
+                borderWidth={2}
+                borderColor="blue.200"
+              >
+                <HStack spacing={3}>
+                  <Icon as={FaTruck} color="blue.500" boxSize={5} />
+                  <VStack align="start" spacing={1}>
+                    <Text fontSize="sm" fontWeight="bold" color="blue.700">
+                      商品の発送待ち
+                    </Text>
+                    <Text fontSize="xs" color="gray.600">
+                      出品者が商品を発送するまでお待ちください
+                    </Text>
+                  </VStack>
+                </HStack>
+              </Box>
+            )}
+
+          {/* 購入フロー: 受取確認（Buyer） */}
+          {memorizeChatItemData.trade_type === "purchase" &&
+            memorizeChatItemData.status === "shipped" &&
+            !isCurrentUserSeller && (
+              <PurchaseReceivedConfirmation
+                tradeId={Number(memorizeChatItemData.trade_id)}
+                isBuyerConfirmed={
+                  memorizeChatItemData.is_buyer_confirmed || false
+                }
+                onSuccess={() => getChatPageData(tradeIdNumber!)}
+              />
+            )}
+
+          {/* 購入フロー: 受取確認待ち表示（Seller） */}
+          {memorizeChatItemData.trade_type === "purchase" &&
+            memorizeChatItemData.status === "shipped" &&
+            isCurrentUserSeller && (
+              <Box
+                mt={3}
+                p={4}
+                bg="blue.50"
+                borderRadius="md"
+                borderWidth={2}
+                borderColor="blue.200"
+              >
+                <VStack align="stretch" spacing={3}>
+                  <HStack>
+                    <Icon as={FaBox} color="blue.500" boxSize={5} />
+                    <Text fontSize="md" fontWeight="bold" color="blue.700">
+                      購入者の受取確認待ち
+                    </Text>
+                  </HStack>
+
+                  <HStack>
+                    <Icon
+                      as={
+                        memorizeChatItemData.is_buyer_confirmed
+                          ? FaCheckCircle
+                          : FaHourglassHalf
+                      }
+                      color={
+                        memorizeChatItemData.is_buyer_confirmed
+                          ? "green.500"
+                          : "gray.400"
+                      }
+                      boxSize={4}
+                    />
+                    <Text fontSize="sm">
+                      購入者の受取確認:{" "}
+                      {memorizeChatItemData.is_buyer_confirmed
+                        ? "完了"
+                        : "未完了"}
+                    </Text>
+                  </HStack>
+
+                  {!memorizeChatItemData.is_buyer_confirmed && (
+                    <Text fontSize="xs" color="gray.600">
+                      購入者が商品を受け取り、確認するまでお待ちください
+                    </Text>
+                  )}
+                </VStack>
+              </Box>
+            )}
+
+          {/* 購入フロー: 取引完了（Seller） */}
+          {memorizeChatItemData.trade_type === "purchase" &&
+            memorizeChatItemData.status === "buyer_received" &&
+            isCurrentUserSeller && (
+              <PurchaseCompleteButton
+                tradeId={Number(memorizeChatItemData.trade_id)}
+                isBuyerConfirmed={
+                  memorizeChatItemData.is_buyer_confirmed || false
+                }
+                purchasePrice={memorizeChatItemData.purchase_price || 0}
+              />
+            )}
+
+          {/* 発送情報表示: 購入フローの場合はSellerのみ、交換フローは両者 */}
           <ShippingInfoDisplay
             sellerShipping={sellerShippingData}
-            buyerShipping={buyerShippingData}
+            buyerShipping={
+              memorizeChatItemData.trade_type === "purchase"
+                ? undefined
+                : buyerShippingData
+            }
             sellerName={memorizeSellerUserData.name}
             buyerName={memorizeBuyerUserData.name}
+            isPurchaseFlow={memorizeChatItemData.trade_type === "purchase"}
           />
         </Box>
 
@@ -808,6 +1124,18 @@ const Home: FC = () => {
           setShippingInfo={setShippingInfo}
           handleShipping={handleShipping}
         />
+
+        {/* 決済モーダル */}
+        {memorizeChatItemData.trade_type === "purchase" &&
+          memorizeChatItemData.purchase_price && (
+            <PaymentModal
+              isOpen={isPaymentOpen}
+              onClose={onPaymentClose}
+              tradeId={Number(memorizeChatItemData.trade_id)}
+              purchasePrice={memorizeChatItemData.purchase_price}
+              onSuccess={() => getChatPageData(tradeIdNumber!)}
+            />
+          )}
       </Box>
     </>
   );

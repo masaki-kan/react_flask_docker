@@ -193,7 +193,21 @@ const useChat = (): useChatReturn => {
             user_name: item.user_name,
             status: item.status,
             trade_status_flag: item.trade_status_flag,
+            // 購入フロー用のフィールド
+            trade_type: item.trade_type,
+            purchase_price: item.purchase_price,
+            is_price_agreed_seller: item.is_price_agreed_seller,
+            is_price_agreed_buyer: item.is_price_agreed_buyer,
+            is_buyer_confirmed: item.is_buyer_confirmed,
           };
+
+          console.log("📦 取得したitemData:", {
+            trade_type: itemData.trade_type,
+            status: itemData.status,
+            purchase_price: itemData.purchase_price,
+            is_price_agreed_seller: itemData.is_price_agreed_seller,
+            is_price_agreed_buyer: itemData.is_price_agreed_buyer,
+          });
         }
 
         // パートナーアイテムの処理

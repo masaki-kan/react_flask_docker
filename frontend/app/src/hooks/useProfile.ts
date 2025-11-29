@@ -8,14 +8,20 @@ import {
   cancellationProcessApi,
   getProfileItemsApi,
   exchangeArchiveApi,
+  purchaseArchiveApi,
   fetchArchiveDetailApi,
 } from "../api/profileApis";
-import { setProfile, setProfileArchives } from "../store/profileSlice";
+import {
+  setProfile,
+  setProfileArchives,
+  setProfilePurchaseArchives,
+} from "../store/profileSlice";
 import { setProfile as setSliceProfile } from "../store/usersSlice";
 import { itemLikeApi } from "../api/likeApi";
 import useAlert from "./useAlert";
 import {
   exchangeArchive,
+  purchaseArchive,
   archiveMessage,
   archiveShippingInfo,
   archiveTradeType,
@@ -34,6 +40,7 @@ type useMyProfileReturn = {
     items: itemListType[];
   };
   memorizeuserProfileArchives: exchangeArchive[];
+  memorizeuserProfilePurchaseArchives: purchaseArchive[];
   getMyProfile: () => Promise<void>;
   getProfile: (userNumver: number, myUserNumber: number) => Promise<void>;
   favoriteUpdateHandler: (itemId: string, userId: string) => Promise<void>;
@@ -70,6 +77,11 @@ const useMyProfile = (): useMyProfileReturn => {
     return profile.archive;
   }, [profile]);
 
+  // 他のユーザーの購入履歴
+  const memorizeuserProfilePurchaseArchives = useMemo(() => {
+    return profile.archivePurchase;
+  }, [profile]);
+
   // 自分のプロフィールデータ取得
   const getMyProfile = useCallback(async () => {
     if (Number(profile.profile.id) === 0) {
@@ -77,10 +89,16 @@ const useMyProfile = (): useMyProfileReturn => {
       return;
     }
 
-    const [responseProfile, responseItems, responseActive] = await Promise.all([
+    const [
+      responseProfile,
+      responseItems,
+      responseActive,
+      responsePurchaseArchive,
+    ] = await Promise.all([
       await getProfileApi(Number(profile.profile.id)),
       await getProfileItemsApi(Number(profile.profile.id)),
       await exchangeArchiveApi(Number(profile.profile.id)),
+      await purchaseArchiveApi(Number(profile.profile.id)),
     ]);
 
     // もしプロフィール情報が取得できない場合はログアウトする
@@ -124,6 +142,11 @@ const useMyProfile = (): useMyProfileReturn => {
     }
     if (responseActive && responseActive.success) {
       dispatch(setProfileArchives(responseActive.data.archives));
+    }
+    if (responsePurchaseArchive && responsePurchaseArchive.success) {
+      dispatch(
+        setProfilePurchaseArchives(responsePurchaseArchive.data.archives)
+      );
     }
   }, [dispatch, logOutHandler, profile.profile.id]);
 
@@ -246,6 +269,7 @@ const useMyProfile = (): useMyProfileReturn => {
 
   return {
     memorizeuserProfileArchives,
+    memorizeuserProfilePurchaseArchives,
     memorizeuserProfile,
     memorizeProfile,
     getMyProfile,

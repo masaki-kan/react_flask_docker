@@ -1,7 +1,7 @@
 export const route = {
   top: "/",
   login: "/login",
-  singUp: "/singUp",
+  signUp: "/signUp",
   tokushoho: "/tokushoho", // 特定商取引法に基づく表記
   privacy: "/privacy", // プライバシーポリシー
   terms: "/terms", // 利用規約
