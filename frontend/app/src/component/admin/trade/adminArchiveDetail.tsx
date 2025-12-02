@@ -43,6 +43,11 @@ interface ArchiveInfo {
   seller_item_type: string;
   seller_item_brand: string;
   seller_item_images: string[];
+  trade_type: string | null;
+  purchase_price: number | null;
+  paid_at: string | null;
+  payment_intent_id: string | null;
+  buyer_received_at: string | null;
   buyer_item: {
     archive_id: number;
     title: string;
@@ -61,13 +66,13 @@ interface ArchiveInfo {
   } | null;
 }
 
-interface Message {
-  message_id: number;
-  sender_id: number;
-  sender_name: string;
-  message: string;
-  created_at: string;
-}
+// interface Message {
+//   message_id: number;
+//   sender_id: number;
+//   sender_name: string;
+//   message: string;
+//   created_at: string;
+// }
 
 interface ShippingInfo {
   shipping_id: number;
@@ -83,7 +88,7 @@ const AdminArchiveDetail: FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [archive, setArchive] = useState<ArchiveInfo | null>(null);
-  const [messages, setMessages] = useState<Message[]>([]);
+  // const [messages, setMessages] = useState<Message[]>([]);
   const [shippingInfo, setShippingInfo] = useState<ShippingInfo[]>([]);
 
   const archiveTradeId = searchParams.get("archive_trade_id");
@@ -101,7 +106,8 @@ const AdminArchiveDetail: FC = () => {
 
       if (response && response.success) {
         setArchive(response.data.trade);
-        setMessages(response.data.messages);
+        console.log("response.data.trade", response.data.trade);
+        // setMessages(response.data.messages);
         setShippingInfo(response.data.shipping_info);
       } else {
         setError("アーカイブ取引情報の取得に失敗しました");
@@ -115,7 +121,6 @@ const AdminArchiveDetail: FC = () => {
 
   useEffect(() => {
     fetchArchiveDetail();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [archiveTradeId]);
 
   const formatDate = (dateString: string) => {
@@ -486,6 +491,65 @@ const AdminArchiveDetail: FC = () => {
                     ID: {archive.buyer_id}
                   </Text>
                 </Box>
+                <Divider />
+                <Box>
+                  <Text fontWeight="bold" color="gray.600" fontSize="sm">
+                    取引種別
+                  </Text>
+                  <Badge
+                    colorScheme={
+                      archive.trade_type === "purchase" ? "green" : "blue"
+                    }
+                  >
+                    {archive.trade_type === "purchase" ? "購入" : "交換"}
+                  </Badge>
+                </Box>
+                {archive.trade_type === "purchase" && (
+                  <>
+                    <Divider />
+                    <Box>
+                      <Text fontWeight="bold" color="gray.600" fontSize="sm">
+                        購入金額
+                      </Text>
+                      <Text fontSize="xl" fontWeight="bold" color="green.600">
+                        ¥
+                        {archive.purchase_price
+                          ? Math.round(archive.purchase_price).toLocaleString()
+                          : "-"}
+                      </Text>
+                    </Box>
+                    {archive.paid_at && (
+                      <Box>
+                        <Text fontWeight="bold" color="gray.600" fontSize="sm">
+                          決済完了日
+                        </Text>
+                        <Text fontSize="sm">
+                          {formatDate(archive.paid_at)}
+                        </Text>
+                      </Box>
+                    )}
+                    {archive.payment_intent_id && (
+                      <Box>
+                        <Text fontWeight="bold" color="gray.600" fontSize="sm">
+                          Payment Intent ID
+                        </Text>
+                        <Text fontSize="xs" color="gray.500" wordBreak="break-all">
+                          {archive.payment_intent_id}
+                        </Text>
+                      </Box>
+                    )}
+                    {archive.buyer_received_at && (
+                      <Box>
+                        <Text fontWeight="bold" color="gray.600" fontSize="sm">
+                          受取確認日
+                        </Text>
+                        <Text fontSize="sm">
+                          {formatDate(archive.buyer_received_at)}
+                        </Text>
+                      </Box>
+                    )}
+                  </>
+                )}
                 <Divider />
                 <Box>
                   <Text fontWeight="bold" color="gray.600" fontSize="sm">

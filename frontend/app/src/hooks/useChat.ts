@@ -201,13 +201,13 @@ const useChat = (): useChatReturn => {
             is_buyer_confirmed: item.is_buyer_confirmed,
           };
 
-          console.log("📦 取得したitemData:", {
-            trade_type: itemData.trade_type,
-            status: itemData.status,
-            purchase_price: itemData.purchase_price,
-            is_price_agreed_seller: itemData.is_price_agreed_seller,
-            is_price_agreed_buyer: itemData.is_price_agreed_buyer,
-          });
+          // console.log("📦 取得したitemData:", {
+          //   trade_type: itemData.trade_type,
+          //   status: itemData.status,
+          //   purchase_price: itemData.purchase_price,
+          //   is_price_agreed_seller: itemData.is_price_agreed_seller,
+          //   is_price_agreed_buyer: itemData.is_price_agreed_buyer,
+          // });
         }
 
         // パートナーアイテムの処理

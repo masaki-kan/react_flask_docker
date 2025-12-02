@@ -38,6 +38,7 @@ import useMyProfile from "../../hooks/useProfile";
 interface PurchaseArchiveModalProps {
   isOpen: boolean;
   onClose: () => void;
+  filterType?: "buyer" | "seller" | "all"; // 購入者・販売者・すべて
 }
 
 type ViewMode = "list" | "detail";
@@ -45,6 +46,7 @@ type ViewMode = "list" | "detail";
 const PurchaseArchiveModal: FC<PurchaseArchiveModalProps> = ({
   isOpen,
   onClose,
+  filterType = "all",
 }) => {
   const { memorizeuserProfilePurchaseArchives } = useMyProfile();
   const [loading, setLoading] = useState(false);
@@ -68,13 +70,29 @@ const PurchaseArchiveModal: FC<PurchaseArchiveModalProps> = ({
         memorizeuserProfilePurchaseArchives &&
         memorizeuserProfilePurchaseArchives.length > 0
       ) {
-        setArchives(memorizeuserProfilePurchaseArchives as purchaseArchive[]);
+        // filterTypeに応じてフィルタリング
+        let filteredArchives = memorizeuserProfilePurchaseArchives as purchaseArchive[];
+
+        if (filterType === "buyer") {
+          // 購入した履歴のみ（自分がbuyer）
+          filteredArchives = filteredArchives.filter(
+            (archive) => archive.user_role === "buyer"
+          );
+        } else if (filterType === "seller") {
+          // 販売した履歴のみ（自分がseller）
+          filteredArchives = filteredArchives.filter(
+            (archive) => archive.user_role === "seller"
+          );
+        }
+        // filterType === "all" の場合はすべて表示
+
+        setArchives(filteredArchives);
         setLoading(false);
       } else {
         setLoading(false);
       }
     }
-  }, [isOpen, memorizeuserProfilePurchaseArchives]);
+  }, [isOpen, memorizeuserProfilePurchaseArchives, filterType]);
 
   const formatDate = (dateString: string) => {
     try {
@@ -112,7 +130,13 @@ const PurchaseArchiveModal: FC<PurchaseArchiveModalProps> = ({
         </Center>
       ) : archives.length === 0 ? (
         <Center h="200px">
-          <Text color="gray.500">購入履歴がありません</Text>
+          <Text color="gray.500">
+            {filterType === "buyer"
+              ? "購入した履歴がありません"
+              : filterType === "seller"
+              ? "販売した履歴がありません"
+              : "売買履歴がありません"}
+          </Text>
         </Center>
       ) : (
         <VStack spacing={3} align="stretch">
@@ -330,7 +354,15 @@ const PurchaseArchiveModal: FC<PurchaseArchiveModalProps> = ({
                   onClick={handleBackToList}
                 />
               )}
-              <Text>{viewMode === "list" ? "購入履歴" : "商品詳細"}</Text>
+              <Text>
+                {viewMode === "list"
+                  ? filterType === "buyer"
+                    ? "購入した履歴"
+                    : filterType === "seller"
+                    ? "販売した履歴"
+                    : "売買履歴"
+                  : "商品詳細"}
+              </Text>
             </HStack>
           </HStack>
         </ModalHeader>

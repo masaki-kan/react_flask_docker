@@ -14,7 +14,13 @@ import {
   Badge,
   Icon,
 } from "@chakra-ui/react";
-import { FaBox, FaTruck, FaUserCircle, FaCheckCircle, FaHourglassHalf } from "react-icons/fa";
+import {
+  FaBox,
+  FaTruck,
+  FaUserCircle,
+  FaCheckCircle,
+  FaHourglassHalf,
+} from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import { route } from "../../route/routeConst";
 import { useEffectOnce } from "react-use";
@@ -249,10 +255,10 @@ const Home: FC = () => {
   useEffect(() => {
     const checkPurchaseStatus = async () => {
       if (tradeIdNumber) {
-        console.log("🔄 購入フローポーリング実行:", {
-          trade_type: memorizeChatItemData.trade_type,
-          status: memorizeChatItemData.status,
-        });
+        // console.log("🔄 購入フローポーリング実行:", {
+        //   trade_type: memorizeChatItemData.trade_type,
+        //   status: memorizeChatItemData.status,
+        // });
 
         try {
           // チャットページデータを再取得して最新のステータスをチェック
@@ -269,19 +275,23 @@ const Home: FC = () => {
     const shouldPoll =
       memorizeChatItemData.trade_type === "purchase" ||
       memorizeChatItemData.status === "pending" ||
-      ["price_proposed", "price_agreed", "paid", "shipped", "buyer_received"].includes(
-        memorizeChatItemData.status
-      );
+      [
+        "price_proposed",
+        "price_agreed",
+        "paid",
+        "shipped",
+        "buyer_received",
+      ].includes(memorizeChatItemData.status);
 
     if (shouldPoll && tradeIdNumber) {
-      console.log("✅ ポーリング開始");
+      // console.log("✅ ポーリング開始");
       checkPurchaseStatus(); // 初回実行
       purchaseInterval = setInterval(checkPurchaseStatus, 3000); // 3秒ごとにチェック
     }
 
     return () => {
       if (purchaseInterval) {
-        console.log("⏹️ ポーリング停止");
+        // console.log("⏹️ ポーリング停止");
         clearInterval(purchaseInterval);
       }
     };
@@ -855,11 +865,11 @@ const Home: FC = () => {
               (memorizeChatItemData.status === "price_proposed" ||
                 memorizeChatItemData.status === "price_agreed");
 
-            console.log("💰 金額合意UI表示判定:", {
-              trade_type: memorizeChatItemData.trade_type,
-              status: memorizeChatItemData.status,
-              shouldShow: shouldShowPriceAgreement,
-            });
+            // console.log("💰 金額合意UI表示判定:", {
+            //   trade_type: memorizeChatItemData.trade_type,
+            //   status: memorizeChatItemData.status,
+            //   shouldShow: shouldShowPriceAgreement,
+            // });
 
             if (shouldShowPriceAgreement) {
               return (
@@ -938,12 +948,7 @@ const Home: FC = () => {
                 >
                   商品を発送する
                 </Button>
-                <Box
-                  mt={2}
-                  p={3}
-                  bg="green.50"
-                  borderRadius="md"
-                >
+                <Box mt={2} p={3} bg="green.50" borderRadius="md">
                   <Text fontSize="xs" color="gray.600">
                     💰 決済が完了しました。商品を発送してください。
                   </Text>

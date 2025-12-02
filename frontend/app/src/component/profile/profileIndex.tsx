@@ -425,13 +425,14 @@ const ProfileIndex: FC<profileIndexType> = ({ editFormSwitch }) => {
 
           <Button
             w="full"
-            colorScheme="purple"
+            colorScheme="gray"
+            bg={"white"}
             variant="outline"
             size="lg"
             onClick={() => setIsPurchaseArchiveOpen(true)}
             leftIcon={<FaHistory />}
           >
-            購入履歴を見る
+            履歴を見る
           </Button>
 
           {/* マイアイテム */}

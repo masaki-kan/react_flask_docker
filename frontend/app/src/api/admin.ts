@@ -654,6 +654,10 @@ export const getArchivesDataApi = async (params?: {
           item_title: string;
           seller_name: string;
           buyer_name: string;
+          trade_type: string | null;
+          purchase_price: number | null;
+          paid_at: string | null;
+          payment_intent_id: string | null;
         }>;
         total: number;
       };
@@ -732,6 +736,11 @@ export const getArchiveDetailApi = async (
           seller_item_type: string;
           seller_item_brand: string;
           seller_item_images: string[];
+          trade_type: string | null;
+          purchase_price: number | null;
+          paid_at: string | null;
+          payment_intent_id: string | null;
+          buyer_received_at: string | null;
           buyer_item: {
             archive_id: number;
             title: string;

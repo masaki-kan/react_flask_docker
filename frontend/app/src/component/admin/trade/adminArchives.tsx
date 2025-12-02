@@ -34,6 +34,10 @@ interface ArchiveDataType {
   item_title: string;
   seller_name: string;
   buyer_name: string;
+  trade_type: string | null;
+  purchase_price: number | null;
+  paid_at: string | null;
+  payment_intent_id: string | null;
 }
 
 interface SearchFilters {
@@ -152,17 +156,40 @@ const AdminArchives: FC = () => {
       header: "Trade ID",
       cell: (info) => info.getValue(),
     }),
+    columnHelper.accessor("trade_type", {
+      header: "取引種別",
+      cell: (info) => {
+        const value = info.getValue();
+        if (value === "purchase") return "購入";
+        if (value === "exchange") return "交換";
+        return "交換";
+      },
+    }),
     columnHelper.accessor("buyer_name", {
-      header: "申請者",
+      header: "購入者",
       cell: (info) => info.getValue(),
     }),
     columnHelper.accessor("seller_name", {
-      header: "申請を受けた人",
+      header: "販売者",
       cell: (info) => info.getValue(),
     }),
     columnHelper.accessor("item_title", {
       header: "商品名",
       cell: (info) => info.getValue(),
+    }),
+    columnHelper.accessor("purchase_price", {
+      header: "購入金額",
+      cell: (info) => {
+        const value = info.getValue();
+        return value ? `¥${Math.round(value).toLocaleString()}` : "-";
+      },
+    }),
+    columnHelper.accessor("paid_at", {
+      header: "決済完了日",
+      cell: (info) => {
+        const value = info.getValue();
+        return value ? formatDate(value) : "-";
+      },
     }),
     columnHelper.accessor("created_at", {
       header: "取引開始日",

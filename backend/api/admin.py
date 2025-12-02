@@ -1178,7 +1178,11 @@ def get_archives_data():
                     at.final_status as status,
                     at.seller_name,
                     at.buyer_name,
-                    ai.title as item_title
+                    ai.title as item_title,
+                    at.trade_type,
+                    at.purchase_price,
+                    at.paid_at,
+                    at.payment_intent_id
                 FROM archived_trades at
                 INNER JOIN archived_items ai ON at.item_archive_id = ai.archive_id
                 WHERE {where_clause}
@@ -1248,7 +1252,12 @@ def get_archive_detail():
                     at.seller_name,
                     at.seller_email,
                     at.buyer_name,
-                    at.buyer_email
+                    at.buyer_email,
+                    at.trade_type,
+                    at.purchase_price,
+                    at.paid_at,
+                    at.payment_intent_id,
+                    at.buyer_received_at
                 FROM archived_trades at
                 WHERE at.archive_trade_id = %s
             """, (archive_trade_id,))
