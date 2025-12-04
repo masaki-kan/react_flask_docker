@@ -14,7 +14,7 @@ stripe_connect_bp = Blueprint('stripe_connect', __name__, url_prefix='/api')
 
 # 環境変数からStripeキーを取得
 STRIPE_SECRET_KEY = os.environ.get('STRIPE_SECRET_KEY')
-STRIPE_MODE = os.environ.get('STRIPE_MODE', 'live')  # 'test' or 'live'
+STRIPE_MODE = os.environ.get('STRIPE_MODE', 'test')  # 'test' or 'live' (デフォルト: test)
 PLATFORM_URL = os.environ.get('PLATFORM_URL', 'http://localhost:5173')
 
 stripe.api_key = STRIPE_SECRET_KEY
