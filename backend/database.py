@@ -492,6 +492,103 @@ def migrate_add_purchase_flow_to_archives(cursor):
         print(f"✗ アーカイブテーブルのマイグレーションエラー: {e}")
         raise
 
+# ================================================================================
+# マイグレーション: Stripe Connect用のカラムを追加
+# ================================================================================
+def migrate_add_stripe_connect_columns(cursor):
+    """
+    usersテーブルにStripe Connected Account関連のカラムを追加
+    tradesとarchived_tradesテーブルにstripe_transfer_idを追加
+    作成日: 2025-12-04
+    """
+    try:
+        # usersテーブルにstripe_account_idが既に存在するかチェック
+        cursor.execute("""
+            SELECT COUNT(*) as count
+            FROM information_schema.COLUMNS
+            WHERE TABLE_SCHEMA = DATABASE()
+            AND TABLE_NAME = 'users'
+            AND COLUMN_NAME = 'stripe_account_id'
+        """)
+        result = cursor.fetchone()
+
+        if result['count'] > 0:
+            print("✓ Stripe Connect用のカラムは既に存在します")
+            return
+
+        print("Stripe Connect用のカラムを追加中...")
+
+        # usersテーブルにStripe Connected Account関連のカラムを追加
+        cursor.execute("""
+            ALTER TABLE users
+            ADD COLUMN stripe_account_id VARCHAR(255) DEFAULT NULL
+                COMMENT 'Stripe Connected Account ID（販売者用）' AFTER stripe_customer_id,
+            ADD COLUMN stripe_onboarding_completed BOOLEAN DEFAULT FALSE
+                COMMENT 'Stripeオンボーディング完了フラグ' AFTER stripe_account_id,
+            ADD COLUMN stripe_charges_enabled BOOLEAN DEFAULT FALSE
+                COMMENT 'Stripe決済受付可能フラグ' AFTER stripe_onboarding_completed,
+            ADD COLUMN stripe_payouts_enabled BOOLEAN DEFAULT FALSE
+                COMMENT 'Stripe出金可能フラグ' AFTER stripe_charges_enabled,
+            ADD COLUMN stripe_details_submitted BOOLEAN DEFAULT FALSE
+                COMMENT 'Stripe詳細情報提出済みフラグ' AFTER stripe_payouts_enabled
+        """)
+
+        # インデックスを追加
+        cursor.execute("""
+            CREATE INDEX idx_stripe_account ON users(stripe_account_id)
+        """)
+
+        print("✓ usersテーブルへのStripe Connect用カラム追加完了")
+
+        # tradesテーブルにstripe_transfer_idを追加
+        cursor.execute("""
+            SELECT COUNT(*) as count
+            FROM information_schema.COLUMNS
+            WHERE TABLE_SCHEMA = DATABASE()
+            AND TABLE_NAME = 'trades'
+            AND COLUMN_NAME = 'stripe_transfer_id'
+        """)
+        result = cursor.fetchone()
+
+        if result['count'] == 0:
+            cursor.execute("""
+                ALTER TABLE trades
+                ADD COLUMN stripe_transfer_id VARCHAR(255) DEFAULT NULL
+                    COMMENT 'Stripe Transfer ID（販売者への送金）' AFTER payment_intent_id
+            """)
+
+            cursor.execute("""
+                CREATE INDEX idx_stripe_transfer ON trades(stripe_transfer_id)
+            """)
+
+            print("✓ tradesテーブルへのstripe_transfer_id追加完了")
+
+        # archived_tradesテーブルにstripe_transfer_idを追加
+        cursor.execute("""
+            SELECT COUNT(*) as count
+            FROM information_schema.COLUMNS
+            WHERE TABLE_SCHEMA = DATABASE()
+            AND TABLE_NAME = 'archived_trades'
+            AND COLUMN_NAME = 'stripe_transfer_id'
+        """)
+        result = cursor.fetchone()
+
+        if result['count'] == 0:
+            cursor.execute("""
+                ALTER TABLE archived_trades
+                ADD COLUMN stripe_transfer_id VARCHAR(255) DEFAULT NULL
+                    COMMENT 'Stripe Transfer ID（販売者への送金）' AFTER payment_intent_id
+            """)
+
+            print("✓ archived_tradesテーブルへのstripe_transfer_id追加完了")
+
+        print("✓ Stripe Connect用のすべてのカラム追加完了")
+
+    except Exception as e:
+        print(f"✗ Stripe Connectマイグレーションエラー: {e}")
+        raise
+
+
 def create_table(cursor):
     create_users_table(cursor)
     create_follows_table(cursor)
@@ -513,3 +610,6 @@ def create_table(cursor):
     # 購入フローのマイグレーションを実行
     migrate_add_purchase_flow_columns(cursor)
     migrate_add_purchase_flow_to_archives(cursor)
+
+    # Stripe Connectのマイグレーションを実行
+    migrate_add_stripe_connect_columns(cursor)
