@@ -43,6 +43,7 @@ import { MdOutlineShoppingBag } from "react-icons/md";
 import { route } from "../../route/routeConst";
 import WithdrawalButton from "./withdrawalButton";
 import CreditCardSection from "./creditCardSection";
+import SellerRegistration from "./sellerRegistration";
 import { TokenManager, decodeJWTPayload } from "../../utils/auth/tokenUtils";
 
 type profileIndexType = {
@@ -468,6 +469,10 @@ const ProfileIndex: FC<profileIndexType> = ({ editFormSwitch }) => {
           </Box>
 
           <CreditCardSection />
+
+          {/* 販売者登録セクション */}
+          <SellerRegistration />
+
           {/* アカウント設定 */}
           <Box
             bg={bgColor}

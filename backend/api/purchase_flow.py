@@ -7,8 +7,15 @@ from utils.db_utils import get_db_connection
 import mysql.connector
 from datetime import datetime
 from tradeArchiver import TradeArchiver
+import stripe
+import os
 
 purchase_bp = Blueprint('purchase', __name__, url_prefix='/api')
+
+# Stripe設定
+STRIPE_SECRET_KEY = os.environ.get('STRIPE_SECRET_KEY')
+STRIPE_MODE = os.environ.get('STRIPE_MODE', 'live')  # 'test' or 'live'
+stripe.api_key = STRIPE_SECRET_KEY
 
 
 # ================================================================================
@@ -265,11 +272,15 @@ def pay_for_purchase():
         with get_db_connection() as conn:
             cursor = conn.cursor(dictionary=True)
 
-            # 取引情報を取得
+            # 取引情報を取得（販売者のStripe情報も取得）
             cursor.execute("""
-                SELECT trade_id, purchase_price, status
-                FROM trades
-                WHERE trade_id = %s
+                SELECT t.trade_id, t.purchase_price, t.status, t.buyer_id,
+                       i.user_id as seller_id,
+                       u.stripe_account_id, u.stripe_charges_enabled
+                FROM trades t
+                JOIN items i ON t.item_id = i.item_id
+                JOIN users u ON i.user_id = u.user_id
+                WHERE t.trade_id = %s
             """, (trade_id,))
             trade = cursor.fetchone()
 
@@ -285,11 +296,68 @@ def pay_for_purchase():
                     'message': 'この取引は決済できません（金額が合意されていません）'
                 }), 400
 
-            # TODO: Stripe決済処理をここに実装
-            # payment_intent = stripe.PaymentIntent.create(...)
+            # Stripe手数料を計算（3.6%）
+            purchase_price = float(trade['purchase_price'])
+            stripe_fee = int(purchase_price * 0.036)
+            total_amount = int(purchase_price + stripe_fee)
 
-            # 仮の決済完了処理（実際はStripeのレスポンスを使用）
-            payment_intent_id = f"pi_test_{trade_id}_{int(datetime.now().timestamp())}"
+            # 本番環境の場合: Stripe Connectを使用
+            if STRIPE_MODE == 'live':
+                # 販売者のStripe Connected Accountを確認
+                if not trade['stripe_account_id']:
+                    return jsonify({
+                        'success': False,
+                        'message': '販売者がStripe連携を完了していません'
+                    }), 400
+
+                if not trade['stripe_charges_enabled']:
+                    return jsonify({
+                        'success': False,
+                        'message': '販売者のStripeアカウントが決済を受け付けられる状態ではありません'
+                    }), 400
+
+                try:
+                    # PaymentIntentを作成（エスクロー設定）
+                    payment_intent = stripe.PaymentIntent.create(
+                        amount=total_amount,  # Stripe手数料込み
+                        currency='jpy',
+                        payment_method=payment_method_id,
+                        payment_method_types=['card'],
+                        confirm=True,  # 即座に決済確定
+                        automatic_payment_methods={'enabled': False},
+
+                        # エスクロー設定: 販売者のConnected Accountを指定
+                        on_behalf_of=trade['stripe_account_id'],
+
+                        # 送金予約（後でTransferで実行）
+                        transfer_data={
+                            'destination': trade['stripe_account_id'],
+                        },
+
+                        metadata={
+                            'trade_id': str(trade_id),
+                            'seller_id': str(trade['seller_id']),
+                            'buyer_id': str(trade['buyer_id']),
+                            'product_price': str(purchase_price),
+                            'stripe_fee': str(stripe_fee),
+                        }
+                    )
+
+                    payment_intent_id = payment_intent.id
+
+                    print(f"[INFO] PaymentIntent created: {payment_intent_id}", flush=True)
+
+                except stripe.error.StripeError as e:
+                    print(f"[ERROR] Stripe payment failed: {str(e)}", flush=True)
+                    return jsonify({
+                        'success': False,
+                        'message': f'決済エラー: {str(e)}'
+                    }), 500
+
+            else:
+                # 開発環境: テストモード（ダミーのPaymentIntent ID）
+                payment_intent_id = f"pi_test_{trade_id}_{int(datetime.now().timestamp())}"
+                print(f"[INFO] Test mode: PaymentIntent ID = {payment_intent_id}", flush=True)
 
             # 決済完了を記録
             cursor.execute("""
@@ -310,7 +378,11 @@ def pay_for_purchase():
             'data': {
                 'trade_id': trade_id,
                 'payment_intent_id': payment_intent_id,
-                'status': 'paid'
+                'status': 'paid',
+                'amount': total_amount,
+                'purchase_price': int(purchase_price),
+                'stripe_fee': stripe_fee,
+                'is_test_mode': STRIPE_MODE != 'live'
             }
         })
 
@@ -436,11 +508,16 @@ def complete_purchase_trade():
         with get_db_connection() as conn:
             cursor = conn.cursor(dictionary=True)
 
-            # 取引情報を取得
+            # 取引情報を取得（販売者のStripe情報も取得）
             cursor.execute("""
-                SELECT trade_id, status, trade_type, is_buyer_confirmed, item_id
-                FROM trades
-                WHERE trade_id = %s
+                SELECT t.trade_id, t.status, t.trade_type, t.is_buyer_confirmed,
+                       t.item_id, t.purchase_price, t.payment_intent_id,
+                       i.user_id as seller_id,
+                       u.stripe_account_id, u.stripe_payouts_enabled
+                FROM trades t
+                JOIN items i ON t.item_id = i.item_id
+                JOIN users u ON i.user_id = u.user_id
+                WHERE t.trade_id = %s
             """, (trade_id,))
             trade = cursor.fetchone()
 
@@ -468,14 +545,63 @@ def complete_purchase_trade():
                     'message': '購入者の受け取り確認が完了していません'
                 }), 400
 
+            # 本番環境の場合: Stripe Transferを実行（販売者への送金）
+            stripe_transfer_id = None
+            if STRIPE_MODE == 'live':
+                try:
+                    # 販売者のStripe Accountを確認
+                    if not trade['stripe_account_id']:
+                        print(f"[WARNING] Seller has no Stripe account. Skipping transfer.", flush=True)
+                    elif not trade['stripe_payouts_enabled']:
+                        print(f"[WARNING] Seller's Stripe payouts not enabled. Skipping transfer.", flush=True)
+                    else:
+                        # PaymentIntentからChargeを取得
+                        payment_intent = stripe.PaymentIntent.retrieve(trade['payment_intent_id'])
+
+                        if not payment_intent.charges or not payment_intent.charges.data:
+                            raise Exception("PaymentIntentにChargeが見つかりません")
+
+                        charge_id = payment_intent.charges.data[0].id
+
+                        # 販売者への送金額（商品代金100%）
+                        transfer_amount = int(float(trade['purchase_price']))
+
+                        # Transferを実行
+                        transfer = stripe.Transfer.create(
+                            amount=transfer_amount,
+                            currency='jpy',
+                            destination=trade['stripe_account_id'],
+                            source_transaction=charge_id,
+                            metadata={
+                                'trade_id': str(trade_id),
+                                'seller_id': str(trade['seller_id']),
+                            }
+                        )
+
+                        stripe_transfer_id = transfer.id
+                        print(f"[INFO] Transfer created: {stripe_transfer_id} (amount: ¥{transfer_amount})", flush=True)
+
+                except stripe.error.StripeError as e:
+                    # Transfer失敗時もログに記録して続行
+                    # （トランザクション全体を失敗させないため）
+                    print(f"[ERROR] Stripe Transfer failed: {str(e)}", flush=True)
+                    # 管理者に通知するなどの処理を追加する場合はここに
+                except Exception as e:
+                    print(f"[ERROR] Transfer process failed: {str(e)}", flush=True)
+            else:
+                # 開発環境: ダミーのTransfer ID
+                stripe_transfer_id = f"tr_test_{trade_id}_{int(datetime.now().timestamp())}"
+                print(f"[INFO] Test mode: Transfer ID = {stripe_transfer_id}", flush=True)
+
             # 取引を完了
             cursor.execute("""
                 UPDATE trades
                 SET is_seller_confirmed = TRUE,
                     status = 'completed',
+                    stripe_transfer_id = %s,
                     updated_at = NOW()
                 WHERE trade_id = %s
-            """, (trade_id,))
+            """, (stripe_transfer_id, trade_id,))
 
             # アーカイブ処理
             try:

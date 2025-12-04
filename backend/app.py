@@ -48,6 +48,7 @@ try:
     from api.saves import saves_bp
     from api.admin import admin_bp
     from api.purchase_flow import purchase_bp
+    from api.stripe_connect import stripe_connect_bp
 except ImportError as e:
     logging.error(f"Import error for blueprints: {e}")
     raise
@@ -93,6 +94,7 @@ app.register_blueprint(saves_bp)
 app.register_blueprint(payment_bp)
 app.register_blueprint(admin_bp)
 app.register_blueprint(purchase_bp)
+app.register_blueprint(stripe_connect_bp)
 
 # === WebSocketハンドラーの登録 ===
 register_socketio_handlers(socketio)
