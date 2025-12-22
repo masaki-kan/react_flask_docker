@@ -1,25 +1,10 @@
 import { FC, useState, useCallback } from "react";
 import { savedListType } from "../../types/savedType";
-import {
-  // HStack,
-  VStack,
-  // Avatar,
-  // Text,
-  Box,
-  Flex,
-  Badge,
-  // Divider,
-  Grid,
-  GridItem,
-} from "@chakra-ui/react";
-// import { viewDate } from "../../utils/date/format";
+import { VStack, Box, Flex, Badge, Grid, GridItem } from "@chakra-ui/react";
 import { useNavigate } from "react-router-dom";
 import { route } from "../../route/routeConst";
 import useMyProfile from "../../hooks/useProfile";
 import OptimizedImage from "../render/optimizedImage";
-// import { FaUserCircle } from "react-icons/fa";
-// import { itemParts } from "../../consts/itemConsts";
-
 type RenderSavedType = {
   savedList: savedListType[];
 };
@@ -90,26 +75,27 @@ const RenderSaved: FC<RenderSavedType> = ({ savedList }) => {
           }
 
           // ステータスに応じた色とラベル
-          type TradeStatus =
-            | "pending"
-            | "purchased"
-            | "shipped"
-            | "completed"
-            | "cancelled";
-
           const getStatusBadge = (status: string) => {
+            // 大文字・小文字を統一（小文字に変換）
+            const normalizedStatus = status.toLowerCase();
+
             const statusConfig: Record<
-              TradeStatus,
+              string,
               { color: string; label: string }
             > = {
-              pending: { color: "yellow", label: "交渉中" },
-              purchased: { color: "blue", label: "購入済" },
-              shipped: { color: "purple", label: "発送済" },
+              pending: { color: "yellow", label: "申請中" },
+              purchased: { color: "blue", label: "選択済" },
+              shipped: { color: "purple", label: "発送済み" },
               completed: { color: "green", label: "取引完了" },
-              cancelled: { color: "red", label: "キャンセル" },
+              cancelled: { color: "red", label: "取引キャンセル" },
+              price_proposed: { color: "orange", label: "金額提案中" },
+              price_agreed: { color: "cyan", label: "金額合意済み" },
+              paid: { color: "teal", label: "決済済み" },
+              buyer_received: { color: "blue", label: "受取確認済み" },
             };
+
             return (
-              statusConfig[status as TradeStatus] || {
+              statusConfig[normalizedStatus] || {
                 color: "gray",
                 label: status,
               }

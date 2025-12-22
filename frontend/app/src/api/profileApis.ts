@@ -44,6 +44,8 @@ export const getProfileApi = async (
       is_deleted: response.data.profile.is_deleted,
       deleted_at: response.data.profile.deleted_at,
       email: response.data.profile.email,
+      stripe_account_id: response.data.profile.stripe_account_id,
+      stripe_onboarding_completed: response.data.profile.stripe_onboarding_completed,
     };
 
     // 空なので

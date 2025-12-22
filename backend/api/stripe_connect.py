@@ -19,6 +19,10 @@ PLATFORM_URL = os.environ.get('PLATFORM_URL', 'http://localhost:5173')
 
 stripe.api_key = STRIPE_SECRET_KEY
 
+# 起動時にモードを確認
+print(f"[STRIPE_CONNECT] Mode: {STRIPE_MODE}", flush=True)
+print(f"[STRIPE_CONNECT] Platform URL: {PLATFORM_URL}", flush=True)
+
 
 @stripe_connect_bp.route('/create_connect_account', methods=['POST'])
 @jwt_required()
@@ -143,12 +147,17 @@ def create_connect_account():
                 })
 
             else:
-                # 開発環境: ダミーアカウントIDを作成
+                # テスト環境: ダミーアカウントIDを作成
+                print(f"[STRIPE_CONNECT] Creating dummy account for user {user_id} in test mode", flush=True)
+
                 # すでにダミーIDがある場合はそれを使用
                 if user['stripe_account_id'] and user['stripe_account_id'].startswith('acct_dev_'):
                     dummy_account_id = user['stripe_account_id']
+                    print(f"[STRIPE_CONNECT] Using existing dummy account: {dummy_account_id}", flush=True)
                 else:
-                    dummy_account_id = f"acct_dev_{user_id}_{int(os.urandom(4).hex(), 16)}"
+                    import random
+                    dummy_account_id = f"acct_dev_{user_id}_{random.randint(1000, 9999)}"
+                    print(f"[STRIPE_CONNECT] Creating new dummy account: {dummy_account_id}", flush=True)
 
                     # DBに保存
                     cursor.execute("""
@@ -162,10 +171,11 @@ def create_connect_account():
                         WHERE user_id = %s
                     """, (dummy_account_id, user_id))
                     conn.commit()
+                    print(f"[STRIPE_CONNECT] Dummy account saved to database", flush=True)
 
                 return jsonify({
                     'success': True,
-                    'message': '開発環境: ダミーアカウントを作成しました',
+                    'message': 'テスト環境: 販売者登録が完了しました',
                     'data': {
                         'account_id': dummy_account_id,
                         'onboarding_completed': True,

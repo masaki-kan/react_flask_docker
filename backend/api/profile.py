@@ -25,8 +25,9 @@ def get_authenticated_user_profile():
         with get_db_connection() as conn:
             cursor = conn.cursor(dictionary=True)
             cursor.execute("""
-                SELECT user_id, name, email, type, plan, location, age, old, shop_name, shop_url, reasen, created_at, is_deleted
-                FROM users 
+                SELECT user_id, name, email, type, plan, location, age, old, shop_name, shop_url, reasen, created_at, is_deleted,
+                       stripe_account_id, stripe_onboarding_completed
+                FROM users
                 WHERE email = %s
             """, (current_user_email,))
             user_data = cursor.fetchone()
@@ -70,6 +71,8 @@ def get_authenticated_user_profile():
                 'reasen': user_data['reasen'],
                 'profile_image': image_data['image_url'] if image_data else None,
                 'created_at': user_data['created_at'].isoformat() if user_data['created_at'] else None,
+                'stripe_account_id': user_data.get('stripe_account_id'),
+                'stripe_onboarding_completed': user_data.get('stripe_onboarding_completed', False),
             }
             
             # タグの処理
@@ -177,17 +180,18 @@ def getMyProfile():
 
             # 1. 基本的なユーザー情報を最初に返す
             cursor.execute('''
-                SELECT 
-                    u.user_id, u.name, u.location, u.old, u.age, u.email, 
+                SELECT
+                    u.user_id, u.name, u.location, u.old, u.age, u.email,
                     u.shop_name, u.shop_url, u.reasen, u.plan, u.type,
                     u.is_deleted , u.deleted_at,
+                    u.stripe_account_id, u.stripe_onboarding_completed,
                     pi.image_url as image,
                     t.tag as tags
                 FROM users u
-                LEFT JOIN profile_images pi ON u.user_id = pi.user_id 
+                LEFT JOIN profile_images pi ON u.user_id = pi.user_id
                     AND pi.uploaded_at = (
-                        SELECT MAX(uploaded_at) 
-                        FROM profile_images 
+                        SELECT MAX(uploaded_at)
+                        FROM profile_images
                         WHERE user_id = u.user_id
                     )
                 LEFT JOIN tags t ON u.user_id = t.user_id

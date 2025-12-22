@@ -18,6 +18,8 @@ export interface profileType {
   is_deleted: number;
   deleted_at: Date | null;
   email: string;
+  stripe_account_id?: string;
+  stripe_onboarding_completed?: boolean;
 }
 
 export interface apiRetuenProfileType {

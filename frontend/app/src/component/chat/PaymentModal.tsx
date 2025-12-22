@@ -14,10 +14,15 @@ import {
   HStack,
   Icon,
   useToast,
-  Divider,
+  Alert,
+  AlertIcon,
+  AlertTitle,
+  AlertDescription,
 } from "@chakra-ui/react";
-import { FaCreditCard, FaLock, FaYenSign } from "react-icons/fa";
+import { FaCreditCard, FaLock, FaYenSign, FaStore } from "react-icons/fa";
 import { payForPurchase } from "../../api/purchaseApi";
+import useMyProfile from "../../hooks/useProfile";
+import { useNavigate } from "react-router-dom";
 
 type PaymentModalProps = {
   isOpen: boolean;
@@ -39,13 +44,29 @@ const PaymentModal: FC<PaymentModalProps> = ({
   onSuccess,
 }) => {
   const toast = useToast();
+  const navigate = useNavigate();
+  const { memorizeProfile } = useMyProfile();
   const [isLoading, setIsLoading] = useState(false);
 
-  // 手数料計算
-  const stripeFee = Math.floor(purchasePrice * 0.036);
-  const totalAmount = purchasePrice + stripeFee;
+  // 購入者が支払う金額（商品代金のみ）
+  const totalAmount = purchasePrice;
+
+  // 販売者登録状態を確認
+  const isSellerRegistered = memorizeProfile.profile.stripe_onboarding_completed;
 
   const handlePayment = async () => {
+    // 販売者登録チェック
+    if (!isSellerRegistered) {
+      toast({
+        title: "販売者登録が必要です",
+        description: "購入するには、まず販売者として登録する必要があります。プロフィールページから登録してください。",
+        status: "warning",
+        duration: 6000,
+        isClosable: true,
+      });
+      return;
+    }
+
     if (
       !window.confirm(
         `¥${totalAmount.toLocaleString()} の決済を実行しますか？\n（商品代金 + 手数料）`
@@ -109,6 +130,19 @@ const PaymentModal: FC<PaymentModalProps> = ({
         <ModalCloseButton />
         <ModalBody>
           <VStack spacing={4} align="stretch">
+            {/* 販売者未登録の警告 */}
+            {!isSellerRegistered && (
+              <Alert status="error" borderRadius="md">
+                <AlertIcon />
+                <Box flex="1">
+                  <AlertTitle fontSize="sm">販売者登録が必要です</AlertTitle>
+                  <AlertDescription fontSize="xs">
+                    購入するには、まず販売者として登録する必要があります。
+                  </AlertDescription>
+                </Box>
+              </Alert>
+            )}
+
             {/* セキュリティメッセージ */}
             <Box p={3} bg="blue.50" borderRadius="md">
               <HStack spacing={2}>
@@ -121,30 +155,12 @@ const PaymentModal: FC<PaymentModalProps> = ({
 
             {/* 金額詳細 */}
             <Box>
-              <Text fontSize="sm" fontWeight="bold" mb={3}>
-                お支払い金額
-              </Text>
-              <VStack align="stretch" spacing={2}>
-                <HStack justify="space-between">
-                  <Text fontSize="sm">商品代金</Text>
-                  <Text fontSize="sm" fontWeight="bold">
-                    ¥{purchasePrice.toLocaleString()}
-                  </Text>
-                </HStack>
-                <HStack justify="space-between">
-                  <Text fontSize="sm" color="gray.600">
-                    決済手数料 (3.6%)
-                  </Text>
-                  <Text fontSize="sm" color="gray.600">
-                    ¥{stripeFee.toLocaleString()}
-                  </Text>
-                </HStack>
-                <Divider />
+              <VStack align="stretch" spacing={4}>
                 <HStack justify="space-between">
                   <HStack>
                     <Icon as={FaYenSign} color="purple.500" />
                     <Text fontSize="lg" fontWeight="bold">
-                      合計金額
+                      お支払い金額
                     </Text>
                   </HStack>
                   <Text fontSize="2xl" fontWeight="bold" color="purple.600">
@@ -161,6 +177,8 @@ const PaymentModal: FC<PaymentModalProps> = ({
               </Text>
               <Text fontSize="xs" color="gray.600">
                 お支払いいただいた金額は、商品を受け取り確認するまでプラットフォームで安全に保管されます。
+                <br />
+                販売者への送金は、あなたが受け取り確認をした後に行われます。
               </Text>
             </Box>
 
@@ -185,14 +203,27 @@ const PaymentModal: FC<PaymentModalProps> = ({
           <Button variant="ghost" mr={3} onClick={onClose}>
             キャンセル
           </Button>
-          <Button
-            colorScheme="purple"
-            onClick={handlePayment}
-            isLoading={isLoading}
-            leftIcon={<FaCreditCard />}
-          >
-            ¥{totalAmount.toLocaleString()} を支払う
-          </Button>
+          {isSellerRegistered ? (
+            <Button
+              colorScheme="purple"
+              onClick={handlePayment}
+              isLoading={isLoading}
+              leftIcon={<FaCreditCard />}
+            >
+              ¥{totalAmount.toLocaleString()} を支払う
+            </Button>
+          ) : (
+            <Button
+              colorScheme="blue"
+              leftIcon={<FaStore />}
+              onClick={() => {
+                onClose();
+                navigate("/profile");
+              }}
+            >
+              販売者登録へ
+            </Button>
+          )}
         </ModalFooter>
       </ModalContent>
     </Modal>

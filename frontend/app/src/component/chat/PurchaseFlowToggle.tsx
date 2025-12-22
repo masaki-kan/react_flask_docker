@@ -151,6 +151,17 @@ const PurchaseFlowToggle: FC<PurchaseFlowToggleProps> = ({
                 </Text>
               </Box>
 
+              <Box p={3} bg="orange.50" borderRadius="md" borderWidth={1} borderColor="orange.300">
+                <Text fontSize="xs" fontWeight="bold" color="orange.700" mb={1}>
+                  💡 手数料について
+                </Text>
+                <Text fontSize="xs" color="gray.700">
+                  決済手数料（3.6%）は販売者負担となります。
+                  <br />
+                  購入者から受け取った金額から手数料が差し引かれた金額が振り込まれます。
+                </Text>
+              </Box>
+
               <Box>
                 <Text fontSize="sm" fontWeight="bold" mb={2}>
                   希望金額（円）
@@ -162,9 +173,6 @@ const PurchaseFlowToggle: FC<PurchaseFlowToggleProps> = ({
                 >
                   <NumberInputField placeholder="例: 3000" />
                 </NumberInput>
-                <Text fontSize="xs" color="gray.500" mt={1}>
-                  ※ 購入者負担: 商品代金 + Stripe手数料 3.6%
-                </Text>
               </Box>
 
               <Box>
@@ -187,16 +195,32 @@ const PurchaseFlowToggle: FC<PurchaseFlowToggleProps> = ({
                   </Text>
                   <VStack align="stretch" spacing={1}>
                     <HStack justify="space-between">
+                      <Text fontSize="xs" color="gray.600">
+                        購入者の支払い金額
+                      </Text>
+                      <Text fontSize="xs" color="gray.600">
+                        ¥{Number(price).toLocaleString()}
+                      </Text>
+                    </HStack>
+                    <HStack justify="space-between">
+                      <Text fontSize="xs" color="gray.600">
+                        決済手数料 (3.6%)
+                      </Text>
+                      <Text fontSize="xs" color="red.500">
+                        -¥{Math.floor(Number(price) * 0.036).toLocaleString()}
+                      </Text>
+                    </HStack>
+                    <HStack justify="space-between" pt={1} borderTopWidth={1} borderColor="gray.300">
                       <Text fontSize="sm" fontWeight="bold" color="green.700">
-                        受取金額
+                        銀行口座への振込額
                       </Text>
                       <Text fontSize="lg" fontWeight="bold" color="green.600">
-                        ¥{Number(price).toLocaleString()}
+                        ¥{(Number(price) - Math.floor(Number(price) * 0.036)).toLocaleString()}
                       </Text>
                     </HStack>
                   </VStack>
                   <Text fontSize="xs" color="gray.600" mt={2}>
-                    ※ 購入者は商品代金 + Stripe手数料(3.6%)を支払います
+                    ※ 決済手数料分が差し引かれた金額が銀行口座に振り込まれます
                   </Text>
                 </Box>
               )}

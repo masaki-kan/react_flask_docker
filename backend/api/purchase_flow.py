@@ -296,10 +296,10 @@ def pay_for_purchase():
                     'message': 'この取引は決済できません（金額が合意されていません）'
                 }), 400
 
-            # Stripe手数料を計算（3.6%）
+            # 購入金額（販売者負担の場合、購入者は商品代金のみ支払う）
             purchase_price = float(trade['purchase_price'])
-            stripe_fee = int(purchase_price * 0.036)
-            total_amount = int(purchase_price + stripe_fee)
+            stripe_fee = int(purchase_price * 0.036)  # 販売者が負担する手数料
+            buyer_payment_amount = int(purchase_price)  # 購入者が支払う金額（商品代金のみ）
 
             # 本番環境の場合: Stripe Connectを使用
             if STRIPE_MODE == 'live':
@@ -318,8 +318,9 @@ def pay_for_purchase():
 
                 try:
                     # PaymentIntentを作成（エスクロー設定）
+                    # 購入者は商品代金のみ支払い、販売者がStripe手数料を負担
                     payment_intent = stripe.PaymentIntent.create(
-                        amount=total_amount,  # Stripe手数料込み
+                        amount=buyer_payment_amount,  # 購入者が支払う金額（商品代金のみ）
                         currency='jpy',
                         payment_method=payment_method_id,
                         payment_method_types=['card'],
@@ -340,6 +341,7 @@ def pay_for_purchase():
                             'buyer_id': str(trade['buyer_id']),
                             'product_price': str(purchase_price),
                             'stripe_fee': str(stripe_fee),
+                            'seller_receives': str(int(purchase_price - stripe_fee)),
                         }
                     )
 
@@ -379,9 +381,10 @@ def pay_for_purchase():
                 'trade_id': trade_id,
                 'payment_intent_id': payment_intent_id,
                 'status': 'paid',
-                'amount': total_amount,
+                'buyer_paid': buyer_payment_amount,  # 購入者が支払った金額
                 'purchase_price': int(purchase_price),
                 'stripe_fee': stripe_fee,
+                'seller_receives': int(purchase_price - stripe_fee),  # 販売者が受け取る金額
                 'is_test_mode': STRIPE_MODE != 'live'
             }
         })
@@ -563,8 +566,10 @@ def complete_purchase_trade():
 
                         charge_id = payment_intent.charges.data[0].id
 
-                        # 販売者への送金額（商品代金100%）
-                        transfer_amount = int(float(trade['purchase_price']))
+                        # 販売者への送金額（商品代金 - Stripe手数料3.6%）
+                        purchase_price = float(trade['purchase_price'])
+                        stripe_fee = int(purchase_price * 0.036)
+                        transfer_amount = int(purchase_price - stripe_fee)
 
                         # Transferを実行
                         transfer = stripe.Transfer.create(
@@ -575,6 +580,9 @@ def complete_purchase_trade():
                             metadata={
                                 'trade_id': str(trade_id),
                                 'seller_id': str(trade['seller_id']),
+                                'purchase_price': str(int(purchase_price)),
+                                'stripe_fee': str(stripe_fee),
+                                'transfer_amount': str(transfer_amount),
                             }
                         )
 

@@ -1,7 +1,10 @@
 export const statusView = (status: string) => {
-  switch (status) {
+  // 大文字・小文字を統一（小文字に変換）
+  const normalizedStatus = status.toLowerCase();
+
+  switch (normalizedStatus) {
     case "pending":
-      return "取引中";
+      return "申請中";
     case "purchased":
       return "選択済";
     case "completed":
@@ -13,11 +16,11 @@ export const statusView = (status: string) => {
     case "price_proposed":
       return "金額提案中";
     case "price_agreed":
-      return "金額合意済";
+      return "金額合意済み";
     case "paid":
-      return "決済完了";
+      return "決済済み";
     case "buyer_received":
-      return "受取確認済";
+      return "受取確認済み";
     default:
       return status;
   }

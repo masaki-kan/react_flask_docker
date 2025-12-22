@@ -21,10 +21,6 @@ const SavedIndex: FC = () => {
   // カラーモード対応
   const bgColor = useColorModeValue("white", "gray.800");
   const borderColor = useColorModeValue("gray.200", "gray.700");
-  // const shadowColor = useColorModeValue(
-  //   "0 4px 12px rgba(0, 0, 0, 0.08)",
-  //   "0 4px 12px rgba(0, 0, 0, 0.3)"
-  // );
 
   const unCompletedList = useMemo(() => {
     return savedList
@@ -33,14 +29,6 @@ const SavedIndex: FC = () => {
         return list;
       });
   }, [savedList]);
-
-  // const completedList = useMemo(() => {
-  //   return savedList
-  //     .filter((list) => list.status === "completed")
-  //     .map((list) => {
-  //       return list;
-  //     });
-  // }, [savedList]);
 
   const tabs = [
     {
@@ -57,26 +45,6 @@ const SavedIndex: FC = () => {
 
   return (
     <>
-      {/* <Box px={4}>
-        <Container maxW="container.xl" px={{ base: 2, md: 4 }}>
-          <VStack
-            px={2}
-            py={3}
-            spacing={2}
-            width="100%"
-            bgColor="white"
-            boxShadow={shadowColor}
-            borderRadius="md"
-          >
-            <HStack width="full" justify="space-between" align="center">
-              <Box fontSize="sm" fontWeight="medium" color="gray.600">
-                交換リスト
-              </Box>
-            </HStack>
-          </VStack>
-        </Container>
-      </Box> */}
-
       <Box pb={24} pt={4}>
         <AnimatePresence mode="wait">
           <MotionBox

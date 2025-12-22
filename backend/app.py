@@ -20,10 +20,18 @@ logging.basicConfig(level=logging.DEBUG)
 
 # 環境変数の読み込み
 env = os.getenv("FLASK_ENV", "development")
+print(f"[STARTUP] FLASK_ENV: {env}", flush=True)
+
 if env == "production":
+    print("[STARTUP] Loading .env.production", flush=True)
     load_dotenv(dotenv_path=Path(".env.production"))
 else:
+    print("[STARTUP] Loading .env.development", flush=True)
     load_dotenv(dotenv_path=Path(".env.development"))
+
+# Stripe設定の確認
+stripe_mode = os.getenv("STRIPE_MODE", "not_set")
+print(f"[STARTUP] STRIPE_MODE: {stripe_mode}", flush=True)
 
 # ユーティリティのインポート（エラーハンドリング付き）
 try:

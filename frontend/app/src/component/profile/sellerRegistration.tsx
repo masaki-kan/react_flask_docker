@@ -132,14 +132,16 @@ const SellerRegistration: FC = () => {
       const response = await createConnectAccount(userId);
 
       if (response.success && response.data) {
-        if (response.data.onboarding_completed) {
-          // 既に登録済み（開発環境）
+        if (response.data.onboarding_completed || response.data.is_test_mode) {
+          // 登録完了（開発環境またはテストモード）
           toast({
-            title: "登録済み",
+            title: response.data.is_test_mode ? "販売者登録完了（テストモード）" : "登録済み",
             description:
-              response.message || "販売者登録は既に完了しています",
-            status: "info",
-            duration: 3000,
+              response.message || response.data.is_test_mode
+                ? "テスト環境のため、すぐに登録が完了しました"
+                : "販売者登録は既に完了しています",
+            status: "success",
+            duration: 4000,
             isClosable: true,
           });
 
@@ -147,7 +149,7 @@ const SellerRegistration: FC = () => {
           await checkStatus();
           await getMyProfile();
         } else if (response.data.onboarding_url) {
-          // オンボーディングURLにリダイレクト
+          // オンボーディングURLにリダイレクト（本番環境）
           toast({
             title: "Stripe登録画面へ移動します",
             description: "銀行口座情報などを登録してください",
