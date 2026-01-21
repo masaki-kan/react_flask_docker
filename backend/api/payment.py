@@ -1340,8 +1340,157 @@ def withdraw_user():
         logger.error(f"Withdrawal error for user {user_id}: {str(e)}")
         import traceback
         traceback.print_exc()
-        
+
         return jsonify({
             "error": "退会処理中にエラーが発生しました",
             "result": False
         }), 500
+
+
+# ================================================================================
+# Stripe Webhook
+# ================================================================================
+
+STRIPE_WEBHOOK_SECRET = os.getenv('STRIPE_WEBHOOK_SECRET')
+
+@payment_bp.route('/stripe-webhook', methods=['POST'])
+def stripe_webhook():
+    """
+    Stripe Webhookエンドポイント
+    銀行振込の入金確認などを処理
+    """
+    payload = request.get_data()
+    sig_header = request.headers.get('Stripe-Signature')
+
+    try:
+        # Webhook署名を検証（本番環境のみ）
+        if STRIPE_WEBHOOK_SECRET:
+            event = stripe.Webhook.construct_event(
+                payload, sig_header, STRIPE_WEBHOOK_SECRET
+            )
+        else:
+            # 開発環境: 署名検証をスキップ
+            import json
+            event = stripe.Event.construct_from(
+                json.loads(payload), stripe.api_key
+            )
+
+    except ValueError as e:
+        logger.error(f"Invalid webhook payload: {str(e)}")
+        return jsonify({'error': 'Invalid payload'}), 400
+    except stripe.error.SignatureVerificationError as e:
+        logger.error(f"Invalid webhook signature: {str(e)}")
+        return jsonify({'error': 'Invalid signature'}), 400
+
+    # イベントタイプに応じた処理
+    event_type = event['type']
+    data = event['data']['object']
+
+    logger.info(f"[WEBHOOK] Received event: {event_type}")
+
+    try:
+        if event_type == 'payment_intent.succeeded':
+            handle_payment_intent_succeeded(data)
+        elif event_type == 'payment_intent.payment_failed':
+            handle_payment_intent_failed(data)
+        elif event_type == 'customer.balance_transaction.created':
+            handle_balance_transaction_created(data)
+        elif event_type == 'invoice.paid':
+            handle_invoice_paid(data)
+        elif event_type == 'customer.subscription.created':
+            handle_subscription_created(data)
+        elif event_type == 'customer.subscription.updated':
+            handle_subscription_updated(data)
+        elif event_type == 'customer.subscription.deleted':
+            handle_subscription_deleted(data)
+        elif event_type == 'invoice.payment_failed':
+            handle_payment_failed(data)
+        elif event_type == 'customer.subscription.trial_will_end':
+            handle_trial_ending(data)
+        else:
+            logger.info(f"[WEBHOOK] Unhandled event type: {event_type}")
+
+    except Exception as e:
+        logger.error(f"[WEBHOOK] Error handling event {event_type}: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        # Webhookはエラーでも200を返す（リトライを避けるため）
+
+    return jsonify({'status': 'success'}), 200
+
+
+def handle_payment_intent_succeeded(payment_intent):
+    """
+    PaymentIntent成功時の処理
+    銀行振込の入金完了を処理
+    """
+    payment_intent_id = payment_intent['id']
+    metadata = payment_intent.get('metadata', {})
+    trade_id = metadata.get('trade_id')
+    payment_method = metadata.get('payment_method')
+
+    logger.info(f"[WEBHOOK] PaymentIntent succeeded: {payment_intent_id}")
+
+    if not trade_id:
+        logger.info(f"[WEBHOOK] No trade_id in metadata, skipping...")
+        return
+
+    # 銀行振込の場合、取引ステータスを更新
+    if payment_method == 'bank_transfer':
+        try:
+            with get_db_connection() as conn:
+                cursor = conn.cursor(dictionary=True)
+
+                # 取引情報を取得
+                cursor.execute("""
+                    SELECT trade_id, status, payment_method
+                    FROM trades
+                    WHERE trade_id = %s AND payment_intent_id = %s
+                """, (trade_id, payment_intent_id))
+                trade = cursor.fetchone()
+
+                if trade and trade['status'] == 'awaiting_payment':
+                    # ステータスを「決済完了」に更新
+                    cursor.execute("""
+                        UPDATE trades
+                        SET paid_at = NOW(),
+                            status = 'paid',
+                            updated_at = NOW()
+                        WHERE trade_id = %s
+                    """, (trade_id,))
+                    conn.commit()
+                    logger.info(f"[WEBHOOK] Trade {trade_id} updated to 'paid'")
+                else:
+                    logger.info(f"[WEBHOOK] Trade {trade_id} already processed or not found")
+
+        except Exception as e:
+            logger.error(f"[WEBHOOK] Error updating trade {trade_id}: {str(e)}")
+
+
+def handle_payment_intent_failed(payment_intent):
+    """
+    PaymentIntent失敗時の処理
+    """
+    payment_intent_id = payment_intent['id']
+    metadata = payment_intent.get('metadata', {})
+    trade_id = metadata.get('trade_id')
+
+    logger.error(f"[WEBHOOK] PaymentIntent failed: {payment_intent_id}")
+
+    if trade_id:
+        # 必要に応じて取引ステータスを更新
+        logger.info(f"[WEBHOOK] Trade {trade_id} payment failed")
+
+
+def handle_balance_transaction_created(transaction):
+    """
+    残高トランザクション作成時の処理（銀行振込入金時）
+    """
+    logger.info(f"[WEBHOOK] Balance transaction created: {transaction.get('id')}")
+
+
+def handle_invoice_paid(invoice):
+    """
+    インボイス支払い完了時の処理
+    """
+    logger.info(f"[WEBHOOK] Invoice paid: {invoice.get('id')}")

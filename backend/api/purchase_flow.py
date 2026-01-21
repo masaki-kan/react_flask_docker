@@ -681,3 +681,421 @@ def complete_purchase_trade():
             'success': False,
             'message': f'エラーが発生しました: {str(e)}'
         }), 500
+
+
+# ================================================================================
+# 6. 銀行振込決済API
+# ================================================================================
+
+@purchase_bp.route('/create_bank_transfer_payment', methods=['POST'])
+def create_bank_transfer_payment():
+    """
+    銀行振込用のPaymentIntentを作成
+
+    Parameters:
+        trade_id: 取引ID
+
+    Returns:
+        - 仮想口座情報（振込先）
+        - 振込期限
+    """
+    try:
+        data = request.json
+        trade_id = data.get('trade_id')
+
+        if not trade_id:
+            return jsonify({
+                'success': False,
+                'message': '取引IDは必須です'
+            }), 400
+
+        with get_db_connection() as conn:
+            cursor = conn.cursor(dictionary=True)
+
+            # 取引情報を取得（購入者と販売者のStripe情報も取得）
+            cursor.execute("""
+                SELECT t.trade_id, t.purchase_price, t.status, t.buyer_id,
+                       i.user_id as seller_id,
+                       seller.stripe_account_id, seller.stripe_charges_enabled,
+                       buyer.stripe_customer_id as buyer_stripe_customer_id,
+                       buyer.email as buyer_email, buyer.name as buyer_name
+                FROM trades t
+                JOIN items i ON t.item_id = i.item_id
+                JOIN users seller ON i.user_id = seller.user_id
+                JOIN users buyer ON t.buyer_id = buyer.user_id
+                WHERE t.trade_id = %s
+            """, (trade_id,))
+            trade = cursor.fetchone()
+
+            if not trade:
+                return jsonify({
+                    'success': False,
+                    'message': '取引が見つかりません'
+                }), 404
+
+            if trade['status'] != 'price_agreed':
+                return jsonify({
+                    'success': False,
+                    'message': 'この取引は決済できません（金額が合意されていません）'
+                }), 400
+
+            purchase_price = int(float(trade['purchase_price']))
+
+            # 本番環境の場合: Stripe Bank Transferを使用
+            if STRIPE_MODE == 'live':
+                # 販売者のStripe Connected Accountを確認
+                if not trade['stripe_account_id']:
+                    return jsonify({
+                        'success': False,
+                        'message': '販売者がStripe連携を完了していません'
+                    }), 400
+
+                if not trade['stripe_charges_enabled']:
+                    return jsonify({
+                        'success': False,
+                        'message': '販売者のStripeアカウントが決済を受け付けられる状態ではありません'
+                    }), 400
+
+                try:
+                    # 購入者のStripe Customerを取得または作成
+                    if trade['buyer_stripe_customer_id']:
+                        customer_id = trade['buyer_stripe_customer_id']
+                    else:
+                        # 新規Customer作成
+                        customer = stripe.Customer.create(
+                            email=trade['buyer_email'],
+                            name=trade['buyer_name'],
+                            metadata={
+                                'user_id': str(trade['buyer_id']),
+                                'platform': 'vintage_marketplace'
+                            }
+                        )
+                        customer_id = customer.id
+
+                        # DBに保存
+                        cursor.execute("""
+                            UPDATE users
+                            SET stripe_customer_id = %s,
+                                updated_at = NOW()
+                            WHERE user_id = %s
+                        """, (customer_id, trade['buyer_id']))
+
+                    # 銀行振込用PaymentIntentを作成
+                    payment_intent = stripe.PaymentIntent.create(
+                        amount=purchase_price,
+                        currency='jpy',
+                        customer=customer_id,
+                        payment_method_types=['customer_balance'],
+                        payment_method_data={
+                            'type': 'customer_balance',
+                        },
+                        payment_method_options={
+                            'customer_balance': {
+                                'funding_type': 'bank_transfer',
+                                'bank_transfer': {
+                                    'type': 'jp_bank_transfer',
+                                },
+                            },
+                        },
+                        # エスクロー設定
+                        on_behalf_of=trade['stripe_account_id'],
+                        transfer_data={
+                            'destination': trade['stripe_account_id'],
+                        },
+                        metadata={
+                            'trade_id': str(trade_id),
+                            'seller_id': str(trade['seller_id']),
+                            'buyer_id': str(trade['buyer_id']),
+                            'payment_method': 'bank_transfer',
+                        }
+                    )
+
+                    # 取引テーブルを更新
+                    cursor.execute("""
+                        UPDATE trades
+                        SET payment_intent_id = %s,
+                            payment_method = 'bank_transfer',
+                            status = 'awaiting_payment',
+                            updated_at = NOW()
+                        WHERE trade_id = %s
+                    """, (payment_intent.id, trade_id))
+
+                    conn.commit()
+
+                    # 振込先口座情報を取得
+                    bank_transfer_info = None
+                    if payment_intent.next_action and payment_intent.next_action.type == 'display_bank_transfer_instructions':
+                        bank_transfer_info = payment_intent.next_action.display_bank_transfer_instructions
+
+                    print(f"[INFO] Bank transfer PaymentIntent created: {payment_intent.id}", flush=True)
+
+                    return jsonify({
+                        'success': True,
+                        'message': '銀行振込情報を作成しました',
+                        'data': {
+                            'trade_id': trade_id,
+                            'payment_intent_id': payment_intent.id,
+                            'status': 'awaiting_payment',
+                            'amount': purchase_price,
+                            'bank_transfer_info': {
+                                'type': 'jp_bank_transfer',
+                                'financial_addresses': bank_transfer_info.financial_addresses if bank_transfer_info else None,
+                                'amount_remaining': bank_transfer_info.amount_remaining if bank_transfer_info else purchase_price,
+                                'reference': bank_transfer_info.reference if bank_transfer_info else None,
+                            } if bank_transfer_info else None,
+                            'is_test_mode': False
+                        }
+                    })
+
+                except stripe.error.StripeError as e:
+                    print(f"[ERROR] Stripe bank transfer error: {str(e)}", flush=True)
+                    return jsonify({
+                        'success': False,
+                        'message': f'銀行振込設定エラー: {str(e)}'
+                    }), 500
+
+            else:
+                # 開発環境: テストモード
+                payment_intent_id = f"pi_bank_test_{trade_id}_{int(datetime.now().timestamp())}"
+
+                # 取引テーブルを更新
+                cursor.execute("""
+                    UPDATE trades
+                    SET payment_intent_id = %s,
+                        payment_method = 'bank_transfer',
+                        status = 'awaiting_payment',
+                        updated_at = NOW()
+                    WHERE trade_id = %s
+                """, (payment_intent_id, trade_id))
+
+                conn.commit()
+
+                print(f"[INFO] Test mode: Bank transfer PaymentIntent ID = {payment_intent_id}", flush=True)
+
+                return jsonify({
+                    'success': True,
+                    'message': '【テスト】銀行振込情報を作成しました',
+                    'data': {
+                        'trade_id': trade_id,
+                        'payment_intent_id': payment_intent_id,
+                        'status': 'awaiting_payment',
+                        'amount': purchase_price,
+                        'bank_transfer_info': {
+                            'type': 'jp_bank_transfer',
+                            'financial_addresses': [{
+                                'type': 'zengin',
+                                'zengin': {
+                                    'bank_name': 'テスト銀行',
+                                    'bank_code': '0001',
+                                    'branch_name': 'テスト支店',
+                                    'branch_code': '001',
+                                    'account_type': 'futsu',
+                                    'account_number': '1234567',
+                                    'account_holder_name': 'ストライプ（カ'
+                                }
+                            }],
+                            'amount_remaining': purchase_price,
+                            'reference': f'TEST-{trade_id}',
+                        },
+                        'is_test_mode': True
+                    }
+                })
+
+    except mysql.connector.Error as e:
+        return jsonify({
+            'success': False,
+            'message': f'データベースエラー: {str(e)}'
+        }), 500
+    except Exception as e:
+        print(f"[ERROR] Bank transfer error: {str(e)}", flush=True)
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'success': False,
+            'message': f'エラーが発生しました: {str(e)}'
+        }), 500
+
+
+@purchase_bp.route('/check_bank_transfer_status', methods=['POST'])
+def check_bank_transfer_status():
+    """
+    銀行振込の入金状況を確認
+
+    Parameters:
+        trade_id: 取引ID
+    """
+    try:
+        data = request.json
+        trade_id = data.get('trade_id')
+
+        if not trade_id:
+            return jsonify({
+                'success': False,
+                'message': '取引IDは必須です'
+            }), 400
+
+        with get_db_connection() as conn:
+            cursor = conn.cursor(dictionary=True)
+
+            # 取引情報を取得
+            cursor.execute("""
+                SELECT trade_id, payment_intent_id, payment_method, status, purchase_price
+                FROM trades
+                WHERE trade_id = %s
+            """, (trade_id,))
+            trade = cursor.fetchone()
+
+            if not trade:
+                return jsonify({
+                    'success': False,
+                    'message': '取引が見つかりません'
+                }), 404
+
+            if trade['payment_method'] != 'bank_transfer':
+                return jsonify({
+                    'success': False,
+                    'message': 'この取引は銀行振込決済ではありません'
+                }), 400
+
+            # 本番環境の場合: Stripe APIで確認
+            if STRIPE_MODE == 'live' and trade['payment_intent_id'] and not trade['payment_intent_id'].startswith('pi_bank_test_'):
+                try:
+                    payment_intent = stripe.PaymentIntent.retrieve(trade['payment_intent_id'])
+
+                    payment_status = payment_intent.status
+                    amount_received = payment_intent.amount_received if hasattr(payment_intent, 'amount_received') else 0
+
+                    # 入金完了の場合、ステータスを更新
+                    if payment_status == 'succeeded' and trade['status'] == 'awaiting_payment':
+                        cursor.execute("""
+                            UPDATE trades
+                            SET paid_at = NOW(),
+                                status = 'paid',
+                                updated_at = NOW()
+                            WHERE trade_id = %s
+                        """, (trade_id,))
+                        conn.commit()
+
+                        return jsonify({
+                            'success': True,
+                            'data': {
+                                'trade_id': trade_id,
+                                'payment_status': 'succeeded',
+                                'trade_status': 'paid',
+                                'amount_received': amount_received,
+                                'is_payment_complete': True
+                            }
+                        })
+
+                    return jsonify({
+                        'success': True,
+                        'data': {
+                            'trade_id': trade_id,
+                            'payment_status': payment_status,
+                            'trade_status': trade['status'],
+                            'amount_received': amount_received,
+                            'amount_remaining': int(trade['purchase_price']) - amount_received,
+                            'is_payment_complete': False
+                        }
+                    })
+
+                except stripe.error.StripeError as e:
+                    return jsonify({
+                        'success': False,
+                        'message': f'Stripe確認エラー: {str(e)}'
+                    }), 500
+            else:
+                # 開発環境: テストモード
+                return jsonify({
+                    'success': True,
+                    'data': {
+                        'trade_id': trade_id,
+                        'payment_status': 'requires_action',
+                        'trade_status': trade['status'],
+                        'amount_received': 0,
+                        'amount_remaining': int(trade['purchase_price']),
+                        'is_payment_complete': False,
+                        'is_test_mode': True
+                    }
+                })
+
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': f'エラーが発生しました: {str(e)}'
+        }), 500
+
+
+@purchase_bp.route('/simulate_bank_transfer_received', methods=['POST'])
+def simulate_bank_transfer_received():
+    """
+    【テスト用】銀行振込の入金をシミュレート
+
+    Parameters:
+        trade_id: 取引ID
+    """
+    if STRIPE_MODE == 'live':
+        return jsonify({
+            'success': False,
+            'message': '本番環境ではこのエンドポイントは使用できません'
+        }), 400
+
+    try:
+        data = request.json
+        trade_id = data.get('trade_id')
+
+        if not trade_id:
+            return jsonify({
+                'success': False,
+                'message': '取引IDは必須です'
+            }), 400
+
+        with get_db_connection() as conn:
+            cursor = conn.cursor(dictionary=True)
+
+            # 取引情報を取得
+            cursor.execute("""
+                SELECT trade_id, payment_method, status
+                FROM trades
+                WHERE trade_id = %s
+            """, (trade_id,))
+            trade = cursor.fetchone()
+
+            if not trade:
+                return jsonify({
+                    'success': False,
+                    'message': '取引が見つかりません'
+                }), 404
+
+            if trade['status'] != 'awaiting_payment':
+                return jsonify({
+                    'success': False,
+                    'message': 'この取引は入金待ち状態ではありません'
+                }), 400
+
+            # ステータスを「決済完了」に更新
+            cursor.execute("""
+                UPDATE trades
+                SET paid_at = NOW(),
+                    status = 'paid',
+                    updated_at = NOW()
+                WHERE trade_id = %s
+            """, (trade_id,))
+            conn.commit()
+
+            print(f"[INFO] Test mode: Bank transfer simulated for trade_id={trade_id}", flush=True)
+
+            return jsonify({
+                'success': True,
+                'message': '【テスト】銀行振込の入金をシミュレートしました',
+                'data': {
+                    'trade_id': trade_id,
+                    'status': 'paid'
+                }
+            })
+
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': f'エラーが発生しました: {str(e)}'
+        }), 500

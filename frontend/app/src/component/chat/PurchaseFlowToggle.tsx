@@ -156,7 +156,11 @@ const PurchaseFlowToggle: FC<PurchaseFlowToggleProps> = ({
                   💡 手数料について
                 </Text>
                 <Text fontSize="xs" color="gray.700">
-                  決済手数料（3.6%）は販売者負担となります。
+                  以下の手数料は販売者負担となります。
+                  <br />
+                  ・決済手数料（3.6%）
+                  <br />
+                  ・銀行振込手数料（250円/回）
                   <br />
                   購入者から受け取った金額から手数料が差し引かれた金額が振り込まれます。
                 </Text>
@@ -210,17 +214,25 @@ const PurchaseFlowToggle: FC<PurchaseFlowToggleProps> = ({
                         -¥{Math.floor(Number(price) * 0.036).toLocaleString()}
                       </Text>
                     </HStack>
+                    <HStack justify="space-between">
+                      <Text fontSize="xs" color="gray.600">
+                        銀行振込手数料
+                      </Text>
+                      <Text fontSize="xs" color="red.500">
+                        -¥250
+                      </Text>
+                    </HStack>
                     <HStack justify="space-between" pt={1} borderTopWidth={1} borderColor="gray.300">
                       <Text fontSize="sm" fontWeight="bold" color="green.700">
                         銀行口座への振込額
                       </Text>
                       <Text fontSize="lg" fontWeight="bold" color="green.600">
-                        ¥{(Number(price) - Math.floor(Number(price) * 0.036)).toLocaleString()}
+                        ¥{(Number(price) - Math.floor(Number(price) * 0.036) - 250).toLocaleString()}
                       </Text>
                     </HStack>
                   </VStack>
                   <Text fontSize="xs" color="gray.600" mt={2}>
-                    ※ 決済手数料分が差し引かれた金額が銀行口座に振り込まれます
+                    ※ 決済手数料・銀行振込手数料が差し引かれた金額が銀行口座に振り込まれます
                   </Text>
                 </Box>
               )}

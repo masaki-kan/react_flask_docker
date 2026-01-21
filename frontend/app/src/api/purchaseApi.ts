@@ -34,6 +34,47 @@ export interface CompletePurchaseRequest {
   trade_id: number;
 }
 
+export interface BankTransferRequest {
+  trade_id: number;
+}
+
+export interface BankTransferInfo {
+  type: string;
+  financial_addresses?: Array<{
+    type: string;
+    zengin?: {
+      bank_name: string;
+      bank_code: string;
+      branch_name: string;
+      branch_code: string;
+      account_type: string;
+      account_number: string;
+      account_holder_name: string;
+    };
+  }>;
+  amount_remaining: number;
+  reference?: string;
+}
+
+export interface BankTransferResponse {
+  trade_id: number;
+  payment_intent_id: string;
+  status: string;
+  amount: number;
+  bank_transfer_info?: BankTransferInfo;
+  is_test_mode: boolean;
+}
+
+export interface BankTransferStatusResponse {
+  trade_id: number;
+  payment_status: string;
+  trade_status: string;
+  amount_received: number;
+  amount_remaining?: number;
+  is_payment_complete: boolean;
+  is_test_mode?: boolean;
+}
+
 export interface ApiResponse<T = any> {
   success: boolean;
   message: string;
@@ -168,6 +209,79 @@ export const completePurchaseTrade = async (
     return response.data;
   } catch (error: any) {
     console.error('取引完了エラー:', error);
+    if (error.response) {
+      return error.response.data;
+    }
+    throw error;
+  }
+};
+
+// ================================================================================
+// 6. 銀行振込決済API
+// ================================================================================
+
+/**
+ * 銀行振込用のPaymentIntentを作成
+ */
+export const createBankTransferPayment = async (
+  params: BankTransferRequest
+): Promise<ApiResponse<BankTransferResponse>> => {
+  try {
+    const response = await axios.post(`${API_BASE_URL}/create_bank_transfer_payment`, params, {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      withCredentials: true,
+    });
+    return response.data;
+  } catch (error: any) {
+    console.error('銀行振込決済エラー:', error);
+    if (error.response) {
+      return error.response.data;
+    }
+    throw error;
+  }
+};
+
+/**
+ * 銀行振込の入金状況を確認
+ */
+export const checkBankTransferStatus = async (
+  params: BankTransferRequest
+): Promise<ApiResponse<BankTransferStatusResponse>> => {
+  try {
+    const response = await axios.post(`${API_BASE_URL}/check_bank_transfer_status`, params, {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      withCredentials: true,
+    });
+    return response.data;
+  } catch (error: any) {
+    console.error('銀行振込状況確認エラー:', error);
+    if (error.response) {
+      return error.response.data;
+    }
+    throw error;
+  }
+};
+
+/**
+ * 【テスト用】銀行振込の入金をシミュレート
+ */
+export const simulateBankTransferReceived = async (
+  params: BankTransferRequest
+): Promise<ApiResponse> => {
+  try {
+    const response = await axios.post(`${API_BASE_URL}/simulate_bank_transfer_received`, params, {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      withCredentials: true,
+    });
+    return response.data;
+  } catch (error: any) {
+    console.error('銀行振込シミュレートエラー:', error);
     if (error.response) {
       return error.response.data;
     }
