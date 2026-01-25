@@ -14,7 +14,7 @@ purchase_bp = Blueprint('purchase', __name__, url_prefix='/api')
 
 # Stripe設定
 STRIPE_SECRET_KEY = os.environ.get('STRIPE_SECRET_KEY')
-STRIPE_MODE = os.environ.get('STRIPE_MODE', 'test')  # 'test' or 'live' (デフォルト: test)
+STRIPE_MODE = os.environ.get('STRIPE_MODE', 'live')  # 'test' or 'live' (デフォルト: test)
 stripe.api_key = STRIPE_SECRET_KEY
 
 
