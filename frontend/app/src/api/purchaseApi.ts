@@ -75,6 +75,22 @@ export interface BankTransferStatusResponse {
   is_test_mode?: boolean;
 }
 
+export interface CardPaymentIntentRequest {
+  trade_id: number;
+}
+
+export interface CardPaymentIntentResponse {
+  client_secret: string;
+  payment_intent_id: string;
+  amount: number;
+  is_test_mode: boolean;
+}
+
+export interface ConfirmCardPaymentRequest {
+  trade_id: number;
+  payment_intent_id: string;
+}
+
 export interface ApiResponse<T = any> {
   success: boolean;
   message: string;
@@ -282,6 +298,56 @@ export const simulateBankTransferReceived = async (
     return response.data;
   } catch (error: any) {
     console.error('銀行振込シミュレートエラー:', error);
+    if (error.response) {
+      return error.response.data;
+    }
+    throw error;
+  }
+};
+
+// ================================================================================
+// 7. カード決済API（Stripe Elements用）
+// ================================================================================
+
+/**
+ * カード決済用のPaymentIntentを作成
+ */
+export const createCardPaymentIntent = async (
+  params: CardPaymentIntentRequest
+): Promise<ApiResponse<CardPaymentIntentResponse>> => {
+  try {
+    const response = await axios.post(`${API_BASE_URL}/create_card_payment_intent`, params, {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      withCredentials: true,
+    });
+    return response.data;
+  } catch (error: any) {
+    console.error('カード決済準備エラー:', error);
+    if (error.response) {
+      return error.response.data;
+    }
+    throw error;
+  }
+};
+
+/**
+ * カード決済の完了を確認
+ */
+export const confirmCardPayment = async (
+  params: ConfirmCardPaymentRequest
+): Promise<ApiResponse> => {
+  try {
+    const response = await axios.post(`${API_BASE_URL}/confirm_card_payment`, params, {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      withCredentials: true,
+    });
+    return response.data;
+  } catch (error: any) {
+    console.error('カード決済確認エラー:', error);
     if (error.response) {
       return error.response.data;
     }

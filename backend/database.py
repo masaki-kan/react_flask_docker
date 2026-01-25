@@ -13,6 +13,11 @@ def create_users_table(cursor):
             shop_url VARCHAR(255),
             reasen TEXT,
             stripe_customer_id VARCHAR(255),
+            stripe_account_id VARCHAR(255) DEFAULT NULL COMMENT 'Stripe Connected Account ID（販売者用）',
+            stripe_onboarding_completed BOOLEAN DEFAULT FALSE COMMENT 'Stripeオンボーディング完了フラグ',
+            stripe_charges_enabled BOOLEAN DEFAULT FALSE COMMENT 'Stripe決済受付可能フラグ',
+            stripe_payouts_enabled BOOLEAN DEFAULT FALSE COMMENT 'Stripe出金可能フラグ',
+            stripe_details_submitted BOOLEAN DEFAULT FALSE COMMENT 'Stripe詳細情報提出済みフラグ',
             plan VARCHAR(1) DEFAULT '1',
             status INT DEFAULT 1, -- 必要ないカラムあとで削除
             type INT DEFAULT 1, -- 0 : 管理者, 1 : 利用者
@@ -24,7 +29,8 @@ def create_users_table(cursor):
             INDEX idx_users_active (is_deleted, email),
             INDEX idx_users_deleted_at (deleted_at),
             INDEX idx_email (email),
-            INDEX idx_stripe_customer (stripe_customer_id)
+            INDEX idx_stripe_customer (stripe_customer_id),
+            INDEX idx_stripe_account (stripe_account_id)
         );
     ''')
     
@@ -145,6 +151,7 @@ def create_trades_table(cursor):
                 'cancelled',
                 'price_proposed',
                 'price_agreed',
+                'awaiting_payment',
                 'paid',
                 'buyer_received'
             ) DEFAULT 'pending',
@@ -154,6 +161,8 @@ def create_trades_table(cursor):
             is_price_agreed_seller BOOLEAN DEFAULT FALSE COMMENT 'Sellerが金額に合意したか',
             is_price_agreed_buyer BOOLEAN DEFAULT FALSE COMMENT 'Buyerが金額に合意したか',
             payment_intent_id VARCHAR(255) DEFAULT NULL COMMENT 'Stripe PaymentIntent ID',
+            payment_method ENUM('card', 'bank_transfer') DEFAULT 'card' COMMENT '支払い方法: card=カード決済, bank_transfer=銀行振込',
+            stripe_transfer_id VARCHAR(255) DEFAULT NULL COMMENT 'Stripe Transfer ID（販売者への送金）',
             paid_at TIMESTAMP NULL COMMENT '決済完了日時',
             buyer_received_at TIMESTAMP NULL COMMENT 'Buyer受取確認日時',
             is_buyer_confirmed BOOLEAN DEFAULT FALSE,
@@ -169,7 +178,8 @@ def create_trades_table(cursor):
             INDEX idx_trade_status (trade_id, status),
             INDEX idx_exchange_items (seller_exchange_item_id, buyer_exchange_item_id),
             INDEX idx_trade_type (trade_type),
-            INDEX idx_payment_intent (payment_intent_id)
+            INDEX idx_payment_intent (payment_intent_id),
+            INDEX idx_stripe_transfer (stripe_transfer_id)
         );
     ''')
 
@@ -294,9 +304,16 @@ def create_archived_trades_table(cursor):
             seller_exchange_item_archive_id INT,  -- 交換商品のアーカイブID
             buyer_exchange_item_archive_id INT,  -- 交換商品のアーカイブID
             final_status VARCHAR(50),  -- 完了時のステータス
+            trade_type ENUM('exchange', 'purchase') DEFAULT 'exchange' COMMENT 'アーカイブ時の取引種類',
+            purchase_price DECIMAL(10, 2) DEFAULT NULL COMMENT '購入金額（購入フローの場合）',
+            payment_intent_id VARCHAR(255) DEFAULT NULL COMMENT 'Stripe PaymentIntent ID',
+            payment_method ENUM('card', 'bank_transfer') DEFAULT 'card' COMMENT '支払い方法',
+            stripe_transfer_id VARCHAR(255) DEFAULT NULL COMMENT 'Stripe Transfer ID（販売者への送金）',
+            paid_at TIMESTAMP NULL COMMENT '決済完了日時',
+            buyer_received_at TIMESTAMP NULL COMMENT 'Buyer受取確認日時',
             trade_created_at TIMESTAMP,  -- 元の取引作成日時
             trade_completed_at TIMESTAMP,  -- 取引完了日時
-            
+
             -- ユーザー情報のスナップショット（削除されても保持）
             seller_name VARCHAR(255),
             seller_email VARCHAR(255),
@@ -306,9 +323,9 @@ def create_archived_trades_table(cursor):
             buyer_location VARCHAR(100) COMMENT '買い手の地域（アーカイブ時点）',
             seller_profile_image_at_archive LONGTEXT COMMENT '売り手のプロフィール画像（アーカイブ時点）',
             buyer_profile_image_at_archive LONGTEXT COMMENT '買い手のプロフィール画像（アーカイブ時点）',
-            
+
             archived_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            
+
             FOREIGN KEY (item_archive_id) REFERENCES archived_items(archive_id),
             FOREIGN KEY (seller_exchange_item_archive_id) REFERENCES archived_items(archive_id),
             FOREIGN KEY (buyer_exchange_item_archive_id) REFERENCES archived_items(archive_id),
@@ -589,6 +606,100 @@ def migrate_add_stripe_connect_columns(cursor):
         raise
 
 
+# ================================================================================
+# マイグレーション: 銀行振込用のカラムを追加
+# ================================================================================
+def migrate_add_bank_transfer_columns(cursor):
+    """
+    tradesテーブルに銀行振込用のカラムを追加するマイグレーション
+    作成日: 2026-01-04
+    """
+    try:
+        # payment_methodカラムが既に存在するかチェック
+        cursor.execute("""
+            SELECT COUNT(*) as count
+            FROM information_schema.COLUMNS
+            WHERE TABLE_SCHEMA = DATABASE()
+            AND TABLE_NAME = 'trades'
+            AND COLUMN_NAME = 'payment_method'
+        """)
+        result = cursor.fetchone()
+
+        if result['count'] > 0:
+            print("✓ 銀行振込用のカラムは既に存在します")
+            return
+
+        print("銀行振込用のカラムを追加中...")
+
+        # tradesテーブルにpayment_methodカラムを追加
+        cursor.execute("""
+            ALTER TABLE trades
+            ADD COLUMN payment_method ENUM('card', 'bank_transfer') DEFAULT 'card'
+                COMMENT '支払い方法: card=カード決済, bank_transfer=銀行振込'
+                AFTER payment_intent_id
+        """)
+
+        # ステータスにawaiting_paymentを追加
+        cursor.execute("""
+            ALTER TABLE trades
+            MODIFY COLUMN status ENUM(
+                'pending',
+                'purchased',
+                'shipped',
+                'completed',
+                'cancelled',
+                'price_proposed',
+                'price_agreed',
+                'awaiting_payment',
+                'paid',
+                'buyer_received'
+            ) DEFAULT 'pending'
+        """)
+
+        print("✓ 銀行振込用のカラム追加完了")
+
+    except Exception as e:
+        print(f"✗ 銀行振込マイグレーションエラー: {e}")
+        raise
+
+
+# ================================================================================
+# マイグレーション: archived_tradesテーブルに購入フロー・銀行振込用カラムを追加
+# ================================================================================
+def migrate_add_purchase_columns_to_archived_trades(cursor):
+    """
+    archived_tradesテーブルに購入フロー・銀行振込関連のカラムを追加
+    """
+    try:
+        # payment_methodカラムが既に存在するかチェック
+        cursor.execute("""
+            SELECT COUNT(*) as count
+            FROM information_schema.COLUMNS
+            WHERE TABLE_SCHEMA = DATABASE()
+            AND TABLE_NAME = 'archived_trades'
+            AND COLUMN_NAME = 'payment_method'
+        """)
+        result = cursor.fetchone()
+
+        if result['count'] > 0:
+            print("✓ archived_tradesの銀行振込用カラムは既に存在します")
+            return
+
+        print("archived_tradesテーブルに銀行振込用のカラムを追加中...")
+
+        cursor.execute("""
+            ALTER TABLE archived_trades
+            ADD COLUMN payment_method ENUM('card', 'bank_transfer') DEFAULT 'card'
+                COMMENT '支払い方法' AFTER payment_intent_id
+        """)
+
+        print("✓ archived_tradesテーブルへの銀行振込用カラム追加完了")
+
+    except Exception as e:
+        print(f"✗ archived_tradesマイグレーションエラー: {e}")
+        raise
+
+
 def create_table(cursor):
     create_users_table(cursor)
     create_follows_table(cursor)
@@ -607,9 +718,9 @@ def create_table(cursor):
     create_cleanup_logs_table(cursor)
     create_withdrawal_logs_table(cursor)
 
-    # 購入フローのマイグレーションを実行
+    # 既存DBへのマイグレーションを実行（新規作成時は不要だがエラーにならない）
     migrate_add_purchase_flow_columns(cursor)
     migrate_add_purchase_flow_to_archives(cursor)
-
-    # Stripe Connectのマイグレーションを実行
     migrate_add_stripe_connect_columns(cursor)
+    migrate_add_bank_transfer_columns(cursor)
+    migrate_add_purchase_columns_to_archived_trades(cursor)

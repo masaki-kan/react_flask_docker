@@ -246,7 +246,282 @@ def agree_purchase_price():
 
 
 # ================================================================================
-# 3. 決済API（Stripe連携は後で実装）
+# 3. カード決済API（Stripe Elements用）
+# ================================================================================
+
+@purchase_bp.route('/create_card_payment_intent', methods=['POST'])
+def create_card_payment_intent():
+    """
+    カード決済用のPaymentIntentを作成（Stripe Elements用）
+    client_secretを返し、フロントエンドでカード情報を入力して決済を確定する
+
+    Parameters:
+        trade_id: 取引ID
+
+    Returns:
+        client_secret: Stripe Elements用のシークレット
+    """
+    try:
+        data = request.json
+        trade_id = data.get('trade_id')
+
+        if not trade_id:
+            return jsonify({
+                'success': False,
+                'message': '取引IDは必須です'
+            }), 400
+
+        with get_db_connection() as conn:
+            cursor = conn.cursor(dictionary=True)
+
+            # 取引情報を取得（販売者のStripe情報も取得）
+            cursor.execute("""
+                SELECT t.trade_id, t.purchase_price, t.status, t.buyer_id,
+                       i.user_id as seller_id,
+                       u.stripe_account_id, u.stripe_charges_enabled
+                FROM trades t
+                JOIN items i ON t.item_id = i.item_id
+                JOIN users u ON i.user_id = u.user_id
+                WHERE t.trade_id = %s
+            """, (trade_id,))
+            trade = cursor.fetchone()
+
+            if not trade:
+                return jsonify({
+                    'success': False,
+                    'message': '取引が見つかりません'
+                }), 404
+
+            if trade['status'] != 'price_agreed':
+                return jsonify({
+                    'success': False,
+                    'message': 'この取引は決済できません（金額が合意されていません）'
+                }), 400
+
+            purchase_price = float(trade['purchase_price'])
+            buyer_payment_amount = int(purchase_price)
+            stripe_fee = int(purchase_price * 0.036)
+
+            # 本番環境の場合: Stripe Connectを使用
+            if STRIPE_MODE == 'live':
+                if not trade['stripe_account_id']:
+                    return jsonify({
+                        'success': False,
+                        'message': '販売者がStripe連携を完了していません'
+                    }), 400
+
+                if not trade['stripe_charges_enabled']:
+                    return jsonify({
+                        'success': False,
+                        'message': '販売者のStripeアカウントが決済を受け付けられる状態ではありません'
+                    }), 400
+
+                try:
+                    # PaymentIntentを作成（確定はフロントエンドで行う）
+                    payment_intent = stripe.PaymentIntent.create(
+                        amount=buyer_payment_amount,
+                        currency='jpy',
+                        payment_method_types=['card'],
+                        # エスクロー設定
+                        on_behalf_of=trade['stripe_account_id'],
+                        transfer_data={
+                            'destination': trade['stripe_account_id'],
+                        },
+                        metadata={
+                            'trade_id': str(trade_id),
+                            'seller_id': str(trade['seller_id']),
+                            'buyer_id': str(trade['buyer_id']),
+                            'product_price': str(purchase_price),
+                            'stripe_fee': str(stripe_fee),
+                            'seller_receives': str(int(purchase_price - stripe_fee)),
+                            'payment_method': 'card',
+                        }
+                    )
+
+                    # 取引テーブルを更新（PaymentIntent ID保存）
+                    cursor.execute("""
+                        UPDATE trades
+                        SET payment_intent_id = %s,
+                            payment_method = 'card',
+                            updated_at = NOW()
+                        WHERE trade_id = %s
+                    """, (payment_intent.id, trade_id))
+                    conn.commit()
+
+                    print(f"[INFO] Card PaymentIntent created: {payment_intent.id}", flush=True)
+
+                    return jsonify({
+                        'success': True,
+                        'message': 'PaymentIntentを作成しました',
+                        'data': {
+                            'client_secret': payment_intent.client_secret,
+                            'payment_intent_id': payment_intent.id,
+                            'amount': buyer_payment_amount,
+                            'is_test_mode': False
+                        }
+                    })
+
+                except stripe.error.StripeError as e:
+                    print(f"[ERROR] Stripe PaymentIntent creation failed: {str(e)}", flush=True)
+                    return jsonify({
+                        'success': False,
+                        'message': f'決済準備エラー: {str(e)}'
+                    }), 500
+
+            else:
+                # 開発環境: テストモード
+                # テスト環境でもStripe APIを使用（テストキーで）
+                try:
+                    payment_intent = stripe.PaymentIntent.create(
+                        amount=buyer_payment_amount,
+                        currency='jpy',
+                        payment_method_types=['card'],
+                        metadata={
+                            'trade_id': str(trade_id),
+                            'seller_id': str(trade['seller_id']),
+                            'buyer_id': str(trade['buyer_id']),
+                            'payment_method': 'card',
+                        }
+                    )
+
+                    cursor.execute("""
+                        UPDATE trades
+                        SET payment_intent_id = %s,
+                            payment_method = 'card',
+                            updated_at = NOW()
+                        WHERE trade_id = %s
+                    """, (payment_intent.id, trade_id))
+                    conn.commit()
+
+                    return jsonify({
+                        'success': True,
+                        'message': '【テスト】PaymentIntentを作成しました',
+                        'data': {
+                            'client_secret': payment_intent.client_secret,
+                            'payment_intent_id': payment_intent.id,
+                            'amount': buyer_payment_amount,
+                            'is_test_mode': True
+                        }
+                    })
+
+                except stripe.error.StripeError as e:
+                    print(f"[ERROR] Test Stripe PaymentIntent creation failed: {str(e)}", flush=True)
+                    return jsonify({
+                        'success': False,
+                        'message': f'決済準備エラー: {str(e)}'
+                    }), 500
+
+    except mysql.connector.Error as e:
+        return jsonify({
+            'success': False,
+            'message': f'データベースエラー: {str(e)}'
+        }), 500
+    except Exception as e:
+        print(f"[ERROR] create_card_payment_intent error: {str(e)}", flush=True)
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'success': False,
+            'message': f'エラーが発生しました: {str(e)}'
+        }), 500
+
+
+@purchase_bp.route('/confirm_card_payment', methods=['POST'])
+def confirm_card_payment():
+    """
+    カード決済の完了を確認してDBを更新
+
+    Parameters:
+        trade_id: 取引ID
+        payment_intent_id: PaymentIntent ID
+    """
+    try:
+        data = request.json
+        trade_id = data.get('trade_id')
+        payment_intent_id = data.get('payment_intent_id')
+
+        if not trade_id or not payment_intent_id:
+            return jsonify({
+                'success': False,
+                'message': '取引IDとPaymentIntent IDは必須です'
+            }), 400
+
+        with get_db_connection() as conn:
+            cursor = conn.cursor(dictionary=True)
+
+            # 取引情報を取得
+            cursor.execute("""
+                SELECT trade_id, payment_intent_id, status, purchase_price
+                FROM trades
+                WHERE trade_id = %s
+            """, (trade_id,))
+            trade = cursor.fetchone()
+
+            if not trade:
+                return jsonify({
+                    'success': False,
+                    'message': '取引が見つかりません'
+                }), 404
+
+            if trade['payment_intent_id'] != payment_intent_id:
+                return jsonify({
+                    'success': False,
+                    'message': 'PaymentIntent IDが一致しません'
+                }), 400
+
+            # Stripeで決済状況を確認
+            try:
+                payment_intent = stripe.PaymentIntent.retrieve(payment_intent_id)
+
+                if payment_intent.status == 'succeeded':
+                    # 決済成功 → DBを更新
+                    cursor.execute("""
+                        UPDATE trades
+                        SET paid_at = NOW(),
+                            status = 'paid',
+                            updated_at = NOW()
+                        WHERE trade_id = %s
+                    """, (trade_id,))
+                    conn.commit()
+
+                    purchase_price = float(trade['purchase_price'])
+                    stripe_fee = int(purchase_price * 0.036)
+
+                    print(f"[INFO] Card payment confirmed: trade_id={trade_id}", flush=True)
+
+                    return jsonify({
+                        'success': True,
+                        'message': '決済が完了しました',
+                        'data': {
+                            'trade_id': trade_id,
+                            'status': 'paid',
+                            'purchase_price': int(purchase_price),
+                            'stripe_fee': stripe_fee,
+                            'seller_receives': int(purchase_price - stripe_fee)
+                        }
+                    })
+                else:
+                    return jsonify({
+                        'success': False,
+                        'message': f'決済が完了していません（状態: {payment_intent.status}）'
+                    }), 400
+
+            except stripe.error.StripeError as e:
+                return jsonify({
+                    'success': False,
+                    'message': f'決済確認エラー: {str(e)}'
+                }), 500
+
+    except Exception as e:
+        print(f"[ERROR] confirm_card_payment error: {str(e)}", flush=True)
+        return jsonify({
+            'success': False,
+            'message': f'エラーが発生しました: {str(e)}'
+        }), 500
+
+
+# ================================================================================
+# 3-2. 決済API（レガシー - 後方互換性のため残す）
 # ================================================================================
 
 @purchase_bp.route('/pay_for_purchase', methods=['POST'])

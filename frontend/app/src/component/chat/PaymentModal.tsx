@@ -1,4 +1,4 @@
-import { FC, useState } from "react";
+import { FC, useState, useEffect } from "react";
 import {
   Modal,
   ModalOverlay,
@@ -23,11 +23,22 @@ import {
   Stack,
   Divider,
   Badge,
+  Spinner,
 } from "@chakra-ui/react";
 import { FaCreditCard, FaLock, FaYenSign, FaStore, FaUniversity, FaCopy } from "react-icons/fa";
-import { payForPurchase, createBankTransferPayment, BankTransferInfo } from "../../api/purchaseApi";
+import { loadStripe } from "@stripe/stripe-js";
+import { Elements, CardElement, useStripe, useElements } from "@stripe/react-stripe-js";
+import {
+  createBankTransferPayment,
+  createCardPaymentIntent,
+  confirmCardPayment,
+  BankTransferInfo,
+} from "../../api/purchaseApi";
 import useMyProfile from "../../hooks/useProfile";
 import { useNavigate } from "react-router-dom";
+
+// Stripeの公開キー
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PROMISE_KEY || "");
 
 type PaymentModalProps = {
   isOpen: boolean;
@@ -38,6 +49,211 @@ type PaymentModalProps = {
 };
 
 type PaymentMethod = "card" | "bank_transfer";
+
+// カード入力フォームのスタイル
+const cardElementOptions = {
+  style: {
+    base: {
+      fontSize: "16px",
+      color: "#424770",
+      "::placeholder": {
+        color: "#aab7c4",
+      },
+    },
+    invalid: {
+      color: "#9e2146",
+    },
+  },
+  hidePostalCode: true,
+};
+
+// カード決済フォームコンポーネント
+const CardPaymentForm: FC<{
+  tradeId: number;
+  purchasePrice: number;
+  onSuccess: () => void;
+  onCancel: () => void;
+}> = ({ tradeId, purchasePrice, onSuccess, onCancel }) => {
+  const stripe = useStripe();
+  const elements = useElements();
+  const toast = useToast();
+  const [isLoading, setIsLoading] = useState(false);
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [paymentIntentId, setPaymentIntentId] = useState<string | null>(null);
+  const [cardError, setCardError] = useState<string | null>(null);
+
+  // PaymentIntentを作成
+  useEffect(() => {
+    const createIntent = async () => {
+      try {
+        const result = await createCardPaymentIntent({ trade_id: tradeId });
+        if (result.success && result.data) {
+          setClientSecret(result.data.client_secret);
+          setPaymentIntentId(result.data.payment_intent_id);
+        } else {
+          toast({
+            title: "エラー",
+            description: result.message || "決済準備に失敗しました",
+            status: "error",
+            duration: 5000,
+            isClosable: true,
+          });
+        }
+      } catch (error) {
+        console.error("PaymentIntent作成エラー:", error);
+        toast({
+          title: "エラー",
+          description: "決済準備に失敗しました",
+          status: "error",
+          duration: 5000,
+          isClosable: true,
+        });
+      }
+    };
+    createIntent();
+  }, [tradeId, toast]);
+
+  const handleSubmit = async () => {
+    if (!stripe || !elements || !clientSecret) {
+      return;
+    }
+
+    const cardElement = elements.getElement(CardElement);
+    if (!cardElement) {
+      return;
+    }
+
+    setIsLoading(true);
+    setCardError(null);
+
+    try {
+      // Stripeでカード決済を確定
+      const { error, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
+        payment_method: {
+          card: cardElement,
+        },
+      });
+
+      if (error) {
+        console.error("Stripe決済エラー:", error);
+        setCardError(error.message || "カード決済に失敗しました");
+        toast({
+          title: "決済エラー",
+          description: error.message || "カード決済に失敗しました",
+          status: "error",
+          duration: 5000,
+          isClosable: true,
+        });
+      } else if (paymentIntent && paymentIntent.status === "succeeded") {
+        // バックエンドに決済完了を通知
+        const confirmResult = await confirmCardPayment({
+          trade_id: tradeId,
+          payment_intent_id: paymentIntentId!,
+        });
+
+        if (confirmResult.success) {
+          toast({
+            title: "決済完了",
+            description: "カード決済が完了しました。商品の発送をお待ちください。",
+            status: "success",
+            duration: 5000,
+            isClosable: true,
+          });
+          onSuccess();
+        } else {
+          toast({
+            title: "エラー",
+            description: confirmResult.message || "決済確認に失敗しました",
+            status: "error",
+            duration: 5000,
+            isClosable: true,
+          });
+        }
+      }
+    } catch (error) {
+      console.error("決済処理エラー:", error);
+      toast({
+        title: "エラー",
+        description: "決済処理に失敗しました",
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (!clientSecret) {
+    return (
+      <VStack py={8}>
+        <Spinner size="lg" color="purple.500" />
+        <Text>決済を準備中...</Text>
+      </VStack>
+    );
+  }
+
+  return (
+    <VStack spacing={4} align="stretch">
+      {/* 金額表示 */}
+      <Box p={4} bg="purple.50" borderRadius="md">
+        <HStack justify="space-between">
+          <Text fontWeight="bold">お支払い金額</Text>
+          <Text fontSize="2xl" fontWeight="bold" color="purple.600">
+            ¥{purchasePrice.toLocaleString()}
+          </Text>
+        </HStack>
+      </Box>
+
+      {/* カード入力フォーム */}
+      <Box p={4} bg="gray.50" borderRadius="md" borderWidth={1} borderColor="gray.200">
+        <Text fontSize="sm" fontWeight="bold" mb={3} color="gray.700">
+          カード情報を入力
+        </Text>
+        <Box
+          p={3}
+          bg="white"
+          borderRadius="md"
+          borderWidth={1}
+          borderColor="gray.300"
+        >
+          <CardElement options={cardElementOptions} />
+        </Box>
+        {cardError && (
+          <Text color="red.500" fontSize="sm" mt={2}>
+            {cardError}
+          </Text>
+        )}
+      </Box>
+
+      {/* セキュリティメッセージ */}
+      <Box p={3} bg="blue.50" borderRadius="md">
+        <HStack spacing={2}>
+          <Icon as={FaLock} color="blue.500" />
+          <Text fontSize="xs" color="blue.700">
+            カード情報はStripeにより安全に処理されます。このサイトにカード番号は保存されません。
+          </Text>
+        </HStack>
+      </Box>
+
+      {/* ボタン */}
+      <HStack justify="flex-end" pt={2}>
+        <Button variant="ghost" onClick={onCancel} isDisabled={isLoading}>
+          戻る
+        </Button>
+        <Button
+          colorScheme="purple"
+          onClick={handleSubmit}
+          isLoading={isLoading}
+          isDisabled={!stripe || !clientSecret}
+          leftIcon={<FaCreditCard />}
+        >
+          ¥{purchasePrice.toLocaleString()} を支払う
+        </Button>
+      </HStack>
+    </VStack>
+  );
+};
 
 /**
  * 決済モーダル
@@ -57,72 +273,13 @@ const PaymentModal: FC<PaymentModalProps> = ({
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("card");
   const [bankTransferInfo, setBankTransferInfo] = useState<BankTransferInfo | null>(null);
   const [showBankTransferInfo, setShowBankTransferInfo] = useState(false);
+  const [showCardForm, setShowCardForm] = useState(false);
 
   // 購入者が支払う金額（商品代金のみ）
   const totalAmount = purchasePrice;
 
   // 販売者登録状態を確認
   const isSellerRegistered = memorizeProfile.profile.stripe_onboarding_completed;
-
-  const handleCardPayment = async () => {
-    if (!isSellerRegistered) {
-      toast({
-        title: "販売者登録が必要です",
-        description: "購入するには、まず販売者として登録する必要があります。プロフィールページから登録してください。",
-        status: "warning",
-        duration: 6000,
-        isClosable: true,
-      });
-      return;
-    }
-
-    if (
-      !window.confirm(
-        `¥${totalAmount.toLocaleString()} のカード決済を実行しますか？`
-      )
-    ) {
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-      const result = await payForPurchase({
-        trade_id: tradeId,
-        payment_method_id: "pm_test_success",
-      });
-
-      if (result.success) {
-        toast({
-          title: "決済完了",
-          description: "決済が完了しました。商品の発送をお待ちください。",
-          status: "success",
-          duration: 5000,
-          isClosable: true,
-        });
-        onClose();
-        onSuccess();
-      } else {
-        toast({
-          title: "決済エラー",
-          description: result.message || "決済に失敗しました",
-          status: "error",
-          duration: 3000,
-          isClosable: true,
-        });
-      }
-    } catch (error) {
-      console.error("決済エラー:", error);
-      toast({
-        title: "決済エラー",
-        description: "決済処理に失敗しました",
-        status: "error",
-        duration: 3000,
-        isClosable: true,
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const handleBankTransferPayment = async () => {
     if (!isSellerRegistered) {
@@ -177,7 +334,7 @@ const PaymentModal: FC<PaymentModalProps> = ({
 
   const handlePayment = () => {
     if (paymentMethod === "card") {
-      handleCardPayment();
+      setShowCardForm(true);
     } else {
       handleBankTransferPayment();
     }
@@ -204,6 +361,39 @@ const PaymentModal: FC<PaymentModalProps> = ({
     onClose();
     onSuccess();
   };
+
+  const handleCardSuccess = () => {
+    onClose();
+    onSuccess();
+  };
+
+  // カード入力フォーム表示
+  if (showCardForm) {
+    return (
+      <Modal isOpen={isOpen} onClose={onClose} size="md">
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>
+            <HStack>
+              <Icon as={FaCreditCard} color="purple.500" />
+              <Text>カード決済</Text>
+            </HStack>
+          </ModalHeader>
+          <ModalCloseButton />
+          <ModalBody pb={6}>
+            <Elements stripe={stripePromise}>
+              <CardPaymentForm
+                tradeId={tradeId}
+                purchasePrice={totalAmount}
+                onSuccess={handleCardSuccess}
+                onCancel={() => setShowCardForm(false)}
+              />
+            </Elements>
+          </ModalBody>
+        </ModalContent>
+      </Modal>
+    );
+  }
 
   // 銀行振込情報表示画面
   if (showBankTransferInfo && bankTransferInfo) {
@@ -471,22 +661,6 @@ const PaymentModal: FC<PaymentModalProps> = ({
                 販売者への送金は、あなたが受け取り確認をした後に行われます。
               </Text>
             </Box>
-
-            {/* テスト決済の注意書き */}
-            <Box
-              p={3}
-              bg="yellow.50"
-              borderRadius="md"
-              borderWidth={1}
-              borderColor="yellow.300"
-            >
-              <Text fontSize="xs" fontWeight="bold" color="orange.700" mb={1}>
-                テスト決済モード
-              </Text>
-              <Text fontSize="xs" color="gray.600">
-                現在はテスト環境です。実際の決済は行われません。
-              </Text>
-            </Box>
           </VStack>
         </ModalBody>
         <ModalFooter>
@@ -501,7 +675,7 @@ const PaymentModal: FC<PaymentModalProps> = ({
               leftIcon={paymentMethod === "card" ? <FaCreditCard /> : <FaUniversity />}
             >
               {paymentMethod === "card"
-                ? `¥${totalAmount.toLocaleString()} を支払う`
+                ? "カード情報を入力"
                 : "振込先情報を表示"}
             </Button>
           ) : (
