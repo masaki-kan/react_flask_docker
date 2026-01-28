@@ -37,6 +37,10 @@ def propose_purchase_price():
         trade_id = data.get('trade_id')
         price = data.get('price')
         message = data.get('message', '')
+        payment_method = data.get('payment_method', 'card')
+
+        if payment_method not in ('card', 'bank_transfer'):
+            payment_method = 'card'
 
         if not trade_id or not price:
             return jsonify({
@@ -89,12 +93,13 @@ def propose_purchase_price():
                 SET trade_type = 'purchase',
                     purchase_price = %s,
                     price_proposed_by = %s,
+                    payment_method = %s,
                     status = 'price_proposed',
                     is_price_agreed_seller = FALSE,
                     is_price_agreed_buyer = FALSE,
                     updated_at = NOW()
                 WHERE trade_id = %s
-            """, (price, trade['seller_id'], trade_id))
+            """, (price, trade['seller_id'], payment_method, trade_id))
 
             # メッセージを保存（任意）
             if message:
@@ -114,6 +119,7 @@ def propose_purchase_price():
             'data': {
                 'trade_id': trade_id,
                 'purchase_price': price,
+                'payment_method': payment_method,
                 'status': 'price_proposed'
             }
         })

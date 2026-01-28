@@ -18,8 +18,11 @@ import {
   NumberInputField,
   Textarea,
   useToast,
+  Radio,
+  RadioGroup,
+  Stack,
 } from "@chakra-ui/react";
-import { FaYenSign, FaExchangeAlt } from "react-icons/fa";
+import { FaYenSign, FaExchangeAlt, FaCreditCard, FaUniversity } from "react-icons/fa";
 import { useState } from "react";
 import { proposePurchasePrice } from "../../api/purchaseApi";
 
@@ -47,10 +50,17 @@ const PurchaseFlowToggle: FC<PurchaseFlowToggleProps> = ({
   const [price, setPrice] = useState<string>("");
   const [message, setMessage] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<"card" | "bank_transfer">("card");
 
   // 購入モードに切り替え可能な条件（Sellerのみ）
   const canSwitchToPurchase =
     tradeType === "exchange" && status === "pending" && !isBuyer;
+
+  // 手数料計算（カード: 3.6%、銀行振込: 1.5%）
+  const priceNum = Number(price) || 0;
+  const feeRate = paymentMethod === "card" ? 0.036 : 0.015;
+  const processingFee = Math.floor(priceNum * feeRate);
+  const netAmount = priceNum - processingFee;
 
   const handleProposePurchase = async () => {
     if (!price || Number(price) <= 0) {
@@ -70,6 +80,7 @@ const PurchaseFlowToggle: FC<PurchaseFlowToggleProps> = ({
         trade_id: tradeId,
         price: Number(price),
         message: message || undefined,
+        payment_method: paymentMethod,
       });
 
       if (result.success) {
@@ -151,6 +162,59 @@ const PurchaseFlowToggle: FC<PurchaseFlowToggleProps> = ({
                 </Text>
               </Box>
 
+              {/* 決済方法選択 */}
+              <Box>
+                <Text fontSize="sm" fontWeight="bold" mb={2}>
+                  決済方法
+                </Text>
+                <RadioGroup
+                  value={paymentMethod}
+                  onChange={(val) => setPaymentMethod(val as "card" | "bank_transfer")}
+                >
+                  <Stack spacing={3}>
+                    <Box
+                      p={3}
+                      borderRadius="md"
+                      borderWidth={2}
+                      borderColor={paymentMethod === "card" ? "blue.400" : "gray.200"}
+                      bg={paymentMethod === "card" ? "blue.50" : "white"}
+                      cursor="pointer"
+                      onClick={() => setPaymentMethod("card")}
+                    >
+                      <Radio value="card" colorScheme="blue">
+                        <HStack spacing={2}>
+                          <Icon as={FaCreditCard} color="blue.500" />
+                          <Text fontSize="sm" fontWeight="bold">カード決済</Text>
+                        </HStack>
+                      </Radio>
+                      <Text fontSize="xs" color="gray.600" ml={6} mt={1}>
+                        決済手数料 3.6%（販売者負担）
+                      </Text>
+                    </Box>
+                    <Box
+                      p={3}
+                      borderRadius="md"
+                      borderWidth={2}
+                      borderColor={paymentMethod === "bank_transfer" ? "blue.400" : "gray.200"}
+                      bg={paymentMethod === "bank_transfer" ? "blue.50" : "white"}
+                      cursor="pointer"
+                      onClick={() => setPaymentMethod("bank_transfer")}
+                    >
+                      <Radio value="bank_transfer" colorScheme="blue">
+                        <HStack spacing={2}>
+                          <Icon as={FaUniversity} color="green.600" />
+                          <Text fontSize="sm" fontWeight="bold">銀行振込</Text>
+                        </HStack>
+                      </Radio>
+                      <Text fontSize="xs" color="gray.600" ml={6} mt={1}>
+                        決済手数料 1.5%（販売者負担）
+                      </Text>
+                    </Box>
+                  </Stack>
+                </RadioGroup>
+              </Box>
+
+              {/* 手数料説明 */}
               <Box p={3} bg="orange.50" borderRadius="md" borderWidth={1} borderColor="orange.300">
                 <Text fontSize="xs" fontWeight="bold" color="orange.700" mb={1}>
                   💡 手数料について
@@ -158,9 +222,7 @@ const PurchaseFlowToggle: FC<PurchaseFlowToggleProps> = ({
                 <Text fontSize="xs" color="gray.700">
                   以下の手数料は販売者負担となります。
                   <br />
-                  ・決済手数料（3.6%）
-                  <br />
-                  ・銀行振込手数料（250円/回）
+                  ・決済手数料（{paymentMethod === "card" ? "3.6%" : "1.5%"}）
                   <br />
                   購入者から受け取った金額から手数料が差し引かれた金額が振り込まれます。
                 </Text>
@@ -192,7 +254,7 @@ const PurchaseFlowToggle: FC<PurchaseFlowToggleProps> = ({
                 />
               </Box>
 
-              {price && Number(price) > 0 && (
+              {price && priceNum > 0 && (
                 <Box p={3} bg="green.50" borderRadius="md">
                   <Text fontSize="xs" fontWeight="bold" color="green.700" mb={2}>
                     💰 あなたの受取金額
@@ -200,26 +262,18 @@ const PurchaseFlowToggle: FC<PurchaseFlowToggleProps> = ({
                   <VStack align="stretch" spacing={1}>
                     <HStack justify="space-between">
                       <Text fontSize="xs" color="gray.600">
-                        購入者の支払い金額
+                        提示金額
                       </Text>
                       <Text fontSize="xs" color="gray.600">
-                        ¥{Number(price).toLocaleString()}
+                        ¥{priceNum.toLocaleString()}
                       </Text>
                     </HStack>
                     <HStack justify="space-between">
                       <Text fontSize="xs" color="gray.600">
-                        決済手数料 (3.6%)
+                        決済手数料 ({paymentMethod === "card" ? "3.6%" : "1.5%"})
                       </Text>
                       <Text fontSize="xs" color="red.500">
-                        -¥{Math.floor(Number(price) * 0.036).toLocaleString()}
-                      </Text>
-                    </HStack>
-                    <HStack justify="space-between">
-                      <Text fontSize="xs" color="gray.600">
-                        銀行振込手数料
-                      </Text>
-                      <Text fontSize="xs" color="red.500">
-                        -¥250
+                        -¥{processingFee.toLocaleString()}
                       </Text>
                     </HStack>
                     <HStack justify="space-between" pt={1} borderTopWidth={1} borderColor="gray.300">
@@ -227,13 +281,10 @@ const PurchaseFlowToggle: FC<PurchaseFlowToggleProps> = ({
                         銀行口座への振込額
                       </Text>
                       <Text fontSize="lg" fontWeight="bold" color="green.600">
-                        ¥{(Number(price) - Math.floor(Number(price) * 0.036) - 250).toLocaleString()}
+                        ¥{netAmount.toLocaleString()}
                       </Text>
                     </HStack>
                   </VStack>
-                  <Text fontSize="xs" color="gray.600" mt={2}>
-                    ※ 決済手数料・銀行振込手数料が差し引かれた金額が銀行口座に振り込まれます
-                  </Text>
                 </Box>
               )}
             </VStack>

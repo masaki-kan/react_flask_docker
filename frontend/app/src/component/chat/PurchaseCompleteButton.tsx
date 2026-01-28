@@ -17,6 +17,7 @@ type PurchaseCompleteButtonProps = {
   tradeId: number;
   isBuyerConfirmed: boolean;
   purchasePrice: number;
+  paymentMethod: "card" | "bank_transfer";
 };
 
 /**
@@ -27,14 +28,21 @@ const PurchaseCompleteButton: FC<PurchaseCompleteButtonProps> = ({
   tradeId,
   isBuyerConfirmed,
   purchasePrice,
+  paymentMethod,
 }) => {
   const toast = useToast();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
 
+  // 手数料計算（カード: 3.6%、銀行振込: 1.5%）
+  const feeRate = paymentMethod === "card" ? 0.036 : 0.015;
+  const processingFee = Math.floor(purchasePrice * feeRate);
+  const netAmount = purchasePrice - processingFee;
+
   const handleCompletePurchase = async () => {
+    const feeRateLabel = paymentMethod === "card" ? "3.6%" : "1.5%";
     const confirm = window.confirm(
-      `取引を完了しますか？\n\nあなたが受け取る金額: ¥${purchasePrice.toLocaleString()}\n\n完了後は取引履歴に保存されます。`
+      `取引を完了しますか？\n\n購入金額: ¥${purchasePrice.toLocaleString()}\n決済手数料 (${feeRateLabel}): -¥${processingFee.toLocaleString()}\nあなたの受取金額: ¥${netAmount.toLocaleString()}\n\n完了後は取引履歴に保存されます。`
     );
 
     if (!confirm) return;
@@ -116,13 +124,29 @@ const PurchaseCompleteButton: FC<PurchaseCompleteButtonProps> = ({
             </HStack>
 
             <Box p={3} bg="white" borderRadius="md">
-              <VStack align="stretch" spacing={2}>
+              <VStack align="stretch" spacing={1}>
                 <HStack justify="space-between">
-                  <Text fontSize="md" fontWeight="bold">
+                  <Text fontSize="xs" color="gray.600">
+                    購入金額
+                  </Text>
+                  <Text fontSize="xs" color="gray.600">
+                    ¥{purchasePrice.toLocaleString()}
+                  </Text>
+                </HStack>
+                <HStack justify="space-between">
+                  <Text fontSize="xs" color="gray.600">
+                    決済手数料 ({paymentMethod === "card" ? "3.6%" : "1.5%"})
+                  </Text>
+                  <Text fontSize="xs" color="red.500">
+                    -¥{processingFee.toLocaleString()}
+                  </Text>
+                </HStack>
+                <HStack justify="space-between" pt={1} borderTopWidth={1} borderColor="gray.300">
+                  <Text fontSize="sm" fontWeight="bold" color="green.700">
                     あなたの受取金額
                   </Text>
-                  <Text fontSize="xl" fontWeight="bold" color="green.600">
-                    ¥{purchasePrice.toLocaleString()}
+                  <Text fontSize="lg" fontWeight="bold" color="green.600">
+                    ¥{netAmount.toLocaleString()}
                   </Text>
                 </HStack>
               </VStack>

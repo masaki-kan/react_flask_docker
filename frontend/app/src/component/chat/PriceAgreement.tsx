@@ -29,6 +29,7 @@ type PriceAgreementProps = {
   isPriceAgreedBuyer: boolean;
   isSeller: boolean;
   status: string;
+  paymentMethod: "card" | "bank_transfer";
   onSuccess: () => void;
 };
 
@@ -43,6 +44,7 @@ const PriceAgreement: FC<PriceAgreementProps> = ({
   isPriceAgreedBuyer,
   isSeller,
   status,
+  paymentMethod,
   onSuccess,
 }) => {
   const toast = useToast();
@@ -340,11 +342,27 @@ const PriceAgreement: FC<PriceAgreementProps> = ({
                   </Text>
                   <VStack align="stretch" spacing={1}>
                     <HStack justify="space-between">
+                      <Text fontSize="xs" color="gray.600">
+                        提示金額
+                      </Text>
+                      <Text fontSize="xs" color="gray.600">
+                        ¥{Number(newPrice).toLocaleString()}
+                      </Text>
+                    </HStack>
+                    <HStack justify="space-between">
+                      <Text fontSize="xs" color="gray.600">
+                        決済手数料 ({paymentMethod === "card" ? "3.6%" : "1.5%"})
+                      </Text>
+                      <Text fontSize="xs" color="red.500">
+                        -¥{Math.floor(Number(newPrice) * (paymentMethod === "card" ? 0.036 : 0.015)).toLocaleString()}
+                      </Text>
+                    </HStack>
+                    <HStack justify="space-between" pt={1} borderTopWidth={1} borderColor="gray.300">
                       <Text fontSize="sm" fontWeight="bold" color="green.700">
-                        受取金額
+                        銀行口座への振込額
                       </Text>
                       <Text fontSize="lg" fontWeight="bold" color="green.600">
-                        ¥{Number(newPrice).toLocaleString()}
+                        ¥{(Number(newPrice) - Math.floor(Number(newPrice) * (paymentMethod === "card" ? 0.036 : 0.015))).toLocaleString()}
                       </Text>
                     </HStack>
                   </VStack>

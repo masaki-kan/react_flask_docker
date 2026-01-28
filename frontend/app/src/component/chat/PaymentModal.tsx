@@ -18,9 +18,6 @@ import {
   AlertIcon,
   AlertTitle,
   AlertDescription,
-  RadioGroup,
-  Radio,
-  Stack,
   Divider,
   Badge,
   Spinner,
@@ -45,10 +42,11 @@ type PaymentModalProps = {
   onClose: () => void;
   tradeId: number;
   purchasePrice: number;
+  paymentMethod: "card" | "bank_transfer";
   onSuccess: () => void;
 };
 
-type PaymentMethod = "card" | "bank_transfer";
+
 
 // カード入力フォームのスタイル
 const cardElementOptions = {
@@ -264,13 +262,13 @@ const PaymentModal: FC<PaymentModalProps> = ({
   onClose,
   tradeId,
   purchasePrice,
+  paymentMethod,
   onSuccess,
 }) => {
   const toast = useToast();
   const navigate = useNavigate();
   const { memorizeProfile } = useMyProfile();
   const [isLoading, setIsLoading] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("card");
   const [bankTransferInfo, setBankTransferInfo] = useState<BankTransferInfo | null>(null);
   const [showBankTransferInfo, setShowBankTransferInfo] = useState(false);
   const [showCardForm, setShowCardForm] = useState(false);
@@ -596,58 +594,39 @@ const PaymentModal: FC<PaymentModalProps> = ({
 
             <Divider />
 
-            {/* 支払い方法選択 */}
+            {/* 決済方法（合意済み） */}
             <Box>
               <Text fontSize="sm" fontWeight="bold" mb={3}>
-                お支払い方法を選択
+                お支払い方法
               </Text>
-              <RadioGroup value={paymentMethod} onChange={(val) => setPaymentMethod(val as PaymentMethod)}>
-                <Stack spacing={3}>
-                  {/* カード決済 */}
-                  <Box
-                    p={3}
-                    borderRadius="md"
-                    borderWidth={2}
-                    borderColor={paymentMethod === "card" ? "purple.500" : "gray.200"}
-                    bg={paymentMethod === "card" ? "purple.50" : "white"}
-                    cursor="pointer"
-                    onClick={() => setPaymentMethod("card")}
+              <Box
+                p={3}
+                borderRadius="md"
+                borderWidth={2}
+                borderColor={paymentMethod === "card" ? "purple.500" : "blue.500"}
+                bg={paymentMethod === "card" ? "purple.50" : "blue.50"}
+              >
+                <HStack spacing={2}>
+                  <Icon
+                    as={paymentMethod === "card" ? FaCreditCard : FaUniversity}
+                    color={paymentMethod === "card" ? "purple.500" : "blue.500"}
+                  />
+                  <Text fontWeight="bold">
+                    {paymentMethod === "card" ? "クレジットカード" : "銀行振込"}
+                  </Text>
+                  <Badge
+                    colorScheme={paymentMethod === "card" ? "purple" : "blue"}
+                    fontSize="xs"
                   >
-                    <Radio value="card" colorScheme="purple">
-                      <HStack spacing={2}>
-                        <Icon as={FaCreditCard} color="purple.500" />
-                        <Text fontWeight="bold">クレジットカード</Text>
-                        <Badge colorScheme="purple" fontSize="xs">即時決済</Badge>
-                      </HStack>
-                    </Radio>
-                    <Text fontSize="xs" color="gray.500" ml={6} mt={1}>
-                      決済手数料 3.6%（販売者負担）
-                    </Text>
-                  </Box>
-
-                  {/* 銀行振込 */}
-                  <Box
-                    p={3}
-                    borderRadius="md"
-                    borderWidth={2}
-                    borderColor={paymentMethod === "bank_transfer" ? "blue.500" : "gray.200"}
-                    bg={paymentMethod === "bank_transfer" ? "blue.50" : "white"}
-                    cursor="pointer"
-                    onClick={() => setPaymentMethod("bank_transfer")}
-                  >
-                    <Radio value="bank_transfer" colorScheme="blue">
-                      <HStack spacing={2}>
-                        <Icon as={FaUniversity} color="blue.500" />
-                        <Text fontWeight="bold">銀行振込</Text>
-                        <Badge colorScheme="blue" fontSize="xs">1〜2営業日</Badge>
-                      </HStack>
-                    </Radio>
-                    <Text fontSize="xs" color="gray.500" ml={6} mt={1}>
-                      決済手数料 1.5%（販売者負担）・振込手数料はお客様負担
-                    </Text>
-                  </Box>
-                </Stack>
-              </RadioGroup>
+                    {paymentMethod === "card" ? "即時決済" : "1〜2営業日"}
+                  </Badge>
+                </HStack>
+                <Text fontSize="xs" color="gray.500" mt={1}>
+                  {paymentMethod === "card"
+                    ? "カード情報を入力して即時決済"
+                    : "指定口座に振込・入金確認まで1〜2営業日"}
+                </Text>
+              </Box>
             </Box>
 
             {/* エスクロー説明 */}

@@ -722,7 +722,8 @@ const Home: FC = () => {
                   </Button>
                 )}
 
-              {memorizeChatItemData.status === "shipped" && (
+              {memorizeChatItemData.trade_type !== "purchase" &&
+                memorizeChatItemData.status === "shipped" && (
                 <VStack align="stretch" spacing={2} w="100%">
                   <Checkbox
                     isChecked={hasUserConfirmed}
@@ -884,6 +885,7 @@ const Home: FC = () => {
                   }
                   isSeller={isCurrentUserSeller}
                   status={memorizeChatItemData.status}
+                  paymentMethod={memorizeChatItemData.payment_method || "card"}
                   onSuccess={() => getChatPageData(tradeIdNumber!)}
                 />
               );
@@ -1056,6 +1058,7 @@ const Home: FC = () => {
                   memorizeChatItemData.is_buyer_confirmed || false
                 }
                 purchasePrice={memorizeChatItemData.purchase_price || 0}
+                paymentMethod={memorizeChatItemData.payment_method || "card"}
               />
             )}
 
@@ -1138,6 +1141,7 @@ const Home: FC = () => {
               onClose={onPaymentClose}
               tradeId={Number(memorizeChatItemData.trade_id)}
               purchasePrice={memorizeChatItemData.purchase_price}
+              paymentMethod={memorizeChatItemData.payment_method || "card"}
               onSuccess={() => getChatPageData(tradeIdNumber!)}
             />
           )}

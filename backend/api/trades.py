@@ -968,6 +968,7 @@ def get_chat_item_detail():
                     trades.is_price_agreed_seller,
                     trades.is_price_agreed_buyer,
                     trades.is_buyer_confirmed,
+                    trades.payment_method,
                     items.item_id,
                     items.title,
                     items.description,
@@ -1003,6 +1004,7 @@ def get_chat_item_detail():
                 "is_price_agreed_seller": trade_data["is_price_agreed_seller"],
                 "is_price_agreed_buyer": trade_data["is_price_agreed_buyer"],
                 "is_buyer_confirmed": trade_data["is_buyer_confirmed"],
+                "payment_method": trade_data.get("payment_method", "card"),
             }
 
             print(f"📦 getChatItemDetail: trade_id={trade_id}, trade_type={item_data['trade_type']}, status={item_data['status']}, price={item_data['purchase_price']}")

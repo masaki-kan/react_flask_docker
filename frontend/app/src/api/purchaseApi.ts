@@ -14,6 +14,7 @@ export interface ProposePriceRequest {
   trade_id: number;
   price: number;
   message?: string;
+  payment_method?: 'card' | 'bank_transfer';
 }
 
 export interface AgreePriceRequest {

@@ -26,6 +26,7 @@ export interface chatItemDataType {
   is_price_agreed_seller?: boolean;
   is_price_agreed_buyer?: boolean;
   is_buyer_confirmed?: boolean;
+  payment_method?: 'card' | 'bank_transfer';
 }
 
 export interface shippingInfoType {
