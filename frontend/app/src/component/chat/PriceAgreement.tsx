@@ -19,7 +19,7 @@ import {
   NumberInputField,
   Textarea,
 } from "@chakra-ui/react";
-import { FaCheckCircle, FaYenSign, FaHourglassHalf, FaEdit } from "react-icons/fa";
+import { FaCheckCircle, FaYenSign, FaHourglassHalf, FaEdit, FaCreditCard, FaUniversity } from "react-icons/fa";
 import { agreePurchasePrice, proposePurchasePrice } from "../../api/purchaseApi";
 
 type PriceAgreementProps = {
@@ -188,6 +188,22 @@ const PriceAgreement: FC<PriceAgreementProps> = ({
           <Text fontSize="2xl" fontWeight="bold" color="purple.600">
             ¥{purchasePrice.toLocaleString()}
           </Text>
+        </Box>
+
+        {/* 決済方法 */}
+        <Box p={3} bg="white" borderRadius="md">
+          <Text fontSize="xs" color="gray.600" mb={1}>
+            決済方法
+          </Text>
+          <HStack spacing={2}>
+            <Icon
+              as={paymentMethod === "card" ? FaCreditCard : FaUniversity}
+              color={paymentMethod === "card" ? "purple.500" : "blue.500"}
+            />
+            <Text fontSize="sm" fontWeight="bold">
+              {paymentMethod === "card" ? "クレジットカード" : "銀行振込"}
+            </Text>
+          </HStack>
         </Box>
 
         {/* 合意状況 */}
