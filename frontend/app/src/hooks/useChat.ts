@@ -199,6 +199,7 @@ const useChat = (): useChatReturn => {
             is_price_agreed_seller: item.is_price_agreed_seller,
             is_price_agreed_buyer: item.is_price_agreed_buyer,
             is_buyer_confirmed: item.is_buyer_confirmed,
+            payment_method: item.payment_method,
           };
 
           // console.log("📦 取得したitemData:", {
