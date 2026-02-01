@@ -328,6 +328,8 @@ def create_card_payment_intent():
                         amount=buyer_payment_amount,
                         currency='jpy',
                         payment_method_types=['card'],
+                        # プラットフォーム手数料（販売者から差し引かれる）
+                        application_fee_amount=stripe_fee,
                         # エスクロー設定
                         on_behalf_of=trade['stripe_account_id'],
                         transfer_data={
@@ -607,6 +609,9 @@ def pay_for_purchase():
                         payment_method_types=['card'],
                         confirm=True,  # 即座に決済確定
                         automatic_payment_methods={'enabled': False},
+
+                        # プラットフォーム手数料（販売者から差し引かれる）
+                        application_fee_amount=stripe_fee,
 
                         # エスクロー設定: 販売者のConnected Accountを指定
                         on_behalf_of=trade['stripe_account_id'],
@@ -1021,6 +1026,8 @@ def create_bank_transfer_payment():
                 }), 400
 
             purchase_price = int(float(trade['purchase_price']))
+            # 銀行振込手数料 1.5%
+            stripe_fee = int(purchase_price * 0.015)
 
             # 本番環境の場合: Stripe Bank Transferを使用
             if STRIPE_MODE == 'live':
@@ -1078,6 +1085,8 @@ def create_bank_transfer_payment():
                                 },
                             },
                         },
+                        # プラットフォーム手数料（販売者から差し引かれる）
+                        application_fee_amount=stripe_fee,
                         # エスクロー設定
                         on_behalf_of=trade['stripe_account_id'],
                         transfer_data={
@@ -1088,6 +1097,8 @@ def create_bank_transfer_payment():
                             'seller_id': str(trade['seller_id']),
                             'buyer_id': str(trade['buyer_id']),
                             'payment_method': 'bank_transfer',
+                            'stripe_fee': str(stripe_fee),
+                            'seller_receives': str(purchase_price - stripe_fee),
                         }
                     )
 
