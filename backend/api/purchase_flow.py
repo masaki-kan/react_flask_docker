@@ -9,6 +9,7 @@ from datetime import datetime
 from tradeArchiver import TradeArchiver
 import stripe
 import os
+import math
 
 purchase_bp = Blueprint('purchase', __name__, url_prefix='/api')
 
@@ -49,12 +50,13 @@ def propose_purchase_price():
             }), 400
 
         # 金額のバリデーション
+        MIN_PRICE = 300
         try:
             price = float(price)
-            if price <= 0:
+            if price < MIN_PRICE:
                 return jsonify({
                     'success': False,
-                    'message': '金額は0より大きい値を入力してください'
+                    'message': f'金額は{MIN_PRICE}円以上で入力してください'
                 }), 400
         except ValueError:
             return jsonify({
@@ -306,7 +308,7 @@ def create_card_payment_intent():
 
             purchase_price = float(trade['purchase_price'])
             buyer_payment_amount = int(purchase_price)
-            stripe_fee = int(purchase_price * 0.036)
+            stripe_fee = math.floor(purchase_price * 0.036)
 
             # 本番環境の場合: Stripe Connectを使用
             if STRIPE_MODE == 'live':
@@ -493,7 +495,7 @@ def confirm_card_payment():
                     conn.commit()
 
                     purchase_price = float(trade['purchase_price'])
-                    stripe_fee = int(purchase_price * 0.036)
+                    stripe_fee = math.floor(purchase_price * 0.036)
 
                     print(f"[INFO] Card payment confirmed: trade_id={trade_id}", flush=True)
 
@@ -581,7 +583,7 @@ def pay_for_purchase():
 
             # 購入金額（販売者負担の場合、購入者は商品代金のみ支払う）
             purchase_price = float(trade['purchase_price'])
-            stripe_fee = int(purchase_price * 0.036)  # 販売者が負担する手数料
+            stripe_fee = math.floor(purchase_price * 0.036)  # 販売者が負担する手数料
             buyer_payment_amount = int(purchase_price)  # 購入者が支払う金額（商品代金のみ）
 
             # 本番環境の場合: Stripe Connectを使用
@@ -854,7 +856,7 @@ def complete_purchase_trade():
 
                         # 販売者への送金額（商品代金 - Stripe手数料3.6%）
                         purchase_price = float(trade['purchase_price'])
-                        stripe_fee = int(purchase_price * 0.036)
+                        stripe_fee = math.floor(purchase_price * 0.036)
                         transfer_amount = int(purchase_price - stripe_fee)
 
                         # Transferを実行
@@ -1027,7 +1029,7 @@ def create_bank_transfer_payment():
 
             purchase_price = int(float(trade['purchase_price']))
             # 銀行振込手数料 1.5%
-            stripe_fee = int(purchase_price * 0.015)
+            stripe_fee = math.floor(purchase_price * 0.015)
 
             # 本番環境の場合: Stripe Bank Transferを使用
             if STRIPE_MODE == 'live':

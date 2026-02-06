@@ -114,12 +114,14 @@ const PriceAgreement: FC<PriceAgreementProps> = ({
     }
   };
 
+  const MIN_PRICE = 300;
+
   // 金額修正ハンドラー
   const handleEditPrice = async () => {
-    if (!newPrice || Number(newPrice) <= 0) {
+    if (!newPrice || Number(newPrice) < MIN_PRICE) {
       toast({
         title: "エラー",
-        description: "有効な金額を入力してください",
+        description: `金額は${MIN_PRICE}円以上で入力してください`,
         status: "error",
         duration: 3000,
         isClosable: true,
@@ -330,12 +332,15 @@ const PriceAgreement: FC<PriceAgreementProps> = ({
                   新しい金額（円）
                 </Text>
                 <NumberInput
-                  min={1}
+                  min={MIN_PRICE}
                   value={newPrice}
                   onChange={(valueString) => setNewPrice(valueString)}
                 >
                   <NumberInputField placeholder="例: 3000" />
                 </NumberInput>
+                <Text fontSize="xs" color="gray.500" mt={1}>
+                  ※ 最低金額: {MIN_PRICE}円
+                </Text>
               </Box>
 
               <Box>
@@ -394,7 +399,7 @@ const PriceAgreement: FC<PriceAgreementProps> = ({
               colorScheme="orange"
               onClick={handleEditPrice}
               isLoading={isEditLoading}
-              isDisabled={!newPrice || Number(newPrice) <= 0}
+              isDisabled={!newPrice || Number(newPrice) < MIN_PRICE}
             >
               金額を修正
             </Button>

@@ -71,27 +71,25 @@ const VintageLandingPage: FC = () => {
         </MotionText>
       );
     },
-    [MotionText]
+    [MotionText],
   );
 
-  const headerTextMessages = "古着ってこんなに高かったっけ？";
+  const headerTextMessages =
+    "僕らのヴィンテージは古着好きのための交流プラットフォームです";
 
   const textMessages = [
-    // "古着ってこんなに高かったっけ？",
-    "新品にはない、あの空気感に憧れて",
-    "町の古着屋をまわったあの頃。",
-    "今は着なくなったあの服も、",
-    "誰かのもとでもう一度輝ける。",
-    "スーパーなヴィンテージじゃないし、",
-    "買い取りに出しても、、、",
-    // "それなら、みんなで着まわす方が絶対楽しい。",
+    "古着の交換ができます。",
+    "販売もできます。",
+    "古着の価値は人それぞれ。",
+    "本当に古着が好きな人に譲りたい。",
+    "スペシャルなビンテージもいいけど、",
+    "面白い古着が欲しい。",
   ];
 
-  const bottomTextMessages = ["それなら、みんなで着まわす方が", "絶対楽しい。"];
+  const bottomTextMessages = ["そんなあなたを待っています。"];
 
   return (
     <Box bg="#fdfcf8" minH="100vh" display="flex" flexDirection="column">
-      {/* Hero Section with parallax effect */}
       <MotionBox
         initial={{ opacity: 0, scale: 1.1 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -99,11 +97,7 @@ const VintageLandingPage: FC = () => {
       >
         <Box
           position="relative"
-          // overflow="hidden"
           bgImage={"/背景.svg"}
-          // bgSize="cover"
-          // bgPosition="center"
-          // bgAttachment="fixed"
           py={24}
           px={4}
           textAlign="center"

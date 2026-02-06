@@ -62,11 +62,13 @@ const PurchaseFlowToggle: FC<PurchaseFlowToggleProps> = ({
   const processingFee = Math.floor(priceNum * feeRate);
   const netAmount = priceNum - processingFee;
 
+  const MIN_PRICE = 300;
+
   const handleProposePurchase = async () => {
-    if (!price || Number(price) <= 0) {
+    if (!price || Number(price) < MIN_PRICE) {
       toast({
         title: "エラー",
-        description: "有効な金額を入力してください",
+        description: `金額は${MIN_PRICE}円以上で入力してください`,
         status: "error",
         duration: 3000,
         isClosable: true,
@@ -233,12 +235,15 @@ const PurchaseFlowToggle: FC<PurchaseFlowToggleProps> = ({
                   希望金額（円）
                 </Text>
                 <NumberInput
-                  min={1}
+                  min={MIN_PRICE}
                   value={price}
                   onChange={(valueString) => setPrice(valueString)}
                 >
                   <NumberInputField placeholder="例: 3000" />
                 </NumberInput>
+                <Text fontSize="xs" color="gray.500" mt={1}>
+                  ※ 最低金額: {MIN_PRICE}円
+                </Text>
               </Box>
 
               <Box>
@@ -297,7 +302,7 @@ const PurchaseFlowToggle: FC<PurchaseFlowToggleProps> = ({
               colorScheme="orange"
               onClick={handleProposePurchase}
               isLoading={isLoading}
-              isDisabled={!price || Number(price) <= 0}
+              isDisabled={!price || Number(price) < MIN_PRICE}
             >
               金額を提案
             </Button>
