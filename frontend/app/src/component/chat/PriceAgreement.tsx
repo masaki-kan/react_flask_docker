@@ -135,6 +135,7 @@ const PriceAgreement: FC<PriceAgreementProps> = ({
         trade_id: tradeId,
         price: Number(newPrice),
         message: message || undefined,
+        payment_method: paymentMethod,
       });
 
       if (result.success) {
