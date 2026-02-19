@@ -326,21 +326,17 @@ def create_card_payment_intent():
 
                 try:
                     # PaymentIntentを作成（確定はフロントエンドで行う）
+                    # エスクロー: 代金はプラットフォームが保留し、取引完了時にTransferで販売者に送金
                     payment_intent = stripe.PaymentIntent.create(
                         amount=buyer_payment_amount,
                         currency='jpy',
                         payment_method_types=['card'],
-                        # プラットフォーム手数料（販売者から差し引かれる）
-                        application_fee_amount=stripe_fee,
-                        # エスクロー設定
-                        on_behalf_of=trade['stripe_account_id'],
-                        transfer_data={
-                            'destination': trade['stripe_account_id'],
-                        },
+                        # transfer_data を設定しないことで、代金はプラットフォームに保留される
                         metadata={
                             'trade_id': str(trade_id),
                             'seller_id': str(trade['seller_id']),
                             'buyer_id': str(trade['buyer_id']),
+                            'seller_stripe_account_id': trade['stripe_account_id'],
                             'product_price': str(purchase_price),
                             'stripe_fee': str(stripe_fee),
                             'seller_receives': str(int(purchase_price - stripe_fee)),
@@ -604,6 +600,7 @@ def pay_for_purchase():
                 try:
                     # PaymentIntentを作成（エスクロー設定）
                     # 購入者は商品代金のみ支払い、販売者がStripe手数料を負担
+                    # transfer_data を設定しないことで、代金はプラットフォームに保留される
                     payment_intent = stripe.PaymentIntent.create(
                         amount=buyer_payment_amount,  # 購入者が支払う金額（商品代金のみ）
                         currency='jpy',
@@ -611,22 +608,11 @@ def pay_for_purchase():
                         payment_method_types=['card'],
                         confirm=True,  # 即座に決済確定
                         automatic_payment_methods={'enabled': False},
-
-                        # プラットフォーム手数料（販売者から差し引かれる）
-                        application_fee_amount=stripe_fee,
-
-                        # エスクロー設定: 販売者のConnected Accountを指定
-                        on_behalf_of=trade['stripe_account_id'],
-
-                        # 送金予約（後でTransferで実行）
-                        transfer_data={
-                            'destination': trade['stripe_account_id'],
-                        },
-
                         metadata={
                             'trade_id': str(trade_id),
                             'seller_id': str(trade['seller_id']),
                             'buyer_id': str(trade['buyer_id']),
+                            'seller_stripe_account_id': trade['stripe_account_id'],
                             'product_price': str(purchase_price),
                             'stripe_fee': str(stripe_fee),
                             'seller_receives': str(int(purchase_price - stripe_fee)),
@@ -802,7 +788,7 @@ def complete_purchase_trade():
             # 取引情報を取得（販売者のStripe情報も取得）
             cursor.execute("""
                 SELECT t.trade_id, t.status, t.trade_type, t.is_buyer_confirmed,
-                       t.item_id, t.purchase_price, t.payment_intent_id,
+                       t.item_id, t.purchase_price, t.payment_intent_id, t.payment_method,
                        i.user_id as seller_id,
                        u.stripe_account_id, u.stripe_payouts_enabled
                 FROM trades t
@@ -854,9 +840,11 @@ def complete_purchase_trade():
 
                         charge_id = payment_intent.charges.data[0].id
 
-                        # 販売者への送金額（商品代金 - Stripe手数料3.6%）
+                        # 販売者への送金額（商品代金 - 手数料）
+                        # カード: 3.6%、銀行振込: 1.5%
                         purchase_price = float(trade['purchase_price'])
-                        stripe_fee = math.floor(purchase_price * 0.036)
+                        fee_rate = 0.015 if trade.get('payment_method') == 'bank_transfer' else 0.036
+                        stripe_fee = math.floor(purchase_price * fee_rate)
                         transfer_amount = int(purchase_price - stripe_fee)
 
                         # Transferを実行
@@ -1071,6 +1059,7 @@ def create_bank_transfer_payment():
                         """, (customer_id, trade['buyer_id']))
 
                     # 銀行振込用PaymentIntentを作成
+                    # エスクロー: 代金はプラットフォームが保留し、取引完了時にTransferで販売者に送金
                     payment_intent = stripe.PaymentIntent.create(
                         amount=purchase_price,
                         currency='jpy',
@@ -1087,17 +1076,12 @@ def create_bank_transfer_payment():
                                 },
                             },
                         },
-                        # プラットフォーム手数料（販売者から差し引かれる）
-                        application_fee_amount=stripe_fee,
-                        # エスクロー設定
-                        on_behalf_of=trade['stripe_account_id'],
-                        transfer_data={
-                            'destination': trade['stripe_account_id'],
-                        },
+                        # transfer_data を設定しないことで、代金はプラットフォームに保留される
                         metadata={
                             'trade_id': str(trade_id),
                             'seller_id': str(trade['seller_id']),
                             'buyer_id': str(trade['buyer_id']),
+                            'seller_stripe_account_id': trade['stripe_account_id'],
                             'payment_method': 'bank_transfer',
                             'stripe_fee': str(stripe_fee),
                             'seller_receives': str(purchase_price - stripe_fee),

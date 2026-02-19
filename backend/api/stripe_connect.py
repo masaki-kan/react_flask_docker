@@ -112,6 +112,13 @@ def create_connect_account():
                         'transfers': {'requested': True},
                     },
                     business_type='individual',  # 個人事業主
+                    settings={
+                        'payouts': {
+                            'schedule': {
+                                'interval': 'manual'  # 手動出金（販売者が好きなタイミングで出金）
+                            }
+                        }
+                    },
                     metadata={
                         'user_id': str(user_id),
                         'platform': 'vintage_marketplace',
