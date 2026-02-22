@@ -995,13 +995,18 @@ def reactivate_account():
                         subscription.current_period_end
                     ).isoformat()
                 
-                # データベースを更新
+                # データベースを更新（Stripe Connect情報もリセット）
                 cursor.execute("""
-                    UPDATE users 
+                    UPDATE users
                     SET is_deleted = FALSE,
                         deleted_at = NULL,
                         status = 1,
                         plan = %s,
+                        stripe_account_id = NULL,
+                        stripe_onboarding_completed = FALSE,
+                        stripe_charges_enabled = FALSE,
+                        stripe_payouts_enabled = FALSE,
+                        stripe_details_submitted = FALSE,
                         updated_at = NOW()
                     WHERE user_id = %s
                 """, (plan_type, user_id))
@@ -1091,8 +1096,8 @@ def withdraw_user():
             try:
                 # ユーザー情報を取得
                 cursor.execute("""
-                    SELECT user_id, stripe_customer_id, email, name, is_deleted
-                    FROM users 
+                    SELECT user_id, stripe_customer_id, stripe_account_id, email, name, is_deleted
+                    FROM users
                     WHERE user_id = %s
                     FOR UPDATE
                 """, (user_id,))
@@ -1219,17 +1224,40 @@ def withdraw_user():
                             "error": f"サブスクリプション一覧取得エラー: {str(e)}"
                         })
 
+                # Stripe Connect Account削除処理
+                connect_account_deleted = False
+                if user.get('stripe_account_id'):
+                    try:
+                        STRIPE_MODE = os.environ.get('STRIPE_MODE', 'test')
+                        if STRIPE_MODE == 'live' and not user['stripe_account_id'].startswith('acct_dev_'):
+                            stripe.Account.delete(user['stripe_account_id'])
+                            connect_account_deleted = True
+                            logger.info(f"Stripe Connect account {user['stripe_account_id']} deleted for user {user_id}")
+                        else:
+                            connect_account_deleted = True
+                            logger.info(f"Skipped Stripe Connect deletion (test mode) for user {user_id}")
+                    except stripe.error.StripeError as e:
+                        stripe_errors.append({
+                            "error": f"Connect Account削除エラー: {str(e)}"
+                        })
+                        logger.error(f"Failed to delete Connect account {user['stripe_account_id']}: {str(e)}")
+
                 # 現在の日時を取得
                 current_time = datetime.now()
 
-                # 1. ユーザーを論理削除（Stripe顧客情報もクリア）
+                # 1. ユーザーを論理削除（Stripe顧客情報・Connect情報もクリア）
                 cursor.execute("""
                     UPDATE users
                     SET is_deleted = TRUE,
                         deleted_at = %s,
                         updated_at = %s,
                         status = 0,
-                        stripe_customer_id = NULL
+                        stripe_customer_id = NULL,
+                        stripe_account_id = NULL,
+                        stripe_onboarding_completed = FALSE,
+                        stripe_charges_enabled = FALSE,
+                        stripe_payouts_enabled = FALSE,
+                        stripe_details_submitted = FALSE
                     WHERE user_id = %s
                 """, (current_time, current_time, user_id))
 
@@ -1313,7 +1341,8 @@ def withdraw_user():
                     "details": {
                         "deleted_items": deleted_items,
                         "cancelled_subscriptions": len(cancelled_subscriptions),
-                        "customer_deleted": customer_deleted
+                        "customer_deleted": customer_deleted,
+                        "connect_account_deleted": connect_account_deleted
                     }
                 }
 
