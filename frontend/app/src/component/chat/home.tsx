@@ -20,6 +20,7 @@ import {
   FaUserCircle,
   FaCheckCircle,
   FaHourglassHalf,
+  FaUniversity,
 } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import { route } from "../../route/routeConst";
@@ -278,6 +279,7 @@ const Home: FC = () => {
       [
         "price_proposed",
         "price_agreed",
+        "awaiting_payment",
         "paid",
         "shipped",
         "buyer_received",
@@ -929,6 +931,60 @@ const Home: FC = () => {
                     </Text>
                     <Text fontSize="xs" color="gray.600">
                       購入者が決済を完了するまでお待ちください
+                    </Text>
+                  </VStack>
+                </HStack>
+              </Box>
+            )}
+
+          {/* 購入フロー: 銀行振込の入金待ち表示（Buyer） */}
+          {memorizeChatItemData.trade_type === "purchase" &&
+            memorizeChatItemData.status === "awaiting_payment" &&
+            !isCurrentUserSeller && (
+              <Box
+                mt={3}
+                p={4}
+                bg="orange.50"
+                borderRadius="md"
+                borderWidth={2}
+                borderColor="orange.300"
+              >
+                <VStack align="stretch" spacing={3}>
+                  <HStack spacing={3}>
+                    <Icon as={FaUniversity} color="orange.500" boxSize={5} />
+                    <VStack align="start" spacing={1}>
+                      <Text fontSize="sm" fontWeight="bold" color="orange.700">
+                        銀行振込の入金待ち
+                      </Text>
+                      <Text fontSize="xs" color="gray.600">
+                        振込先口座に送金してください。入金確認まで1〜2営業日かかる場合があります。
+                      </Text>
+                    </VStack>
+                  </HStack>
+                </VStack>
+              </Box>
+            )}
+
+          {/* 購入フロー: 銀行振込の入金待ち表示（Seller） */}
+          {memorizeChatItemData.trade_type === "purchase" &&
+            memorizeChatItemData.status === "awaiting_payment" &&
+            isCurrentUserSeller && (
+              <Box
+                mt={3}
+                p={4}
+                bg="blue.50"
+                borderRadius="md"
+                borderWidth={2}
+                borderColor="blue.200"
+              >
+                <HStack spacing={3}>
+                  <Icon as={FaUniversity} color="blue.500" boxSize={5} />
+                  <VStack align="start" spacing={1}>
+                    <Text fontSize="sm" fontWeight="bold" color="blue.700">
+                      購入者の入金待ち（銀行振込）
+                    </Text>
+                    <Text fontSize="xs" color="gray.600">
+                      購入者が銀行振込を完了するまでお待ちください。入金確認後、発送手続きに進みます。
                     </Text>
                   </VStack>
                 </HStack>
