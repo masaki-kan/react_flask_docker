@@ -21,6 +21,8 @@ export const statusView = (status: string) => {
       return "決済済み";
     case "buyer_received":
       return "受取確認済み";
+    case "awaiting_payment":
+      return "入金待ち";
     default:
       return status;
   }

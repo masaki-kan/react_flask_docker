@@ -1060,6 +1060,7 @@ def create_bank_transfer_payment():
 
                     # 銀行振込用PaymentIntentを作成
                     # エスクロー: 代金はプラットフォームが保留し、取引完了時にTransferで販売者に送金
+                    # confirm=True で即時確認し、振込先口座情報（next_action）を取得する
                     payment_intent = stripe.PaymentIntent.create(
                         amount=purchase_price,
                         currency='jpy',
@@ -1076,6 +1077,7 @@ def create_bank_transfer_payment():
                                 },
                             },
                         },
+                        confirm=True,
                         # transfer_data を設定しないことで、代金はプラットフォームに保留される
                         metadata={
                             'trade_id': str(trade_id),

@@ -298,15 +298,26 @@ const PaymentModal: FC<PaymentModalProps> = ({
       });
 
       if (result.success && result.data) {
-        setBankTransferInfo(result.data.bank_transfer_info || null);
-        setShowBankTransferInfo(true);
-        toast({
-          title: "振込先情報を取得しました",
-          description: "下記の口座に振り込んでください。",
-          status: "success",
-          duration: 5000,
-          isClosable: true,
-        });
+        const transferInfo = result.data.bank_transfer_info;
+        if (transferInfo) {
+          setBankTransferInfo(transferInfo);
+          setShowBankTransferInfo(true);
+          toast({
+            title: "振込先情報を取得しました",
+            description: "下記の口座に振り込んでください。",
+            status: "success",
+            duration: 5000,
+            isClosable: true,
+          });
+        } else {
+          toast({
+            title: "エラー",
+            description: "振込先口座情報を取得できませんでした。しばらくしてから再度お試しください。",
+            status: "error",
+            duration: 5000,
+            isClosable: true,
+          });
+        }
       } else {
         toast({
           title: "エラー",
