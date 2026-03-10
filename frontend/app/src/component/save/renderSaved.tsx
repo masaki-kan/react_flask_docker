@@ -90,6 +90,7 @@ const RenderSaved: FC<RenderSavedType> = ({ savedList }) => {
               cancelled: { color: "red", label: "取引キャンセル" },
               price_proposed: { color: "orange", label: "金額提案中" },
               price_agreed: { color: "cyan", label: "金額合意済み" },
+              awaiting_payment: { color: "orange", label: "入金待ち" },
               paid: { color: "teal", label: "決済済み" },
               buyer_received: { color: "blue", label: "受取確認済み" },
             };
