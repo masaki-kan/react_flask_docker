@@ -798,11 +798,12 @@ const Home: FC = () => {
 
               {/* 取引キャンセルボタン */}
               {(() => {
-                // 購入フローの場合: 金額合意以降はキャンセル不可
+                // 購入フローの場合: 決済開始以降はキャンセル不可
                 if (memorizeChatItemData.trade_type === "purchase") {
                   const canCancelPurchase =
                     memorizeChatItemData.status === "pending" ||
-                    memorizeChatItemData.status === "price_proposed";
+                    memorizeChatItemData.status === "price_proposed" ||
+                    memorizeChatItemData.status === "price_agreed";
                   if (!canCancelPurchase) return null;
                 }
 
@@ -961,6 +962,15 @@ const Home: FC = () => {
                       </Text>
                     </VStack>
                   </HStack>
+                  <Button
+                    leftIcon={<FaUniversity />}
+                    colorScheme="orange"
+                    variant="outline"
+                    size="sm"
+                    onClick={onPaymentOpen}
+                  >
+                    振込先情報を表示
+                  </Button>
                 </VStack>
               </Box>
             )}
@@ -1199,6 +1209,11 @@ const Home: FC = () => {
               purchasePrice={memorizeChatItemData.purchase_price}
               paymentMethod={memorizeChatItemData.payment_method || "card"}
               onSuccess={() => getChatPageData(tradeIdNumber!)}
+              mode={
+                memorizeChatItemData.status === "awaiting_payment"
+                  ? "view_bank_info"
+                  : "payment"
+              }
             />
           )}
       </Box>

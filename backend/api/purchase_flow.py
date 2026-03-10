@@ -1398,3 +1398,142 @@ def simulate_bank_transfer_received():
             'success': False,
             'message': f'エラーが発生しました: {str(e)}'
         }), 500
+
+
+# ================================================================================
+# 振込先情報再取得API
+# ================================================================================
+
+@purchase_bp.route('/get_bank_transfer_info', methods=['GET'])
+def get_bank_transfer_info():
+    """
+    銀行振込先情報を再取得する（モーダルを閉じた後でも確認可能にする）
+
+    Parameters:
+        trade_id: 取引ID（クエリパラメータ）
+
+    Returns:
+        振込先口座情報
+    """
+    try:
+        trade_id = request.args.get('trade_id')
+
+        if not trade_id:
+            return jsonify({
+                'success': False,
+                'message': '取引IDは必須です'
+            }), 400
+
+        with get_db_connection() as conn:
+            cursor = conn.cursor(dictionary=True)
+
+            # 取引情報を取得
+            cursor.execute("""
+                SELECT t.trade_id, t.payment_intent_id, t.status, t.purchase_price,
+                       t.payment_method
+                FROM trades t
+                WHERE t.trade_id = %s
+            """, (trade_id,))
+            trade = cursor.fetchone()
+
+            if not trade:
+                return jsonify({
+                    'success': False,
+                    'message': '取引が見つかりません'
+                }), 404
+
+            if trade['payment_method'] != 'bank_transfer':
+                return jsonify({
+                    'success': False,
+                    'message': 'この取引は銀行振込ではありません'
+                }), 400
+
+            if trade['status'] not in ('awaiting_payment',):
+                return jsonify({
+                    'success': False,
+                    'message': 'この取引は入金待ち状態ではありません'
+                }), 400
+
+            if not trade['payment_intent_id']:
+                return jsonify({
+                    'success': False,
+                    'message': '決済情報が見つかりません'
+                }), 400
+
+            purchase_price = int(float(trade['purchase_price']))
+
+            # 本番環境: StripeからPaymentIntentを取得して振込先情報を返す
+            if STRIPE_MODE == 'live':
+                try:
+                    payment_intent = stripe.PaymentIntent.retrieve(trade['payment_intent_id'])
+
+                    bank_transfer_info = None
+                    if payment_intent.next_action and payment_intent.next_action.type == 'display_bank_transfer_instructions':
+                        bank_transfer_info = payment_intent.next_action.display_bank_transfer_instructions
+
+                    if not bank_transfer_info:
+                        return jsonify({
+                            'success': False,
+                            'message': '振込先情報が取得できませんでした'
+                        }), 400
+
+                    return jsonify({
+                        'success': True,
+                        'message': '振込先情報を取得しました',
+                        'data': {
+                            'trade_id': trade_id,
+                            'bank_transfer_info': {
+                                'type': 'jp_bank_transfer',
+                                'financial_addresses': bank_transfer_info.financial_addresses,
+                                'amount_remaining': bank_transfer_info.amount_remaining,
+                                'reference': bank_transfer_info.reference,
+                            }
+                        }
+                    })
+
+                except stripe.error.StripeError as e:
+                    print(f"[ERROR] Stripe get bank transfer info error: {str(e)}", flush=True)
+                    return jsonify({
+                        'success': False,
+                        'message': f'振込先情報の取得エラー: {str(e)}'
+                    }), 500
+            else:
+                # テストモード: ダミーの振込先情報を返す
+                return jsonify({
+                    'success': True,
+                    'message': '【テスト】振込先情報を取得しました',
+                    'data': {
+                        'trade_id': trade_id,
+                        'bank_transfer_info': {
+                            'type': 'jp_bank_transfer',
+                            'financial_addresses': [{
+                                'type': 'zengin',
+                                'zengin': {
+                                    'bank_name': 'テスト銀行',
+                                    'bank_code': '0001',
+                                    'branch_name': 'テスト支店',
+                                    'branch_code': '001',
+                                    'account_type': 'futsu',
+                                    'account_number': '1234567',
+                                    'account_holder_name': 'ストライプ（カ'
+                                }
+                            }],
+                            'amount_remaining': purchase_price,
+                            'reference': f'TEST-{trade_id}',
+                        }
+                    }
+                })
+
+    except mysql.connector.Error as e:
+        return jsonify({
+            'success': False,
+            'message': f'データベースエラー: {str(e)}'
+        }), 500
+    except Exception as e:
+        print(f"[ERROR] Get bank transfer info error: {str(e)}", flush=True)
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'success': False,
+            'message': f'エラーが発生しました: {str(e)}'
+        }), 500

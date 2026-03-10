@@ -29,6 +29,7 @@ import {
   createBankTransferPayment,
   createCardPaymentIntent,
   confirmCardPayment,
+  getBankTransferInfo,
   BankTransferInfo,
 } from "../../api/purchaseApi";
 import useMyProfile from "../../hooks/useProfile";
@@ -44,6 +45,7 @@ type PaymentModalProps = {
   purchasePrice: number;
   paymentMethod: "card" | "bank_transfer";
   onSuccess: () => void;
+  mode?: "payment" | "view_bank_info";
 };
 
 
@@ -264,6 +266,7 @@ const PaymentModal: FC<PaymentModalProps> = ({
   purchasePrice,
   paymentMethod,
   onSuccess,
+  mode = "payment",
 }) => {
   const toast = useToast();
   const navigate = useNavigate();
@@ -272,6 +275,48 @@ const PaymentModal: FC<PaymentModalProps> = ({
   const [bankTransferInfo, setBankTransferInfo] = useState<BankTransferInfo | null>(null);
   const [showBankTransferInfo, setShowBankTransferInfo] = useState(false);
   const [showCardForm, setShowCardForm] = useState(false);
+
+  // view_bank_info モードの場合、モーダルが開いたらAPIから振込先情報を取得
+  useEffect(() => {
+    if (isOpen && mode === "view_bank_info") {
+      const fetchBankInfo = async () => {
+        setIsLoading(true);
+        try {
+          const result = await getBankTransferInfo(tradeId);
+          if (result.success && result.data) {
+            setBankTransferInfo(result.data.bank_transfer_info);
+            setShowBankTransferInfo(true);
+          } else {
+            toast({
+              title: "エラー",
+              description: result.message || "振込先情報の取得に失敗しました",
+              status: "error",
+              duration: 5000,
+              isClosable: true,
+            });
+          }
+        } catch (error) {
+          console.error("振込先情報取得エラー:", error);
+          toast({
+            title: "エラー",
+            description: "振込先情報の取得に失敗しました",
+            status: "error",
+            duration: 5000,
+            isClosable: true,
+          });
+        } finally {
+          setIsLoading(false);
+        }
+      };
+      fetchBankInfo();
+    }
+    // モーダルが閉じたらリセット
+    if (!isOpen) {
+      setShowBankTransferInfo(false);
+      setBankTransferInfo(null);
+      setShowCardForm(false);
+    }
+  }, [isOpen, mode, tradeId, toast]);
 
   // 購入者が支払う金額（商品代金のみ）
   const totalAmount = purchasePrice;
@@ -398,6 +443,30 @@ const PaymentModal: FC<PaymentModalProps> = ({
                 onCancel={() => setShowCardForm(false)}
               />
             </Elements>
+          </ModalBody>
+        </ModalContent>
+      </Modal>
+    );
+  }
+
+  // view_bank_info モードでローディング中
+  if (mode === "view_bank_info" && isLoading) {
+    return (
+      <Modal isOpen={isOpen} onClose={onClose} size="md">
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>
+            <HStack>
+              <Icon as={FaUniversity} color="blue.500" />
+              <Text>銀行振込先情報</Text>
+            </HStack>
+          </ModalHeader>
+          <ModalCloseButton />
+          <ModalBody pb={6}>
+            <VStack py={8}>
+              <Spinner size="lg" color="blue.500" />
+              <Text>振込先情報を取得中...</Text>
+            </VStack>
           </ModalBody>
         </ModalContent>
       </Modal>
@@ -535,15 +604,23 @@ const PaymentModal: FC<PaymentModalProps> = ({
             </VStack>
           </ModalBody>
           <ModalFooter>
-            <Button variant="ghost" mr={3} onClick={() => setShowBankTransferInfo(false)}>
-              戻る
-            </Button>
-            <Button
-              colorScheme="blue"
-              onClick={handleBankTransferComplete}
-            >
-              振込手続きを開始する
-            </Button>
+            {mode === "view_bank_info" ? (
+              <Button colorScheme="blue" onClick={onClose}>
+                閉じる
+              </Button>
+            ) : (
+              <>
+                <Button variant="ghost" mr={3} onClick={() => setShowBankTransferInfo(false)}>
+                  戻る
+                </Button>
+                <Button
+                  colorScheme="blue"
+                  onClick={handleBankTransferComplete}
+                >
+                  振込手続きを開始する
+                </Button>
+              </>
+            )}
           </ModalFooter>
         </ModalContent>
       </Modal>

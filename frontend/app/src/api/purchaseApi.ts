@@ -334,6 +334,27 @@ export const createCardPaymentIntent = async (
 };
 
 /**
+ * 銀行振込先情報を再取得
+ */
+export const getBankTransferInfo = async (
+  tradeId: number
+): Promise<ApiResponse<{ trade_id: number; bank_transfer_info: BankTransferInfo }>> => {
+  try {
+    const response = await axios.get(`${API_BASE_URL}/get_bank_transfer_info`, {
+      params: { trade_id: tradeId },
+      withCredentials: true,
+    });
+    return response.data;
+  } catch (error: any) {
+    console.error('振込先情報取得エラー:', error);
+    if (error.response) {
+      return error.response.data;
+    }
+    throw error;
+  }
+};
+
+/**
  * カード決済の完了を確認
  */
 export const confirmCardPayment = async (
