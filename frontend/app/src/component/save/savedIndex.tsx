@@ -15,8 +15,7 @@ import RenderSaved from "./renderSaved";
 import { useEffectOnce } from "react-use";
 
 const SavedIndex: FC = () => {
-  const { savedList } = useSaved();
-  const { getSavedListHandler } = useSaved();
+  const { savedList, getSavedListHandler } = useSaved();
   const MotionBox = motion.create(Box);
   // カラーモード対応
   const bgColor = useColorModeValue("white", "gray.800");
