@@ -14,15 +14,11 @@ import {
   HStack,
   Icon,
   useToast,
-  Alert,
-  AlertIcon,
-  AlertTitle,
-  AlertDescription,
   Divider,
   Badge,
   Spinner,
 } from "@chakra-ui/react";
-import { FaCreditCard, FaLock, FaYenSign, FaStore, FaUniversity, FaCopy } from "react-icons/fa";
+import { FaCreditCard, FaLock, FaYenSign, FaUniversity, FaCopy } from "react-icons/fa";
 import { loadStripe } from "@stripe/stripe-js";
 import { Elements, CardElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import {
@@ -32,8 +28,6 @@ import {
   getBankTransferInfo,
   BankTransferInfo,
 } from "../../api/purchaseApi";
-import useMyProfile from "../../hooks/useProfile";
-import { useNavigate } from "react-router-dom";
 
 // Stripeの公開キー
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PROMISE_KEY || "");
@@ -269,8 +263,6 @@ const PaymentModal: FC<PaymentModalProps> = ({
   mode = "payment",
 }) => {
   const toast = useToast();
-  const navigate = useNavigate();
-  const { memorizeProfile } = useMyProfile();
   const [isLoading, setIsLoading] = useState(false);
   const [bankTransferInfo, setBankTransferInfo] = useState<BankTransferInfo | null>(null);
   const [showBankTransferInfo, setShowBankTransferInfo] = useState(false);
@@ -321,21 +313,7 @@ const PaymentModal: FC<PaymentModalProps> = ({
   // 購入者が支払う金額（商品代金のみ）
   const totalAmount = purchasePrice;
 
-  // 販売者登録状態を確認
-  const isSellerRegistered = memorizeProfile.profile.stripe_onboarding_completed;
-
   const handleBankTransferPayment = async () => {
-    if (!isSellerRegistered) {
-      toast({
-        title: "販売者登録が必要です",
-        description: "購入するには、まず販売者として登録する必要があります。",
-        status: "warning",
-        duration: 6000,
-        isClosable: true,
-      });
-      return;
-    }
-
     setIsLoading(true);
     try {
       const result = await createBankTransferPayment({
@@ -640,19 +618,6 @@ const PaymentModal: FC<PaymentModalProps> = ({
         <ModalCloseButton />
         <ModalBody>
           <VStack spacing={4} align="stretch">
-            {/* 販売者未登録の警告 */}
-            {!isSellerRegistered && (
-              <Alert status="error" borderRadius="md">
-                <AlertIcon />
-                <Box flex="1">
-                  <AlertTitle fontSize="sm">販売者登録が必要です</AlertTitle>
-                  <AlertDescription fontSize="xs">
-                    購入するには、まず販売者として登録する必要があります。
-                  </AlertDescription>
-                </Box>
-              </Alert>
-            )}
-
             {/* セキュリティメッセージ */}
             <Box p={3} bg="blue.50" borderRadius="md">
               <HStack spacing={2}>
@@ -734,29 +699,16 @@ const PaymentModal: FC<PaymentModalProps> = ({
           <Button variant="ghost" mr={3} onClick={onClose}>
             キャンセル
           </Button>
-          {isSellerRegistered ? (
-            <Button
-              colorScheme={paymentMethod === "card" ? "purple" : "blue"}
-              onClick={handlePayment}
-              isLoading={isLoading}
-              leftIcon={paymentMethod === "card" ? <FaCreditCard /> : <FaUniversity />}
-            >
-              {paymentMethod === "card"
-                ? "カード情報を入力"
-                : "振込先情報を表示"}
-            </Button>
-          ) : (
-            <Button
-              colorScheme="blue"
-              leftIcon={<FaStore />}
-              onClick={() => {
-                onClose();
-                navigate("/profile");
-              }}
-            >
-              販売者登録へ
-            </Button>
-          )}
+          <Button
+            colorScheme={paymentMethod === "card" ? "purple" : "blue"}
+            onClick={handlePayment}
+            isLoading={isLoading}
+            leftIcon={paymentMethod === "card" ? <FaCreditCard /> : <FaUniversity />}
+          >
+            {paymentMethod === "card"
+              ? "カード情報を入力"
+              : "振込先情報を表示"}
+          </Button>
         </ModalFooter>
       </ModalContent>
     </Modal>

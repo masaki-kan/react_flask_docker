@@ -22,9 +22,11 @@ import {
   RadioGroup,
   Stack,
 } from "@chakra-ui/react";
-import { FaYenSign, FaExchangeAlt, FaCreditCard, FaUniversity } from "react-icons/fa";
+import { FaYenSign, FaExchangeAlt, FaCreditCard, FaUniversity, FaStore } from "react-icons/fa";
 import { useState } from "react";
 import { proposePurchasePrice } from "../../api/purchaseApi";
+import useMyProfile from "../../hooks/useProfile";
+import { useNavigate } from "react-router-dom";
 
 type PurchaseFlowToggleProps = {
   tradeId: number;
@@ -47,10 +49,15 @@ const PurchaseFlowToggle: FC<PurchaseFlowToggleProps> = ({
 }) => {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const toast = useToast();
+  const navigate = useNavigate();
+  const { memorizeProfile } = useMyProfile();
   const [price, setPrice] = useState<string>("");
   const [message, setMessage] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<"card" | "bank_transfer">("card");
+
+  // 販売者登録状態を確認
+  const isSellerRegistered = memorizeProfile.profile.stripe_onboarding_completed;
 
   // 購入モードに切り替え可能な条件（Sellerのみ）
   const canSwitchToPurchase =
@@ -137,14 +144,32 @@ const PurchaseFlowToggle: FC<PurchaseFlowToggleProps> = ({
             <br />
             希望金額を提案してください。
           </Text>
-          <Button
-            size="sm"
-            colorScheme="orange"
-            leftIcon={<FaYenSign />}
-            onClick={onOpen}
-          >
-            購入してもらう（金額を提案）
-          </Button>
+          {isSellerRegistered ? (
+            <Button
+              size="sm"
+              colorScheme="orange"
+              leftIcon={<FaYenSign />}
+              onClick={onOpen}
+            >
+              購入してもらう（金額を提案）
+            </Button>
+          ) : (
+            <VStack spacing={2} align="stretch">
+              <Box p={2} bg="red.50" borderRadius="md" borderWidth={1} borderColor="red.200">
+                <Text fontSize="xs" color="red.600">
+                  金額を提案するには、販売者登録（Stripe連携）が必要です。
+                </Text>
+              </Box>
+              <Button
+                size="sm"
+                colorScheme="blue"
+                leftIcon={<FaStore />}
+                onClick={() => navigate("/profile")}
+              >
+                販売者登録へ
+              </Button>
+            </VStack>
+          )}
         </VStack>
       </Box>
 
