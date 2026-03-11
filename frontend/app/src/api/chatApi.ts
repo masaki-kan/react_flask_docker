@@ -5,7 +5,7 @@ import { ApiResponse, createErrorResponse } from "../utils/alert/sweetalert2";
 export const getChatItemDetailApi = async (
   trade_id: string
 ): Promise<
-  { result: boolean; item?: chatItemDataType; user: userDataType } | undefined
+  { result: boolean; item?: chatItemDataType; user: userDataType; notFound?: boolean } | undefined
 > => {
   try {
     const response = await axios.post(
@@ -21,6 +21,11 @@ export const getChatItemDetailApi = async (
       user: response.data.user,
     };
   } catch (error: unknown) {
+    // 404の場合はトーストを表示せず、notFoundフラグを返す（取引完了後の削除済みケース）
+    if (axios.isAxiosError(error) && error.response?.status === 404) {
+      return { result: false, notFound: true, user: {} as userDataType };
+    }
+
     let errorMessage = "予期しないエラーが発生しました";
 
     if (axios.isAxiosError(error) && error.response?.data?.error) {

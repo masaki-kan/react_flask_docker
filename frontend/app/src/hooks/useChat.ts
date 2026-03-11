@@ -157,6 +157,17 @@ const useChat = (): useChatReturn => {
           );
         }
 
+        // 取引が見つからない場合（完了後に削除済み）
+        if (
+          itemDetailResponse.status === "fulfilled" &&
+          itemDetailResponse.value?.notFound
+        ) {
+          changeLoading(false);
+          const error = new Error("trade_not_found");
+          (error as any).tradeNotFound = true;
+          throw error;
+        }
+
         // 交換申請したユーザーのアイテム詳細とユーザー情報の処理
         if (
           itemDetailResponse.status === "fulfilled" &&

@@ -165,8 +165,7 @@ const ChatLayout: FC = () => {
       borderWidth={1}
       borderColor="#edf2f7"
       bg="white"
-      h={{ base: "calc(100vh - 400px)", md: "calc(100vh - 280px)" }}
-      minH={{ base: "400px", md: "500px" }}
+      h="100%"
       display="flex"
       flexDirection="column"
     >

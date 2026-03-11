@@ -264,7 +264,19 @@ const Home: FC = () => {
         try {
           // チャットページデータを再取得して最新のステータスをチェック
           await getChatPageData(tradeIdNumber);
-        } catch (error) {
+        } catch (error: any) {
+          // 取引データが削除済み（完了済み）の場合、取引一覧に遷移
+          if (error?.tradeNotFound) {
+            toast({
+              title: "取引完了",
+              description: "取引が完了しました。取引履歴に移動します。",
+              status: "success",
+              duration: 3000,
+              isClosable: true,
+            });
+            navigate(route.saved);
+            return;
+          }
           console.error("購入フロー状況の取得エラー:", error);
         }
       }
@@ -317,7 +329,18 @@ const Home: FC = () => {
           await getChatPageData(tradeIdNumber);
 
           // ステータスが変更されているかチェックは次のレンダリングで行われる
-        } catch (error) {
+        } catch (error: any) {
+          if (error?.tradeNotFound) {
+            toast({
+              title: "取引完了",
+              description: "取引が完了しました。取引履歴に移動します。",
+              status: "success",
+              duration: 3000,
+              isClosable: true,
+            });
+            navigate(route.saved);
+            return;
+          }
           console.error("取引状況の取得エラー:", error);
         }
       }
@@ -570,9 +593,9 @@ const Home: FC = () => {
 
   return (
     <>
-      <Box h="100vh">
+      <Box h="100vh" display="flex" flexDirection="column" overflow="hidden">
         {/* ヘッダー部分：ユーザーアバターとステータス */}
-        <Box bg="white" borderRadius="lg" boxShadow="sm" p={4}>
+        <Box bg="white" borderRadius="lg" boxShadow="sm" p={4} flexShrink={0} overflowY="auto" maxH="50vh">
           <Flex
             direction={{ base: "column", md: "row" }}
             justify="space-between"
@@ -1148,11 +1171,14 @@ const Home: FC = () => {
           wordBreak={"break-all"}
           mt={4}
           mb={2}
+          flexShrink={0}
         >
           注:発送していない状態で１週間やりとりがない場合は自動でキャンセルされます。
         </Text>
         {/* チャット画面 */}
-        <ChatRight />
+        <Box flex={1} minH={0}>
+          <ChatRight />
+        </Box>
 
         {/* 商品詳細モーダル */}
         <ItemDetailModal
