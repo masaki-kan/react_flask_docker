@@ -33,7 +33,11 @@ import {
 import useCredit from "../../hooks/useCredit";
 import useAlert from "../../hooks/useAlert";
 import { singupApi } from "../../api/loginApis";
-import { plansType, sinupFormType } from "../../types/loginType";
+import {
+  plansType,
+  sinupFormType,
+  EarlyBirdStatus,
+} from "../../types/loginType";
 import { stripePromise } from "../../consts/stripe";
 
 type Step3Props = {
@@ -44,6 +48,7 @@ type Step3Props = {
   handleFinalSubmit: () => void;
   setFormData: (data: sinupFormType) => void;
   onSuccess: () => void;
+  earlyBirdStatus: EarlyBirdStatus | null;
 };
 
 // Stripe決済処理を行うコンポーネント
@@ -56,6 +61,8 @@ const CheckoutFormContent: FC<{
   trialEnd?: string;
   nextBillingDate?: string;
   amount?: number;
+  isEarlyBird?: boolean;
+  trialEndFormatted?: string;
 }> = memo(
   ({
     formData,
@@ -66,6 +73,8 @@ const CheckoutFormContent: FC<{
     trialEnd,
     nextBillingDate,
     amount,
+    isEarlyBird,
+    trialEndFormatted,
   }) => {
     const stripe = useStripe();
     const elements = useElements();
@@ -87,7 +96,7 @@ const CheckoutFormContent: FC<{
 
         // SetupIntentとPaymentIntentで処理を分岐
         if (paymentType === "setup") {
-          // SetupIntent（月額プラン・初月無料）の場合
+          // SetupIntent（月額プラン・初月無料 or 先着無料トライアル）の場合
           const result = await stripe.confirmSetup({
             elements,
             clientSecret: formData.clientSecret,
@@ -110,12 +119,15 @@ const CheckoutFormContent: FC<{
               ...formData,
               setupIntentId: result.setupIntent.id,
               paymentType: "setup",
+              isEarlyBird: formData.isEarlyBird,
+              trialEndDate: formData.trialEndDate,
             });
 
             if (response.success === true) {
-              await sweetSuccessTextOverAlert(
-                "登録しました。30日間の無料期間後、月額500円が課金されます。"
-              );
+              const successMessage = formData.isEarlyBird
+                ? `登録しました。${trialEndFormatted || ""}まで無料でご利用いただけます。`
+                : "登録しました。30日間の無料期間後、月額500円が課金されます。";
+              await sweetSuccessTextOverAlert(successMessage);
               onSuccess();
             } else {
               await sweetErrorOverAlert();
@@ -168,6 +180,7 @@ const CheckoutFormContent: FC<{
       elements,
       formData,
       paymentType,
+      trialEndFormatted,
       sweetErrorOverAlert,
       sweetSuccessTextOverAlert,
       onSuccess,
@@ -180,9 +193,11 @@ const CheckoutFormContent: FC<{
             決済情報を入力
           </Heading>
           <Text color="gray.600">
-            {paymentType === "setup"
-              ? "カード情報を登録します（初月無料）"
-              : "クレジットカード情報を安全に登録します"}
+            {isEarlyBird
+              ? "カード情報を登録します（1年間無料トライアル）"
+              : paymentType === "setup"
+                ? "カード情報を登録します（初月無料）"
+                : "クレジットカード情報を安全に登録します"}
           </Text>
         </Box>
 
@@ -220,8 +235,8 @@ const CheckoutFormContent: FC<{
         {/* 選択中のプラン */}
         <Box
           borderWidth={2}
-          borderColor="orange.200"
-          bg="orange.50"
+          borderColor={isEarlyBird ? "green.300" : "orange.200"}
+          bg={isEarlyBird ? "green.50" : "orange.50"}
           p={4}
           borderRadius="lg"
         >
@@ -233,24 +248,36 @@ const CheckoutFormContent: FC<{
               <Text fontSize="lg" fontWeight="bold">
                 {selectedPlan?.price}
               </Text>
-              {paymentType === "setup" && (
+              {isEarlyBird ? (
                 <Badge colorScheme="green" mt={1}>
-                  初月無料トライアル付き
+                  1年間無料トライアル適用
                 </Badge>
+              ) : (
+                paymentType === "setup" && (
+                  <Badge colorScheme="green" mt={1}>
+                    初月無料トライアル付き
+                  </Badge>
+                )
               )}
             </Box>
             <Box textAlign="right">
-              <Text fontSize="2xl" fontWeight="bold" color="orange.600">
-                {paymentType === "setup"
+              <Text fontSize="2xl" fontWeight="bold" color={isEarlyBird ? "green.600" : "orange.600"}>
+                {isEarlyBird
                   ? "¥0"
-                  : amount
-                    ? `¥${amount.toLocaleString()}`
-                    : selectedPlan?.price || "¥5,500"}
+                  : paymentType === "setup"
+                    ? "¥0"
+                    : amount
+                      ? `¥${amount.toLocaleString()}`
+                      : selectedPlan?.price || "¥5,500"}
                 <Text as="span" fontSize="sm" fontWeight="normal">
-                  {paymentType === "setup" ? "（初月）" : selectedPlan?.period}
+                  {isEarlyBird
+                    ? "（1年間）"
+                    : paymentType === "setup"
+                      ? "（初月）"
+                      : selectedPlan?.period}
                 </Text>
               </Text>
-              {selectedPlan?.save && paymentType === "payment" && (
+              {!isEarlyBird && selectedPlan?.save && paymentType === "payment" && (
                 <Badge colorScheme="green" fontSize="sm">
                   {selectedPlan?.save}
                 </Badge>
@@ -291,8 +318,26 @@ const CheckoutFormContent: FC<{
           </Box>
         </FormControl>
 
-        {/* 月額プランの場合の注意事項 */}
-        {paymentType === "setup" && trialEnd && (
+        {/* 先着無料トライアルの注意事項 */}
+        {isEarlyBird && trialEndFormatted && (
+          <Alert status="success" borderRadius="lg">
+            <AlertIcon />
+            <Box>
+              <Text fontWeight="bold" fontSize="sm">
+                1年間無料トライアルについて
+              </Text>
+              <Text fontSize="xs">
+                {trialEndFormatted}
+                まで無料でご利用いただけます。
+                トライアル終了後、選択プランの料金が自動的に課金されます。
+                いつでも解約可能です。
+              </Text>
+            </Box>
+          </Alert>
+        )}
+
+        {/* 月額プランの場合の注意事項（先着枠外） */}
+        {!isEarlyBird && paymentType === "setup" && trialEnd && (
           <Alert status="info" borderRadius="lg">
             <AlertIcon />
             <Box>
@@ -308,8 +353,8 @@ const CheckoutFormContent: FC<{
           </Alert>
         )}
 
-        {/* 年額プランの場合の注意事項 */}
-        {paymentType === "payment" && nextBillingDate && (
+        {/* 年額プランの場合の注意事項（先着枠外） */}
+        {!isEarlyBird && paymentType === "payment" && nextBillingDate && (
           <Alert status="info" borderRadius="lg">
             <AlertIcon />
             <Box>
@@ -358,9 +403,11 @@ const CheckoutFormContent: FC<{
             isLoading={loading}
             loadingText="処理中..."
           >
-            {paymentType === "setup"
-              ? "登録して無料で始める"
-              : "登録して支払いを完了する"}
+            {isEarlyBird
+              ? "登録して1年間無料で始める"
+              : paymentType === "setup"
+                ? "登録して無料で始める"
+                : "登録して支払いを完了する"}
           </Button>
         </HStack>
 
@@ -388,7 +435,7 @@ const CheckoutFormContent: FC<{
 );
 
 const Step3: FC<Step3Props> = memo(
-  ({ plans, formData, prevStep, setFormData, onSuccess }) => {
+  ({ plans, formData, prevStep, setFormData, onSuccess, earlyBirdStatus }) => {
     const selectedPlan = plans.find((p) => p.id === formData.plan);
     const { getCreatePaymentIntent } = useCredit();
     const [clientSecret, setClientSecret] = useState("");
@@ -400,6 +447,8 @@ const Step3: FC<Step3Props> = memo(
       trialEnd?: string;
       nextBillingDate?: string;
       amount?: number;
+      isEarlyBird?: boolean;
+      trialEndFormatted?: string;
     }>({});
 
     useEffect(() => {
@@ -422,6 +471,8 @@ const Step3: FC<Step3Props> = memo(
               trialEnd: response.trialEnd,
               nextBillingDate: response.nextBillingDate,
               amount: response.amount,
+              isEarlyBird: response.isEarlyBird,
+              trialEndFormatted: response.trialEndFormatted,
             });
 
             setFormData({
@@ -432,6 +483,9 @@ const Step3: FC<Step3Props> = memo(
               intentId: response.intentId,
               paymentType: response.type,
               plan: response.plan === "monthly" ? "0" : "1",
+              isEarlyBird: response.isEarlyBird,
+              trialEndDate: response.trialEndDate,
+              trialEndFormatted: response.trialEndFormatted,
             });
           }
         } catch (error) {

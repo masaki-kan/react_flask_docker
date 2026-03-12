@@ -8,10 +8,16 @@ import {
   SimpleGrid,
   Text,
   Badge,
+  Alert,
+  AlertIcon,
 } from "@chakra-ui/react";
 import { FC } from "react";
 import { FaCheck, FaChevronLeft, FaChevronRight } from "react-icons/fa";
-import { sinupFormType, plansType } from "../../types/loginType";
+import {
+  sinupFormType,
+  plansType,
+  EarlyBirdStatus,
+} from "../../types/loginType";
 
 type Step2Type = {
   formData: sinupFormType;
@@ -20,6 +26,7 @@ type Step2Type = {
   prevStep: () => void;
   loading: boolean;
   plans: plansType[];
+  earlyBirdStatus: EarlyBirdStatus | null;
 };
 
 const Step2: FC<Step2Type> = ({
@@ -29,7 +36,10 @@ const Step2: FC<Step2Type> = ({
   prevStep,
   loading,
   plans,
+  earlyBirdStatus,
 }) => {
+  const isEarlyBirdAvailable = earlyBirdStatus?.earlyBirdAvailable ?? false;
+
   return (
     <>
       <VStack spacing={6} align="stretch">
@@ -41,6 +51,29 @@ const Step2: FC<Step2Type> = ({
             お好きなプランを選んで、今すぐスタートしましょう！
           </Text>
         </Box>
+
+        {/* 先着無料トライアルバナー */}
+        {isEarlyBirdAvailable && (
+          <Alert
+            status="success"
+            borderRadius="xl"
+            bg="green.50"
+            border="2px solid"
+            borderColor="green.300"
+            py={4}
+          >
+            <AlertIcon boxSize={6} />
+            <Box>
+              <Text fontWeight="bold" fontSize="lg" color="green.700">
+                先着{earlyBirdStatus?.limit}名様 1年間無料！
+              </Text>
+              <Text fontSize="sm" color="green.600">
+                残り{earlyBirdStatus?.remaining}枠
+                — どちらのプランでも1年間無料でご利用いただけます
+              </Text>
+            </Box>
+          </Alert>
+        )}
 
         <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
           {plans.map((plan) => (
@@ -76,10 +109,10 @@ const Step2: FC<Step2Type> = ({
 
               <VStack align="start" spacing={4}>
                 <Badge
-                  colorScheme={plan.color}
+                  colorScheme={isEarlyBirdAvailable ? "green" : plan.color}
                   fontSize={plan.recommended ? "xl" : "sm"}
                 >
-                  {plan.badge}
+                  {isEarlyBirdAvailable ? "1年間無料！" : plan.badge}
                 </Badge>
                 <Box>
                   <Heading size="md">{plan.name}</Heading>

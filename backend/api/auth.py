@@ -152,6 +152,8 @@ def sign_up():
     password = data['password']
     plan = data['plan']
     stripe_customer_id = data['stripeCustomerId']
+    is_early_bird = data.get('isEarlyBird', False)
+    trial_end_date = data.get('trialEndDate', None)
 
     if not all([username, email, password, stripe_customer_id]):
         return jsonify({"error": "登録に失敗しました。"}), 400
@@ -161,14 +163,14 @@ def sign_up():
     try:
         with get_db_connection() as conn:
             cursor = conn.cursor()
-            
+
             cursor.execute("""
-                SELECT email, is_deleted 
-                FROM users 
+                SELECT email, is_deleted
+                FROM users
                 WHERE email = %s
             """, (email,))
             existing_user = cursor.fetchone()
-            
+
             if existing_user:
                 if existing_user[1]:  # 退会済みユーザーの場合
                     return jsonify({
@@ -180,21 +182,51 @@ def sign_up():
                         "error": "このメールアドレスは既に登録されています。",
                         "result": False
                     }), 400
-                    
+
+            # 先着無料トライアルの場合、枠を再確認（同時登録対策）
+            if is_early_bird:
+                cursor.execute("""
+                    SELECT setting_value FROM app_settings
+                    WHERE setting_key = 'early_bird_limit'
+                    FOR UPDATE
+                """)
+                limit_row = cursor.fetchone()
+                early_bird_limit = int(limit_row[0]) if limit_row else 500
+
+                cursor.execute("""
+                    SELECT setting_value FROM app_settings
+                    WHERE setting_key = 'early_bird_enabled'
+                """)
+                enabled_row = cursor.fetchone()
+                early_bird_enabled = enabled_row[0] == 'true' if enabled_row else False
+
+                cursor.execute("""
+                    SELECT COUNT(*) FROM users
+                    WHERE is_early_bird = TRUE AND (is_deleted = FALSE OR is_deleted IS NULL)
+                """)
+                current_count = cursor.fetchone()[0]
+
+                if not early_bird_enabled or current_count >= early_bird_limit:
+                    return jsonify({
+                        "error": "先着無料トライアル枠が埋まりました。通常プランでの登録をお願いします。",
+                        "result": False
+                    }), 409
+
             cursor.execute(
-                "INSERT INTO users (name, email, password, plan, stripe_customer_id) VALUES (%s, %s, %s, %s, %s)", 
-                (username, email, hashed_password, plan, stripe_customer_id)
+                """INSERT INTO users (name, email, password, plan, stripe_customer_id, is_early_bird, trial_end_date)
+                VALUES (%s, %s, %s, %s, %s, %s, %s)""",
+                (username, email, hashed_password, plan, stripe_customer_id, is_early_bird, trial_end_date)
             )
 
             send_welcome_email(username, plan, email)
-            
+
             conn.commit()
-            
+
             return jsonify({
                 "message": "登録しました。ログイン画面に移ります",
                 "result": True
             }), 201
-            
+
     except mysql.connector.Error as err:
         return jsonify({
             "error": "アカウント登録中にエラーが発生しました",

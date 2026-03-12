@@ -27,6 +27,17 @@ export interface sinupFormType {
   intentId?: string;
   setupIntentId?: string;
   paymentType?: "setup" | "payment";
+
+  // 先着無料トライアル関連
+  isEarlyBird?: boolean;
+  trialEndDate?: string;
+  trialEndFormatted?: string;
+}
+
+export interface EarlyBirdStatus {
+  earlyBirdAvailable: boolean;
+  remaining: number;
+  limit: number;
 }
 
 export interface errorStateType {

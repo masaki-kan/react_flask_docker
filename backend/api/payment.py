@@ -5,6 +5,7 @@ import mysql.connector
 import stripe
 import os
 from datetime import datetime, timedelta
+import calendar
 import logging
 from utils.email_utils import reactivation_send_welcome_email ,send_withdrawal_email
 
@@ -55,6 +56,68 @@ def get_or_create_price(plan_type='monthly'):
         raise
 
 
+def get_early_bird_info():
+    """先着無料トライアルの状態を取得するヘルパー関数"""
+    with get_db_connection() as conn:
+        cursor = conn.cursor(dictionary=True)
+
+        # app_settingsから設定取得
+        cursor.execute("""
+            SELECT setting_key, setting_value FROM app_settings
+            WHERE setting_key IN ('early_bird_enabled', 'early_bird_limit')
+        """)
+        settings = {row['setting_key']: row['setting_value'] for row in cursor.fetchall()}
+
+        enabled = settings.get('early_bird_enabled', 'false') == 'true'
+        limit = int(settings.get('early_bird_limit', '500'))
+
+        # 先着ユーザー数をカウント
+        cursor.execute("""
+            SELECT COUNT(*) as count FROM users
+            WHERE is_early_bird = TRUE AND (is_deleted = FALSE OR is_deleted IS NULL)
+        """)
+        current_count = cursor.fetchone()['count']
+
+        remaining = max(0, limit - current_count)
+        available = enabled and remaining > 0
+
+        return {
+            'earlyBirdAvailable': available,
+            'remaining': remaining,
+            'limit': limit,
+            'currentCount': current_count,
+            'enabled': enabled,
+        }
+
+
+def calculate_trial_end():
+    """トライアル終了日を計算: 登録日から1年後の月末"""
+    now = datetime.now()
+    one_year_later = now.replace(year=now.year + 1)
+    last_day = calendar.monthrange(one_year_later.year, one_year_later.month)[1]
+    trial_end = one_year_later.replace(day=last_day, hour=23, minute=59, second=59)
+    return trial_end
+
+
+@payment_bp.route('/early-bird-status', methods=['GET'])
+def early_bird_status():
+    """先着無料トライアルの状態を返す（認証不要）"""
+    try:
+        info = get_early_bird_info()
+        return jsonify({
+            'earlyBirdAvailable': info['earlyBirdAvailable'],
+            'remaining': info['remaining'],
+            'limit': info['limit'],
+        })
+    except Exception as e:
+        logger.error(f"Early bird status error: {str(e)}")
+        return jsonify({
+            'earlyBirdAvailable': False,
+            'remaining': 0,
+            'limit': 0,
+        })
+
+
 @payment_bp.route('/create-payment-intent', methods=['POST'])
 def create_payment():
     """支払いインテント作成エンドポイント"""
@@ -79,17 +142,66 @@ def create_payment():
         }), 400
     
     try:
+        # 先着無料トライアルの状態を確認
+        early_bird_info = get_early_bird_info()
+        is_early_bird = early_bird_info['earlyBirdAvailable']
+
         # Stripe Customer を作成
         customer = stripe.Customer.create(
             metadata={
                 "plan_type": "monthly" if plan_status == 0 else "yearly",
-                "created_at": datetime.now().isoformat()
+                "created_at": datetime.now().isoformat(),
+                "is_early_bird": str(is_early_bird)
             }
         )
-        
+
+        # ========== 先着枠内: 月額/年額どちらも1年間無料トライアル ==========
+        if is_early_bird:
+            plan_type = 'monthly' if plan_status == 0 else 'yearly'
+            price = get_or_create_price(plan_type)
+            trial_end = calculate_trial_end()
+            trial_end_timestamp = int(trial_end.timestamp())
+
+            # サブスクリプションを作成（1年間トライアル + SetupIntent）
+            subscription = stripe.Subscription.create(
+                customer=customer.id,
+                items=[{"price": price.id}],
+                trial_end=trial_end_timestamp,
+                payment_behavior="default_incomplete",
+                payment_settings={
+                    "save_default_payment_method": "on_subscription"
+                },
+                expand=["latest_invoice.payment_intent", "pending_setup_intent"],
+                metadata={
+                    "plan_type": plan_type,
+                    "is_early_bird": "true"
+                }
+            )
+
+            setup_intent = subscription.pending_setup_intent
+            if not setup_intent:
+                raise Exception("SetupIntentの作成に失敗しました")
+
+            trial_end_formatted = f"{trial_end.year}年{trial_end.month:02d}月{trial_end.day:02d}日"
+
+            return jsonify({
+                'type': 'setup',
+                'clientSecret': setup_intent.client_secret,
+                'stripeCustomerId': customer.id,
+                'subscriptionId': subscription.id,
+                'plan': plan_type,
+                'trialEnd': trial_end.isoformat(),
+                'nextBillingDate': trial_end.isoformat(),
+                'nextBillingAmount': 550 if plan_status == 0 else 5500,
+                'isEarlyBird': True,
+                'trialEndFormatted': trial_end_formatted,
+                'trialEndDate': trial_end.strftime('%Y-%m-%d'),
+            })
+
+        # ========== 先着枠外: 既存ロジック ==========
         if plan_status == 0:  # 月額プラン（550円、初月無料）
             price = get_or_create_price('monthly')
-            
+
             # サブスクリプションを作成（30日間の無料トライアル付き）
             subscription = stripe.Subscription.create(
                 customer=customer.id,
@@ -104,13 +216,13 @@ def create_payment():
                     "plan_type": "monthly"
                 }
             )
-            
+
             # SetupIntentを取得
             setup_intent = subscription.pending_setup_intent
-            
+
             if not setup_intent:
                 raise Exception("SetupIntentの作成に失敗しました")
-            
+
             return jsonify({
                 'type': 'setup',
                 'clientSecret': setup_intent.client_secret,
@@ -119,12 +231,13 @@ def create_payment():
                 'plan': 'monthly',
                 'trialEnd': (datetime.now() + timedelta(days=30)).isoformat(),
                 'nextBillingDate': (datetime.now() + timedelta(days=30)).isoformat(),
-                'nextBillingAmount': 550
+                'nextBillingAmount': 550,
+                'isEarlyBird': False,
             })
-            
+
         else:  # 年額プラン（5500円、即時決済）
             price = get_or_create_price('yearly')
-            
+
             # サブスクリプションを作成（即時課金）
             subscription = stripe.Subscription.create(
                 customer=customer.id,
@@ -138,13 +251,13 @@ def create_payment():
                     "plan_type": "yearly"
                 }
             )
-            
+
             # Payment Intentを取得
             if not subscription.latest_invoice or not subscription.latest_invoice.payment_intent:
                 raise Exception("PaymentIntentの作成に失敗しました")
-                
+
             payment_intent = subscription.latest_invoice.payment_intent
-            
+
             return jsonify({
                 'type': 'payment',
                 'clientSecret': payment_intent.client_secret,
@@ -153,7 +266,8 @@ def create_payment():
                 'subscriptionId': subscription.id,
                 'plan': 'yearly',
                 'nextBillingDate': (datetime.now() + timedelta(days=365)).isoformat(),
-                'amount': 5500
+                'amount': 5500,
+                'isEarlyBird': False,
             })
             
     except stripe.error.CardError as e:

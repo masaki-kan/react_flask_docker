@@ -378,6 +378,24 @@ def create_withdrawal_logs_table(cursor):
             INDEX idx_created_at (created_at DESC)
         );
     ''')
+
+# アプリ設定テーブル（先着無料トライアル等）
+def create_app_settings_table(cursor):
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS app_settings (
+            setting_key VARCHAR(100) PRIMARY KEY,
+            setting_value TEXT NOT NULL,
+            description TEXT,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+    ''')
+    # 初期データ投入（既に存在する場合はスキップ）
+    cursor.execute('''
+        INSERT IGNORE INTO app_settings (setting_key, setting_value, description) VALUES
+        ('early_bird_limit', '500', '先着無料トライアルの上限人数'),
+        ('early_bird_enabled', 'true', '先着無料トライアルの有効/無効')
+    ''')
     
     
 # アーカイブテーブル作成関数
@@ -718,9 +736,50 @@ def create_table(cursor):
     create_cleanup_logs_table(cursor)
     create_withdrawal_logs_table(cursor)
 
+    create_app_settings_table(cursor)
+
     # 既存DBへのマイグレーションを実行（新規作成時は不要だがエラーにならない）
     migrate_add_purchase_flow_columns(cursor)
     migrate_add_purchase_flow_to_archives(cursor)
     migrate_add_stripe_connect_columns(cursor)
     migrate_add_bank_transfer_columns(cursor)
     migrate_add_purchase_columns_to_archived_trades(cursor)
+    migrate_add_early_bird_columns(cursor)
+
+
+# ================================================================================
+# マイグレーション: 先着無料トライアル用のカラムを追加
+# ================================================================================
+def migrate_add_early_bird_columns(cursor):
+    """
+    usersテーブルに先着無料トライアル用のカラムを追加するマイグレーション
+    """
+    try:
+        cursor.execute("""
+            SELECT COUNT(*) as count
+            FROM information_schema.COLUMNS
+            WHERE TABLE_SCHEMA = DATABASE()
+            AND TABLE_NAME = 'users'
+            AND COLUMN_NAME = 'is_early_bird'
+        """)
+        result = cursor.fetchone()
+
+        if result['count'] > 0:
+            print("✓ 先着無料トライアル用のカラムは既に存在します")
+            return
+
+        print("先着無料トライアル用のカラムを追加中...")
+
+        cursor.execute("""
+            ALTER TABLE users
+            ADD COLUMN is_early_bird BOOLEAN DEFAULT FALSE
+                COMMENT '先着無料トライアルユーザーフラグ' AFTER plan,
+            ADD COLUMN trial_end_date DATE DEFAULT NULL
+                COMMENT 'トライアル終了日' AFTER is_early_bird
+        """)
+
+        print("✓ 先着無料トライアル用のカラム追加完了")
+
+    except Exception as e:
+        print(f"✗ 先着無料トライアルマイグレーションエラー: {e}")
+        raise

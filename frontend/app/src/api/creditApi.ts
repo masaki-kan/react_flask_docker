@@ -1,5 +1,6 @@
 import axios from "axios";
 import { ApiError, createErrorResponse } from "../utils/alert/sweetalert2";
+import { EarlyBirdStatus } from "../types/loginType";
 
 // Stripeレスポンスの型定義
 export interface StripePaymentResponse {
@@ -13,6 +14,9 @@ export interface StripePaymentResponse {
   nextBillingDate?: string;
   nextBillingAmount?: number;
   amount?: number;
+  isEarlyBird?: boolean;
+  trialEndFormatted?: string;
+  trialEndDate?: string;
 }
 
 // エラーレスポンスの型定義
@@ -144,6 +148,22 @@ export const cancelSubscription = async (userID: string) => {
         "サブスクリプションのキャンセルに失敗しました"
       );
     }
+  }
+};
+
+// 先着無料トライアル状態取得
+export const getEarlyBirdStatus = async (): Promise<EarlyBirdStatus> => {
+  try {
+    const response = await axios.get<EarlyBirdStatus>(
+      `${import.meta.env.VITE_API_URL}/api/early-bird-status`
+    );
+    return response.data;
+  } catch {
+    return {
+      earlyBirdAvailable: false,
+      remaining: 0,
+      limit: 0,
+    };
   }
 };
 

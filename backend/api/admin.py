@@ -1533,3 +1533,76 @@ def delete_item():
             "success": False,
             "error": f"商品削除に失敗しました: {str(e)}"
         }), 500
+
+
+# ================================================================================
+# 先着無料トライアル設定 API
+# ================================================================================
+
+@admin_bp.route('/dashboard/early-bird-settings', methods=['GET'], endpoint='get_early_bird_settings')
+@check_admin()
+def get_early_bird_settings():
+    """先着無料トライアル設定を取得"""
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor(dictionary=True)
+
+            cursor.execute("""
+                SELECT setting_key, setting_value FROM app_settings
+                WHERE setting_key IN ('early_bird_enabled', 'early_bird_limit')
+            """)
+            settings = {row['setting_key']: row['setting_value'] for row in cursor.fetchall()}
+
+            cursor.execute("""
+                SELECT COUNT(*) as count FROM users
+                WHERE is_early_bird = TRUE AND (is_deleted = FALSE OR is_deleted IS NULL)
+            """)
+            current_count = cursor.fetchone()['count']
+
+            return jsonify({
+                "success": True,
+                "data": {
+                    "enabled": settings.get('early_bird_enabled', 'false') == 'true',
+                    "limit": int(settings.get('early_bird_limit', '500')),
+                    "currentCount": current_count,
+                    "remaining": max(0, int(settings.get('early_bird_limit', '500')) - current_count),
+                }
+            }), 200
+
+    except Exception as e:
+        return jsonify({"success": False, "error": f"設定取得に失敗しました: {str(e)}"}), 500
+
+
+@admin_bp.route('/dashboard/early-bird-settings', methods=['PUT'], endpoint='update_early_bird_settings')
+@check_admin()
+def update_early_bird_settings():
+    """先着無料トライアル設定を更新"""
+    try:
+        data = request.get_json()
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+
+            if 'limit' in data:
+                cursor.execute("""
+                    INSERT INTO app_settings (setting_key, setting_value, description)
+                    VALUES ('early_bird_limit', %s, '先着無料トライアルの上限人数')
+                    ON DUPLICATE KEY UPDATE setting_value = %s
+                """, (str(data['limit']), str(data['limit'])))
+
+            if 'enabled' in data:
+                value = 'true' if data['enabled'] else 'false'
+                cursor.execute("""
+                    INSERT INTO app_settings (setting_key, setting_value, description)
+                    VALUES ('early_bird_enabled', %s, '先着無料トライアルの有効/無効')
+                    ON DUPLICATE KEY UPDATE setting_value = %s
+                """, (value, value))
+
+            conn.commit()
+
+            return jsonify({
+                "success": True,
+                "message": "先着無料トライアル設定を更新しました"
+            }), 200
+
+    except Exception as e:
+        return jsonify({"success": False, "error": f"設定更新に失敗しました: {str(e)}"}), 500

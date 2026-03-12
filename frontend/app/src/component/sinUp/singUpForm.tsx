@@ -1,4 +1,4 @@
-import { FC, memo, useCallback, useState } from "react";
+import { FC, memo, useCallback, useState, useEffect } from "react";
 import {
   Heading,
   Box,
@@ -15,7 +15,11 @@ import {
   Progress,
   Text,
 } from "@chakra-ui/react";
-import { sinupFormType, errorStateType } from "../../types/loginType";
+import {
+  sinupFormType,
+  errorStateType,
+  EarlyBirdStatus,
+} from "../../types/loginType";
 import Step1 from "./step1";
 import Step2 from "./step2";
 import Step3 from "./step3";
@@ -24,12 +28,15 @@ import { loginCheckApi } from "../../api/loginApis";
 import { useNavigate } from "react-router-dom";
 import { route } from "../../route/routeConst";
 import { plans } from "../../consts/profileConsts";
+import { getEarlyBirdStatus } from "../../api/creditApi";
 
 const SingUpForm: FC = memo(() => {
   const navigate = useNavigate();
   const toast = useToast();
   const [currentStep, setCurrentStep] = useState<number>(1);
   const [showSuccess, setShowSuccess] = useState<boolean>(false);
+  const [earlyBirdStatus, setEarlyBirdStatus] =
+    useState<EarlyBirdStatus | null>(null);
   const [errors, setErrors] = useState<errorStateType>({
     username: "",
     email: "",
@@ -46,6 +53,15 @@ const SingUpForm: FC = memo(() => {
     stripeCustomerId: "",
     intentId: "",
   });
+
+  // 先着無料トライアル状態を取得
+  useEffect(() => {
+    const fetchEarlyBirdStatus = async () => {
+      const status = await getEarlyBirdStatus();
+      setEarlyBirdStatus(status);
+    };
+    fetchEarlyBirdStatus();
+  }, []);
 
   // バリデーション関数は同じ
   const validateStep = useCallback(
@@ -194,6 +210,7 @@ const SingUpForm: FC = memo(() => {
                 plans={plans}
                 prevStep={prevStep}
                 loading={false}
+                earlyBirdStatus={earlyBirdStatus}
               />
             )}
             {currentStep === 3 && (
@@ -205,6 +222,7 @@ const SingUpForm: FC = memo(() => {
                 handleFinalSubmit={handleFinalSubmit}
                 setFormData={setFormData}
                 onSuccess={handleFinalSubmit}
+                earlyBirdStatus={earlyBirdStatus}
               />
             )}
           </Box>
