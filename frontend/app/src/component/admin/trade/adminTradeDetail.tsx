@@ -32,6 +32,11 @@ interface TradeInfo {
   buyer_exchange_item_id: number | null;
   created_at: string;
   status: string;
+  trade_type: "exchange" | "purchase" | null;
+  purchase_price: number | null;
+  payment_method: "card" | "bank_transfer" | null;
+  payment_intent_id: string | null;
+  paid_at: string | null;
   seller_item_title: string;
   seller_item_description: string;
   seller_item_type: string;
@@ -488,6 +493,69 @@ const AdminTradeDetail: FC = () => {
               </VStack>
             </CardBody>
           </Card>
+
+          {/* 決済情報 */}
+          {trade.trade_type === "purchase" && (
+            <Card mb={6}>
+              <CardHeader bg="yellow.50" pb={3}>
+                <Heading size="md">決済情報</Heading>
+              </CardHeader>
+              <CardBody>
+                <VStack spacing={3} align="stretch">
+                  <HStack>
+                    <Text fontWeight="bold" color="gray.600" fontSize="sm" minW="100px">
+                      取引種別
+                    </Text>
+                    <Badge colorScheme="blue">購入取引</Badge>
+                  </HStack>
+                  <Divider />
+                  <HStack>
+                    <Text fontWeight="bold" color="gray.600" fontSize="sm" minW="100px">
+                      金額
+                    </Text>
+                    <Text fontSize="lg" fontWeight="bold" color="orange.600">
+                      ¥{trade.purchase_price?.toLocaleString() ?? "-"}
+                    </Text>
+                  </HStack>
+                  <Divider />
+                  <HStack>
+                    <Text fontWeight="bold" color="gray.600" fontSize="sm" minW="100px">
+                      支払い方法
+                    </Text>
+                    <Badge
+                      colorScheme={trade.payment_method === "card" ? "purple" : "teal"}
+                    >
+                      {trade.payment_method === "card" ? "クレジットカード" : "銀行振込"}
+                    </Badge>
+                  </HStack>
+                  {trade.paid_at && (
+                    <>
+                      <Divider />
+                      <HStack>
+                        <Text fontWeight="bold" color="gray.600" fontSize="sm" minW="100px">
+                          決済日時
+                        </Text>
+                        <Text fontSize="sm">{formatDate(trade.paid_at)}</Text>
+                      </HStack>
+                    </>
+                  )}
+                  {trade.payment_intent_id && (
+                    <>
+                      <Divider />
+                      <HStack>
+                        <Text fontWeight="bold" color="gray.600" fontSize="sm" minW="100px">
+                          決済ID
+                        </Text>
+                        <Text fontSize="xs" color="gray.500" wordBreak="break-all">
+                          {trade.payment_intent_id}
+                        </Text>
+                      </HStack>
+                    </>
+                  )}
+                </VStack>
+              </CardBody>
+            </Card>
+          )}
 
           {/* チャット履歴 */}
           <Card>
