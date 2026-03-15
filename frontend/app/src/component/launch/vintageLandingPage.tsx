@@ -1,33 +1,33 @@
 import { FC, useCallback } from "react";
-import FeatureCard from "../checkReactivationstatus/featureCard";
+// import FeatureCard from "../checkReactivationstatus/featureCard";
 import HowItWorksSection from "./HowItWorksSection";
 import {
   Box,
   Heading,
   Flex,
-  SimpleGrid,
+  // SimpleGrid,
   Icon,
   Text,
   Link,
   VStack,
   Image,
 } from "@chakra-ui/react";
-import { keyframes } from "@emotion/react";
+// import { keyframes } from "@emotion/react";
 import { FaInstagram } from "react-icons/fa";
-import {
-  IoLogInOutline,
-  IoShieldCheckmarkOutline,
-  IoSwapHorizontal,
-} from "react-icons/io5";
+// import {
+//   IoLogInOutline,
+//   IoShieldCheckmarkOutline,
+//   IoSwapHorizontal,
+// } from "react-icons/io5";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { route } from "../../route/routeConst";
 
 // カスタムキーフレームアニメーション
-const floatAnimation = keyframes`
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-10px); }
-`;
+// const floatAnimation = keyframes`
+//   0%, 100% { transform: translateY(0px); }
+//   50% { transform: translateY(-10px); }
+// `;
 
 const VintageLandingPage: FC = () => {
   const navigate = useNavigate();
@@ -224,7 +224,7 @@ const VintageLandingPage: FC = () => {
       </Box>
 
       {/* Feature Cards with enhanced design */}
-      <MotionBox
+      {/* <MotionBox
         bg="linear-gradient(180deg, #f5f1e8 0%, #edeef4 100%)"
         py={4}
         px={4}
@@ -278,7 +278,7 @@ const VintageLandingPage: FC = () => {
             index={2}
           />
         </SimpleGrid>
-      </MotionBox>
+      </MotionBox> */}
 
       {/* How it Works Section */}
       <HowItWorksSection />
