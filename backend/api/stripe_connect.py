@@ -115,7 +115,8 @@ def create_connect_account():
                     settings={
                         'payouts': {
                             'schedule': {
-                                'interval': 'manual'  # 手動出金（販売者が好きなタイミングで出金）
+                                'interval': 'monthly',  # 毎月自動入金
+                                'monthly_anchor': 24     # 毎月24日
                             }
                         }
                     },
