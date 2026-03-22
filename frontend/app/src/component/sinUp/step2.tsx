@@ -142,6 +142,12 @@ const Step2: FC<Step2Type> = ({
                     </HStack>
                   ))}
                 </VStack>
+
+                {plan.note && (
+                  <Text fontSize="xs" color="gray.500" mt={2}>
+                    {plan.note}
+                  </Text>
+                )}
               </VStack>
 
               {formData.plan === plan.id && (

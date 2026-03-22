@@ -20,12 +20,13 @@ export const plans = [
   {
     id: "0",
     name: "月額プラン",
-    price: "¥550",
+    price: "¥990",
     period: "/月",
     description: "毎月のお支払い",
     badge: "初月無料！",
     color: "blue",
     recommended: true, // 月額プランを推奨に変更
+    note: "※月額料金には、販売アカウント維持費・銀行振込手数料・決済システム利用料が含まれております。",
     features: [
       "出品・購入・取引が可能",
       "プロフィールカスタマイズ",
@@ -35,11 +36,11 @@ export const plans = [
   {
     id: "1",
     name: "年額プラン",
-    price: "¥5,500",
+    price: "¥9,900",
     period: "/年",
     description: "年間一括払い",
     badge: "お得！",
-    save: "¥1,000お得!",
+    save: "¥1,980お得!",
     color: "orange",
     features: [
       "出品・購入・取引が可能",

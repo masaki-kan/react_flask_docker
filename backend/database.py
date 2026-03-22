@@ -393,7 +393,7 @@ def create_app_settings_table(cursor):
     # 初期データ投入（既に存在する場合はスキップ）
     cursor.execute('''
         INSERT IGNORE INTO app_settings (setting_key, setting_value, description) VALUES
-        ('early_bird_limit', '500', '先着無料トライアルの上限人数'),
+        ('early_bird_limit', '100', '先着無料トライアルの上限人数'),
         ('early_bird_enabled', 'true', '先着無料トライアルの有効/無効')
     ''')
     

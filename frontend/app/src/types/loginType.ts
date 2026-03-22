@@ -57,4 +57,5 @@ export interface plansType {
   badge: string;
   color: string;
   features: string[];
+  note?: string;
 }

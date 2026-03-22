@@ -30,7 +30,7 @@ export const cellCheckHandler = (
   value: string | number
 ): string | number => {
   if (key === "plan") {
-    return value === "1" ? "年払 5500円" : "月額 550円(初月無料 )";
+    return value === "1" ? "年払 9900円" : "月額 990円(初月無料 )";
   }
 
   if (key === "is_deleted") {

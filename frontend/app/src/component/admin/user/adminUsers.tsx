@@ -226,8 +226,8 @@ const AdminUsers: FC = () => {
               }}
             >
               <option value="">すべて</option>
-              <option value="0">月額 550円</option>
-              <option value="1">年払 5500円</option>
+              <option value="0">月額 990円</option>
+              <option value="1">年払 9900円</option>
             </select>
           </div>
           <div>

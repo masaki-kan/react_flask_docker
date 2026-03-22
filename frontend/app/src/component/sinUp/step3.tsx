@@ -126,7 +126,7 @@ const CheckoutFormContent: FC<{
             if (response.success === true) {
               const successMessage = formData.isEarlyBird
                 ? `登録しました。${trialEndFormatted || ""}まで無料でご利用いただけます。`
-                : "登録しました。30日間の無料期間後、月額500円が課金されます。";
+                : "登録しました。30日間の無料期間後、月額990円が課金されます。";
               await sweetSuccessTextOverAlert(successMessage);
               onSuccess();
             } else {
@@ -161,7 +161,7 @@ const CheckoutFormContent: FC<{
 
             if (response?.success === true) {
               await sweetSuccessTextOverAlert(
-                "登録しました。年額5,500円のお支払いが完了しました。"
+                "登録しました。年額9,900円のお支払いが完了しました。"
               );
               onSuccess();
             } else {
@@ -268,7 +268,7 @@ const CheckoutFormContent: FC<{
                     ? "¥0"
                     : amount
                       ? `¥${amount.toLocaleString()}`
-                      : selectedPlan?.price || "¥5,500"}
+                      : selectedPlan?.price || "¥9,900"}
                 <Text as="span" fontSize="sm" fontWeight="normal">
                   {isEarlyBird
                     ? "（1年間）"
@@ -346,7 +346,7 @@ const CheckoutFormContent: FC<{
               </Text>
               <Text fontSize="xs">
                 登録から30日間は無料でご利用いただけます。
-                31日目から月額550円が自動的に課金されます。
+                31日目から月額990円が自動的に課金されます。
                 いつでも解約可能です。
               </Text>
             </Box>
@@ -460,7 +460,7 @@ const Step3: FC<Step3Props> = memo(
           const planStatus = formData.plan === "0" ? 0 : 1;
 
           const response = await getCreatePaymentIntent(
-            formData.plan === "0" ? "550" : "5500",
+            formData.plan === "0" ? "990" : "9900",
             planStatus
           );
 

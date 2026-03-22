@@ -191,7 +191,7 @@ def sign_up():
                     FOR UPDATE
                 """)
                 limit_row = cursor.fetchone()
-                early_bird_limit = int(limit_row[0]) if limit_row else 500
+                early_bird_limit = int(limit_row[0]) if limit_row else 100
 
                 cursor.execute("""
                     SELECT setting_value FROM app_settings

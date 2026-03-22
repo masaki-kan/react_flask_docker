@@ -74,7 +74,7 @@ const WithdrawalModal: React.FC<WithdrawalModalProps> = ({
   };
 
   const subscriptionInfo =
-    subscriptionType === "monthly" ? "月額550円プラン" : "年額5,500円プラン";
+    subscriptionType === "monthly" ? "月額990円プラン" : "年額9,900円プラン";
 
   const formatDate = (dateString?: string) => {
     if (!dateString) return "";

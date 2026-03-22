@@ -37,14 +37,14 @@ def get_or_create_price(plan_type='monthly'):
         # 開発環境または価格IDが設定されていない場合は動的作成
         if plan_type == 'monthly':
             price = stripe.Price.create(
-                unit_amount=550,
+                unit_amount=990,
                 currency='jpy',
                 recurring={"interval": "month"},
                 product_data={"name": "僕らのヴィンテージ 月額プラン"}
             )
         else:
             price = stripe.Price.create(
-                unit_amount=5500,
+                unit_amount=9900,
                 currency='jpy',
                 recurring={"interval": "year"},
                 product_data={"name": "僕らのヴィンテージ 年額プラン"}
@@ -69,7 +69,7 @@ def get_early_bird_info():
         settings = {row['setting_key']: row['setting_value'] for row in cursor.fetchall()}
 
         enabled = settings.get('early_bird_enabled', 'false') == 'true'
-        limit = int(settings.get('early_bird_limit', '500'))
+        limit = int(settings.get('early_bird_limit', '100'))
 
         # 先着ユーザー数をカウント
         cursor.execute("""
@@ -192,14 +192,14 @@ def create_payment():
                 'plan': plan_type,
                 'trialEnd': trial_end.isoformat(),
                 'nextBillingDate': trial_end.isoformat(),
-                'nextBillingAmount': 550 if plan_status == 0 else 5500,
+                'nextBillingAmount': 990 if plan_status == 0 else 9900,
                 'isEarlyBird': True,
                 'trialEndFormatted': trial_end_formatted,
                 'trialEndDate': trial_end.strftime('%Y-%m-%d'),
             })
 
         # ========== 先着枠外: 既存ロジック ==========
-        if plan_status == 0:  # 月額プラン（550円、初月無料）
+        if plan_status == 0:  # 月額プラン（990円、初月無料）
             price = get_or_create_price('monthly')
 
             # サブスクリプションを作成（30日間の無料トライアル付き）
@@ -231,11 +231,11 @@ def create_payment():
                 'plan': 'monthly',
                 'trialEnd': (datetime.now() + timedelta(days=30)).isoformat(),
                 'nextBillingDate': (datetime.now() + timedelta(days=30)).isoformat(),
-                'nextBillingAmount': 550,
+                'nextBillingAmount': 990,
                 'isEarlyBird': False,
             })
 
-        else:  # 年額プラン（5500円、即時決済）
+        else:  # 年額プラン（9900円、即時決済）
             price = get_or_create_price('yearly')
 
             # サブスクリプションを作成（即時課金）
@@ -266,7 +266,7 @@ def create_payment():
                 'subscriptionId': subscription.id,
                 'plan': 'yearly',
                 'nextBillingDate': (datetime.now() + timedelta(days=365)).isoformat(),
-                'amount': 5500,
+                'amount': 9900,
                 'isEarlyBird': False,
             })
             
@@ -1155,7 +1155,7 @@ def reactivate_account():
                     "subscription_id": subscription_id,
                     "plan_type": "monthly" if plan_type == 0 else "yearly",
                     "next_billing_date": next_billing_date,
-                    "amount": 550 if plan_type == 0 else 5500
+                    "amount": 990 if plan_type == 0 else 9900
                 })
                 
             except stripe.error.CardError as e:

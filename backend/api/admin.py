@@ -285,13 +285,13 @@ def get_subscription_data():
 
             # 料金設定
             if subscription_type == 'monthly':
-                # plan = 0: 月額550円（初月無料、翌月から課金）
+                # plan = 0: 月額990円（初月無料、翌月から課金）
                 plan_value = 0
-                price_per_user = 550
+                price_per_user = 990
             else:  # yearly
-                # plan = 1: 年払い5500円
+                # plan = 1: 年払い9900円
                 plan_value = 1
-                price_per_user = 5500
+                price_per_user = 9900
 
             if range_type == 'year':
                 # 過去12ヶ月のデータ
@@ -1568,9 +1568,9 @@ def get_early_bird_settings():
                 "success": True,
                 "data": {
                     "enabled": settings.get('early_bird_enabled', 'false') == 'true',
-                    "limit": int(settings.get('early_bird_limit', '500')),
+                    "limit": int(settings.get('early_bird_limit', '100')),
                     "currentCount": current_count,
-                    "remaining": max(0, int(settings.get('early_bird_limit', '500')) - current_count),
+                    "remaining": max(0, int(settings.get('early_bird_limit', '100')) - current_count),
                 }
             }), 200
 
