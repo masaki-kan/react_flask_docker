@@ -1,6 +1,7 @@
 import { FC, useCallback } from "react";
 // import FeatureCard from "../checkReactivationstatus/featureCard";
 import HowItWorksSection from "./HowItWorksSection";
+import PaymentFlowSection from "./PaymentFlowSection";
 import {
   Box,
   Heading,
@@ -282,6 +283,9 @@ const VintageLandingPage: FC = () => {
 
       {/* How it Works Section */}
       <HowItWorksSection />
+
+      {/* Payment Flow Section */}
+      <PaymentFlowSection />
 
       {/* CTA Section */}
       <MotionBox
