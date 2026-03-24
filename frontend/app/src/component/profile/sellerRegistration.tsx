@@ -13,23 +13,35 @@ import {
   Icon,
   useToast,
   useColorModeValue,
+  useDisclosure,
   Badge,
   Spinner,
   Alert,
   AlertIcon,
   AlertTitle,
   AlertDescription,
+  Divider,
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+  ModalCloseButton,
 } from "@chakra-ui/react";
 import {
   FaStore,
   FaCheckCircle,
   FaExclamationCircle,
   FaExternalLinkAlt,
+  FaMoneyBillWave,
 } from "react-icons/fa";
 import {
   createConnectAccount,
   checkAccountStatus,
   getDashboardLink,
+  getSellerBalance,
+  requestPayout,
 } from "../../api/stripeConnect";
 import useMyProfile from "../../hooks/useProfile";
 
@@ -45,6 +57,13 @@ const SellerRegistration: FC = () => {
     payoutsEnabled: boolean;
     isTestMode: boolean;
   } | null>(null);
+  const [balance, setBalance] = useState<{
+    available: number;
+    pending: number;
+    payoutFee: number;
+  } | null>(null);
+  const [payoutLoading, setPayoutLoading] = useState(false);
+  const { isOpen: isPayoutOpen, onOpen: onPayoutOpen, onClose: onPayoutClose } = useDisclosure();
 
   // カラーモード対応
   const bgColor = useColorModeValue("white", "gray.800");
@@ -84,12 +103,81 @@ const SellerRegistration: FC = () => {
     }
   }, [memorizeProfile.profile.id]);
 
+  // 残高を取得
+  const fetchBalance = useCallback(async () => {
+    const userId = memorizeProfile.profile.id;
+    if (!userId) return;
+
+    try {
+      const response = await getSellerBalance(userId);
+      if (response.success && response.data) {
+        setBalance({
+          available: response.data.available,
+          pending: response.data.pending,
+          payoutFee: response.data.payout_fee,
+        });
+      }
+    } catch (error) {
+      console.error("Balance fetch error:", error);
+    }
+  }, [memorizeProfile.profile.id]);
+
+  // 振込申請を実行
+  const handleRequestPayout = async () => {
+    const userId = memorizeProfile.profile.id;
+    if (!userId) return;
+
+    setPayoutLoading(true);
+    try {
+      const response = await requestPayout(userId);
+
+      if (response.success && response.data) {
+        toast({
+          title: "振込申請完了",
+          description: `¥${response.data.amount.toLocaleString()}の振込申請を受け付けました（手数料¥${response.data.fee.toLocaleString()}）`,
+          status: "success",
+          duration: 5000,
+          isClosable: true,
+        });
+        onPayoutClose();
+        // 残高を再取得
+        await fetchBalance();
+      } else {
+        toast({
+          title: "振込申請エラー",
+          description: response.message || "振込申請に失敗しました",
+          status: "error",
+          duration: 5000,
+          isClosable: true,
+        });
+      }
+    } catch (error) {
+      console.error("Payout request error:", error);
+      toast({
+        title: "エラー",
+        description: "予期しないエラーが発生しました",
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
+    } finally {
+      setPayoutLoading(false);
+    }
+  };
+
   // 初回ロード時にステータス確認
   useEffect(() => {
     if (memorizeProfile.profile.id) {
       checkStatus();
     }
   }, [memorizeProfile.profile.id, checkStatus]);
+
+  // アカウント登録済みなら残高を取得
+  useEffect(() => {
+    if (accountStatus?.hasAccount && accountStatus?.onboardingCompleted) {
+      fetchBalance();
+    }
+  }, [accountStatus, fetchBalance]);
 
   // URLパラメータでオンボーディング完了を検知
   useEffect(() => {
@@ -299,6 +387,52 @@ const SellerRegistration: FC = () => {
             </VStack>
           </Box>
 
+          {/* 残高・振込セクション */}
+          {balance && (
+            <>
+              <Divider />
+              <Box bg={sectionBg} p={4} borderRadius="md">
+                <VStack align="stretch" spacing={3}>
+                  <Text fontWeight="bold" fontSize="sm">
+                    売上残高
+                  </Text>
+                  <HStack justify="space-between">
+                    <Text fontSize="sm" color="gray.600">
+                      振込可能残高
+                    </Text>
+                    <Text fontSize="lg" fontWeight="bold">
+                      ¥{balance.available.toLocaleString()}
+                    </Text>
+                  </HStack>
+                  <HStack justify="space-between">
+                    <Text fontSize="sm" color="gray.600">
+                      保留中残高
+                    </Text>
+                    <Text fontSize="sm" color="gray.500">
+                      ¥{balance.pending.toLocaleString()}
+                    </Text>
+                  </HStack>
+                </VStack>
+              </Box>
+
+              <Button
+                colorScheme="green"
+                size="md"
+                leftIcon={<FaMoneyBillWave />}
+                onClick={onPayoutOpen}
+                isDisabled={balance.available < balance.payoutFee + 1}
+              >
+                振込申請する（手数料¥{balance.payoutFee.toLocaleString()}）
+              </Button>
+
+              {balance.available < balance.payoutFee + 1 && (
+                <Text fontSize="xs" color="gray.500">
+                  ※ 振込には¥{(balance.payoutFee + 1).toLocaleString()}以上の残高が必要です
+                </Text>
+              )}
+            </>
+          )}
+
           <Text fontSize="sm" color="gray.600">
             販売者として商品を出品し、売上を受け取ることができます。
           </Text>
@@ -315,6 +449,57 @@ const SellerRegistration: FC = () => {
             </Button>
           )}
         </VStack>
+
+        {/* 振込確認ダイアログ */}
+        <Modal isOpen={isPayoutOpen} onClose={onPayoutClose} isCentered>
+          <ModalOverlay />
+          <ModalContent>
+            <ModalHeader>振込申請の確認</ModalHeader>
+            <ModalCloseButton />
+            <ModalBody>
+              <VStack align="stretch" spacing={3}>
+                <HStack justify="space-between">
+                  <Text color="gray.600">振込可能残高</Text>
+                  <Text fontWeight="bold">
+                    ¥{balance?.available.toLocaleString()}
+                  </Text>
+                </HStack>
+                <HStack justify="space-between">
+                  <Text color="gray.600">振込手数料</Text>
+                  <Text color="red.500">
+                    -¥{balance?.payoutFee.toLocaleString()}
+                  </Text>
+                </HStack>
+                <Divider />
+                <HStack justify="space-between">
+                  <Text fontWeight="bold">振込金額</Text>
+                  <Text fontSize="lg" fontWeight="bold" color="green.500">
+                    ¥{balance ? (balance.available - balance.payoutFee).toLocaleString() : 0}
+                  </Text>
+                </HStack>
+                <Alert status="info" borderRadius="md" mt={2}>
+                  <AlertIcon />
+                  <AlertDescription fontSize="sm">
+                    振込は通常1〜2営業日で銀行口座に入金されます
+                  </AlertDescription>
+                </Alert>
+              </VStack>
+            </ModalBody>
+            <ModalFooter>
+              <Button variant="ghost" mr={3} onClick={onPayoutClose}>
+                キャンセル
+              </Button>
+              <Button
+                colorScheme="green"
+                onClick={handleRequestPayout}
+                isLoading={payoutLoading}
+                loadingText="申請中..."
+              >
+                振込を申請する
+              </Button>
+            </ModalFooter>
+          </ModalContent>
+        </Modal>
       </Box>
     );
   }
