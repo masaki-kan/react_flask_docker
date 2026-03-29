@@ -1005,19 +1005,19 @@ const Home: FC = () => {
               <Box
                 mt={3}
                 p={4}
-                bg="blue.50"
+                bg="orange.50"
                 borderRadius="md"
                 borderWidth={2}
-                borderColor="blue.200"
+                borderColor="orange.300"
               >
                 <HStack spacing={3}>
-                  <Icon as={FaUniversity} color="blue.500" boxSize={5} />
+                  <Icon as={FaUniversity} color="orange.500" boxSize={5} />
                   <VStack align="start" spacing={1}>
-                    <Text fontSize="sm" fontWeight="bold" color="blue.700">
-                      購入者の入金待ち（銀行振込）
+                    <Text fontSize="sm" fontWeight="bold" color="orange.700">
+                      銀行振込の入金待ち
                     </Text>
                     <Text fontSize="xs" color="gray.600">
-                      購入者が銀行振込を完了するまでお待ちください。入金確認後、発送手続きに進みます。
+                      購入者が銀行振込を完了するまでお待ちください。入金確認まで1〜2営業日かかる場合があります。
                     </Text>
                   </VStack>
                 </HStack>
