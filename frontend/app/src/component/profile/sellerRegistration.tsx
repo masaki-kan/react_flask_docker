@@ -412,6 +412,9 @@ const SellerRegistration: FC = () => {
                       ¥{balance.pending.toLocaleString()}
                     </Text>
                   </HStack>
+                  <Text fontSize="xs" color="gray.500">
+                    ※ 売上残高への反映には決済完了から約4営業日かかります。
+                  </Text>
                 </VStack>
               </Box>
 

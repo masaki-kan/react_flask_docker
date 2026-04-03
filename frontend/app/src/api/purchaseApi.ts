@@ -92,6 +92,11 @@ export interface ConfirmCardPaymentRequest {
   payment_intent_id: string;
 }
 
+export interface RefundPurchaseRequest {
+  trade_id: number;
+  seller_id: number;
+}
+
 export interface ApiResponse<T = any> {
   success: boolean;
   message: string;
@@ -370,6 +375,33 @@ export const confirmCardPayment = async (
     return response.data;
   } catch (error: any) {
     console.error('カード決済確認エラー:', error);
+    if (error.response) {
+      return error.response.data;
+    }
+    throw error;
+  }
+};
+
+// ================================================================================
+// 返金API
+// ================================================================================
+
+/**
+ * 販売者が購入取引を返金する（全額返金）
+ */
+export const refundPurchase = async (
+  params: RefundPurchaseRequest
+): Promise<ApiResponse> => {
+  try {
+    const response = await axios.post(`${API_BASE_URL}/refund_purchase`, params, {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      withCredentials: true,
+    });
+    return response.data;
+  } catch (error: any) {
+    console.error('返金エラー:', error);
     if (error.response) {
       return error.response.data;
     }

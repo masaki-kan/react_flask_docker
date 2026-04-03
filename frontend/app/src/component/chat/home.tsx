@@ -46,6 +46,7 @@ import PriceAgreement from "./PriceAgreement";
 import PaymentModal from "./PaymentModal";
 import PurchaseReceivedConfirmation from "./PurchaseReceivedConfirmation";
 import PurchaseCompleteButton from "./PurchaseCompleteButton";
+import RefundButton from "./RefundButton";
 
 const Home: FC = () => {
   const navigate = useNavigate();
@@ -1043,6 +1044,9 @@ const Home: FC = () => {
                   <Text fontSize="xs" color="gray.600">
                     💰 決済が完了しました。商品を発送してください。
                   </Text>
+                  <Text fontSize="xs" color="gray.500" mt={1}>
+                    ※ 売上残高への反映には決済完了から約4営業日かかります。
+                  </Text>
                 </Box>
               </Box>
             )}
@@ -1148,6 +1152,20 @@ const Home: FC = () => {
                 }
                 purchasePrice={memorizeChatItemData.purchase_price || 0}
                 paymentMethod={memorizeChatItemData.payment_method || "card"}
+              />
+            )}
+
+          {/* 購入フロー: 返金ボタン（Seller） */}
+          {memorizeChatItemData.trade_type === "purchase" &&
+            ["paid", "shipped", "buyer_received"].includes(
+              memorizeChatItemData.status
+            ) &&
+            isCurrentUserSeller && (
+              <RefundButton
+                tradeId={Number(memorizeChatItemData.trade_id)}
+                sellerId={Number(memorizeSellerUserData.user_id)}
+                purchasePrice={memorizeChatItemData.purchase_price || 0}
+                status={memorizeChatItemData.status}
               />
             )}
 

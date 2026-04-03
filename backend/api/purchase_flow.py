@@ -1537,3 +1537,150 @@ def get_bank_transfer_info():
             'success': False,
             'message': f'エラーが発生しました: {str(e)}'
         }), 500
+
+
+# ================================================================================
+# 返金API（Seller用）
+# ================================================================================
+
+@purchase_bp.route('/refund_purchase', methods=['POST'])
+def refund_purchase():
+    """
+    販売者が購入取引を返金する（全額返金）
+
+    Parameters:
+        trade_id: 取引ID
+        seller_id: 販売者のユーザーID
+    """
+    try:
+        data = request.json
+        trade_id = data.get('trade_id')
+        seller_id = data.get('seller_id')
+
+        if not trade_id or not seller_id:
+            return jsonify({
+                'success': False,
+                'message': '取引IDと販売者IDは必須です'
+            }), 400
+
+        with get_db_connection() as conn:
+            cursor = conn.cursor(dictionary=True)
+
+            # 取引情報を取得
+            cursor.execute("""
+                SELECT t.trade_id, t.status, t.trade_type, t.item_id,
+                       t.purchase_price, t.payment_intent_id,
+                       i.user_id as seller_id
+                FROM trades t
+                JOIN items i ON t.item_id = i.item_id
+                WHERE t.trade_id = %s
+            """, (trade_id,))
+            trade = cursor.fetchone()
+
+            if not trade:
+                return jsonify({
+                    'success': False,
+                    'message': '取引が見つかりません'
+                }), 404
+
+            # 購入取引であることを確認
+            if trade['trade_type'] != 'purchase':
+                return jsonify({
+                    'success': False,
+                    'message': 'この取引は購入取引ではありません'
+                }), 400
+
+            # 販売者本人であることを確認
+            if str(trade['seller_id']) != str(seller_id):
+                return jsonify({
+                    'success': False,
+                    'message': '販売者のみが返金を実行できます'
+                }), 403
+
+            # ステータスが返金可能な状態であることを確認
+            allowed_statuses = ['paid', 'shipped', 'buyer_received']
+            if trade['status'] not in allowed_statuses:
+                return jsonify({
+                    'success': False,
+                    'message': f'現在のステータス({trade["status"]})では返金できません'
+                }), 400
+
+            # Stripe返金を実行
+            if STRIPE_MODE == 'live':
+                try:
+                    stripe.Refund.create(
+                        payment_intent=trade['payment_intent_id']
+                    )
+                    print(f"[INFO] Refund created for trade {trade_id}, payment_intent={trade['payment_intent_id']}", flush=True)
+                except stripe.error.StripeError as e:
+                    print(f"[ERROR] Stripe Refund failed: {str(e)}", flush=True)
+                    return jsonify({
+                        'success': False,
+                        'message': f'Stripe返金に失敗しました: {str(e)}'
+                    }), 500
+            else:
+                print(f"[INFO] Test mode: Refund simulated for trade {trade_id}", flush=True)
+
+            # ステータスをcancelledに更新
+            cursor.execute("""
+                UPDATE trades
+                SET status = 'cancelled',
+                    updated_at = NOW()
+                WHERE trade_id = %s
+            """, (trade_id,))
+
+            # アーカイブ処理 → final_statusをrefundedに上書き
+            try:
+                archiver = TradeArchiver(conn)
+                archive_trade_id = archiver.archive_trade(trade_id)
+
+                # final_statusをrefundedに上書き
+                cursor.execute("""
+                    UPDATE archived_trades
+                    SET final_status = 'refunded'
+                    WHERE trade_id = %s
+                """, (archive_trade_id,))
+
+                print(f"✅ 返金取引をアーカイブしました: archive_trade_id={archive_trade_id}, final_status=refunded")
+            except Exception as archive_error:
+                print(f"⚠️ アーカイブ処理でエラーが発生しましたが、返金は完了しました: {archive_error}")
+
+            # アイテムをavailableに戻す
+            item_id = trade['item_id']
+            cursor.execute("""
+                UPDATE items
+                SET status = 'available',
+                    updated_at = NOW()
+                WHERE item_id = %s
+            """, (item_id,))
+
+            # 取引関連データの削除
+            cursor.execute('DELETE FROM trade_messages WHERE trade_id = %s', (trade_id,))
+            cursor.execute('DELETE FROM shipping_info WHERE trade_id = %s', (trade_id,))
+            cursor.execute('DELETE FROM trade_confirmations WHERE trade_id = %s', (trade_id,))
+            cursor.execute('DELETE FROM trades WHERE trade_id = %s', (trade_id,))
+
+            print(f"✅ 返金完了: trade_id={trade_id}, item_id={item_id}をavailableに戻しました")
+
+            conn.commit()
+            cursor.close()
+
+        return jsonify({
+            'success': True,
+            'message': '返金が完了しました',
+            'data': {
+                'trade_id': trade_id,
+                'status': 'refunded'
+            }
+        })
+
+    except mysql.connector.Error as e:
+        return jsonify({
+            'success': False,
+            'message': f'データベースエラー: {str(e)}'
+        }), 500
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': f'エラーが発生しました: {str(e)}'
+        }), 500
