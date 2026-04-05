@@ -31,7 +31,8 @@ const PaymentFlowSection: FC = () => {
     {
       icon: FaCreditCard,
       title: "カード決済",
-      description: "クレジットカードで即時決済。代金はプラットフォームが一時預かりします。",
+      description:
+        "クレジットカードで即時決済。代金はプラットフォームが一時預かりします。",
     },
     {
       icon: FaTruck,
@@ -54,12 +55,14 @@ const PaymentFlowSection: FC = () => {
     {
       icon: FaUniversity,
       title: "銀行振込",
-      description: "表示される振込先口座に代金を振り込みます。手数料がカード決済よりお得です。",
+      description:
+        "表示される振込先口座に代金を振り込みます。手数料がカード決済よりお得です。",
     },
     {
       icon: FaTruck,
       title: "商品の発送・受取",
-      description: "入金確認後、出品者が商品を発送し、購入者が受取確認を行います。",
+      description:
+        "入金確認後、出品者が商品を発送し、購入者が受取確認を行います。",
     },
     {
       icon: FaCheckCircle,
@@ -71,7 +74,7 @@ const PaymentFlowSection: FC = () => {
   const renderSteps = (
     steps: typeof cardSteps,
     color: string,
-    bgGradient: string
+    bgGradient: string,
   ) => (
     <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
       {steps.map((step, index) => (
@@ -139,7 +142,7 @@ const PaymentFlowSection: FC = () => {
   );
 
   return (
-    <Box bg="#f5f1e8" py={16} px={4}>
+    <Box bg="#fdfcf8" py={16} px={4}>
       <VStack spacing={10} maxW="1000px" mx="auto">
         <VStack spacing={3}>
           <Heading
@@ -163,12 +166,7 @@ const PaymentFlowSection: FC = () => {
           >
             お支払いの流れ
           </Heading>
-          <Text
-            fontSize="sm"
-            color="#A18249"
-            textAlign="center"
-            pt={4}
-          >
+          <Text fontSize="sm" color="#A18249" textAlign="center" pt={4}>
             安心・安全なエスクロー決済で、代金はプラットフォームが一時預かりします。
           </Text>
         </VStack>

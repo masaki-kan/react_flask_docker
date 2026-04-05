@@ -66,7 +66,7 @@ const HowItWorksSection: FC = () => {
   const color = "#e68019";
 
   return (
-    <Box bg="#fdfcf8" py={16} px={4}>
+    <Box bg="#f5f1e8" py={16} px={4}>
       <VStack spacing={10} maxW="1000px" mx="auto">
         <Heading
           fontSize={{ base: "2xl", md: "3xl" }}
