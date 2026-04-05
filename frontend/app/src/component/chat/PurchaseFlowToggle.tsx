@@ -26,6 +26,7 @@ import { FaYenSign, FaExchangeAlt, FaCreditCard, FaUniversity, FaStore } from "r
 import { useState } from "react";
 import { proposePurchasePrice } from "../../api/purchaseApi";
 import useMyProfile from "../../hooks/useProfile";
+import { TRADE_STATUS } from "../../constants/tradeStatus";
 import { useNavigate } from "react-router-dom";
 
 type PurchaseFlowToggleProps = {
@@ -61,7 +62,7 @@ const PurchaseFlowToggle: FC<PurchaseFlowToggleProps> = ({
 
   // 購入モードに切り替え可能な条件（Sellerのみ）
   const canSwitchToPurchase =
-    tradeType === "exchange" && status === "pending" && !isBuyer;
+    tradeType === "exchange" && status === TRADE_STATUS.PENDING && !isBuyer;
 
   // 手数料計算（カード: 3.6%、銀行振込: 1.5%）
   const priceNum = Number(price) || 0;

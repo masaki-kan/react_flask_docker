@@ -13,6 +13,7 @@ import {
   useToast,
 } from "@chakra-ui/react";
 import useChat from "../../hooks/useChat";
+import { TRADE_STATUS } from "../../constants/tradeStatus";
 import { useEffectOnce } from "react-use";
 import { messagesType } from "../../types/chatType";
 import { viewDate } from "../../utils/date/format";
@@ -226,7 +227,7 @@ const ChatLayout: FC = () => {
         borderTop="1px"
         borderColor="gray.200"
         bg="white"
-        hidden={memorizeChatItemData.status === "completed"}
+        hidden={memorizeChatItemData.status === TRADE_STATUS.COMPLETED}
       >
         <HStack>
           {/* <Input

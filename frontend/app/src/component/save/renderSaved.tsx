@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { route } from "../../route/routeConst";
 import useMyProfile from "../../hooks/useProfile";
 import OptimizedImage from "../render/optimizedImage";
+import { TRADE_STATUS } from "../../constants/tradeStatus";
 type RenderSavedType = {
   savedList: savedListType[];
 };
@@ -62,7 +63,7 @@ const RenderSaved: FC<RenderSavedType> = ({ savedList }) => {
       >
         {savedList.map((save, index) => {
           let isNew: boolean = false;
-          if (save.status !== "completed") {
+          if (save.status !== TRADE_STATUS.COMPLETED) {
             const tradeKey: string = save.trade_id.toString();
             const stored = localStorage.getItem("readSaveTimestamps");
             if (stored !== null) {
@@ -83,16 +84,16 @@ const RenderSaved: FC<RenderSavedType> = ({ savedList }) => {
               string,
               { color: string; label: string }
             > = {
-              pending: { color: "yellow", label: "申請中" },
-              purchased: { color: "blue", label: "選択済" },
-              shipped: { color: "purple", label: "発送済み" },
-              completed: { color: "green", label: "取引完了" },
-              cancelled: { color: "red", label: "取引キャンセル" },
-              price_proposed: { color: "orange", label: "金額提案中" },
-              price_agreed: { color: "cyan", label: "金額合意済み" },
+              [TRADE_STATUS.PENDING]: { color: "yellow", label: "申請中" },
+              [TRADE_STATUS.PURCHASED]: { color: "blue", label: "選択済" },
+              [TRADE_STATUS.SHIPPED]: { color: "purple", label: "発送済み" },
+              [TRADE_STATUS.COMPLETED]: { color: "green", label: "取引完了" },
+              [TRADE_STATUS.CANCELLED]: { color: "red", label: "取引キャンセル" },
+              [TRADE_STATUS.PRICE_PROPOSED]: { color: "orange", label: "金額提案中" },
+              [TRADE_STATUS.PRICE_AGREED]: { color: "cyan", label: "金額合意済み" },
               awaiting_payment: { color: "orange", label: "入金待ち" },
-              paid: { color: "teal", label: "決済済み" },
-              buyer_received: { color: "blue", label: "受取確認済み" },
+              [TRADE_STATUS.PAID]: { color: "teal", label: "決済済み" },
+              [TRADE_STATUS.BUYER_RECEIVED]: { color: "blue", label: "受取確認済み" },
             };
 
             return (
@@ -108,7 +109,7 @@ const RenderSaved: FC<RenderSavedType> = ({ savedList }) => {
           return (
             <GridItem
               key={index}
-              cursor={save.status !== "completed" ? "pointer" : "default"}
+              cursor={save.status !== TRADE_STATUS.COMPLETED ? "pointer" : "default"}
               onClick={() => {
                 saveTransition(save.trade_id, save.last_message_time);
               }}
@@ -118,7 +119,7 @@ const RenderSaved: FC<RenderSavedType> = ({ savedList }) => {
               boxShadow="sm"
               transition="all 0.3s ease"
               _hover={
-                save.status !== "completed"
+                save.status !== TRADE_STATUS.COMPLETED
                   ? {
                       transform: "translateY(-2px)",
                       boxShadow: "md",

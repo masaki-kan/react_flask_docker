@@ -11,6 +11,7 @@ import {
 import { AnimatePresence, motion } from "framer-motion";
 import { FaHandshake } from "react-icons/fa";
 import useSaved from "../../hooks/useSaved";
+import { TRADE_STATUS } from "../../constants/tradeStatus";
 import RenderSaved from "./renderSaved";
 import { useEffectOnce } from "react-use";
 
@@ -23,7 +24,7 @@ const SavedIndex: FC = () => {
 
   const unCompletedList = useMemo(() => {
     return savedList
-      .filter((list) => list.status !== "completed")
+      .filter((list) => list.status !== TRADE_STATUS.COMPLETED)
       .map((list) => {
         return list;
       });

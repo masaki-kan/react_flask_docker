@@ -12,6 +12,7 @@ import { FaUndoAlt } from "react-icons/fa";
 import { refundPurchase } from "../../api/purchaseApi";
 import { useNavigate } from "react-router-dom";
 import { route } from "../../route/routeConst";
+import { TRADE_STATUS } from "../../constants/tradeStatus";
 
 type RefundButtonProps = {
   tradeId: number;
@@ -37,7 +38,7 @@ const RefundButton: FC<RefundButtonProps> = ({
   const handleRefund = async () => {
     let confirmMessage = `購入者に¥${purchasePrice.toLocaleString()}を全額返金しますか？\n\nこの操作は取り消せません。`;
 
-    if (status === "shipped" || status === "buyer_received") {
+    if (status === TRADE_STATUS.SHIPPED || status === TRADE_STATUS.BUYER_RECEIVED) {
       confirmMessage =
         `⚠️ 商品が発送済みの場合、購入者と返品について事前に話し合ってください。\n\n` +
         confirmMessage;

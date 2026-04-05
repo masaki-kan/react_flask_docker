@@ -17,6 +17,7 @@ import useSaved from "../../hooks/useSaved";
 import { FaUserCircle } from "react-icons/fa";
 import { useEffectOnce } from "react-use";
 import useAlert from "../../hooks/useAlert";
+import { TRADE_STATUS } from "../../constants/tradeStatus";
 
 const RenderRouteLinks: FC = () => {
   const { warningToast } = useAlert();
@@ -41,7 +42,7 @@ const RenderRouteLinks: FC = () => {
 
   const unCompletedList = useMemo(() => {
     return savedList
-      .filter((list) => list.status !== "completed")
+      .filter((list) => list.status !== TRADE_STATUS.COMPLETED)
       .map((list) => list);
   }, [savedList]);
 

@@ -1,25 +1,27 @@
+import { TRADE_STATUS } from "../../constants/tradeStatus";
+
 export const statusView = (status: string) => {
   // 大文字・小文字を統一（小文字に変換）
   const normalizedStatus = status.toLowerCase();
 
   switch (normalizedStatus) {
-    case "pending":
+    case TRADE_STATUS.PENDING:
       return "申請中";
-    case "purchased":
+    case TRADE_STATUS.PURCHASED:
       return "選択済";
-    case "completed":
+    case TRADE_STATUS.COMPLETED:
       return "取引完了";
-    case "shipped":
+    case TRADE_STATUS.SHIPPED:
       return "発送済み";
-    case "cancelled":
+    case TRADE_STATUS.CANCELLED:
       return "取引キャンセル";
-    case "price_proposed":
+    case TRADE_STATUS.PRICE_PROPOSED:
       return "金額提案中";
-    case "price_agreed":
+    case TRADE_STATUS.PRICE_AGREED:
       return "金額合意済み";
-    case "paid":
+    case TRADE_STATUS.PAID:
       return "決済済み";
-    case "buyer_received":
+    case TRADE_STATUS.BUYER_RECEIVED:
       return "受取確認済み";
     case "awaiting_payment":
       return "入金待ち";
@@ -36,24 +38,24 @@ export const chatDetailTradeStatus = (
   text: string;
 }[] => {
   switch (status) {
-    case "pending":
+    case TRADE_STATUS.PENDING:
       return [
         {
           color: "yellow",
-          status: "shipped",
+          status: TRADE_STATUS.SHIPPED,
           text: "発送済み",
         },
         {
           color: "red",
-          status: "cancelled",
+          status: TRADE_STATUS.CANCELLED,
           text: "取引キャンセル",
         },
       ];
-    case "shipped":
+    case TRADE_STATUS.SHIPPED:
       return [
         {
           color: "green",
-          status: "completed",
+          status: TRADE_STATUS.COMPLETED,
           text: "取引終了",
         },
       ];

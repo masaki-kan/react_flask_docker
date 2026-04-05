@@ -47,6 +47,7 @@ import PaymentModal from "./PaymentModal";
 import PurchaseReceivedConfirmation from "./PurchaseReceivedConfirmation";
 import PurchaseCompleteButton from "./PurchaseCompleteButton";
 import RefundButton from "./RefundButton";
+import { TRADE_STATUS } from "../../constants/tradeStatus";
 
 const Home: FC = () => {
   const navigate = useNavigate();
@@ -217,7 +218,7 @@ const Home: FC = () => {
       // 取引が完了している場合はチェックしない
       if (
         tradeIdNumber &&
-        memorizeChatItemData.status === "shipped" // 完了済みは除外
+        memorizeChatItemData.status === TRADE_STATUS.SHIPPED // 完了済みは除外
       ) {
         try {
           const result = await fetchConfirmationsApi(tradeIdNumber);
@@ -242,7 +243,7 @@ const Home: FC = () => {
     // intervalの設定前にstatusをチェック
     let interval: NodeJS.Timeout | undefined;
 
-    if (memorizeChatItemData.status === "shipped") {
+    if (memorizeChatItemData.status === TRADE_STATUS.SHIPPED) {
       interval = setInterval(checkConfirmations, 5000); // 5秒ごとにチェック
     }
 
@@ -288,14 +289,14 @@ const Home: FC = () => {
     // 購入フロー中、または金額提案待ちの場合は定期的にチェック
     const shouldPoll =
       memorizeChatItemData.trade_type === "purchase" ||
-      memorizeChatItemData.status === "pending" ||
+      memorizeChatItemData.status === TRADE_STATUS.PENDING ||
       [
-        "price_proposed",
-        "price_agreed",
+        TRADE_STATUS.PRICE_PROPOSED,
+        TRADE_STATUS.PRICE_AGREED,
         "awaiting_payment",
-        "paid",
-        "shipped",
-        "buyer_received",
+        TRADE_STATUS.PAID,
+        TRADE_STATUS.SHIPPED,
+        TRADE_STATUS.BUYER_RECEIVED,
       ].includes(memorizeChatItemData.status);
 
     if (shouldPoll && tradeIdNumber) {
@@ -349,7 +350,7 @@ const Home: FC = () => {
 
     let statusInterval: NodeJS.Timeout | undefined;
 
-    if (!isCurrentUserSeller && memorizeChatItemData.status === "shipped") {
+    if (!isCurrentUserSeller && memorizeChatItemData.status === TRADE_STATUS.SHIPPED) {
       statusInterval = setInterval(checkTransactionStatus, 3000); // 3秒ごとにチェック
     }
 
@@ -367,7 +368,7 @@ const Home: FC = () => {
 
   // 取引完了時の自動リダイレクト
   useEffect(() => {
-    if (memorizeChatItemData.status === "completed") {
+    if (memorizeChatItemData.status === TRADE_STATUS.COMPLETED) {
       toast({
         title: "交換完了",
         description: "取引が完了しました。取引履歴に移動します。",
@@ -671,13 +672,13 @@ const Home: FC = () => {
               </HStack>
 
               {/* 発送状況表示 */}
-              {(memorizeChatItemData.status === "pending" ||
-                memorizeChatItemData.status === "purchased" ||
-                memorizeChatItemData.status === "shipped") && (
+              {(memorizeChatItemData.status === TRADE_STATUS.PENDING ||
+                memorizeChatItemData.status === TRADE_STATUS.PURCHASED ||
+                memorizeChatItemData.status === TRADE_STATUS.SHIPPED) && (
                 <VStack align="stretch" spacing={2}>
                   {/* sellerの交換商品選択状態 */}
                   {isCurrentUserSeller &&
-                    memorizeChatItemData.status === "pending" && (
+                    memorizeChatItemData.status === TRADE_STATUS.PENDING && (
                       <HStack>
                         <Icon
                           as={FaCheckCircle}
@@ -719,7 +720,7 @@ const Home: FC = () => {
               )}
 
               {/* ステータスに応じたアクションボタン */}
-              {memorizeChatItemData.status === "pending" &&
+              {memorizeChatItemData.status === TRADE_STATUS.PENDING &&
                 isCurrentUserSeller &&
                 !hasSellerSelectedItem && (
                   <Button
@@ -733,7 +734,7 @@ const Home: FC = () => {
                   </Button>
                 )}
 
-              {memorizeChatItemData.status === "purchased" &&
+              {memorizeChatItemData.status === TRADE_STATUS.PURCHASED &&
                 !hasUserShipped &&
                 (!isCurrentUserSeller || hasSellerSelectedItem) && (
                   <Button
@@ -749,7 +750,7 @@ const Home: FC = () => {
                 )}
 
               {memorizeChatItemData.trade_type !== "purchase" &&
-                memorizeChatItemData.status === "shipped" && (
+                memorizeChatItemData.status === TRADE_STATUS.SHIPPED && (
                 <VStack align="stretch" spacing={2} w="100%">
                   <Checkbox
                     isChecked={hasUserConfirmed}
@@ -825,9 +826,9 @@ const Home: FC = () => {
                 // 購入フローの場合: 決済開始以降はキャンセル不可
                 if (memorizeChatItemData.trade_type === "purchase") {
                   const canCancelPurchase =
-                    memorizeChatItemData.status === "pending" ||
-                    memorizeChatItemData.status === "price_proposed" ||
-                    memorizeChatItemData.status === "price_agreed";
+                    memorizeChatItemData.status === TRADE_STATUS.PENDING ||
+                    memorizeChatItemData.status === TRADE_STATUS.PRICE_PROPOSED ||
+                    memorizeChatItemData.status === TRADE_STATUS.PRICE_AGREED;
                   if (!canCancelPurchase) return null;
                 }
 
@@ -875,7 +876,7 @@ const Home: FC = () => {
           {/* 購入フロー: 申請された側（Seller）が購入を提案 */}
           {memorizeChatItemData.trade_type !== "purchase" &&
             isCurrentUserSeller &&
-            memorizeChatItemData.status === "pending" &&
+            memorizeChatItemData.status === TRADE_STATUS.PENDING &&
             !hasSellerSelectedItem && (
               <PurchaseFlowToggle
                 tradeId={Number(memorizeChatItemData.trade_id)}
@@ -1027,7 +1028,7 @@ const Home: FC = () => {
 
           {/* 購入フロー: 発送ボタン（Seller） */}
           {memorizeChatItemData.trade_type === "purchase" &&
-            memorizeChatItemData.status === "paid" &&
+            memorizeChatItemData.status === TRADE_STATUS.PAID &&
             isCurrentUserSeller &&
             !sellerShippingData && (
               <Box mt={3}>
@@ -1053,7 +1054,7 @@ const Home: FC = () => {
 
           {/* 購入フロー: 発送待ち表示（Buyer） */}
           {memorizeChatItemData.trade_type === "purchase" &&
-            memorizeChatItemData.status === "paid" &&
+            memorizeChatItemData.status === TRADE_STATUS.PAID &&
             !isCurrentUserSeller && (
               <Box
                 mt={3}
@@ -1079,7 +1080,7 @@ const Home: FC = () => {
 
           {/* 購入フロー: 受取確認（Buyer） */}
           {memorizeChatItemData.trade_type === "purchase" &&
-            memorizeChatItemData.status === "shipped" &&
+            memorizeChatItemData.status === TRADE_STATUS.SHIPPED &&
             !isCurrentUserSeller && (
               <PurchaseReceivedConfirmation
                 tradeId={Number(memorizeChatItemData.trade_id)}
@@ -1092,7 +1093,7 @@ const Home: FC = () => {
 
           {/* 購入フロー: 受取確認待ち表示（Seller） */}
           {memorizeChatItemData.trade_type === "purchase" &&
-            memorizeChatItemData.status === "shipped" &&
+            memorizeChatItemData.status === TRADE_STATUS.SHIPPED &&
             isCurrentUserSeller && (
               <Box
                 mt={3}
@@ -1143,7 +1144,7 @@ const Home: FC = () => {
 
           {/* 購入フロー: 取引完了（Seller） */}
           {memorizeChatItemData.trade_type === "purchase" &&
-            memorizeChatItemData.status === "buyer_received" &&
+            memorizeChatItemData.status === TRADE_STATUS.BUYER_RECEIVED &&
             isCurrentUserSeller && (
               <PurchaseCompleteButton
                 tradeId={Number(memorizeChatItemData.trade_id)}
@@ -1157,7 +1158,7 @@ const Home: FC = () => {
 
           {/* 購入フロー: 返金ボタン（Seller） */}
           {memorizeChatItemData.trade_type === "purchase" &&
-            ["paid", "shipped", "buyer_received"].includes(
+            [TRADE_STATUS.PAID, TRADE_STATUS.SHIPPED, TRADE_STATUS.BUYER_RECEIVED].includes(
               memorizeChatItemData.status
             ) &&
             isCurrentUserSeller && (
