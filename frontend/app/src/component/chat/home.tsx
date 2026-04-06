@@ -828,7 +828,7 @@ const Home: FC = () => {
                   const canCancelPurchase =
                     memorizeChatItemData.status === TRADE_STATUS.PENDING ||
                     memorizeChatItemData.status === TRADE_STATUS.PRICE_PROPOSED ||
-                    memorizeChatItemData.status === TRADE_STATUS.PRICE_AGREED;
+                    (memorizeChatItemData.status === TRADE_STATUS.PRICE_AGREED && !isCurrentUserSeller);
                   if (!canCancelPurchase) return null;
                 }
 
