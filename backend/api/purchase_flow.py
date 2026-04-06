@@ -1612,6 +1612,17 @@ def refund_purchase():
                         payment_intent=trade['payment_intent_id']
                     )
                     print(f"[INFO] Refund created for trade {trade_id}, payment_intent={trade['payment_intent_id']}", flush=True)
+                except stripe.error.InvalidRequestError as e:
+                    # すでに返金済みの場合はべき等として扱い、DBクリーンアップを続行
+                    error_message = str(e).lower()
+                    if 'already been refunded' in error_message or 'already_refunded' in error_message:
+                        print(f"[INFO] Charge already refunded on Stripe. Proceeding with DB cleanup for trade {trade_id}", flush=True)
+                    else:
+                        print(f"[ERROR] Stripe Refund failed: {str(e)}", flush=True)
+                        return jsonify({
+                            'success': False,
+                            'message': f'Stripe返金に失敗しました: {str(e)}'
+                        }), 500
                 except stripe.error.StripeError as e:
                     print(f"[ERROR] Stripe Refund failed: {str(e)}", flush=True)
                     return jsonify({
