@@ -1660,8 +1660,7 @@ def refund_purchase():
             item_id = trade['item_id']
             cursor.execute("""
                 UPDATE items
-                SET status = 'available',
-                    updated_at = NOW()
+                SET status = 'available'
                 WHERE item_id = %s
             """, (item_id,))
 
