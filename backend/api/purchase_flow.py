@@ -1632,31 +1632,7 @@ def refund_purchase():
             else:
                 print(f"[INFO] Test mode: Refund simulated for trade {trade_id}", flush=True)
 
-            # ステータスをcancelledに更新
-            cursor.execute("""
-                UPDATE trades
-                SET status = 'cancelled',
-                    updated_at = NOW()
-                WHERE trade_id = %s
-            """, (trade_id,))
-
-            # アーカイブ処理 → final_statusをrefundedに上書き
-            try:
-                archiver = TradeArchiver(conn)
-                archive_trade_id = archiver.archive_trade(trade_id)
-
-                # final_statusをrefundedに上書き
-                cursor.execute("""
-                    UPDATE archived_trades
-                    SET final_status = 'refunded'
-                    WHERE trade_id = %s
-                """, (archive_trade_id,))
-
-                print(f"✅ 返金取引をアーカイブしました: archive_trade_id={archive_trade_id}, final_status=refunded")
-            except Exception as archive_error:
-                print(f"⚠️ アーカイブ処理でエラーが発生しましたが、返金は完了しました: {archive_error}")
-
-            # アイテムをavailableに戻す
+            # アイテムをavailableに戻す（商品はそのまま残す）
             item_id = trade['item_id']
             cursor.execute("""
                 UPDATE items
@@ -1664,13 +1640,13 @@ def refund_purchase():
                 WHERE item_id = %s
             """, (item_id,))
 
-            # 取引関連データの削除
+            # 取引関連データの削除（アーカイブは作成しない）
             cursor.execute('DELETE FROM trade_messages WHERE trade_id = %s', (trade_id,))
             cursor.execute('DELETE FROM shipping_info WHERE trade_id = %s', (trade_id,))
             cursor.execute('DELETE FROM trade_confirmations WHERE trade_id = %s', (trade_id,))
             cursor.execute('DELETE FROM trades WHERE trade_id = %s', (trade_id,))
 
-            print(f"✅ 返金完了: trade_id={trade_id}, item_id={item_id}をavailableに戻しました")
+            print(f"✅ 返金完了: trade_id={trade_id}, item_id={item_id}をavailableに戻し、取引データを削除しました")
 
             conn.commit()
             cursor.close()
