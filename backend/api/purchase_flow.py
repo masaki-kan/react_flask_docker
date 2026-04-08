@@ -825,72 +825,91 @@ def complete_purchase_trade():
             # 本番環境の場合: Stripe Transferを実行（販売者への送金）
             stripe_transfer_id = None
             if STRIPE_MODE == 'live':
+                # 販売者のStripe Accountを確認（必須）
+                if not trade['stripe_account_id']:
+                    return jsonify({
+                        'success': False,
+                        'message': '販売者のStripeアカウントが設定されていません。'
+                    }), 400
+                if not trade['stripe_payouts_enabled']:
+                    return jsonify({
+                        'success': False,
+                        'message': '販売者のStripe入金設定が完了していません。販売者にStripe Connectの設定確認を依頼してください。'
+                    }), 400
+
                 try:
-                    # 販売者のStripe Accountを確認
-                    if not trade['stripe_account_id']:
-                        print(f"[WARNING] Seller has no Stripe account. Skipping transfer.", flush=True)
-                    elif not trade['stripe_payouts_enabled']:
-                        print(f"[WARNING] Seller's Stripe payouts not enabled. Skipping transfer.", flush=True)
+                    # 販売者への送金額（商品代金 - 手数料）
+                    # カード: 3.6%、銀行振込: 1.5%
+                    purchase_price = float(trade['purchase_price'])
+                    fee_rate = 0.015 if trade.get('payment_method') == 'bank_transfer' else 0.036
+                    stripe_fee = math.floor(purchase_price * fee_rate)
+                    transfer_amount = int(purchase_price - stripe_fee)
+
+                    # 銀行振込（customer_balance）はChargeが存在しないため、
+                    # source_transactionなしでTransferを実行する
+                    is_bank_transfer = trade.get('payment_method') == 'bank_transfer'
+
+                    if is_bank_transfer:
+                        transfer = stripe.Transfer.create(
+                            amount=transfer_amount,
+                            currency='jpy',
+                            destination=trade['stripe_account_id'],
+                            metadata={
+                                'trade_id': str(trade_id),
+                                'seller_id': str(trade['seller_id']),
+                                'purchase_price': str(int(purchase_price)),
+                                'stripe_fee': str(stripe_fee),
+                                'transfer_amount': str(transfer_amount),
+                                'payment_method': 'bank_transfer',
+                            }
+                        )
                     else:
-                        # 販売者への送金額（商品代金 - 手数料）
-                        # カード: 3.6%、銀行振込: 1.5%
-                        purchase_price = float(trade['purchase_price'])
-                        fee_rate = 0.015 if trade.get('payment_method') == 'bank_transfer' else 0.036
-                        stripe_fee = math.floor(purchase_price * fee_rate)
-                        transfer_amount = int(purchase_price - stripe_fee)
+                        # カード決済: PaymentIntentからChargeを取得してsource_transactionを指定
+                        payment_intent = stripe.PaymentIntent.retrieve(trade['payment_intent_id'])
 
-                        # 銀行振込（customer_balance）はChargeが存在しないため、
-                        # source_transactionなしでTransferを実行する
-                        is_bank_transfer = trade.get('payment_method') == 'bank_transfer'
+                        # Stripe API 2022-11-15以降は latest_charge を使用
+                        charge_id = getattr(payment_intent, 'latest_charge', None)
+                        if not charge_id:
+                            # 後方互換: 古いAPIバージョンの charges.data フォールバック
+                            charges = getattr(payment_intent, 'charges', None)
+                            if charges and getattr(charges, 'data', None):
+                                charge_id = charges.data[0].id
+                        if not charge_id:
+                            raise Exception("PaymentIntentにChargeが見つかりません")
 
-                        if is_bank_transfer:
-                            transfer = stripe.Transfer.create(
-                                amount=transfer_amount,
-                                currency='jpy',
-                                destination=trade['stripe_account_id'],
-                                metadata={
-                                    'trade_id': str(trade_id),
-                                    'seller_id': str(trade['seller_id']),
-                                    'purchase_price': str(int(purchase_price)),
-                                    'stripe_fee': str(stripe_fee),
-                                    'transfer_amount': str(transfer_amount),
-                                    'payment_method': 'bank_transfer',
-                                }
-                            )
-                        else:
-                            # カード決済: PaymentIntentからChargeを取得してsource_transactionを指定
-                            payment_intent = stripe.PaymentIntent.retrieve(trade['payment_intent_id'])
+                        transfer = stripe.Transfer.create(
+                            amount=transfer_amount,
+                            currency='jpy',
+                            destination=trade['stripe_account_id'],
+                            source_transaction=charge_id,
+                            metadata={
+                                'trade_id': str(trade_id),
+                                'seller_id': str(trade['seller_id']),
+                                'purchase_price': str(int(purchase_price)),
+                                'stripe_fee': str(stripe_fee),
+                                'transfer_amount': str(transfer_amount),
+                                'payment_method': 'card',
+                            }
+                        )
 
-                            if not payment_intent.charges or not payment_intent.charges.data:
-                                raise Exception("PaymentIntentにChargeが見つかりません")
-
-                            charge_id = payment_intent.charges.data[0].id
-
-                            transfer = stripe.Transfer.create(
-                                amount=transfer_amount,
-                                currency='jpy',
-                                destination=trade['stripe_account_id'],
-                                source_transaction=charge_id,
-                                metadata={
-                                    'trade_id': str(trade_id),
-                                    'seller_id': str(trade['seller_id']),
-                                    'purchase_price': str(int(purchase_price)),
-                                    'stripe_fee': str(stripe_fee),
-                                    'transfer_amount': str(transfer_amount),
-                                    'payment_method': 'card',
-                                }
-                            )
-
-                        stripe_transfer_id = transfer.id
-                        print(f"[INFO] Transfer created: {stripe_transfer_id} (amount: ¥{transfer_amount}, method: {'bank_transfer' if is_bank_transfer else 'card'})", flush=True)
+                    stripe_transfer_id = transfer.id
+                    print(f"[INFO] Transfer created: {stripe_transfer_id} (amount: ¥{transfer_amount}, method: {'bank_transfer' if is_bank_transfer else 'card'})", flush=True)
 
                 except stripe.error.StripeError as e:
-                    # Transfer失敗時もログに記録して続行
-                    # （トランザクション全体を失敗させないため）
+                    # Transfer失敗時はトランザクションをロールバックして取引を完了させない
                     print(f"[ERROR] Stripe Transfer failed: {str(e)}", flush=True)
-                    # 管理者に通知するなどの処理を追加する場合はここに
+                    conn.rollback()
+                    return jsonify({
+                        'success': False,
+                        'message': f'販売者への送金に失敗しました: {str(e)}'
+                    }), 500
                 except Exception as e:
                     print(f"[ERROR] Transfer process failed: {str(e)}", flush=True)
+                    conn.rollback()
+                    return jsonify({
+                        'success': False,
+                        'message': f'送金処理でエラーが発生しました: {str(e)}'
+                    }), 500
             else:
                 # 開発環境: ダミーのTransfer ID
                 stripe_transfer_id = f"tr_test_{trade_id}_{int(datetime.now().timestamp())}"
