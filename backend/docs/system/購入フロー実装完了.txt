@@ -1,0 +1,414 @@
+================================================================================
+購入フロー実装完了レポート
+作成日: 2025-11-27
+================================================================================
+
+## 概要
+
+交換機能に加えて、「購入」機能を実装しました。
+ユーザーが交換する商品を持っていない場合、金額を提案して購入できるようになります。
+
+================================================================================
+## 実装完了項目
+================================================================================
+
+### 1. データベース（Backend）
+
+✅ tradesテーブルに以下のカラムを追加:
+   - trade_type: 'exchange' | 'purchase' (デフォルト: 'exchange')
+   - purchase_price: 購入金額
+   - price_proposed_by: 金額を提案したユーザーID
+   - is_price_agreed_seller: Sellerが合意したか
+   - is_price_agreed_buyer: Buyerが合意したか
+   - payment_intent_id: Stripe決済ID
+   - paid_at: 決済完了日時
+   - buyer_received_at: Buyer受取確認日時
+
+✅ 新しいステータスを追加:
+   - price_proposed: 金額提案中
+   - price_agreed: 金額合意済
+   - paid: 決済完了
+   - buyer_received: Buyer受取確認済
+
+📁 ファイル:
+   - backend/migrations/add_purchase_flow_columns.sql
+   - backend/database.py (create_trades_table 更新)
+
+### 2. バックエンドAPI（Backend）
+
+✅ 5つの新しいAPIエンドポイントを実装:
+
+   1. POST /api/propose_purchase_price
+      - 購入金額を提案
+      - trade_typeを'purchase'に変更
+      - statusを'price_proposed'に変更
+
+   2. POST /api/agree_purchase_price
+      - Seller/Buyerが金額に合意
+      - 両者が合意したらstatusを'price_agreed'に変更
+
+   3. POST /api/pay_for_purchase
+      - 決済実行（現在はテスト実装）
+      - TODO: Stripe実決済を実装
+      - statusを'paid'に変更
+
+   4. POST /api/confirm_buyer_received
+      - Buyerが商品受取を確認
+      - statusを'buyer_received'に変更
+
+   5. POST /api/complete_purchase_trade
+      - Sellerが取引を完了
+      - statusを'completed'に変更
+      - TODO: アーカイブ処理を追加
+
+📁 ファイル:
+   - backend/api/purchase_flow.py (新規作成)
+   - backend/app.py (purchase_bp登録)
+
+### 3. フロントエンドAPIクライアント（Frontend）
+
+✅ purchaseApi.tsを作成:
+   - proposePurchasePrice()
+   - agreePurchasePrice()
+   - payForPurchase()
+   - confirmBuyerReceived()
+   - completePurchaseTrade()
+
+📁 ファイル:
+   - frontend/app/src/api/purchaseApi.ts
+
+### 4. Reactコンポーネント（Frontend）
+
+✅ 5つの新しいコンポーネントを作成:
+
+   1. PurchaseFlowToggle.tsx
+      - 交換モードから購入モードへの切り替え
+      - 金額提案モーダル
+      - 手数料の計算と表示
+
+   2. PriceAgreement.tsx
+      - 提案された金額の表示
+      - Seller/Buyerの合意ボタン
+      - 合意状況の表示
+
+   3. PaymentModal.tsx
+      - 決済モーダル
+      - 金額内訳の表示
+      - TODO: Stripe実決済UI
+
+   4. PurchaseReceivedConfirmation.tsx
+      - Buyerが商品受取を確認
+      - エスクロー説明
+
+   5. PurchaseCompleteButton.tsx
+      - Sellerが取引を完了
+      - 受取金額の表示（手数料差引後）
+
+📁 ファイル:
+   - frontend/app/src/component/chat/PurchaseFlowToggle.tsx
+   - frontend/app/src/component/chat/PriceAgreement.tsx
+   - frontend/app/src/component/chat/PaymentModal.tsx
+   - frontend/app/src/component/chat/PurchaseReceivedConfirmation.tsx
+   - frontend/app/src/component/chat/PurchaseCompleteButton.tsx
+
+### 5. チャット画面への統合（Frontend）
+
+✅ home.tsxに購入フローを統合:
+   - trade_typeに応じて表示を切り替え
+   - statusに応じて適切なコンポーネントを表示
+   - 既存の交換フローと共存
+
+📁 ファイル:
+   - frontend/app/src/component/chat/home.tsx
+
+### 6. 型定義の更新（Frontend）
+
+✅ chatType.tsを更新:
+   - trade_type, purchase_price等のフィールドを追加
+
+📁 ファイル:
+   - frontend/app/src/types/chatType.ts
+
+### 7. ステータス表示の更新（Frontend）
+
+✅ saveStatusView.ts.tsを更新:
+   - 購入フローの新しいステータスの日本語表示を追加
+
+📁 ファイル:
+   - frontend/app/src/component/save/saveStatusView.ts.ts
+
+================================================================================
+## 購入フローの流れ
+================================================================================
+
+### ステップ1: 金額提案（Buyer）
+状態: pending → price_proposed
+
+1. Buyerがチャット画面で「購入モードで金額を提案」ボタンをクリック
+2. 金額提案モーダルが開く
+3. 金額とメッセージ（任意）を入力
+4. 手数料込みの総額が表示される
+5. 提案すると、trade_typeが'purchase'に、statusが'price_proposed'に変更
+
+### ステップ2: 金額合意（Seller & Buyer）
+状態: price_proposed → price_agreed
+
+1. 提案された金額が表示される
+2. Sellerが「この金額で販売する」をクリック → is_price_agreed_seller = TRUE
+3. Buyerが「この金額で購入する」をクリック → is_price_agreed_buyer = TRUE
+4. 両者が合意すると、statusが'price_agreed'に変更
+
+### ステップ3: 決済（Buyer）
+状態: price_agreed → paid
+
+1. 「決済に進む」ボタンが表示される
+2. クリックすると決済モーダルが開く
+3. 金額詳細（商品代金 + Stripe手数料 3.6% + プラットフォーム手数料 10%）が表示
+4. 決済を実行（現在はテスト実装）
+5. statusが'paid'に変更
+
+### ステップ4: 発送（Seller）
+状態: paid → shipped
+
+1. Sellerが商品を発送
+2. 発送情報（追跡番号、配送会社）を入力
+3. statusが'shipped'に変更
+
+### ステップ5: 受取確認（Buyer）
+状態: shipped → buyer_received
+
+1. Buyerが商品を受け取る
+2. 「商品を受け取りました」チェックボックスをチェック
+3. 確認すると支払いが確定（エスクロー解除）
+4. statusが'buyer_received'に変更
+
+### ステップ6: 取引完了（Seller）
+状態: buyer_received → completed
+
+1. Sellerに「取引を完了する」ボタンが表示される
+2. 受取金額（商品代金 - プラットフォーム手数料 10%）が表示
+3. 完了すると、statusが'completed'に変更
+4. 取引履歴に保存される
+
+================================================================================
+## 手数料構造
+================================================================================
+
+### Buyerが支払う金額:
+- 商品代金: ¥X
+- Stripe決済手数料: ¥X × 3.6%
+- プラットフォーム手数料: ¥X × 10%
+- 合計: ¥X × 1.136
+
+### Sellerが受け取る金額:
+- 商品代金: ¥X
+- プラットフォーム手数料: -¥X × 10%
+- 合計: ¥X × 0.9
+
+### エスクロー方式:
+決済金額は商品受取確認までプラットフォームで保管されます。
+Buyerが受取確認後、Sellerへの支払いが確定します。
+
+================================================================================
+## 今後の実装が必要な項目（TODO）
+================================================================================
+
+### 高優先度:
+
+1. ✅ Stripe実決済の実装
+   - Stripe Connect Accountの設定
+   - PaymentIntentの作成
+   - Webhook処理
+   ファイル: backend/api/purchase_flow.py の pay_for_purchase()
+
+2. ✅ アーカイブ処理の実装
+   - 購入取引完了時のアーカイブ
+   ファイル: backend/api/purchase_flow.py の complete_purchase_trade()
+
+3. ✅ 購入フローの発送状況表示
+   - 現在は交換フローの発送表示と共通
+   - 購入フローでは片方向の発送のみなので、表示を調整
+   ファイル: frontend/app/src/component/chat/home.tsx
+
+### 中優先度:
+
+4. ✅ 購入取引のキャンセル処理
+   - 決済前: 全額返金
+   - 決済後: キャンセルポリシーに基づく処理
+
+5. ✅ 通知機能の追加
+   - 金額提案時
+   - 合意時
+   - 決済完了時
+   - 発送時
+   - 受取確認時
+
+6. ✅ 取引履歴画面での購入/交換の区別表示
+
+### 低優先度:
+
+7. ✅ 金額提案の履歴表示（値下げ交渉）
+8. ✅ 評価・レビュー機能
+9. ✅ 配送状況の追跡連携
+
+================================================================================
+## テスト項目
+================================================================================
+
+### 単体テスト:
+
+1. バックエンドAPI
+   □ 金額提案API（バリデーション、DB更新）
+   □ 金額合意API（両者合意の判定）
+   □ 決済API（テスト決済）
+   □ 受取確認API
+   □ 取引完了API
+
+2. フロントエンド
+   □ 各コンポーネントの表示
+   □ 金額計算の正確性
+   □ モーダルの開閉
+
+### 統合テスト:
+
+1. 完全な購入フロー
+   □ Buyer: 金額提案 → 合意 → 決済 → 受取確認
+   □ Seller: 合意 → 発送 → 取引完了
+
+2. エラーハンドリング
+   □ 無効な金額の提案
+   □ 決済失敗時の処理
+   □ ステータス不正時のエラー
+
+3. 権限チェック
+   □ Buyerのみが金額提案できる
+   □ Sellerのみが取引完了できる
+
+### E2Eテスト:
+
+□ 交換フローから購入フローへの切り替え
+□ 購入フロー完全実行（提案 → 完了）
+□ 交換フローと購入フローの並行動作
+
+================================================================================
+## 主要な設計判断
+================================================================================
+
+### 1. trade_typeフィールドの追加理由:
+- 既存の交換フローを壊さない
+- 購入と交換で異なるロジックを適用
+- DEFAULT 'exchange'で後方互換性を維持
+
+### 2. エスクロー方式の採用理由:
+- 買い手保護（商品が届かない詐欺を防止）
+- Mercari等の主要プラットフォームの標準
+- 受取確認後に支払い確定
+
+### 3. 手数料10%の理由:
+- Mercariと同じ水準
+- 業界標準的な手数料率
+- プラットフォーム運営コストをカバー
+
+### 4. 両者合意フローの理由:
+- Buyerの提案だけでなくSellerの同意も必要
+- 双方が納得した金額で取引
+- トラブル防止
+
+================================================================================
+## ファイル一覧
+================================================================================
+
+### Backend（サーバーサイド）:
+- backend/migrations/add_purchase_flow_columns.sql
+- backend/database.py (更新)
+- backend/api/purchase_flow.py (新規)
+- backend/app.py (更新)
+- backend/docs/購入フロー設計.txt
+- backend/docs/Stripe決済フロー設計.txt
+- backend/docs/購入フロー実装完了.txt (このファイル)
+
+### Frontend（クライアントサイド）:
+- frontend/app/src/api/purchaseApi.ts (新規)
+- frontend/app/src/types/chatType.ts (更新)
+- frontend/app/src/component/chat/PurchaseFlowToggle.tsx (新規)
+- frontend/app/src/component/chat/PriceAgreement.tsx (新規)
+- frontend/app/src/component/chat/PaymentModal.tsx (新規)
+- frontend/app/src/component/chat/PurchaseReceivedConfirmation.tsx (新規)
+- frontend/app/src/component/chat/PurchaseCompleteButton.tsx (新規)
+- frontend/app/src/component/chat/home.tsx (更新)
+- frontend/app/src/component/save/saveStatusView.ts.ts (更新)
+
+================================================================================
+## 起動確認手順
+================================================================================
+
+### 1. バックエンド起動:
+```bash
+cd backend
+python app.py
+```
+→ http://localhost:5001 で起動
+
+### 2. フロントエンド起動:
+```bash
+cd frontend/app
+npm run dev
+```
+→ http://localhost:5173 で起動
+
+### 3. データベースマイグレーション（必要な場合）:
+```bash
+cd backend
+mysql -u root -p < migrations/add_purchase_flow_columns.sql
+```
+
+### 4. 動作確認:
+1. ログイン
+2. 商品を選択して交換申請
+3. チャット画面で「購入モードで金額を提案」ボタンを確認
+4. 金額を提案して購入フローをテスト
+
+================================================================================
+## トラブルシューティング
+================================================================================
+
+### Q1: 「購入モードで金額を提案」ボタンが表示されない
+A: 以下を確認:
+   - ログインユーザーがBuyer（交換申請した側）か
+   - ステータスが'pending'か
+   - trade_typeが'exchange'か
+
+### Q2: 決済ボタンが表示されない
+A: 以下を確認:
+   - Seller/Buyer両方が金額に合意したか
+   - ステータスが'price_agreed'か
+
+### Q3: バックエンドAPIエラー
+A: 以下を確認:
+   - データベースに購入フロー用のカラムが追加されているか
+   - purchase_bpがapp.pyで登録されているか
+
+================================================================================
+## まとめ
+================================================================================
+
+✅ 実装完了:
+- データベーススキーマ追加
+- バックエンドAPI 5つ
+- フロントエンドAPIクライアント
+- Reactコンポーネント 5つ
+- チャット画面への統合
+- ステータス表示の更新
+
+⏰ 今後必要な作業:
+- Stripe実決済の実装
+- アーカイブ処理の実装
+- 購入フロー専用の発送表示調整
+- テスト実施
+
+📝 重要ポイント:
+- 既存の交換フローは影響を受けない（後方互換性あり）
+- エスクロー方式で買い手保護を実現
+- 手数料10%（Stripe 3.6% + プラットフォーム 10%）
+
+================================================================================

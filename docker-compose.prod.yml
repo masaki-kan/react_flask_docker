@@ -46,12 +46,10 @@ services:
     container_name: phpmyadmin
     restart: always
     ports:
-      - "8080:80" # http://<EC2のIP>:8080 でアクセス
+      - "8080:80"
     environment:
       PMA_HOST: ourvintagedb.cneu42i26p7f.ap-northeast-1.rds.amazonaws.com
       PMA_PORT: 3306
-      PMA_USER: admin
-      PMA_PASSWORD: ourVintageAdmin
     depends_on:
       - flask
     networks:

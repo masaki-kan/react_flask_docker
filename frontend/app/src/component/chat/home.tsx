@@ -1184,16 +1184,18 @@ const Home: FC = () => {
           />
         </Box>
 
-        <Text
-          fontSize={"xs"}
-          color={"gray.500"}
-          wordBreak={"break-all"}
-          mt={4}
-          mb={2}
-          flexShrink={0}
-        >
-          注:発送していない状態で１週間やりとりがない場合は自動でキャンセルされます。
-        </Text>
+        {memorizeChatItemData.trade_type !== "purchase" && (
+          <Text
+            fontSize={"xs"}
+            color={"gray.500"}
+            wordBreak={"break-all"}
+            mt={4}
+            mb={2}
+            flexShrink={0}
+          >
+            注:発送していない状態で１週間やりとりがない場合は自動でキャンセルされます。
+          </Text>
+        )}
         {/* チャット画面 */}
         <Box flex={1} minH={0}>
           <ChatRight />

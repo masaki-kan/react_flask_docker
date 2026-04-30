@@ -1,0 +1,1106 @@
+================================================================================
+  Flask Blueprint 完全解説
+  - app.register_blueprint() とモジュール分割 -
+================================================================================
+
+目次:
+  1. Blueprint とは？
+  2. なぜ Blueprint が必要なのか？
+  3. Blueprint の作成方法
+  4. app.register_blueprint() の役割
+  5. このアプリケーションの Blueprint 構造
+  6. URL の仕組み
+  7. 実際のコード解説
+  8. ルーティングの流れ
+  9. ベストプラクティス
+  10. トラブルシューティング
+
+================================================================================
+1. Blueprint とは？
+================================================================================
+
+【定義】
+  Blueprint は、Flask アプリケーションを複数のモジュールに分割するための機能です。
+
+【役割】
+  ✓ ルート（エンドポイント）をグループ化
+  ✓ コードを機能別に整理
+  ✓ 再利用可能なコンポーネントを作成
+  ✓ 大規模アプリケーションの管理を容易にする
+
+【例えるなら】
+  Blueprint は「設計図」や「部品」のようなもの。
+  複数の設計図を組み合わせて、最終的なアプリケーションを構築します。
+
+  ┌──────────────────────────────────────┐
+  │ Flask アプリケーション               │
+  ├──────────────────────────────────────┤
+  │ ┌──────────────┐ ┌────────────────┐ │
+  │ │ auth_bp      │ │ users_bp       │ │
+  │ │ (認証関連)   │ │ (ユーザー関連) │ │
+  │ └──────────────┘ └────────────────┘ │
+  │ ┌──────────────┐ ┌────────────────┐ │
+  │ │ items_bp     │ │ trades_bp      │ │
+  │ │ (商品関連)   │ │ (取引関連)     │ │
+  │ └──────────────┘ └────────────────┘ │
+  └──────────────────────────────────────┘
+
+
+================================================================================
+2. なぜ Blueprint が必要なのか？
+================================================================================
+
+【問題: Blueprint を使わない場合】
+
+❌ すべてを app.py に書くと...
+────────────────────────────────────────
+
+# app.py (10000行以上！)
+from flask import Flask, jsonify, request
+
+app = Flask(__name__)
+
+# 認証関連 (500行)
+@app.route('/api/login', methods=['POST'])
+def login():
+    # ログイン処理
+    pass
+
+@app.route('/api/register', methods=['POST'])
+def register():
+    # 登録処理
+    pass
+
+# ユーザー関連 (300行)
+@app.route('/api/users', methods=['GET'])
+def get_users():
+    # ユーザー一覧
+    pass
+
+# 商品関連 (500行)
+@app.route('/api/items', methods=['GET'])
+def get_items():
+    # 商品一覧
+    pass
+
+# 取引関連 (1000行)
+@app.route('/api/trades', methods=['POST'])
+def create_trade():
+    # 取引作成
+    pass
+
+# ... あと8000行続く
+
+
+【問題点】
+
+1. ファイルが巨大になる
+   └─ スクロールが大変、読みにくい
+
+2. チーム開発が困難
+   └─ 複数人が同じファイルを編集すると競合
+
+3. テストが難しい
+   └─ 特定の機能だけテストできない
+
+4. 再利用できない
+   └─ 他のプロジェクトで使い回せない
+
+5. 保守性が低い
+   └─ バグ修正や機能追加が大変
+
+
+【解決: Blueprint を使う】
+
+✅ 機能ごとにファイルを分割
+────────────────────────────────────────
+
+backend/
+  ├── app.py                  # メインアプリ (200行)
+  └── api/
+      ├── auth.py             # 認証関連 (500行)
+      ├── users.py            # ユーザー関連 (300行)
+      ├── items.py            # 商品関連 (500行)
+      ├── trades.py           # 取引関連 (1000行)
+      ├── profile.py          # プロフィール関連 (800行)
+      ├── admin.py            # 管理画面 (2000行)
+      └── ...
+
+メリット:
+  ✓ ファイルが小さく読みやすい
+  ✓ チーム開発が容易
+  ✓ 機能単位でテスト可能
+  ✓ 再利用可能
+  ✓ 保守性が高い
+
+
+================================================================================
+3. Blueprint の作成方法
+================================================================================
+
+【基本構造】
+
+# api/auth.py
+from flask import Blueprint, jsonify, request
+
+# Blueprint の作成
+auth_bp = Blueprint('auth', __name__, url_prefix='/api')
+#                    ↑        ↑           ↑
+#                    名前    モジュール  URLプレフィックス
+
+# ルート（エンドポイント）の定義
+@auth_bp.route('/login', methods=['POST'])
+def login():
+    return jsonify({'message': 'ログイン成功'})
+
+
+【Blueprint() の引数】
+
+1. name (必須)
+   ────────────────────────────────────────
+   • Blueprint の名前
+   • 一意である必要がある
+   • url_for() で使用される
+
+   例: 'auth', 'users', 'items'
+
+
+2. import_name (必須)
+   ────────────────────────────────────────
+   • 通常は __name__ を指定
+   • Blueprint のモジュールパスを特定するため
+
+   例: __name__
+
+
+3. url_prefix (オプション)
+   ────────────────────────────────────────
+   • すべてのルートの前に付くプレフィックス
+   • None の場合はプレフィックスなし
+
+   例:
+     url_prefix='/api'
+     → /api/login, /api/register
+
+     url_prefix='/api/v1'
+     → /api/v1/login, /api/v1/register
+
+     url_prefix=None
+     → /login, /register
+
+
+【完全な例】
+
+# api/users.py
+from flask import Blueprint, jsonify, request
+from flask_jwt_extended import jwt_required
+from utils.db_utils import get_db_connection
+
+# Blueprint 作成
+users_bp = Blueprint('users', __name__, url_prefix='/api')
+
+# ルート定義
+@users_bp.route('/getUsers', methods=['POST'])
+@jwt_required()
+def get_users():
+    """ユーザー一覧取得"""
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor(dictionary=True)
+            cursor.execute("SELECT * FROM users")
+            users = cursor.fetchall()
+            cursor.close()
+        return jsonify({'users': users})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+================================================================================
+4. app.register_blueprint() の役割
+================================================================================
+
+【app.py での登録】
+
+# app.py
+from flask import Flask
+from api.auth import auth_bp
+from api.users import users_bp
+from api.items import items_bp
+
+app = Flask(__name__)
+
+# Blueprint を登録
+app.register_blueprint(auth_bp)
+app.register_blueprint(users_bp)
+app.register_blueprint(items_bp)
+
+
+【register_blueprint() の役割】
+
+1. Blueprint のルートをアプリに追加
+   ────────────────────────────────────────
+   Blueprint で定義したルート（@auth_bp.route など）を
+   Flask アプリケーションに登録する。
+
+   登録前:
+     Flask アプリは Blueprint のルートを認識していない
+
+   登録後:
+     Flask アプリが Blueprint のルートを認識し、
+     リクエストをルーティングできる
+
+
+2. URL プレフィックスの適用
+   ────────────────────────────────────────
+   Blueprint の url_prefix を各ルートに適用する。
+
+   例:
+     auth_bp: url_prefix='/api'
+     @auth_bp.route('/login')
+     → 実際のURL: /api/login
+
+
+3. Blueprint の名前空間を設定
+   ────────────────────────────────────────
+   Blueprint の名前を使って、ルートを識別できるようにする。
+
+   例:
+     url_for('auth.login')  # auth Blueprint の login ルート
+
+
+【登録のタイミング】
+
+重要: Blueprint は必ずアプリ起動前に登録する
+
+# app.py
+app = Flask(__name__)
+
+# ✓ アプリ初期化直後に登録（正しい）
+app.register_blueprint(auth_bp)
+app.register_blueprint(users_bp)
+
+# ✗ アプリ起動後に登録（動作しない）
+if __name__ == "__main__":
+    app.run()
+    app.register_blueprint(items_bp)  # ← これは遅すぎる
+
+
+【複数回登録はできる？】
+
+結論: 同じ Blueprint を複数回登録することは技術的には可能だが、
+      通常は避けるべき。
+
+# 異なる URL プレフィックスで登録
+app.register_blueprint(api_bp, url_prefix='/api/v1')
+app.register_blueprint(api_bp, url_prefix='/api/v2')
+
+# 結果:
+# /api/v1/users
+# /api/v2/users
+# 両方が使える
+
+
+================================================================================
+5. このアプリケーションの Blueprint 構造
+================================================================================
+
+【app.py (83-93行目)】
+
+# Blueprint のインポート
+from api.auth import auth_bp
+from api.profile import profile_bp
+from api.users import users_bp
+from api.items import items_bp
+from api.trades import trades_bp
+from api.thread import thread_bp
+from api.archives import archives_bp
+from api.saves import saves_bp
+from api.payment import payment_bp
+from api.admin import admin_bp
+
+# Blueprint の登録
+app.register_blueprint(auth_bp)       # ← 行84
+app.register_blueprint(profile_bp)    # ← 行85
+app.register_blueprint(users_bp)      # ← 行86
+app.register_blueprint(items_bp)      # ← 行87
+app.register_blueprint(trades_bp)     # ← 行88
+app.register_blueprint(thread_bp)     # ← 行89
+app.register_blueprint(archives_bp)   # ← 行90
+app.register_blueprint(saves_bp)      # ← 行91
+app.register_blueprint(payment_bp)    # ← 行92
+app.register_blueprint(admin_bp)      # ← 行93
+
+
+【各 Blueprint の役割】
+
+┌─────────────────┬──────────────────────────────────┬─────────────┐
+│ Blueprint       │ 役割                             │ ファイル    │
+├─────────────────┼──────────────────────────────────┼─────────────┤
+│ auth_bp         │ 認証・ログイン・登録             │ api/auth.py │
+│ profile_bp      │ プロフィール管理                 │ api/profile.py│
+│ users_bp        │ ユーザー一覧・検索               │ api/users.py│
+│ items_bp        │ 商品の登録・編集・削除           │ api/items.py│
+│ trades_bp       │ 取引・チャット・発送             │ api/trades.py│
+│ thread_bp       │ スレッドメッセージ               │ api/thread.py│
+│ archives_bp     │ 完了した取引のアーカイブ         │ api/archives.py│
+│ saves_bp        │ お気に入り・保存                 │ api/saves.py│
+│ payment_bp      │ 決済・Stripe連携                 │ api/payment.py│
+│ admin_bp        │ 管理画面                         │ api/admin.py│
+└─────────────────┴──────────────────────────────────┴─────────────┘
+
+
+【各 Blueprint の定義】
+
+# api/auth.py (9行目)
+auth_bp = Blueprint('auth', __name__, url_prefix='/api')
+
+# api/users.py (7行目)
+users_bp = Blueprint('users', __name__, url_prefix='/api')
+
+# api/items.py (9行目)
+items_bp = Blueprint('items', __name__, url_prefix='/api')
+
+# api/trades.py (12行目)
+trades_bp = Blueprint('trades', __name__, url_prefix='/api')
+
+# api/admin.py
+admin_bp = Blueprint('admin', __name__, url_prefix='/api/dashboard')
+#                                                    ↑
+#                                             異なるプレフィックス
+
+
+【特徴】
+
+1. ほとんどの Blueprint は url_prefix='/api'
+   └─ フロントエンド用のAPI
+
+2. admin_bp だけ url_prefix='/api/dashboard'
+   └─ 管理画面専用のエンドポイント
+
+3. すべて api/ ディレクトリに配置
+   └─ 整理されたディレクトリ構造
+
+
+================================================================================
+6. URL の仕組み
+================================================================================
+
+【URL の構成】
+
+完全なURL = url_prefix + @blueprint.route()
+
+例:
+  # api/auth.py
+  auth_bp = Blueprint('auth', __name__, url_prefix='/api')
+  @auth_bp.route('/login', methods=['POST'])
+
+  → 完全なURL: /api/login
+
+
+【実際の URL 一覧】
+
+┌────────────────────────┬──────────────┬─────────────────────────┐
+│ Blueprint              │ ルート       │ 完全なURL               │
+├────────────────────────┼──────────────┼─────────────────────────┤
+│ auth_bp                │              │                         │
+│  url_prefix='/api'     │ /login       │ /api/login              │
+│                        │ /register    │ /api/register           │
+│                        │ /admin/login │ /api/admin/login        │
+├────────────────────────┼──────────────┼─────────────────────────┤
+│ users_bp               │              │                         │
+│  url_prefix='/api'     │ /getUsers    │ /api/getUsers           │
+├────────────────────────┼──────────────┼─────────────────────────┤
+│ items_bp               │              │                         │
+│  url_prefix='/api'     │ /getUserItems│ /api/getUserItems       │
+│                        │ /getMyItems  │ /api/getMyItems         │
+├────────────────────────┼──────────────┼─────────────────────────┤
+│ trades_bp              │              │                         │
+│  url_prefix='/api'     │ /get_trade_messages│ /api/get_trade_messages│
+│                        │ /create_trade│ /api/create_trade       │
+├────────────────────────┼──────────────┼─────────────────────────┤
+│ admin_bp               │              │                         │
+│  url_prefix=           │ /users       │ /api/dashboard/users    │
+│  '/api/dashboard'      │ /items       │ /api/dashboard/items    │
+│                        │ /trades      │ /api/dashboard/trades   │
+└────────────────────────┴──────────────┴─────────────────────────┘
+
+
+【URL プレフィックスの重要性】
+
+1. API のバージョニング
+   ────────────────────────────────────────
+   url_prefix='/api/v1'
+   url_prefix='/api/v2'
+   → /api/v1/users, /api/v2/users
+
+
+2. 機能の分類
+   ────────────────────────────────────────
+   url_prefix='/api'          # 一般ユーザー用
+   url_prefix='/api/dashboard' # 管理者用
+   url_prefix='/admin'         # 管理画面
+
+
+3. フロントエンドとの分離
+   ────────────────────────────────────────
+   /api/* → バックエンドAPI
+   /*     → フロントエンド（React）
+
+
+================================================================================
+7. 実際のコード解説
+================================================================================
+
+【auth.py の構造】
+
+# api/auth.py
+from flask import Blueprint, jsonify, request
+from flask_jwt_extended import create_access_token, jwt_required
+from werkzeug.security import generate_password_hash, check_password_hash
+from utils.db_utils import get_db_connection
+import mysql.connector
+
+# [1] Blueprint の作成
+auth_bp = Blueprint('auth', __name__, url_prefix='/api')
+#                    └──┬──┘  └──┬──┘    └──────┬──────┘
+#                    名前    モジュール   URLプレフィックス
+
+
+# [2] ルートの定義
+@auth_bp.route('/loginCheck', methods=['POST'])
+#             └─────┬─────┘         └───┬───┘
+#              エンドポイント     HTTPメソッド
+def login_check():
+    """ログインチェック"""
+    email = request.json.get('email', None)
+
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT user_id
+                FROM users
+                WHERE email = %s
+                AND (is_deleted = FALSE OR is_deleted IS NULL)
+            """, (email,))
+            user_data = cursor.fetchone()
+
+            if user_data:
+                return jsonify({'result': True}), 200
+            else:
+                return jsonify({'result': False}), 200
+    except mysql.connector.Error as err:
+        return jsonify({
+            "error": "申請の作成中にエラーが発生しました",
+            "result": False
+        }), 500
+
+
+# [3] 管理者ログイン
+@auth_bp.route('/admin/login', methods=['POST'])
+def admin_login():
+    """管理者ログイン"""
+    # ... ログイン処理
+
+
+【完全なURL】
+
+@auth_bp.route('/loginCheck')
+  ↓
+url_prefix='/api' + '/loginCheck'
+  ↓
+最終的なURL: /api/loginCheck
+
+
+【users.py の構造】
+
+# api/users.py
+from flask import Blueprint, jsonify, request
+from flask_jwt_extended import jwt_required, get_jwt_identity
+from utils.db_utils import get_db_connection
+
+# [1] Blueprint の作成
+users_bp = Blueprint('users', __name__, url_prefix='/api')
+
+# [2] ルートの定義
+@users_bp.route('/getUsers', methods=['POST'])
+@jwt_required()  # ← JWT認証が必要
+def getUsers():
+    """ユーザー一覧取得"""
+    user_id = request.json.get('user_id', None)
+
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor(dictionary=True)
+            cursor.execute('''
+                SELECT
+                    u.user_id,
+                    u.name,
+                    u.location,
+                    ...
+                FROM users u
+                WHERE u.user_id != %s
+            ''', (user_id,))
+            users = cursor.fetchall()
+            cursor.close()
+
+        return jsonify({'users': users})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+【items.py の構造】
+
+# api/items.py
+from flask import Blueprint, jsonify, request
+from flask_jwt_extended import jwt_required
+from utils.db_utils import get_db_connection
+from utils.image_utils import upload_image_to_s3
+
+# [1] Blueprint の作成
+items_bp = Blueprint('items', __name__, url_prefix='/api')
+
+# [2] 商品一覧取得
+@items_bp.route('/getUserItems', methods=['POST'])
+def getUserItems():
+    """自分以外の商品一覧取得"""
+    user_id = request.json.get('user_id', None)
+
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor(dictionary=True)
+            cursor.execute('''
+                SELECT
+                    items.item_id,
+                    items.title,
+                    items.description,
+                    ...
+                FROM items
+                WHERE items.user_id != %s
+            ''', (user_id,))
+            items = cursor.fetchall()
+            cursor.close()
+
+        return jsonify({'items': items})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+【trades.py の構造】
+
+# api/trades.py
+from flask import Blueprint, jsonify, request
+from flask_jwt_extended import jwt_required
+from utils.db_utils import get_db_connection
+
+# [1] Blueprint の作成
+trades_bp = Blueprint('trades', __name__, url_prefix='/api')
+
+# [2] チャットメッセージ取得
+@trades_bp.route('/get_trade_messages', methods=['GET'])
+def get_trade_messages():
+    """チャットメッセージ取得"""
+    trade_id = request.args.get('trade_id')
+
+    if not trade_id:
+        return jsonify({'error': 'trade_id is required'}), 400
+
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor(dictionary=True)
+            cursor.execute('''
+                SELECT
+                    tm.sender_id,
+                    tm.message,
+                    tm.sent_at,
+                    ...
+                FROM trade_messages tm
+                WHERE tm.trade_id = %s
+            ''', (trade_id,))
+            messages = cursor.fetchall()
+            cursor.close()
+
+        return jsonify({'messages': messages})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+【admin.py の構造】
+
+# api/admin.py
+from flask import Blueprint, jsonify, request
+from utils.db_utils import get_db_connection
+
+# [1] Blueprint の作成（異なる url_prefix）
+admin_bp = Blueprint('admin', __name__, url_prefix='/api/dashboard')
+#                                                   └──────┬──────┘
+#                                                   管理画面専用
+
+
+# [2] ユーザー一覧取得
+@admin_bp.route('/users', methods=['GET'])
+def get_users():
+    """管理画面: ユーザー一覧"""
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor(dictionary=True)
+            cursor.execute("SELECT * FROM users")
+            users = cursor.fetchall()
+            cursor.close()
+
+        return jsonify({
+            'success': True,
+            'data': users
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
+
+# 完全なURL: /api/dashboard/users
+
+
+================================================================================
+8. ルーティングの流れ
+================================================================================
+
+【リクエストからレスポンスまで】
+
+[1] クライアント（React）からリクエスト
+────────────────────────────────────────
+  fetch('http://localhost:5001/api/login', {
+      method: 'POST',
+      body: JSON.stringify({ email, password })
+  })
+
+
+[2] Flask アプリケーションがリクエストを受信
+────────────────────────────────────────
+  URL: /api/login
+  Method: POST
+
+
+[3] Flask のルーティング処理
+────────────────────────────────────────
+  Flask は登録されたすべての Blueprint をチェック
+
+  auth_bp:    url_prefix='/api' + '/login'
+              → マッチ！
+
+
+[4] Blueprint のハンドラー実行
+────────────────────────────────────────
+  @auth_bp.route('/login', methods=['POST'])
+  def login():
+      # ログイン処理
+      return jsonify({'token': '...'})
+
+
+[5] レスポンスを返す
+────────────────────────────────────────
+  {'token': 'eyJ0eXAiOiJKV1QiLCJ...'}
+
+
+【フロー図】
+
+  クライアント
+      ↓
+  POST /api/login
+      ↓
+  Flask アプリ (app.py)
+      ↓
+  ルーティング処理
+      ├─ auth_bp?     → マッチ ✓
+      ├─ users_bp?    → マッチせず
+      ├─ items_bp?    → マッチせず
+      └─ ...
+      ↓
+  auth_bp.login()
+      ↓
+  レスポンス
+      ↓
+  クライアント
+
+
+【404 エラーが発生する場合】
+
+原因1: Blueprint が登録されていない
+────────────────────────────────────────
+  # app.py
+  # app.register_blueprint(auth_bp)  # ← コメントアウトされている
+
+  結果: /api/login にアクセス → 404 Not Found
+
+
+原因2: URL プレフィックスが間違っている
+────────────────────────────────────────
+  # api/auth.py
+  auth_bp = Blueprint('auth', __name__, url_prefix='/auth')
+
+  # クライアント
+  fetch('/api/login')  # ← /auth/login が正しい
+
+  結果: 404 Not Found
+
+
+原因3: ルートのスペルミス
+────────────────────────────────────────
+  # api/auth.py
+  @auth_bp.route('/loginn', methods=['POST'])  # ← 'n' が1つ多い
+
+  # クライアント
+  fetch('/api/login')
+
+  結果: 404 Not Found
+
+
+================================================================================
+9. ベストプラクティス
+================================================================================
+
+【1. 機能ごとに Blueprint を分ける】
+
+✅ 良い例
+────────────────────────────────────────
+api/
+  ├── auth.py        # 認証関連
+  ├── users.py       # ユーザー関連
+  ├── items.py       # 商品関連
+  └── trades.py      # 取引関連
+
+
+❌ 悪い例
+────────────────────────────────────────
+api/
+  └── routes.py      # すべてのルートを1ファイルに
+
+
+【2. 一貫した URL プレフィックスを使う】
+
+✅ 良い例
+────────────────────────────────────────
+auth_bp:   url_prefix='/api'
+users_bp:  url_prefix='/api'
+items_bp:  url_prefix='/api'
+admin_bp:  url_prefix='/api/dashboard'  # 管理画面は別
+
+
+❌ 悪い例
+────────────────────────────────────────
+auth_bp:   url_prefix='/auth'
+users_bp:  url_prefix='/user'
+items_bp:  url_prefix='/api/items'
+# バラバラで統一感がない
+
+
+【3. Blueprint 名は小文字・単数形】
+
+✅ 良い例
+────────────────────────────────────────
+Blueprint('auth', ...)
+Blueprint('user', ...)
+Blueprint('item', ...)
+
+
+❌ 悪い例
+────────────────────────────────────────
+Blueprint('Auth', ...)       # 大文字はNG
+Blueprint('users', ...)      # 複数形は避ける（変数名とかぶる）
+Blueprint('AuthBlueprint', ...) # 冗長
+
+
+【4. ルート名は動詞 + 名詞】
+
+✅ 良い例
+────────────────────────────────────────
+@auth_bp.route('/login')           # ログイン
+@users_bp.route('/getUsers')       # ユーザー取得
+@items_bp.route('/createItem')     # 商品作成
+@trades_bp.route('/updateTrade')   # 取引更新
+
+
+❌ 悪い例
+────────────────────────────────────────
+@auth_bp.route('/l')               # 不明瞭
+@users_bp.route('/data')           # 何のデータ？
+@items_bp.route('/item1')          # 意味不明
+
+
+【5. エラーハンドリングを必ず行う】
+
+✅ 良い例
+────────────────────────────────────────
+@auth_bp.route('/login', methods=['POST'])
+def login():
+    try:
+        with get_db_connection() as conn:
+            # DB処理
+            pass
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+❌ 悪い例
+────────────────────────────────────────
+@auth_bp.route('/login', methods=['POST'])
+def login():
+    # エラーハンドリングなし
+    with get_db_connection() as conn:
+        # DB処理
+        pass
+    return jsonify({'success': True})
+
+
+【6. 関数名とルート名を一致させる】
+
+✅ 良い例
+────────────────────────────────────────
+@auth_bp.route('/login', methods=['POST'])
+def login():  # ルート名と関数名が一致
+    pass
+
+
+❌ 悪い例
+────────────────────────────────────────
+@auth_bp.route('/login', methods=['POST'])
+def handle_user_authentication():  # 冗長で不一致
+    pass
+
+
+【7. Blueprint を app.py でまとめて登録】
+
+✅ 良い例
+────────────────────────────────────────
+# app.py
+from api.auth import auth_bp
+from api.users import users_bp
+from api.items import items_bp
+
+app = Flask(__name__)
+
+# まとめて登録
+app.register_blueprint(auth_bp)
+app.register_blueprint(users_bp)
+app.register_blueprint(items_bp)
+
+
+❌ 悪い例
+────────────────────────────────────────
+# app.py
+app.register_blueprint(auth_bp)
+
+# ... 100行後
+
+app.register_blueprint(users_bp)
+
+# ... 200行後
+
+app.register_blueprint(items_bp)
+# バラバラに登録すると見づらい
+
+
+================================================================================
+10. トラブルシューティング
+================================================================================
+
+【問題1: 404 Not Found】
+
+症状:
+  クライアントから /api/login にアクセスしても 404
+
+原因と解決策:
+
+1. Blueprint が登録されていない
+   ────────────────────────────────────────
+   確認:
+     app.py で app.register_blueprint(auth_bp) が実行されているか
+
+   解決:
+     app.register_blueprint(auth_bp) を追加
+
+
+2. URL プレフィックスが間違っている
+   ────────────────────────────────────────
+   確認:
+     Blueprint の url_prefix とクライアントのURLが一致するか
+
+   解決:
+     url_prefix='/api' を確認
+
+
+3. ルートが定義されていない
+   ────────────────────────────────────────
+   確認:
+     @auth_bp.route('/login') が存在するか
+
+   解決:
+     ルートを追加
+
+
+4. インポートエラー
+   ────────────────────────────────────────
+   確認:
+     app.py で from api.auth import auth_bp がエラーになっていないか
+
+   解決:
+     インポートパスを確認
+
+
+【問題2: ImportError: cannot import name 'auth_bp'】
+
+原因:
+  auth.py で auth_bp が定義されていない、または名前が違う
+
+解決:
+  # api/auth.py
+  auth_bp = Blueprint('auth', __name__, url_prefix='/api')
+  # ← auth_bp という名前で定義されているか確認
+
+
+【問題3: 複数の Blueprint で同じルートが定義されている】
+
+症状:
+  /api/getUsers にアクセスすると、意図しないハンドラーが実行される
+
+原因:
+  # api/users.py
+  @users_bp.route('/getUsers')
+  def get_users():
+      pass
+
+  # api/admin.py
+  @admin_bp.route('/getUsers')
+  def get_users():
+      pass
+
+  → 両方が /api/getUsers になる（admin_bp も url_prefix='/api' の場合）
+
+解決:
+  1. url_prefix を変える
+     admin_bp: url_prefix='/api/dashboard'
+
+  2. ルート名を変える
+     @admin_bp.route('/getAdminUsers')
+
+
+【問題4: Blueprint のルートが実行されない】
+
+原因:
+  app.register_blueprint() の後にルートを定義している
+
+解決:
+  # ✗ 間違い
+  app.register_blueprint(auth_bp)
+
+  @auth_bp.route('/new_route')
+  def new_route():
+      pass
+
+  # ✓ 正しい
+  @auth_bp.route('/new_route')
+  def new_route():
+      pass
+
+  app.register_blueprint(auth_bp)
+
+
+【問題5: CORS エラー】
+
+症状:
+  ブラウザのコンソールに「CORS policy」エラー
+
+原因:
+  CORS が正しく設定されていない
+
+解決:
+  # app.py
+  from flask_cors import CORS
+
+  CORS(app, supports_credentials=True, resources={
+      r"/api/*": {"origins": ["http://localhost:5173"]}
+  })
+
+
+【デバッグ方法】
+
+1. すべてのルートを確認
+   ────────────────────────────────────────
+   # app.py
+   if __name__ == "__main__":
+       print("登録されたルート:")
+       for rule in app.url_map.iter_rules():
+           print(f"{rule.endpoint}: {rule.rule} [{rule.methods}]")
+
+
+2. Blueprint が登録されているか確認
+   ────────────────────────────────────────
+   # app.py
+   print(f"登録された Blueprint: {app.blueprints.keys()}")
+
+
+3. ログを追加
+   ────────────────────────────────────────
+   # api/auth.py
+   @auth_bp.route('/login', methods=['POST'])
+   def login():
+       print("login() が呼ばれました")
+       # ...
+
+
+================================================================================
+まとめ
+================================================================================
+
+【Blueprint の重要ポイント】
+
+1. 目的
+   └─ Flask アプリを機能ごとに分割する
+
+2. 作成方法
+   └─ Blueprint('名前', __name__, url_prefix='...')
+
+3. 登録方法
+   └─ app.register_blueprint(blueprint)
+
+4. URL 構成
+   └─ url_prefix + @blueprint.route()
+
+5. このアプリの構造
+   ├─ auth_bp:     /api/login, /api/register
+   ├─ users_bp:    /api/getUsers
+   ├─ items_bp:    /api/getUserItems
+   ├─ trades_bp:   /api/get_trade_messages
+   └─ admin_bp:    /api/dashboard/users
+
+
+【ベストプラクティス】
+
+✓ 機能ごとに Blueprint を分ける
+✓ 一貫した url_prefix を使う
+✓ エラーハンドリングを必ず行う
+✓ 関数名とルート名を一致させる
+✓ app.py でまとめて登録する
+
+
+【よくあるエラー】
+
+• 404 Not Found → Blueprint 未登録 or URL ミス
+• ImportError → インポートパスが間違っている
+• CORS エラー → CORS 設定が必要
+
+
+【参考ファイル】
+
+- app.py (83-93行目)    : Blueprint 登録
+- api/auth.py (9行目)   : Blueprint 定義例
+- api/users.py (7行目)  : Blueprint 定義例
+- api/admin.py          : 異なる url_prefix の例
+
+
+================================================================================
+作成日: 2025-11-19
+バージョン: 1.0
+================================================================================

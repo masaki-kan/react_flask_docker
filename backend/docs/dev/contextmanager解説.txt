@@ -1,0 +1,698 @@
+================================================================================
+  @contextmanager 完全解説
+  - Pythonのコンテキストマネージャーの仕組み -
+================================================================================
+
+目次:
+  1. @contextmanager とは？
+  2. なぜ必要なのか？
+  3. 基本的な使い方
+  4. db_utils.py での実装解説
+  5. with文の動作フロー
+  6. メリット・デメリット
+  7. 実践例
+  8. よくある間違い
+
+================================================================================
+1. @contextmanager とは？
+================================================================================
+
+@contextmanager は、Pythonの標準ライブラリ contextlib が提供するデコレータです。
+
+【インポート】
+  from contextlib import contextmanager
+
+【役割】
+  通常の関数を「コンテキストマネージャー」に変換します。
+  これにより、with文で使える関数を簡単に作成できます。
+
+【コンテキストマネージャーとは？】
+  with文で使えるオブジェクトのこと。
+  主に「リソースの自動管理」に使われます。
+
+  例: ファイル、データベース接続、ロック、トランザクションなど
+
+
+================================================================================
+2. なぜ必要なのか？
+================================================================================
+
+【問題: リソースの手動管理は面倒で危険】
+
+❌ 悪い例（手動管理）
+────────────────────────────────────────
+conn = db_pool.get_connection()
+cursor = conn.cursor()
+cursor.execute("SELECT * FROM users")
+users = cursor.fetchall()
+cursor.close()
+conn.close()  # ← 忘れがち！
+
+問題点:
+  • close() を忘れるとメモリリーク
+  • エラーが起きたらclose()が実行されない
+  • 毎回同じコードを書く必要がある
+
+
+❌ もっと悪い例（エラー時にリソースが開放されない）
+────────────────────────────────────────
+conn = db_pool.get_connection()
+cursor = conn.cursor()
+cursor.execute("SELECT * FROM users")
+# ↓ ここでエラーが起きたら？
+result = process_data(cursor.fetchall())  # エラー発生！
+cursor.close()  # ← 実行されない！
+conn.close()    # ← 実行されない！
+
+
+✅ 良い例（コンテキストマネージャーで自動管理）
+────────────────────────────────────────
+with get_db_connection() as conn:
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM users")
+    users = cursor.fetchall()
+    cursor.close()
+# ← with を抜けると自動で conn.close() が実行される
+
+メリット:
+  ✓ 自動的にリソースを開放
+  ✓ エラーが起きても必ずクリーンアップ
+  ✓ コードが読みやすい
+  ✓ 書く量が減る
+
+
+================================================================================
+3. 基本的な使い方
+================================================================================
+
+【@contextmanager の基本構造】
+
+from contextlib import contextmanager
+
+@contextmanager
+def my_context():
+    # 【前処理】with文に入る前に実行
+    print("リソースを取得")
+    resource = acquire_resource()
+
+    try:
+        # 【yield】with文のas以降に渡す値
+        yield resource
+
+    finally:
+        # 【後処理】with文を抜ける時に必ず実行
+        print("リソースを解放")
+        release_resource(resource)
+
+
+【使い方】
+
+with my_context() as resource:
+    # ここでresourceを使う
+    print("リソースを使用中")
+# ← 自動的に finally が実行される
+
+
+【実行順序】
+
+1. my_context() が呼ばれる
+2. 前処理: resource = acquire_resource()
+3. yield resource でresourceを返す
+4. with文のブロック内が実行される
+5. with文を抜ける
+6. finally: release_resource(resource) が実行される
+
+
+【簡単な例: ファイルの自動クローズ】
+
+@contextmanager
+def open_file(filename):
+    print(f"ファイルを開く: {filename}")
+    f = open(filename, 'r')
+    try:
+        yield f  # ファイルオブジェクトを返す
+    finally:
+        print(f"ファイルを閉じる: {filename}")
+        f.close()  # 必ず実行される
+
+# 使用例
+with open_file('data.txt') as file:
+    content = file.read()
+    print(content)
+# ← 自動でファイルが閉じられる
+
+
+================================================================================
+4. db_utils.py での実装解説
+================================================================================
+
+【実際のコード（db_utils.py 28-41行目）】
+
+@contextmanager
+def get_db_connection():
+    """接続プールから接続を取得し、自動的に返却する"""
+    conn = None
+    try:
+        conn = db_pool.get_connection()
+        yield conn
+    except Exception as e:
+        if conn and conn.is_connected():
+            conn.rollback()
+        raise e
+    finally:
+        if conn and conn.is_connected():
+            conn.close()
+
+
+【詳細解説】
+
+┌─────────────────────────────────────────────────────────────────┐
+│ フェーズ1: 前処理（with文に入る前）                              │
+└─────────────────────────────────────────────────────────────────┘
+
+conn = None
+try:
+    conn = db_pool.get_connection()  # プールから接続を取得
+
+  説明:
+    • グローバル変数 db_pool（接続プール）から接続を1つ借りる
+    • pool_size=10 なので、最大10個まで同時に借りられる
+    • 空きがない場合は、空くまで待つ（タイムアウト30秒）
+
+
+┌─────────────────────────────────────────────────────────────────┐
+│ フェーズ2: 接続を渡す                                            │
+└─────────────────────────────────────────────────────────────────┘
+
+yield conn
+
+  説明:
+    • with文の as 以降に conn を渡す
+    • ここで関数の実行が一時停止
+    • with文のブロック内が実行される
+
+
+┌─────────────────────────────────────────────────────────────────┐
+│ フェーズ3: エラー処理（例外が起きた場合）                         │
+└─────────────────────────────────────────────────────────────────┘
+
+except Exception as e:
+    if conn and conn.is_connected():
+        conn.rollback()  # トランザクションを巻き戻す
+    raise e              # エラーを再送出
+
+  説明:
+    • with文の中でエラーが起きたら、このブロックが実行される
+    • conn.rollback() でデータベースの変更を取り消す
+    • raise e でエラーを上位に伝える（アプリがエラーログを記録できる）
+
+
+┌─────────────────────────────────────────────────────────────────┐
+│ フェーズ4: 後処理（必ず実行される）                               │
+└─────────────────────────────────────────────────────────────────┘
+
+finally:
+    if conn and conn.is_connected():
+        conn.close()  # 接続をプールに返却
+
+  説明:
+    • with文を抜ける時に必ず実行される（エラーの有無に関わらず）
+    • conn.close() で接続をプールに返却
+    • プールに返された接続は、他のリクエストで再利用される
+
+
+================================================================================
+5. with文の動作フロー
+================================================================================
+
+【コード例】
+
+with get_db_connection() as conn:
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM users WHERE user_id = %s", (1,))
+    user = cursor.fetchone()
+    cursor.close()
+
+
+【実行フロー図】
+
+   [1] with get_db_connection() as conn: が実行される
+          ↓
+   [2] get_db_connection() 関数が呼ばれる
+          ↓
+   [3] conn = db_pool.get_connection()
+       接続プールから接続を1つ取得
+       ┌────────────────────┐
+       │ 接続プール(10個)   │
+       │ [●][○][○]...[○]  │  ● = 使用中
+       └────────────────────┘
+          ↓
+   [4] yield conn
+       接続を with文に渡す（関数が一時停止）
+          ↓
+   [5] with文のブロック内が実行される
+       cursor = conn.cursor()
+       cursor.execute(...)
+       user = cursor.fetchone()
+       cursor.close()
+          ↓
+   [6] with文のブロックが終了
+          ↓
+   [7] finally: ブロックが実行される
+       conn.close()
+       ┌────────────────────┐
+       │ 接続プール(10個)   │
+       │ [○][○][○]...[○]  │  ○ = 空き
+       └────────────────────┘
+       接続がプールに返却される
+
+
+【エラーが起きた場合のフロー】
+
+   [1-4] 同上
+          ↓
+   [5] with文のブロック内でエラー発生
+       cursor = conn.cursor()
+       cursor.execute("INVALID SQL")  # ← エラー！
+          ↓
+   [6] except Exception as e: が実行される
+       conn.rollback()  # 変更を取り消す
+       raise e          # エラーを再送出
+          ↓
+   [7] finally: が実行される
+       conn.close()  # 必ず接続を返却
+          ↓
+   [8] エラーが上位に伝わる
+       アプリがログに記録
+
+
+================================================================================
+6. メリット・デメリット
+================================================================================
+
+【メリット】
+
+✓ リソースの自動管理
+  └─ close() を忘れる心配がない
+
+✓ エラー時も安全
+  └─ エラーが起きても必ずクリーンアップされる
+
+✓ コードが読みやすい
+  └─ try-finally を書く必要がない
+
+✓ トランザクションの自動ロールバック
+  └─ エラー時に自動でデータベースを巻き戻す
+
+✓ 接続プールとの相性が良い
+  └─ 使い終わったら自動で返却される
+
+
+【デメリット】
+
+✗ 初心者には理解しづらい
+  └─ yield の動作を理解する必要がある
+
+✗ デバッグが難しい場合がある
+  └─ エラーがどこで起きたか分かりにくいことがある
+
+✗ ネストすると読みにくい
+  └─ with文を複数重ねると複雑になる
+
+
+【デメリットへの対処法】
+
+1. ログを充実させる
+   logging.debug("DB接続取得")
+   logging.debug("DB接続返却")
+
+2. エラーメッセージを詳細にする
+   except Exception as e:
+       logging.error(f"DB操作エラー: {e}")
+       raise
+
+3. ドキュメントを書く
+   関数のdocstringで動作を説明する
+
+
+================================================================================
+7. 実践例
+================================================================================
+
+【例1: タイマーの実装】
+
+import time
+from contextlib import contextmanager
+
+@contextmanager
+def timer(name):
+    """処理時間を計測"""
+    start = time.time()
+    print(f"[{name}] 開始")
+    try:
+        yield
+    finally:
+        end = time.time()
+        print(f"[{name}] 終了: {end - start:.2f}秒")
+
+# 使用例
+with timer("データベースクエリ"):
+    # 時間を計測したい処理
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM users")
+        users = cursor.fetchall()
+        cursor.close()
+
+# 出力:
+# [データベースクエリ] 開始
+# [データベースクエリ] 終了: 0.05秒
+
+
+【例2: トランザクション管理】
+
+@contextmanager
+def transaction():
+    """トランザクションを自動管理"""
+    with get_db_connection() as conn:
+        try:
+            yield conn
+            conn.commit()  # 成功したらコミット
+            print("✅ トランザクション成功")
+        except Exception as e:
+            conn.rollback()  # エラー時はロールバック
+            print(f"❌ トランザクション失敗: {e}")
+            raise
+
+# 使用例
+with transaction() as conn:
+    cursor = conn.cursor()
+    cursor.execute("INSERT INTO users (name, email) VALUES (%s, %s)",
+                   ("太郎", "taro@example.com"))
+    cursor.execute("UPDATE users SET age = 25 WHERE name = %s", ("太郎",))
+    cursor.close()
+# ← 自動でコミット
+
+
+【例3: 複数の接続を管理】
+
+from contextlib import ExitStack
+
+# 複数のDB接続を同時に使う
+with ExitStack() as stack:
+    conn1 = stack.enter_context(get_db_connection())
+    conn2 = stack.enter_context(get_db_connection())
+
+    cursor1 = conn1.cursor()
+    cursor2 = conn2.cursor()
+
+    cursor1.execute("SELECT * FROM users")
+    cursor2.execute("SELECT * FROM items")
+
+    users = cursor1.fetchall()
+    items = cursor2.fetchall()
+
+    cursor1.close()
+    cursor2.close()
+# ← 両方の接続が自動でクローズ
+
+
+【例4: ログ出力付きDB接続】
+
+@contextmanager
+def get_db_connection_with_logging():
+    """ログ出力付きDB接続"""
+    import logging
+    logging.info("🔵 DB接続を取得")
+    conn = None
+    try:
+        conn = db_pool.get_connection()
+        yield conn
+        logging.info("✅ DB操作完了")
+    except Exception as e:
+        logging.error(f"❌ DB操作エラー: {e}")
+        if conn and conn.is_connected():
+            conn.rollback()
+        raise
+    finally:
+        if conn and conn.is_connected():
+            conn.close()
+        logging.info("🔴 DB接続を返却")
+
+# 使用例
+with get_db_connection_with_logging() as conn:
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM users")
+    users = cursor.fetchall()
+    cursor.close()
+
+# ログ出力:
+# 🔵 DB接続を取得
+# ✅ DB操作完了
+# 🔴 DB接続を返却
+
+
+【例5: リトライ機能付き接続】
+
+import time
+
+@contextmanager
+def get_db_connection_with_retry(max_retries=3):
+    """リトライ機能付きDB接続"""
+    for attempt in range(max_retries):
+        try:
+            conn = db_pool.get_connection()
+            try:
+                yield conn
+                break  # 成功したら抜ける
+            except Exception as e:
+                if conn and conn.is_connected():
+                    conn.rollback()
+                raise
+            finally:
+                if conn and conn.is_connected():
+                    conn.close()
+        except Exception as e:
+            if attempt < max_retries - 1:
+                print(f"リトライ {attempt + 1}/{max_retries}")
+                time.sleep(1)
+            else:
+                raise
+
+
+================================================================================
+8. よくある間違い
+================================================================================
+
+【間違い1: yield を忘れる】
+
+❌ 間違い
+────────────────────────────────────────
+@contextmanager
+def get_connection():
+    conn = db_pool.get_connection()
+    return conn  # ← yield じゃなくて return
+    conn.close()
+
+問題: return だと関数がそこで終了してしまう
+
+
+✅ 正しい
+────────────────────────────────────────
+@contextmanager
+def get_connection():
+    conn = db_pool.get_connection()
+    try:
+        yield conn  # ← yield を使う
+    finally:
+        conn.close()
+
+
+【間違い2: finally を書かない】
+
+❌ 間違い
+────────────────────────────────────────
+@contextmanager
+def get_connection():
+    conn = db_pool.get_connection()
+    yield conn
+    conn.close()  # ← エラー時に実行されない
+
+問題: エラーが起きたら close() がスキップされる
+
+
+✅ 正しい
+────────────────────────────────────────
+@contextmanager
+def get_connection():
+    conn = db_pool.get_connection()
+    try:
+        yield conn
+    finally:
+        conn.close()  # ← 必ず実行される
+
+
+【間違い3: エラーを握りつぶす】
+
+❌ 間違い
+────────────────────────────────────────
+@contextmanager
+def get_connection():
+    conn = db_pool.get_connection()
+    try:
+        yield conn
+    except Exception as e:
+        print(f"エラー: {e}")
+        # ← raise を忘れている
+    finally:
+        conn.close()
+
+問題: エラーが上位に伝わらない
+
+
+✅ 正しい
+────────────────────────────────────────
+@contextmanager
+def get_connection():
+    conn = db_pool.get_connection()
+    try:
+        yield conn
+    except Exception as e:
+        conn.rollback()
+        raise e  # ← エラーを再送出
+    finally:
+        conn.close()
+
+
+【間違い4: 複数回 yield する】
+
+❌ 間違い
+────────────────────────────────────────
+@contextmanager
+def get_connection():
+    conn1 = db_pool.get_connection()
+    yield conn1
+    conn2 = db_pool.get_connection()
+    yield conn2  # ← 2回目の yield はエラー
+
+問題: @contextmanager は1回しか yield できない
+
+
+✅ 正しい（複数の接続が必要な場合）
+────────────────────────────────────────
+@contextmanager
+def get_two_connections():
+    conn1 = db_pool.get_connection()
+    conn2 = db_pool.get_connection()
+    try:
+        yield (conn1, conn2)  # タプルで返す
+    finally:
+        conn1.close()
+        conn2.close()
+
+# 使用例
+with get_two_connections() as (conn1, conn2):
+    # 両方の接続を使う
+    pass
+
+
+【間違い5: @contextmanager を忘れる】
+
+❌ 間違い
+────────────────────────────────────────
+def get_connection():  # ← デコレータがない
+    conn = db_pool.get_connection()
+    try:
+        yield conn
+    finally:
+        conn.close()
+
+with get_connection() as conn:  # ← エラー！
+    pass
+
+エラー: TypeError: 'NoneType' object does not support the context manager protocol
+
+
+✅ 正しい
+────────────────────────────────────────
+@contextmanager  # ← 必須
+def get_connection():
+    conn = db_pool.get_connection()
+    try:
+        yield conn
+    finally:
+        conn.close()
+
+
+================================================================================
+まとめ
+================================================================================
+
+【@contextmanager の要点】
+
+1. 目的
+   └─ リソースの自動管理（開放忘れを防ぐ）
+
+2. 使い方
+   └─ yield でリソースを渡す
+   └─ finally で必ずクリーンアップ
+
+3. メリット
+   └─ コードが読みやすい
+   └─ エラー時も安全
+   └─ 自動でリソース開放
+
+4. db_utils.py での役割
+   └─ DB接続を自動管理
+   └─ エラー時に自動ロールバック
+   └─ プールへの返却を保証
+
+
+【基本パターン】
+
+@contextmanager
+def my_resource():
+    # 前処理: リソース取得
+    resource = acquire_resource()
+    try:
+        # リソースを渡す
+        yield resource
+    except Exception as e:
+        # エラー処理
+        handle_error(resource)
+        raise e
+    finally:
+        # 後処理: リソース解放（必ず実行）
+        release_resource(resource)
+
+
+【with文との関係】
+
+with my_resource() as res:
+    # resを使った処理
+    pass
+# ← 自動でクリーンアップ
+
+  ↓ 内部では以下と同等
+
+res = acquire_resource()
+try:
+    # resを使った処理
+    pass
+finally:
+    release_resource(res)
+
+
+【参考リンク】
+
+Python公式ドキュメント:
+https://docs.python.org/ja/3/library/contextlib.html#contextlib.contextmanager
+
+PEP 343 -- The "with" Statement:
+https://www.python.org/dev/peps/pep-0343/
+
+
+================================================================================
+作成日: 2025-11-14
+バージョン: 1.0
+================================================================================

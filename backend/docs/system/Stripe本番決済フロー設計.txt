@@ -1,0 +1,1179 @@
+================================================================================
+Stripe本番決済フロー設計書
+作成日: 2025-11-29
+================================================================================
+
+## 目次
+1. 概要と要件
+2. Stripe Connectの選択理由
+3. アカウント構成
+4. 決済フロー全体図
+5. 各ステップの技術詳細
+6. エスクロー実装方法
+7. 手数料の扱い
+8. 実装コード例
+9. テスト方法
+10. 本番環境への移行手順
+11. トラブルシューティング
+
+================================================================================
+1. 概要と要件
+================================================================================
+
+### 目的:
+購入者が決済 → プラットフォーム（僕らのヴィンテージ）→ 販売者への資金移動を実現
+
+### 要件:
+
+✅ 購入者（Buyer）がクレジットカードで決済
+✅ 資金は一旦プラットフォームのStripeアカウントに入る
+✅ 購入者が商品受取を確認するまで資金を保持（エスクロー）
+✅ 受取確認後、販売者（Seller）のアカウントに送金
+✅ 手数料の自動計算と徴収
+   - Stripe手数料: 3.6% (購入者負担)
+   - プラットフォーム手数料: 0% (現在は無料)
+✅ 返金・キャンセル処理に対応
+✅ 販売者は自分の銀行口座で受け取り
+
+### 実現方法:
+**Stripe Connect** を使用したマーケットプレイス決済
+
+================================================================================
+2. Stripe Connectの選択理由
+================================================================================
+
+### Stripe Connectとは:
+マーケットプレイスやプラットフォームビジネス向けのStripeの決済ソリューション。
+複数の販売者がいるプラットフォームで、各販売者への支払いを自動化できる。
+
+### なぜStripe Connectが必要か:
+
+┌──────────────────────────────────────────────────────────────┐
+│ 通常のStripe決済の問題点                                        │
+└──────────────────────────────────────────────────────────────┘
+
+問題1: プラットフォームのアカウントにしか入金できない
+  → 販売者への送金を自分で実装する必要がある（銀行振込API等）
+  → 手間とコストがかかる
+
+問題2: 販売者の売上管理が複雑
+  → 誰にいくら払うべきかを自分で管理
+  → 税務処理が複雑化
+
+問題3: 国際送金に対応できない
+  → 海外の販売者への支払いが困難
+
+┌──────────────────────────────────────────────────────────────┐
+│ Stripe Connectの利点                                            │
+└──────────────────────────────────────────────────────────────┘
+
+利点1: 自動送金
+  → 購入者の決済から販売者への送金まで自動化
+  → API一つで資金移動が完結
+
+利点2: エスクロー機能の実装が簡単
+  → 決済と送金を分離できる
+  → 受取確認後に送金を実行
+
+利点3: 手数料の柔軟な設定
+  → プラットフォーム手数料を自由に設定可能
+  → Stripe手数料を購入者/販売者どちらに負担させるか選択可能
+
+利点4: 税務処理の簡素化
+  → 販売者ごとに1099フォーム（米国）を自動生成
+  → 日本の源泉徴収にも対応可能
+
+利点5: グローバル対応
+  → 世界中の販売者への支払いに対応
+  → 各国の銀行口座に直接入金
+
+================================================================================
+3. アカウント構成
+================================================================================
+
+### 3つのアカウントタイプ:
+
+┌──────────────────────────────────────────────────────────────┐
+│ 1. プラットフォームアカウント（僕らのヴィンテージ）               │
+└──────────────────────────────────────────────────────────────┘
+
+種類: Standard Stripe Account
+役割: 全体の決済を管理するマスターアカウント
+作成方法: https://dashboard.stripe.com で登録
+
+設定項目:
+- 事業者名: 僕らのヴィンテージ
+- ビジネスタイプ: マーケットプレイス
+- 銀行口座: プラットフォームの口座（手数料受取用）
+- Webhook URL: https://yourdomain.com/api/stripe/webhook
+
+┌──────────────────────────────────────────────────────────────┐
+│ 2. Connected Account（販売者）                                  │
+└──────────────────────────────────────────────────────────────┘
+
+種類: Express Account（推奨）
+役割: 各販売者が売上を受け取るアカウント
+作成方法: プラットフォームからAPIで作成
+
+販売者がやること:
+1. プラットフォーム上でアカウント作成ボタンをクリック
+2. Stripeのオンボーディングページにリダイレクト
+3. 本人確認情報を入力（名前、住所、銀行口座）
+4. 本人確認書類をアップロード（運転免許証等）
+5. 完了後、プラットフォームに戻る
+
+プラットフォームがやること:
+- Account API で販売者のConnected Accountを作成
+- AccountLink API でオンボーディングURLを生成
+- 本人確認完了を確認
+- 送金可能な状態かチェック
+
+┌──────────────────────────────────────────────────────────────┐
+│ 3. 購入者（Buyerアカウント）                                     │
+└──────────────────────────────────────────────────────────────┘
+
+種類: Customer（Stripeの顧客オブジェクト）
+役割: 決済を行うユーザー
+作成方法: 初回決済時に自動作成
+
+保存情報:
+- カード情報（トークン化）
+- メールアドレス
+- 決済履歴
+
+================================================================================
+4. 決済フロー全体図
+================================================================================
+
+┌──────────────────────────────────────────────────────────────┐
+│                    資金の流れ全体像                             │
+└──────────────────────────────────────────────────────────────┘
+
+時系列:
+
+[1] 購入者が決済実行
+    ↓
+[2] Stripe経由で資金がプラットフォームアカウントに入金
+    ↓
+[3] 資金をプラットフォームで保持（エスクロー状態）
+    ↓
+[4] 販売者が商品を発送
+    ↓
+[5] 購入者が受取を確認
+    ↓
+[6] プラットフォームから販売者のConnected Accountへ送金（Transfer）
+    ↓
+[7] 販売者の銀行口座に自動入金（Payout）
+
+
+詳細フロー図:
+
+┌─────────────────────────────────────────────────────────────┐
+│                                                               │
+│  購入者              プラットフォーム           販売者          │
+│   (Buyer)         (僕らのヴィンテージ)         (Seller)        │
+│                                                               │
+│     │                    │                      │             │
+│     │ [1] 決済実行        │                      │             │
+│     │  ¥5,180           │                      │             │
+│     ├──────────────────>│                      │             │
+│     │                    │                      │             │
+│     │                    │ PaymentIntent        │             │
+│     │                    │ 作成・確定            │             │
+│     │                    │                      │             │
+│     │                    │ [2] 入金完了          │             │
+│     │                 ┌──┴──┐                  │             │
+│     │                 │¥5,180│ (エスクロー)     │             │
+│     │                 └──┬──┘                  │             │
+│     │                    │                      │             │
+│     │                    │         [3] 商品発送  │             │
+│     │                    │  <────────────────── │             │
+│     │                    │                      │             │
+│     │ [4] 商品到着        │                      │             │
+│     │                    │                      │             │
+│     │ [5] 受取確認        │                      │             │
+│     ├──────────────────>│                      │             │
+│     │                    │                      │             │
+│     │                    │ [6] Transfer実行      │             │
+│     │                    │  ¥5,000送金          │             │
+│     │                    ├─────────────────────>│             │
+│     │                 ┌──┴──┐               ┌──┴──┐          │
+│     │                 │ ¥180│ (Stripe手数料) │¥5,000│         │
+│     │                 └─────┘               └──┬──┘          │
+│     │                    │                      │             │
+│     │                    │                      │ [7] Payout  │
+│     │                    │                      │  自動入金    │
+│     │                    │                      ├────────────>│
+│     │                    │                      │  銀行口座    │
+│     │                    │                      │             │
+└─────────────────────────────────────────────────────────────┘
+
+金額の内訳:
+- 購入者支払額: ¥5,180 (商品¥5,000 + Stripe手数料¥180)
+- プラットフォーム保持: ¥5,180 (エスクロー期間中)
+- 販売者への送金: ¥5,000 (商品代金100%)
+- Stripe手数料: ¥180 (プラットフォームが負担)
+
+================================================================================
+5. 各ステップの技術詳細
+================================================================================
+
+┌──────────────────────────────────────────────────────────────┐
+│ ステップ1: 販売者のConnected Account作成（事前準備）             │
+└──────────────────────────────────────────────────────────────┘
+
+タイミング: 販売者が初めて商品を出品する前
+
+### フロントエンド実装:
+
+ユーザー操作:
+1. プロフィール画面に「販売者登録」ボタンを追加
+2. クリックするとStripeオンボーディング開始
+
+```typescript
+// frontend/app/src/component/profile/StripeConnectButton.tsx
+
+const handleConnectStripe = async () => {
+  try {
+    // バックエンドAPIを呼び出してAccountLinkを取得
+    const response = await createStripeConnectAccount(userId);
+
+    if (response.success) {
+      // Stripeのオンボーディングページにリダイレクト
+      window.location.href = response.data.onboarding_url;
+    }
+  } catch (error) {
+    console.error('Stripe Connect登録エラー:', error);
+  }
+};
+```
+
+### バックエンド実装:
+
+```python
+# backend/api/stripe_connect.py
+
+import stripe
+from flask import Blueprint, request, jsonify
+
+stripe.api_key = os.environ.get('STRIPE_SECRET_KEY')
+
+stripe_connect_bp = Blueprint('stripe_connect', __name__)
+
+@stripe_connect_bp.route('/api/create_connect_account', methods=['POST'])
+def create_connect_account():
+    """
+    販売者のConnected Accountを作成
+    """
+    data = request.json
+    user_id = data.get('user_id')
+
+    try:
+        # 既存のアカウントがあるか確認
+        cursor.execute("""
+            SELECT stripe_account_id FROM users
+            WHERE user_id = %s
+        """, (user_id,))
+        user = cursor.fetchone()
+
+        if user and user['stripe_account_id']:
+            # 既存アカウントがある場合
+            account_id = user['stripe_account_id']
+        else:
+            # 新規Accountを作成
+            account = stripe.Account.create(
+                type='express',  # Express Account
+                country='JP',    # 日本
+                email=user_email,
+                capabilities={
+                    'card_payments': {'requested': True},
+                    'transfers': {'requested': True},
+                },
+                business_type='individual',  # 個人事業主
+                metadata={
+                    'user_id': user_id,
+                    'platform': 'vintage_marketplace'
+                }
+            )
+            account_id = account.id
+
+            # DBに保存
+            cursor.execute("""
+                UPDATE users
+                SET stripe_account_id = %s
+                WHERE user_id = %s
+            """, (account_id, user_id))
+            conn.commit()
+
+        # AccountLinkを生成（オンボーディング用URL）
+        account_link = stripe.AccountLink.create(
+            account=account_id,
+            refresh_url='https://yourdomain.com/stripe/refresh',
+            return_url='https://yourdomain.com/profile?stripe_onboarding=success',
+            type='account_onboarding',
+        )
+
+        return jsonify({
+            'success': True,
+            'data': {
+                'account_id': account_id,
+                'onboarding_url': account_link.url
+            }
+        })
+
+    except stripe.error.StripeError as e:
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+```
+
+### データベース変更:
+
+usersテーブルに追加:
+```sql
+ALTER TABLE users
+ADD COLUMN stripe_account_id VARCHAR(255) DEFAULT NULL
+  COMMENT 'Stripe Connected Account ID',
+ADD COLUMN stripe_onboarding_completed BOOLEAN DEFAULT FALSE
+  COMMENT 'Stripeオンボーディング完了フラグ',
+ADD COLUMN stripe_charges_enabled BOOLEAN DEFAULT FALSE
+  COMMENT 'Stripe決済受付可能フラグ',
+ADD COLUMN stripe_payouts_enabled BOOLEAN DEFAULT FALSE
+  COMMENT 'Stripe出金可能フラグ';
+```
+
+### オンボーディング完了確認:
+
+```python
+@stripe_connect_bp.route('/api/check_stripe_account_status', methods=['POST'])
+def check_stripe_account_status():
+    """
+    Stripeアカウントの状態を確認
+    """
+    data = request.json
+    user_id = data.get('user_id')
+
+    cursor.execute("""
+        SELECT stripe_account_id FROM users WHERE user_id = %s
+    """, (user_id,))
+    user = cursor.fetchone()
+
+    if not user or not user['stripe_account_id']:
+        return jsonify({
+            'success': False,
+            'message': 'Stripe account not found'
+        }), 404
+
+    # Stripeからアカウント情報を取得
+    account = stripe.Account.retrieve(user['stripe_account_id'])
+
+    # ステータスを確認
+    charges_enabled = account.charges_enabled
+    payouts_enabled = account.payouts_enabled
+
+    # DBを更新
+    cursor.execute("""
+        UPDATE users
+        SET stripe_onboarding_completed = %s,
+            stripe_charges_enabled = %s,
+            stripe_payouts_enabled = %s
+        WHERE user_id = %s
+    """, (True, charges_enabled, payouts_enabled, user_id))
+    conn.commit()
+
+    return jsonify({
+        'success': True,
+        'data': {
+            'charges_enabled': charges_enabled,
+            'payouts_enabled': payouts_enabled,
+            'details_submitted': account.details_submitted
+        }
+    })
+```
+
+┌──────────────────────────────────────────────────────────────┐
+│ ステップ2: 購入者の決済実行                                     │
+└──────────────────────────────────────────────────────────────┘
+
+タイミング: 購入者が「決済に進む」ボタンをクリック
+
+### フロントエンド実装:
+
+Stripe Elementsを使用してカード情報を安全に収集:
+
+```typescript
+// frontend/app/src/component/chat/StripePaymentForm.tsx
+
+import { CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
+
+const StripePaymentForm = ({ tradeId, amount, onSuccess }) => {
+  const stripe = useStripe();
+  const elements = useElements();
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+
+    if (!stripe || !elements) {
+      return;
+    }
+
+    setIsProcessing(true);
+
+    try {
+      // 1. バックエンドでPaymentIntentを作成
+      const response = await createPaymentIntent({
+        trade_id: tradeId,
+        amount: amount
+      });
+
+      const { client_secret } = response.data;
+
+      // 2. カード情報を使って決済確定
+      const { error, paymentIntent } = await stripe.confirmCardPayment(
+        client_secret,
+        {
+          payment_method: {
+            card: elements.getElement(CardElement),
+            billing_details: {
+              email: userEmail,
+            },
+          },
+        }
+      );
+
+      if (error) {
+        console.error('決済エラー:', error);
+        toast({
+          title: '決済失敗',
+          description: error.message,
+          status: 'error',
+        });
+      } else if (paymentIntent.status === 'succeeded') {
+        // 3. 決済成功をバックエンドに通知
+        await confirmPayment({
+          trade_id: tradeId,
+          payment_intent_id: paymentIntent.id
+        });
+
+        toast({
+          title: '決済完了',
+          description: '決済が完了しました',
+          status: 'success',
+        });
+
+        onSuccess();
+      }
+    } catch (error) {
+      console.error('エラー:', error);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <CardElement />
+      <Button
+        type="submit"
+        isLoading={isProcessing}
+        disabled={!stripe}
+      >
+        ¥{amount.toLocaleString()} を支払う
+      </Button>
+    </form>
+  );
+};
+```
+
+### バックエンド実装:
+
+```python
+# backend/api/purchase_flow.py
+
+@purchase_bp.route('/api/create_payment_intent', methods=['POST'])
+def create_payment_intent():
+    """
+    PaymentIntentを作成（決済の準備）
+    """
+    data = request.json
+    trade_id = data.get('trade_id')
+    amount = data.get('amount')  # 購入者が支払う総額（手数料込み）
+
+    try:
+        # 取引情報を取得
+        cursor.execute("""
+            SELECT t.*, u.stripe_account_id, u.email as seller_email
+            FROM trades t
+            JOIN users u ON t.seller_id = u.user_id
+            WHERE t.trade_id = %s
+        """, (trade_id,))
+        trade = cursor.fetchone()
+
+        if not trade:
+            return jsonify({'success': False, 'message': '取引が見つかりません'}), 404
+
+        if not trade['stripe_account_id']:
+            return jsonify({
+                'success': False,
+                'message': '販売者がStripe連携を完了していません'
+            }), 400
+
+        # PaymentIntentを作成
+        payment_intent = stripe.PaymentIntent.create(
+            amount=int(amount),  # 円単位（¥5,180 = 5180）
+            currency='jpy',
+            payment_method_types=['card'],
+
+            # エスクロー設定: まずはプラットフォームが受け取る
+            # 後でTransferで販売者に送金
+            application_fee_amount=0,  # プラットフォーム手数料（現在は0）
+
+            # 販売者のConnected Accountを指定
+            on_behalf_of=trade['stripe_account_id'],
+
+            # Transferの送金先を指定
+            transfer_data={
+                'destination': trade['stripe_account_id'],
+            },
+
+            metadata={
+                'trade_id': trade_id,
+                'seller_id': trade['seller_id'],
+                'buyer_id': trade['buyer_id'],
+                'product_price': trade['purchase_price'],
+            }
+        )
+
+        return jsonify({
+            'success': True,
+            'data': {
+                'client_secret': payment_intent.client_secret,
+                'payment_intent_id': payment_intent.id
+            }
+        })
+
+    except stripe.error.StripeError as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@purchase_bp.route('/api/confirm_payment', methods=['POST'])
+def confirm_payment():
+    """
+    決済完了を確認してDBを更新
+    """
+    data = request.json
+    trade_id = data.get('trade_id')
+    payment_intent_id = data.get('payment_intent_id')
+
+    try:
+        # PaymentIntentを取得して状態確認
+        payment_intent = stripe.PaymentIntent.retrieve(payment_intent_id)
+
+        if payment_intent.status != 'succeeded':
+            return jsonify({
+                'success': False,
+                'message': '決済が完了していません'
+            }), 400
+
+        # DBを更新
+        cursor.execute("""
+            UPDATE trades
+            SET payment_intent_id = %s,
+                paid_at = NOW(),
+                status = 'paid',
+                updated_at = NOW()
+            WHERE trade_id = %s
+        """, (payment_intent_id, trade_id))
+        conn.commit()
+
+        return jsonify({
+            'success': True,
+            'message': '決済が完了しました'
+        })
+
+    except stripe.error.StripeError as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+```
+
+重要ポイント:
+- `on_behalf_of`: 販売者の代理で決済を受け取る
+- `transfer_data.destination`: 受取確認後に自動送金する先
+- エスクローのため、すぐには送金されない（後でTransferを実行）
+
+┌──────────────────────────────────────────────────────────────┐
+│ ステップ3: 商品受取確認後の送金（Transfer実行）                  │
+└──────────────────────────────────────────────────────────────┘
+
+タイミング: 購入者が「受け取りました」ボタンをクリックした後
+
+### バックエンド実装:
+
+```python
+# backend/api/purchase_flow.py
+
+@purchase_bp.route('/api/complete_purchase_trade', methods=['POST'])
+def complete_purchase_trade():
+    """
+    取引完了 + 販売者への送金実行
+    """
+    data = request.json
+    trade_id = data.get('trade_id')
+
+    try:
+        # 取引情報を取得
+        cursor.execute("""
+            SELECT t.*, u.stripe_account_id
+            FROM trades t
+            JOIN users u ON t.seller_id = u.user_id
+            WHERE t.trade_id = %s AND t.status = 'buyer_received'
+        """, (trade_id,))
+        trade = cursor.fetchone()
+
+        if not trade:
+            return jsonify({
+                'success': False,
+                'message': '取引が見つからないか、ステータスが不正です'
+            }), 400
+
+        # PaymentIntentから決済情報を取得
+        payment_intent = stripe.PaymentIntent.retrieve(
+            trade['payment_intent_id']
+        )
+
+        # Chargeを取得（実際の決済オブジェクト）
+        charge_id = payment_intent.charges.data[0].id
+
+        # Transferを実行（販売者への送金）
+        transfer = stripe.Transfer.create(
+            amount=int(trade['purchase_price'] * 100),  # 商品代金（100円 = 10000）
+            currency='jpy',
+            destination=trade['stripe_account_id'],
+            source_transaction=charge_id,  # 元の決済と紐付け
+            metadata={
+                'trade_id': trade_id,
+                'seller_id': trade['seller_id']
+            }
+        )
+
+        # DBを更新
+        cursor.execute("""
+            UPDATE trades
+            SET is_seller_confirmed = TRUE,
+                status = 'completed',
+                stripe_transfer_id = %s,
+                updated_at = NOW()
+            WHERE trade_id = %s
+        """, (transfer.id, trade_id))
+
+        # アーカイブ処理
+        archiver = TradeArchiver(conn)
+        archive_trade_id = archiver.archive_trade(trade_id)
+
+        # データ削除処理...
+
+        conn.commit()
+
+        return jsonify({
+            'success': True,
+            'message': '取引が完了し、販売者への送金が完了しました',
+            'data': {
+                'trade_id': trade_id,
+                'transfer_id': transfer.id
+            }
+        })
+
+    except stripe.error.StripeError as e:
+        return jsonify({
+            'success': False,
+            'message': f'Stripe送金エラー: {str(e)}'
+        }), 500
+```
+
+### データベース変更:
+
+tradesテーブルに追加:
+```sql
+ALTER TABLE trades
+ADD COLUMN stripe_transfer_id VARCHAR(255) DEFAULT NULL
+  COMMENT 'Stripe Transfer ID（販売者への送金）';
+```
+
+┌──────────────────────────────────────────────────────────────┐
+│ ステップ4: Webhook処理（決済イベントの監視）                     │
+└──────────────────────────────────────────────────────────────┘
+
+Webhookは、Stripeからリアルタイムで決済イベントを受け取る仕組みです。
+決済成功/失敗/返金などのイベントを確実に処理できます。
+
+### バックエンド実装:
+
+```python
+# backend/api/stripe_webhook.py
+
+from flask import Blueprint, request, jsonify
+import stripe
+
+stripe_webhook_bp = Blueprint('stripe_webhook', __name__)
+
+# StripeダッシュボードからWebhook署名秘密鍵を取得
+WEBHOOK_SECRET = os.environ.get('STRIPE_WEBHOOK_SECRET')
+
+@stripe_webhook_bp.route('/api/stripe/webhook', methods=['POST'])
+def stripe_webhook():
+    """
+    Stripeからのwebhookイベントを受信
+    """
+    payload = request.data
+    sig_header = request.headers.get('Stripe-Signature')
+
+    try:
+        # Webhook署名を検証（セキュリティ対策）
+        event = stripe.Webhook.construct_event(
+            payload, sig_header, WEBHOOK_SECRET
+        )
+    except ValueError as e:
+        # Invalid payload
+        return jsonify({'error': 'Invalid payload'}), 400
+    except stripe.error.SignatureVerificationError as e:
+        # Invalid signature
+        return jsonify({'error': 'Invalid signature'}), 400
+
+    # イベントタイプに応じて処理
+    event_type = event['type']
+
+    if event_type == 'payment_intent.succeeded':
+        # 決済成功
+        payment_intent = event['data']['object']
+        handle_payment_success(payment_intent)
+
+    elif event_type == 'payment_intent.payment_failed':
+        # 決済失敗
+        payment_intent = event['data']['object']
+        handle_payment_failure(payment_intent)
+
+    elif event_type == 'transfer.created':
+        # 送金作成
+        transfer = event['data']['object']
+        handle_transfer_created(transfer)
+
+    elif event_type == 'transfer.paid':
+        # 送金完了（販売者の銀行口座に入金）
+        transfer = event['data']['object']
+        handle_transfer_paid(transfer)
+
+    elif event_type == 'account.updated':
+        # Connected Accountの更新
+        account = event['data']['object']
+        handle_account_updated(account)
+
+    return jsonify({'success': True})
+
+
+def handle_payment_success(payment_intent):
+    """決済成功時の処理"""
+    trade_id = payment_intent['metadata'].get('trade_id')
+
+    if trade_id:
+        cursor.execute("""
+            UPDATE trades
+            SET payment_intent_id = %s,
+                paid_at = NOW(),
+                status = 'paid'
+            WHERE trade_id = %s
+        """, (payment_intent['id'], trade_id))
+        conn.commit()
+
+        # 通知送信など
+        send_notification(trade_id, 'payment_completed')
+
+
+def handle_payment_failure(payment_intent):
+    """決済失敗時の処理"""
+    trade_id = payment_intent['metadata'].get('trade_id')
+    error_message = payment_intent.get('last_payment_error', {}).get('message', '')
+
+    # エラーログに記録
+    print(f"Payment failed for trade {trade_id}: {error_message}")
+
+    # 通知送信など
+
+
+def handle_transfer_paid(transfer):
+    """送金完了時の処理"""
+    trade_id = transfer['metadata'].get('trade_id')
+
+    # 販売者に通知
+    send_notification_to_seller(trade_id, 'transfer_completed')
+
+
+def handle_account_updated(account):
+    """Connected Accountの更新"""
+    account_id = account['id']
+    charges_enabled = account['charges_enabled']
+    payouts_enabled = account['payouts_enabled']
+
+    # DBを更新
+    cursor.execute("""
+        UPDATE users
+        SET stripe_charges_enabled = %s,
+            stripe_payouts_enabled = %s
+        WHERE stripe_account_id = %s
+    """, (charges_enabled, payouts_enabled, account_id))
+    conn.commit()
+```
+
+### Webhook設定方法:
+
+1. Stripeダッシュボードにログイン
+2. 「開発者」→「Webhook」に移動
+3. 「エンドポイントを追加」をクリック
+4. エンドポイントURL: `https://yourdomain.com/api/stripe/webhook`
+5. 監視するイベントを選択:
+   - payment_intent.succeeded
+   - payment_intent.payment_failed
+   - transfer.created
+   - transfer.paid
+   - account.updated
+6. 署名秘密鍵をコピーして環境変数に設定
+
+================================================================================
+6. エスクロー実装方法
+================================================================================
+
+### エスクローの仕組み:
+
+┌──────────────────────────────────────────────────────────────┐
+│ 1. 決済時（PaymentIntent作成）                                 │
+└──────────────────────────────────────────────────────────────┘
+
+資金の状態: プラットフォームのStripeアカウントに保持
+送金予約: `transfer_data.destination` で送金先を指定
+実際の送金: まだ実行されない
+
+コード:
+```python
+payment_intent = stripe.PaymentIntent.create(
+    amount=5180,
+    currency='jpy',
+    transfer_data={
+        'destination': seller_stripe_account_id,  # 送金先を予約
+        # amount は指定しない = 自動送金しない
+    },
+    # ...
+)
+```
+
+┌──────────────────────────────────────────────────────────────┐
+│ 2. エスクロー期間中                                             │
+└──────────────────────────────────────────────────────────────┘
+
+資金の状態: プラットフォームで保持
+操作可能: 返金、部分返金が可能
+販売者: まだ資金を受け取っていない
+
+┌──────────────────────────────────────────────────────────────┐
+│ 3. 受取確認後（Transfer実行）                                   │
+└──────────────────────────────────────────────────────────────┘
+
+資金の状態: 販売者のConnected Accountに移動
+操作不可: 返金には販売者の同意が必要
+販売者: 資金を受け取り、銀行口座に出金可能
+
+コード:
+```python
+transfer = stripe.Transfer.create(
+    amount=5000,  # 販売者への送金額
+    currency='jpy',
+    destination=seller_stripe_account_id,
+    source_transaction=charge_id,
+)
+```
+
+### 返金処理:
+
+エスクロー期間中の返金:
+```python
+# PaymentIntentから返金
+refund = stripe.Refund.create(
+    payment_intent=payment_intent_id,
+    reason='requested_by_customer',
+)
+```
+
+Transfer後の返金:
+```python
+# Transferを取り消してから返金
+transfer_reversal = stripe.Transfer.create_reversal(
+    transfer_id,
+    amount=5000,  # 全額または一部
+)
+
+# その後、PaymentIntentを返金
+refund = stripe.Refund.create(
+    payment_intent=payment_intent_id,
+)
+```
+
+================================================================================
+7. 手数料の扱い
+================================================================================
+
+### 現在の手数料構造:
+
+購入者支払額 = 商品価格 + Stripe手数料(3.6%)
+販売者受取額 = 商品価格
+
+例: 商品¥5,000の場合
+- 購入者: ¥5,180
+- Stripe手数料: ¥180
+- 販売者: ¥5,000
+- プラットフォーム: ¥0
+
+### Stripe Connectでの手数料設定:
+
+```python
+payment_intent = stripe.PaymentIntent.create(
+    amount=5180,  # 購入者の支払額（手数料込み）
+    currency='jpy',
+
+    # プラットフォーム手数料（現在は0）
+    application_fee_amount=0,
+
+    # 販売者への送金額を後で指定
+    transfer_data={
+        'destination': seller_account_id,
+    },
+)
+
+# 後でTransferを実行
+transfer = stripe.Transfer.create(
+    amount=5000,  # 販売者への送金額（手数料を差し引いた金額）
+    currency='jpy',
+    destination=seller_account_id,
+    source_transaction=charge_id,
+)
+```
+
+### 将来的にプラットフォーム手数料を取る場合:
+
+例: 10%のプラットフォーム手数料を導入
+
+```python
+purchase_price = 5000  # 商品価格
+stripe_fee = int(purchase_price * 0.036)  # Stripe手数料
+platform_fee = int(purchase_price * 0.10)  # プラットフォーム手数料10%
+total_amount = purchase_price + stripe_fee  # 購入者支払額
+seller_amount = purchase_price - platform_fee  # 販売者受取額
+
+payment_intent = stripe.PaymentIntent.create(
+    amount=total_amount,  # ¥5,180
+    currency='jpy',
+    application_fee_amount=platform_fee,  # ¥500（プラットフォームに残る）
+    transfer_data={
+        'destination': seller_account_id,
+    },
+)
+
+transfer = stripe.Transfer.create(
+    amount=seller_amount,  # ¥4,500
+    currency='jpy',
+    destination=seller_account_id,
+    source_transaction=charge_id,
+)
+```
+
+金額の流れ:
+- 購入者: ¥5,180
+- Stripe手数料: ¥180（購入者負担）
+- プラットフォーム手数料: ¥500（販売者から徴収）
+- 販売者: ¥4,500
+
+================================================================================
+8. 実装コード例（まとめ）
+================================================================================
+
+完全な実装例を提供します。
+
+### app.py への追加:
+
+```python
+# backend/app.py
+
+from api.stripe_connect import stripe_connect_bp
+from api.stripe_webhook import stripe_webhook_bp
+
+# Blueprint登録
+app.register_blueprint(stripe_connect_bp)
+app.register_blueprint(stripe_webhook_bp)
+```
+
+### 環境変数設定:
+
+```bash
+# .env
+
+# Stripe API キー
+STRIPE_PUBLISHABLE_KEY=pk_test_xxxxxx  # フロントエンド用
+STRIPE_SECRET_KEY=sk_test_xxxxxx       # バックエンド用
+
+# Webhook署名秘密鍵
+STRIPE_WEBHOOK_SECRET=whsec_xxxxxx
+
+# プラットフォーム情報
+PLATFORM_URL=https://yourdomain.com
+```
+
+### フロントエンド設定:
+
+```typescript
+// frontend/app/src/config/stripe.ts
+
+import { loadStripe } from '@stripe/stripe-js';
+
+export const stripePromise = loadStripe(
+  import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY
+);
+```
+
+```typescript
+// frontend/app/src/main.tsx
+
+import { Elements } from '@stripe/react-stripe-js';
+import { stripePromise } from './config/stripe';
+
+<Elements stripe={stripePromise}>
+  <App />
+</Elements>
+```
+
+================================================================================
+9. テスト方法
+================================================================================
+
+### テスト環境でのテスト:
+
+1. Stripe テストモードを使用
+   - APIキー: `sk_test_`, `pk_test_`で始まるもの
+   - 実際の決済は発生しない
+
+2. テストカード番号:
+   - 成功: 4242 4242 4242 4242
+   - 失敗: 4000 0000 0000 0002
+   - 3Dセキュア: 4000 0025 0000 3155
+
+3. テストフロー:
+   ```
+   ① 販売者アカウント作成
+   ② Connected Accountオンボーディング
+   ③ 商品購入フロー開始
+   ④ 決済実行（テストカード使用）
+   ⑤ 発送情報入力
+   ⑥ 受取確認
+   ⑦ Transfer実行確認
+   ```
+
+4. Stripeダッシュボードで確認:
+   - Payments: 決済が成功しているか
+   - Transfers: 送金が実行されているか
+   - Connected Accounts: アカウントが正しく作成されているか
+
+================================================================================
+10. 本番環境への移行手順
+================================================================================
+
+### ステップ1: Stripeアカウントを本番モードに切り替え
+
+1. Stripeダッシュボードにログイン
+2. 左上のトグルを「テストモード」→「本番モード」に切り替え
+3. 本人確認を完了（事業情報、銀行口座等）
+
+### ステップ2: 本番用APIキーを取得
+
+1. 「開発者」→「APIキー」
+2. 公開可能キー（pk_live_xxx）をコピー
+3. シークレットキー（sk_live_xxx）をコピー
+4. 環境変数を更新
+
+### ステップ3: Webhookを本番URLに設定
+
+1. 「開発者」→「Webhook」
+2. 本番用エンドポイントを追加
+3. 署名秘密鍵を環境変数に設定
+
+### ステップ4: Connected Accountの本番設定
+
+1. オンボーディングURLを本番URLに変更
+2. 販売者に本番環境でのオンボーディングを依頼
+
+### ステップ5: 動作確認
+
+1. 少額（¥100など）で実際の決済テスト
+2. 実際の銀行口座への入金確認
+3. エラーログの監視
+
+================================================================================
+11. トラブルシューティング
+================================================================================
+
+### Q1: Connected Accountの作成に失敗する
+
+A: 以下を確認:
+- APIキーが正しいか
+- countryが'JP'になっているか
+- capabilitiesが正しく設定されているか
+
+### Q2: 決済は成功するが、Transferに失敗する
+
+A: 以下を確認:
+- Connected Accountのpayouts_enabledがtrueか
+- 送金額がcharge金額を超えていないか
+- source_transactionが正しく指定されているか
+
+### Q3: Webhookが受信されない
+
+A: 以下を確認:
+- エンドポイントURLが正しいか
+- HTTPSを使用しているか
+- 署名検証が正しいか
+- Stripeダッシュボードの「イベント」で配信状況を確認
+
+### Q4: 販売者の銀行口座に入金されない
+
+A: 以下を確認:
+- Transferが成功しているか（Stripeダッシュボード）
+- 販売者のpayout設定（即時 or 定期）
+- 最小payout金額に達しているか
+
+================================================================================
+まとめ
+================================================================================
+
+### 実装の流れ:
+
+1. ✅ Stripe Connectアカウント作成
+2. ✅ 販売者のConnected Account作成とオンボーディング
+3. ✅ PaymentIntent作成（エスクロー設定）
+4. ✅ 決済実行
+5. ✅ Webhook処理
+6. ✅ Transfer実行（受取確認後）
+7. ✅ 販売者の銀行口座に自動Payout
+
+### 重要なポイント:
+
+- Stripe Connectを使用することで、マーケットプレイス決済を実現
+- エスクロー方式で購入者保護
+- 手数料の柔軟な設定
+- Webhookによる確実なイベント処理
+- テスト環境でしっかり動作確認してから本番移行
+
+### 次のステップ:
+
+1. テスト環境でConnected Accountを作成して動作確認
+2. PaymentIntentのフローを実装
+3. Transferの実装
+4. Webhook処理の実装
+5. 本番環境への移行
+
+================================================================================

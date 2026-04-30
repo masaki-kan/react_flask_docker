@@ -1,0 +1,962 @@
+================================================================================
+  get_db_connection() 関数の詳細解説
+  - try, except, finally ブロックの完全理解 -
+================================================================================
+
+目次:
+  1. 全体のコード
+  2. 行ごとの詳細解説
+  3. なぜこの構造なのか？
+  4. 各シナリオでの動作
+  5. よくある質問（FAQ）
+  6. 他の実装パターンとの比較
+  7. デバッグ方法
+
+================================================================================
+1. 全体のコード
+================================================================================
+
+【db_utils.py の get_db_connection() 関数（28-41行目）】
+
+@contextmanager
+def get_db_connection():
+    """接続プールから接続を取得し、自動的に返却する"""
+    conn = None                                   # ← 行29
+    try:                                          # ← 行30
+        conn = db_pool.get_connection()           # ← 行31
+        yield conn                                # ← 行32
+    except Exception as e:                        # ← 行33
+        if conn and conn.is_connected():          # ← 行34
+            conn.rollback()                       # ← 行35
+        raise e                                   # ← 行36
+    finally:                                      # ← 行37
+        if conn and conn.is_connected():          # ← 行38
+            conn.close()                          # ← 行39
+
+
+【この関数の目的】
+  データベース接続を取得し、使い終わったら自動的にプールに返却する
+
+
+================================================================================
+2. 行ごとの詳細解説
+================================================================================
+
+┌─────────────────────────────────────────────────────────────────┐
+│ 行29: conn = None                                               │
+└─────────────────────────────────────────────────────────────────┘
+
+conn = None
+
+【なぜ None で初期化するのか？】
+
+理由1: finally ブロックで安全に参照するため
+────────────────────────────────────────
+  finally ブロックは「必ず実行される」ため、conn が未定義だと
+  NameError が発生する可能性がある。
+
+  例:
+    try:
+        # ここでエラーが起きたら conn は未定義のまま
+        conn = db_pool.get_connection()  # ← エラー発生！
+    finally:
+        conn.close()  # ← NameError: name 'conn' is not defined
+
+
+理由2: 接続取得前のエラーに対応
+────────────────────────────────────────
+  db_pool.get_connection() の前にエラーが起きる可能性は低いが、
+  万が一のために None で初期化しておく。
+
+
+理由3: if conn and ... で安全にチェックできる
+────────────────────────────────────────
+  conn が None の場合、if conn は False になる。
+  これにより、接続が取得されていない状態で close() を呼ばない。
+
+  if conn and conn.is_connected():
+      conn.close()
+  # conn が None なら、このブロックはスキップされる
+
+
+【Pythonの真偽値の基礎】
+  None  → False
+  0     → False
+  ""    → False
+  []    → False
+  オブジェクト → True
+
+
+┌─────────────────────────────────────────────────────────────────┐
+│ 行30-32: try ブロック                                           │
+└─────────────────────────────────────────────────────────────────┘
+
+try:
+    conn = db_pool.get_connection()
+    yield conn
+
+【行31: conn = db_pool.get_connection()】
+────────────────────────────────────────
+
+役割: 接続プールから接続を1つ取得
+
+db_pool とは？
+  • グローバル変数（モジュールレベル）
+  • mysql.connector.pooling.MySQLConnectionPool のインスタンス
+  • アプリ起動時に init_db_pool() で作成される
+  • 最大10個の接続を保持
+
+get_connection() の動作:
+  1. プールに空きがあるか確認
+  2. 空きがあれば、接続オブジェクトを返す
+  3. 空きがない場合は、空くまで待つ（最大30秒）
+  4. タイムアウトしたら PoolError を送出
+
+  ┌────────────────────────────────┐
+  │ 接続プール (pool_size=10)     │
+  │ [○][○][○][○][○]              │  ○ = 空き
+  │ [●][●][○][○][○]              │  ● = 使用中
+  └────────────────────────────────┘
+         ↓ get_connection()
+  ┌────────────────────────────────┐
+  │ [○][○][○][○][○]              │
+  │ [●][●][●][○][○]              │  ← 1つ借りる
+  └────────────────────────────────┘
+
+接続オブジェクトに含まれるもの:
+  • MySQLサーバーへのソケット接続
+  • 接続情報（host, user, database）
+  • トランザクション状態
+  • cursor() メソッド（SQLを実行するため）
+  • commit(), rollback(), close() メソッド
+
+
+【行32: yield conn】
+────────────────────────────────────────
+
+役割: 接続を呼び出し元に渡し、処理を一時停止
+
+yield とは？
+  • Pythonのジェネレータ機能
+  • 関数の実行を一時停止し、値を返す
+  • with文が終わると、関数の実行が再開される
+
+動作フロー:
+  [1] conn を取得
+  [2] yield conn で呼び出し元に渡す
+  [3] 関数の実行がここで一時停止 ⏸
+  [4] with文のブロック内が実行される
+  [5] with文が終わると、ここから再開 ▶️
+  [6] except または finally に進む
+
+具体例:
+  with get_db_connection() as conn:  # ← yield conn がここに渡される
+      cursor = conn.cursor()
+      cursor.execute("SELECT * FROM users")
+      users = cursor.fetchall()
+      cursor.close()
+  # ← with文を抜けると、yield の次の行に進む
+
+yield の後はどこに進む？
+  • 正常終了 → finally ブロック
+  • エラー発生 → except ブロック → finally ブロック
+
+
+┌─────────────────────────────────────────────────────────────────┐
+│ 行33-36: except ブロック                                        │
+└─────────────────────────────────────────────────────────────────┘
+
+except Exception as e:
+    if conn and conn.is_connected():
+        conn.rollback()
+    raise e
+
+【このブロックが実行されるタイミング】
+────────────────────────────────────────
+  with文の中で例外（エラー）が発生した場合
+
+
+【行33: except Exception as e】
+────────────────────────────────────────
+
+Exception とは？
+  • Pythonの全ての例外の基底クラス
+  • ほぼ全てのエラーをキャッチできる
+  • キーボード割り込み（Ctrl+C）などは除外
+
+キャッチされるエラーの例:
+  • mysql.connector.Error      : SQLエラー
+  • ValueError                 : 不正な値
+  • KeyError                   : 存在しないキー
+  • TypeError                  : 型エラー
+  • その他ほぼ全てのエラー
+
+as e の意味:
+  • エラーオブジェクトを変数 e に格納
+  • e.args でエラーメッセージを取得可能
+  • str(e) で文字列に変換可能
+
+
+【行34: if conn and conn.is_connected()】
+────────────────────────────────────────
+
+なぜこのチェックが必要？
+
+理由1: conn が None の可能性
+  • db_pool.get_connection() 自体がエラーになった場合
+  • conn は None のまま
+
+理由2: 接続が既に切れている可能性
+  • ネットワークエラー
+  • MySQLサーバーがダウン
+  • タイムアウト
+
+2つの条件:
+  ┌──────────────────────────────────────────┐
+  │ if conn and conn.is_connected():         │
+  │    └─┬──┘    └──────┬───────┘          │
+  │      │               │                   │
+  │    条件1           条件2                 │
+  └──────────────────────────────────────────┘
+
+条件1: conn
+  • conn が None でないことを確認
+  • None の場合は False になる
+  • 短絡評価により、conn が None なら条件2は評価されない
+
+条件2: conn.is_connected()
+  • MySQLサーバーへの接続が生きているか確認
+  • 返り値: True (接続中) / False (切断済み)
+
+【短絡評価とは？】
+  if A and B:
+     ↑      ↑
+     │      └─ A が False なら B は評価されない
+     └──────── 最初に評価
+
+  例:
+    conn = None
+    if conn and conn.is_connected():  # conn が None なので
+        ...                            # is_connected() は呼ばれない
+    # ← AttributeError にならない！
+
+
+【行35: conn.rollback()】
+────────────────────────────────────────
+
+rollback() とは？
+  • トランザクションを巻き戻す（取り消す）
+  • 未コミットの変更を全て破棄
+  • データベースを処理前の状態に戻す
+
+なぜロールバックが必要？
+
+例: エラーが起きた場合
+  try:
+      cursor.execute("INSERT INTO users (name, email) VALUES (...)")
+      # ← ここまでは実行された（まだコミットされていない）
+
+      cursor.execute("UPDATE items SET price = ...")
+      # ← ここでエラー発生！
+  except:
+      conn.rollback()  # ← INSERTも取り消される
+
+ロールバックしないとどうなる？
+  • 中途半端なデータが残る可能性
+  • データの整合性が壊れる
+  • 次の処理に影響が出る
+
+具体例:
+  ┌─────────────────────────────────────────┐
+  │ トランザクション開始                    │
+  ├─────────────────────────────────────────┤
+  │ INSERT INTO trades (...)                │ ← 実行済み
+  │ UPDATE items SET status = 'trading'     │ ← 実行済み
+  │ INSERT INTO trade_messages (...)        │ ← エラー発生！
+  ├─────────────────────────────────────────┤
+  │ rollback() → 全ての変更を取り消す       │
+  └─────────────────────────────────────────┘
+
+autocommit=False の重要性:
+  • 接続プール作成時に autocommit=False を設定
+  • これにより、明示的に commit() しない限り変更は確定しない
+  • rollback() で変更を取り消せる
+
+
+【行36: raise e】
+────────────────────────────────────────
+
+raise とは？
+  • エラーを再送出する
+  • 上位の呼び出し元にエラーを伝える
+
+なぜ再送出が必要？
+
+理由1: エラーを隠さない
+  • rollback() だけして何もしないと、エラーが隠れる
+  • 上位でログ記録や適切な処理ができない
+
+理由2: APIがエラーレスポンスを返せる
+  • Flaskのエラーハンドラーがキャッチ
+  • クライアントに適切なエラーメッセージを返す
+
+理由3: デバッグが容易
+  • スタックトレースが保持される
+  • どこでエラーが起きたか分かる
+
+動作フロー:
+  [API関数]
+    ↓
+  with get_db_connection() as conn:
+      cursor.execute(...)  # ← エラー発生！
+    ↓
+  [except ブロック]
+    conn.rollback()  # ← ロールバック
+    raise e          # ← エラーを再送出
+    ↓
+  [finally ブロック]
+    conn.close()     # ← 接続を返却
+    ↓
+  [API関数のexceptブロック]
+    return jsonify({'error': str(e)}), 500
+
+
+raise e と raise の違い:
+  • raise e  : エラーオブジェクトをそのまま再送出
+  • raise    : 現在の例外を再送出（スタックトレース保持）
+  • 推奨: raise （スタックトレースが保持される）
+
+修正版（より良い実装）:
+  except Exception as e:
+      if conn and conn.is_connected():
+          conn.rollback()
+      raise  # ← 'raise e' より 'raise' が推奨
+
+
+┌─────────────────────────────────────────────────────────────────┐
+│ 行37-39: finally ブロック                                       │
+└─────────────────────────────────────────────────────────────────┘
+
+finally:
+    if conn and conn.is_connected():
+        conn.close()
+
+【finally ブロックとは？】
+────────────────────────────────────────
+  • 必ず実行されるブロック
+  • エラーの有無に関わらず実行される
+  • リソースのクリーンアップに使う
+
+実行されるタイミング:
+  ✓ 正常終了した場合
+  ✓ エラーが発生した場合
+  ✓ return で抜けた場合
+  ✓ break で抜けた場合
+  ✗ プロセスが強制終了された場合のみ実行されない
+
+
+【行38: if conn and conn.is_connected()】
+────────────────────────────────────────
+
+exceptブロックと同じ理由で2つの条件チェック:
+
+条件1: conn
+  • conn が None でないか確認
+  • db_pool.get_connection() が失敗した場合に備える
+
+条件2: conn.is_connected()
+  • 接続がまだ生きているか確認
+  • ネットワークエラーで切断されている可能性に備える
+
+パターン別の動作:
+
+┌──────────────────┬──────────┬────────────────┬──────┐
+│ 状況             │ conn     │ is_connected() │ 動作 │
+├──────────────────┼──────────┼────────────────┼──────┤
+│ 正常             │ Object   │ True           │ close│
+│ 接続取得失敗     │ None     │ -              │ skip │
+│ ネットワークエラー│ Object   │ False          │ skip │
+│ 既にclose済み    │ Object   │ False          │ skip │
+└──────────────────┴──────────┴────────────────┴──────┘
+
+
+【行39: conn.close()】
+────────────────────────────────────────
+
+close() の役割:
+  • データベース接続をクローズする
+  • 接続プールに接続を返却する
+  • メモリを解放する
+
+重要: close() は「切断」ではなく「返却」
+  ┌────────────────────────────────┐
+  │ 接続プール                     │
+  │ [●][●][●][○][○]              │  ● = 使用中
+  └────────────────────────────────┘
+         ↓ conn.close() で返却
+  ┌────────────────────────────────┐
+  │ [●][●][○][○][○]              │  ○ = 再利用可能
+  └────────────────────────────────┘
+
+実際には接続は切断されない:
+  • ソケット接続は維持される
+  • プール内で再利用される
+  • 効率的（毎回接続を作り直さない）
+
+close() しないとどうなる？
+  • 接続がプールに返却されない
+  • プールが枯渇する（全て使用中になる）
+  • 新しいリクエストが待たされる
+  • 最悪、タイムアウトエラー
+
+例（close() を忘れた場合）:
+  リクエスト1: 接続を取得 → close()忘れ → プール 9個
+  リクエスト2: 接続を取得 → close()忘れ → プール 8個
+  ...
+  リクエスト10: 接続を取得 → close()忘れ → プール 0個
+  リクエスト11: 接続を取得 → 待機... → タイムアウト ❌
+
+
+================================================================================
+3. なぜこの構造なのか？
+================================================================================
+
+【設計原則】
+
+1. 防御的プログラミング
+   └─ あらゆるエラーケースを想定
+
+2. リソースの確実な解放
+   └─ finally で必ず close() を実行
+
+3. データ整合性の保証
+   └─ エラー時は rollback() で巻き戻し
+
+4. エラーの透過性
+   └─ エラーを隠さず上位に伝える
+
+5. 接続プールの効率的な利用
+   └─ 使い終わったら即座に返却
+
+
+【他の実装との比較】
+
+❌ パターンA: finally がない
+────────────────────────────────────────
+@contextmanager
+def get_db_connection():
+    conn = db_pool.get_connection()
+    yield conn
+    conn.close()  # ← エラー時に実行されない
+
+問題点:
+  • エラーが起きたら close() がスキップされる
+  • 接続がリークする
+
+
+❌ パターンB: rollback がない
+────────────────────────────────────────
+@contextmanager
+def get_db_connection():
+    conn = None
+    try:
+        conn = db_pool.get_connection()
+        yield conn
+    except Exception as e:
+        raise e  # ← rollback していない
+    finally:
+        if conn:
+            conn.close()
+
+問題点:
+  • 中途半端な変更が残る可能性
+  • データの整合性が壊れる
+
+
+❌ パターンC: raise がない
+────────────────────────────────────────
+@contextmanager
+def get_db_connection():
+    conn = None
+    try:
+        conn = db_pool.get_connection()
+        yield conn
+    except Exception as e:
+        if conn:
+            conn.rollback()
+        # raise を忘れている
+    finally:
+        if conn:
+            conn.close()
+
+問題点:
+  • エラーが隠される
+  • 上位でエラー処理ができない
+  • デバッグが困難
+
+
+✅ 現在の実装（正しい）
+────────────────────────────────────────
+@contextmanager
+def get_db_connection():
+    conn = None
+    try:
+        conn = db_pool.get_connection()
+        yield conn
+    except Exception as e:
+        if conn and conn.is_connected():
+            conn.rollback()  # ✓ データ整合性を保証
+        raise e              # ✓ エラーを上位に伝える
+    finally:
+        if conn and conn.is_connected():
+            conn.close()     # ✓ 必ずリソースを解放
+
+メリット:
+  ✓ あらゆるエラーケースに対応
+  ✓ データの整合性を保証
+  ✓ リソースリークを防ぐ
+  ✓ デバッグが容易
+
+
+================================================================================
+4. 各シナリオでの動作
+================================================================================
+
+【シナリオ1: 正常終了】
+
+コード:
+  with get_db_connection() as conn:
+      cursor = conn.cursor()
+      cursor.execute("SELECT * FROM users")
+      users = cursor.fetchall()
+      cursor.close()
+
+実行フロー:
+  [1] conn = None
+  [2] conn = db_pool.get_connection()  ✓
+  [3] yield conn
+  [4] with文のブロック実行  ✓
+  [5] finally ブロック
+      if conn and conn.is_connected():  ← True
+          conn.close()  ✓ プールに返却
+  [6] 正常終了
+
+
+【シナリオ2: SQLエラー発生】
+
+コード:
+  with get_db_connection() as conn:
+      cursor = conn.cursor()
+      cursor.execute("SELECT * FROM non_existent_table")  # ← エラー！
+      users = cursor.fetchall()
+
+実行フロー:
+  [1] conn = None
+  [2] conn = db_pool.get_connection()  ✓
+  [3] yield conn
+  [4] with文のブロック実行
+      cursor.execute(...)  ❌ エラー発生！
+  [5] except ブロック
+      if conn and conn.is_connected():  ← True
+          conn.rollback()  ✓ 変更を取り消し
+      raise e  ✓ エラーを再送出
+  [6] finally ブロック
+      if conn and conn.is_connected():  ← True
+          conn.close()  ✓ プールに返却
+  [7] エラーが上位に伝わる
+
+
+【シナリオ3: 接続取得失敗】
+
+コード:
+  with get_db_connection() as conn:
+      cursor = conn.cursor()
+      cursor.execute("SELECT * FROM users")
+
+実行フロー:
+  [1] conn = None
+  [2] conn = db_pool.get_connection()  ❌ プールが枯渇！
+      → PoolError 発生
+  [3] except ブロック
+      if conn and conn.is_connected():  ← conn is None → False
+          # スキップ
+      raise e  ✓ エラーを再送出
+  [4] finally ブロック
+      if conn and conn.is_connected():  ← conn is None → False
+          # スキップ
+  [5] PoolError が上位に伝わる
+
+
+【シナリオ4: ネットワークエラー】
+
+コード:
+  with get_db_connection() as conn:
+      cursor = conn.cursor()
+      # ← ここでネットワーク切断
+      cursor.execute("SELECT * FROM users")  # ← エラー！
+
+実行フロー:
+  [1] conn = None
+  [2] conn = db_pool.get_connection()  ✓
+  [3] yield conn
+  [4] with文のブロック実行
+      cursor.execute(...)  ❌ ネットワークエラー！
+  [5] except ブロック
+      if conn and conn.is_connected():  ← False（切断済み）
+          # スキップ（rollback不要）
+      raise e  ✓ エラーを再送出
+  [6] finally ブロック
+      if conn and conn.is_connected():  ← False
+          # スキップ（既に切断済み）
+  [7] エラーが上位に伝わる
+
+
+【シナリオ5: トランザクション処理】
+
+コード:
+  with get_db_connection() as conn:
+      cursor = conn.cursor()
+      cursor.execute("INSERT INTO trades (...)")
+      cursor.execute("UPDATE items SET status = 'trading' WHERE item_id = 1")
+      cursor.execute("INSERT INTO invalid_table (...)")  # ← エラー！
+      conn.commit()  # ← ここには到達しない
+
+実行フロー:
+  [1] conn = None
+  [2] conn = db_pool.get_connection()  ✓
+  [3] yield conn
+  [4] with文のブロック実行
+      INSERT INTO trades  ✓（未コミット）
+      UPDATE items  ✓（未コミット）
+      INSERT INTO invalid_table  ❌ エラー！
+  [5] except ブロック
+      if conn and conn.is_connected():  ← True
+          conn.rollback()  ✓ 全ての変更を取り消し
+      raise e  ✓ エラーを再送出
+  [6] finally ブロック
+      if conn and conn.is_connected():  ← True
+          conn.close()  ✓ プールに返却
+  [7] エラーが上位に伝わる
+
+結果:
+  • INSERT INTO trades → 取り消し
+  • UPDATE items → 取り消し
+  • データベースは変更前の状態に戻る
+
+
+================================================================================
+5. よくある質問（FAQ）
+================================================================================
+
+Q1. なぜ conn = None から始めるのか？
+────────────────────────────────────────
+A. finally ブロックで安全に参照するため。
+   conn が未定義だと NameError が発生する可能性がある。
+
+
+Q2. yield の後は何が起きるのか？
+────────────────────────────────────────
+A. 関数の実行が一時停止し、with文のブロックが実行される。
+   with文が終わると、yield の次の行から再開する。
+
+
+Q3. なぜ rollback() が必要なのか？
+────────────────────────────────────────
+A. 中途半端な変更を取り消すため。
+   エラーが起きた場合、未コミットの変更が残ると
+   データの整合性が壊れる可能性がある。
+
+
+Q4. raise e と raise の違いは？
+────────────────────────────────────────
+A. raise e : エラーオブジェクトをそのまま再送出
+   raise   : 現在の例外を再送出（スタックトレース保持）
+   推奨: raise （スタックトレースが保持される）
+
+
+Q5. finally は必ず実行されるのか？
+────────────────────────────────────────
+A. ほぼ必ず実行される。
+   ただし、以下の場合は実行されない:
+   • os._exit() で強制終了
+   • プロセスがkillされた
+   • 電源が落ちた
+
+
+Q6. close() は接続を切断するのか？
+────────────────────────────────────────
+A. いいえ。接続プールに返却するだけ。
+   実際のソケット接続は維持され、再利用される。
+
+
+Q7. if conn and conn.is_connected() の順序は重要？
+────────────────────────────────────────
+A. はい。conn が None の場合、is_connected() を呼ぶと
+   AttributeError が発生する。
+   短絡評価により、conn が False なら is_connected() は
+   評価されない。
+
+
+Q8. autocommit=True にしたらどうなるのか？
+────────────────────────────────────────
+A. rollback() が効かなくなる。
+   各SQLが即座にコミットされるため、エラーが起きても
+   それまでの変更は残ってしまう。
+
+
+Q9. 複数のwith文をネストできるか？
+────────────────────────────────────────
+A. はい、可能。
+
+   with get_db_connection() as conn1:
+       with get_db_connection() as conn2:
+           # 2つの接続を同時に使える
+           cursor1 = conn1.cursor()
+           cursor2 = conn2.cursor()
+
+
+Q10. 接続が返却されたか確認する方法は？
+────────────────────────────────────────
+A. MySQLにログインして確認:
+   mysql> SHOW PROCESSLIST;
+
+   または、Pythonコード内で:
+   print(f"接続中: {db_pool._cnx_queue.qsize()}")
+
+
+================================================================================
+6. 他の実装パターンとの比較
+================================================================================
+
+【パターンA: クラスベースのコンテキストマネージャー】
+
+class DBConnection:
+    def __enter__(self):
+        self.conn = db_pool.get_connection()
+        return self.conn
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if exc_val:
+            self.conn.rollback()
+        self.conn.close()
+        return False  # エラーを再送出
+
+# 使用例
+with DBConnection() as conn:
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM users")
+
+メリット:
+  • __enter__ と __exit__ を明示的に定義
+  • より柔軟な制御が可能
+
+デメリット:
+  • コードが長い
+  • @contextmanager より複雑
+
+
+【パターンB: デコレータパターン】
+
+def with_db_connection(func):
+    def wrapper(*args, **kwargs):
+        with get_db_connection() as conn:
+            return func(conn, *args, **kwargs)
+    return wrapper
+
+# 使用例
+@with_db_connection
+def get_users(conn, user_id):
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM users WHERE user_id = %s", (user_id,))
+    return cursor.fetchall()
+
+メリット:
+  • with文を書かなくて良い
+  • 関数がシンプル
+
+デメリット:
+  • デバッグが難しい
+  • 柔軟性が低い
+
+
+【パターンC: 現在の実装（@contextmanager）】
+
+@contextmanager
+def get_db_connection():
+    conn = None
+    try:
+        conn = db_pool.get_connection()
+        yield conn
+    except Exception as e:
+        if conn and conn.is_connected():
+            conn.rollback()
+        raise e
+    finally:
+        if conn and conn.is_connected():
+            conn.close()
+
+メリット:
+  ✓ シンプルで読みやすい
+  ✓ 柔軟性が高い
+  ✓ Pythonic（Pythonらしい）
+  ✓ エラーハンドリングが明確
+
+デメリット:
+  • yield の理解が必要
+
+結論: @contextmanager が最適 ✓
+
+
+================================================================================
+7. デバッグ方法
+================================================================================
+
+【ログ出力を追加する】
+
+import logging
+
+@contextmanager
+def get_db_connection():
+    conn = None
+    try:
+        logging.debug("🔵 DB接続を取得開始")
+        conn = db_pool.get_connection()
+        logging.debug(f"✅ DB接続取得成功: {id(conn)}")
+        yield conn
+        logging.debug("✅ DB操作完了")
+    except Exception as e:
+        logging.error(f"❌ DB操作エラー: {e}")
+        if conn and conn.is_connected():
+            logging.debug("🔄 ロールバック実行")
+            conn.rollback()
+        raise
+    finally:
+        if conn and conn.is_connected():
+            logging.debug(f"🔴 DB接続を返却: {id(conn)}")
+            conn.close()
+        else:
+            logging.warning("⚠️ 接続が既に切断されています")
+
+
+【プールの状態を確認する】
+
+def check_pool_status():
+    """接続プールの状態を確認"""
+    print(f"プールサイズ: {db_pool.pool_size}")
+    print(f"使用中: {db_pool.pool_size - db_pool._cnx_queue.qsize()}")
+    print(f"空き: {db_pool._cnx_queue.qsize()}")
+
+
+【テストコード】
+
+def test_db_connection():
+    """DB接続のテスト"""
+    print("テスト開始")
+
+    # 正常系
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT 1")
+            result = cursor.fetchone()
+            print(f"✅ 正常系OK: {result}")
+    except Exception as e:
+        print(f"❌ 正常系NG: {e}")
+
+    # 異常系
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM non_existent_table")
+    except Exception as e:
+        print(f"✅ 異常系OK（エラーをキャッチ）: {e}")
+
+    print("テスト完了")
+
+
+【トランザクションのテスト】
+
+def test_transaction():
+    """トランザクションのロールバックをテスト"""
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+
+            # データ挿入
+            cursor.execute("""
+                INSERT INTO users (name, email, password)
+                VALUES ('test', 'test@example.com', 'password')
+            """)
+
+            # わざとエラーを起こす
+            raise Exception("テストエラー")
+
+            # ここには到達しない
+            conn.commit()
+    except Exception as e:
+        print(f"✅ エラーをキャッチ: {e}")
+
+    # データが挿入されていないことを確認
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM users WHERE email = 'test@example.com'")
+        result = cursor.fetchone()
+        if result is None:
+            print("✅ ロールバック成功（データが挿入されていない）")
+        else:
+            print("❌ ロールバック失敗（データが残っている）")
+
+
+================================================================================
+まとめ
+================================================================================
+
+【get_db_connection() の各パートの役割】
+
+conn = None
+  └─ finally で安全に参照するため
+
+try:
+  conn = db_pool.get_connection()
+  └─ 接続プールから接続を取得
+
+  yield conn
+  └─ 接続を呼び出し元に渡し、一時停止
+
+except Exception as e:
+  if conn and conn.is_connected():
+      conn.rollback()
+  └─ エラー時にトランザクションを巻き戻し
+
+  raise e
+  └─ エラーを上位に伝える
+
+finally:
+  if conn and conn.is_connected():
+      conn.close()
+  └─ 必ず接続をプールに返却
+
+
+【重要ポイント】
+
+✓ conn = None で初期化
+✓ yield で接続を渡す
+✓ except でロールバック
+✓ raise でエラーを再送出
+✓ finally で必ず close
+✓ if conn and conn.is_connected() で安全にチェック
+
+
+【この実装の素晴らしい点】
+
+1. リソースリークを防ぐ
+2. データ整合性を保証
+3. エラーを隠さない
+4. デバッグが容易
+5. 接続プールを効率的に利用
+
+
+================================================================================
+作成日: 2025-11-14
+バージョン: 1.0
+================================================================================
