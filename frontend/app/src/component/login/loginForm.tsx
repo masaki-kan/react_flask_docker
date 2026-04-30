@@ -94,7 +94,7 @@ const LoginForm: FC = () => {
           response.data.username,
           response.data.token,
           response.data.userId,
-          response.data.type
+          response.data.type,
         );
         navigate(route.profile);
         return;
@@ -167,7 +167,7 @@ const LoginForm: FC = () => {
         ...(type === "password" && { password: value }),
       }));
     },
-    [formErrorCheckHanler]
+    [formErrorCheckHanler],
   );
 
   const handleKeyPress = useCallback(
@@ -176,7 +176,7 @@ const LoginForm: FC = () => {
         loginClick();
       }
     },
-    [form.email, form.password, loginClick]
+    [form.email, form.password, loginClick],
   );
 
   return (

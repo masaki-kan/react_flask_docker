@@ -17,10 +17,14 @@ import {
   useColorModeValue,
   IconButton,
   useToast,
+  Menu,
+  MenuButton,
+  MenuList,
+  MenuItem,
 } from "@chakra-ui/react";
 import MyItems from "./myItems";
 import useMyProfile from "../../hooks/useProfile";
-import LogOut from "../layout/logOut";
+import useLog from "../../hooks/useLog";
 import { useNavigate } from "react-router-dom";
 import { plans } from "../../consts/profileConsts";
 import {
@@ -35,13 +39,14 @@ import {
   FaCrown,
   FaHistory,
   FaTrash,
+  FaCog,
 } from "react-icons/fa";
 import { IconType } from "react-icons";
 import ExchangeArchiveModal from "../archive/exchangeArchiveModal";
 import PurchaseArchiveModal from "../archive/purchaseArchiveModal";
 import { MdOutlineShoppingBag } from "react-icons/md";
 import { route } from "../../route/routeConst";
-import WithdrawalButton from "./withdrawalButton";
+import { WithdrawalButton } from "./withdrawalButton";
 import CreditCardSection from "./creditCardSection";
 import SellerRegistration from "./sellerRegistration";
 import { TokenManager, decodeJWTPayload } from "../../utils/auth/tokenUtils";
@@ -54,6 +59,7 @@ const ProfileIndex: FC<profileIndexType> = ({ editFormSwitch }) => {
   const navigate = useNavigate();
   const toast = useToast();
   const { memorizeProfile, getMyProfile } = useMyProfile();
+  const { logOutHandler } = useLog();
   // プロフィール情報は即座に表示
   const profile = useMemo(() => memorizeProfile, [memorizeProfile]);
   const [isArchiveOpen, setIsArchiveOpen] = useState<boolean>(false);
@@ -338,7 +344,7 @@ const ProfileIndex: FC<profileIndexType> = ({ editFormSwitch }) => {
             border="1px solid"
             borderColor={borderColor}
           >
-            <Heading size="md" mb={4}>
+            <Heading size="sm" mb={4}>
               基本情報
             </Heading>
             <Grid templateColumns={{ base: "1fr", md: "1fr 1fr" }} gap={6}>
@@ -368,7 +374,7 @@ const ProfileIndex: FC<profileIndexType> = ({ editFormSwitch }) => {
               border="1px solid"
               borderColor={borderColor}
             >
-              <Heading size="md" mb={4}>
+              <Heading size="sm" mb={4}>
                 好きなジャンル
               </Heading>
               {tagsViewRender()}
@@ -454,7 +460,7 @@ const ProfileIndex: FC<profileIndexType> = ({ editFormSwitch }) => {
               alignItems={"center"}
               mb={4}
             >
-              <Heading size="md">登録商品</Heading>
+              <Heading size="sm">登録商品</Heading>
               <Button
                 size={"sm"}
                 colorScheme="orange"
@@ -482,7 +488,7 @@ const ProfileIndex: FC<profileIndexType> = ({ editFormSwitch }) => {
             border="1px solid"
             borderColor={borderColor}
           >
-            <Heading size="md" mb={4}>
+            <Heading size="sm" mb={4}>
               アカウント設定
             </Heading>
             <VStack spacing={4} align="stretch">
@@ -493,7 +499,7 @@ const ProfileIndex: FC<profileIndexType> = ({ editFormSwitch }) => {
                 </Text>
                 <Button
                   w="full"
-                  size="md"
+                  size="sm"
                   colorScheme="gray"
                   variant="outline"
                   leftIcon={<FaTrash />}
@@ -503,15 +509,31 @@ const ProfileIndex: FC<profileIndexType> = ({ editFormSwitch }) => {
                 </Button>
               </Box>
 
-              {/* ログアウト・退会ボタン */}
+              {/* アカウント操作プルダウン */}
               <Box>
                 <Text fontSize="sm" color={textMuted} mb={2}>
                   アカウント操作
                 </Text>
-                <HStack justify="space-between">
-                  <LogOut />
-                  <WithdrawalButton />
-                </HStack>
+                <Menu>
+                  <MenuButton
+                    as={Button}
+                    w="full"
+                    size="sm"
+                    variant="outline"
+                    colorScheme="gray"
+                    leftIcon={<FaCog />}
+                  >
+                    アカウント操作
+                  </MenuButton>
+                  <MenuList>
+                    <MenuItem onClick={logOutHandler}>
+                      ログアウト
+                    </MenuItem>
+                    <MenuItem color="red.500">
+                      <WithdrawalButton />
+                    </MenuItem>
+                  </MenuList>
+                </Menu>
               </Box>
             </VStack>
           </Box>
