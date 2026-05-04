@@ -346,17 +346,18 @@ const LoginForm: FC = () => {
                 </Box>
 
                 <VStack spacing={3} pt={2}>
-                  {/* <Link
-                color="#887563"
-                fontSize="sm"
-                _hover={{
-                  color: "#76654f",
-                  textDecoration: "underline",
-                }}
-                transition="color 0.2s"
-              >
-                パスワードをお忘れですか？
-              </Link> */}
+                  <Link
+                    color="#887563"
+                    fontSize="sm"
+                    _hover={{
+                      color: "#76654f",
+                      textDecoration: "underline",
+                    }}
+                    transition="color 0.2s"
+                    onClick={() => navigate(route.forgotPassword)}
+                  >
+                    パスワードをお忘れですか？
+                  </Link>
 
                   <Divider borderColor="gray.200" />
 

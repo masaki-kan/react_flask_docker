@@ -314,6 +314,102 @@ def reactivation_send_welcome_email(user_name, plan_type, to_email):
         return False
     
     
+def send_password_reset_email(user_name, to_email, reset_url):
+    """パスワードリセットメールを送信"""
+    if not all([user_name, to_email, reset_url]):
+        return False
+
+    body = f"""{user_name} 様
+
+パスワード再設定のリクエストを受け付けました。
+
+以下のリンクをクリックして、新しいパスワードを設定してください。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+■ パスワード再設定
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+{reset_url}
+
+※このリンクは1時間以内に有効です。
+※心当たりがない場合は、このメールを無視してください。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+僕らのヴィンテージ 運営チーム
+
+※このメールは送信専用アドレスから配信されております。
+　ご返信いただいてもお答えできませんのでご了承ください。
+
+──────────────────────────────────────
+僕らのヴィンテージ - ヴィンテージをもっと楽しく、もっと自由に
+https://bokurano-vintage.com
+──────────────────────────────────────"""
+
+    try:
+        creds = get_credentials()
+        service = build('gmail', 'v1', credentials=creds)
+
+        message = EmailMessage()
+        message.set_content(body)
+        message['To'] = to_email
+        message['From'] = os.getenv("GMAIL_FROM")
+        message['Subject'] = 'パスワード再設定のお知らせ【僕らのヴィンテージ】'
+
+        html_body = f"""
+        <html>
+            <body style="font-family: 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif; line-height: 1.8; color: #333;">
+                <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+                    <div style="text-align: center; margin-bottom: 30px;">
+                        <h1 style="color: #e68019; font-size: 24px; margin: 0;">僕らのヴィンテージ</h1>
+                        <p style="color: #A18249; font-size: 14px; margin: 5px 0;">パスワード再設定</p>
+                    </div>
+
+                    <div style="background: #fdfcf8; border: 2px solid #E9DFCE; border-radius: 8px; padding: 30px; margin-bottom: 20px;">
+                        <p style="margin: 0 0 20px 0;"><strong>{user_name} 様</strong></p>
+
+                        <p style="margin: 0 0 20px 0;">
+                            パスワード再設定のリクエストを受け付けました。<br>
+                            以下のボタンをクリックして、新しいパスワードを設定してください。
+                        </p>
+
+                        <div style="text-align: center; margin: 30px 0;">
+                            <a href="{reset_url}" style="display: inline-block; background: #e68019; color: white; text-decoration: none; padding: 12px 30px; border-radius: 25px; font-weight: bold;">パスワードを再設定する</a>
+                        </div>
+
+                        <div style="background: #fff3cd; border: 1px solid #ffc107; border-radius: 5px; padding: 15px; margin: 20px 0;">
+                            <p style="margin: 0; font-size: 13px; color: #856404;">
+                                ※ このリンクは1時間以内に有効です。<br>
+                                ※ 心当たりがない場合は、このメールを無視してください。
+                            </p>
+                        </div>
+
+                        <p style="font-size: 12px; color: #999; margin-top: 20px;">
+                            ボタンが機能しない場合は、以下のURLをブラウザに貼り付けてください：<br>
+                            <a href="{reset_url}" style="color: #e68019; word-break: break-all;">{reset_url}</a>
+                        </p>
+                    </div>
+
+                    <div style="font-size: 12px; color: #888; text-align: center;">
+                        <p>&copy; 2025 僕らのヴィンテージ</p>
+                    </div>
+                </div>
+            </body>
+        </html>
+        """
+
+        message.add_alternative(html_body, subtype='html')
+        encoded_message = base64.urlsafe_b64encode(message.as_bytes()).decode()
+
+        send_message = service.users().messages().send(userId="me", body={
+            'raw': encoded_message
+        }).execute()
+        return True
+    except Exception as e:
+        print(f"パスワードリセットメール送信エラー: {e}")
+        return False
+
+
 def send_withdrawal_email(user_name, to_email):
     """退会完了メールを送信"""
     if not all([user_name, to_email]):

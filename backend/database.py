@@ -745,6 +745,7 @@ def create_table(cursor):
     migrate_add_bank_transfer_columns(cursor)
     migrate_add_purchase_columns_to_archived_trades(cursor)
     migrate_add_early_bird_columns(cursor)
+    migrate_add_password_reset_columns(cursor)
 
 
 # ================================================================================
@@ -782,4 +783,42 @@ def migrate_add_early_bird_columns(cursor):
 
     except Exception as e:
         print(f"✗ 先着無料トライアルマイグレーションエラー: {e}")
+        raise
+
+
+# ================================================================================
+# マイグレーション: パスワードリセット用のカラムを追加
+# ================================================================================
+def migrate_add_password_reset_columns(cursor):
+    """
+    usersテーブルにパスワードリセット用のカラムを追加するマイグレーション
+    """
+    try:
+        cursor.execute("""
+            SELECT COUNT(*) as count
+            FROM information_schema.COLUMNS
+            WHERE TABLE_SCHEMA = DATABASE()
+            AND TABLE_NAME = 'users'
+            AND COLUMN_NAME = 'password_reset_token'
+        """)
+        result = cursor.fetchone()
+
+        if result['count'] > 0:
+            print("✓ パスワードリセット用のカラムは既に存在します")
+            return
+
+        print("パスワードリセット用のカラムを追加中...")
+
+        cursor.execute("""
+            ALTER TABLE users
+            ADD COLUMN password_reset_token VARCHAR(255) DEFAULT NULL
+                COMMENT 'パスワードリセットトークン',
+            ADD COLUMN password_reset_expires TIMESTAMP NULL DEFAULT NULL
+                COMMENT 'パスワードリセットトークンの有効期限'
+        """)
+
+        print("✓ パスワードリセット用のカラム追加完了")
+
+    except Exception as e:
+        print(f"✗ パスワードリセットマイグレーションエラー: {e}")
         raise

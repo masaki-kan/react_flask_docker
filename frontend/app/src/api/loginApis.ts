@@ -120,6 +120,47 @@ export const getLoginErrorMessage = (error: unknown): string => {
   return errorMessage;
 };
 
+export const forgotPasswordApi = async (
+  email: string,
+): Promise<ApiResponse<{ result: boolean; message: string }>> => {
+  try {
+    const response = await axios.post(
+      `${import.meta.env.VITE_API_URL}/api/forgot-password`,
+      { email },
+    );
+    return {
+      success: true,
+      data: {
+        result: response.data.result,
+        message: response.data.message,
+      },
+    };
+  } catch (error: unknown) {
+    return createErrorResponse(error, "パスワードリセットの送信に失敗しました");
+  }
+};
+
+export const resetPasswordApi = async (
+  token: string,
+  new_password: string,
+): Promise<ApiResponse<{ result: boolean; message: string }>> => {
+  try {
+    const response = await axios.post(
+      `${import.meta.env.VITE_API_URL}/api/reset-password`,
+      { token, new_password },
+    );
+    return {
+      success: true,
+      data: {
+        result: response.data.result,
+        message: response.data.message,
+      },
+    };
+  } catch (error: unknown) {
+    return createErrorResponse(error, "パスワードの再設定に失敗しました");
+  }
+};
+
 export const singupApi = async (
   formdata: sinupFormType,
 ): Promise<ApiResponse<{ result: boolean; message: string }>> => {

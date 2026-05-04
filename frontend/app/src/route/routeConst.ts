@@ -2,6 +2,8 @@ export const route = {
   top: "/",
   login: "/login",
   signUp: "/signUp",
+  forgotPassword: "/forgot-password",
+  resetPassword: "/reset-password",
   tokushoho: "/tokushoho", // 特定商取引法に基づく表記
   privacy: "/privacy", // プライバシーポリシー
   terms: "/terms", // 利用規約
@@ -46,6 +48,8 @@ export const PUBLIC_ROUTES = [
   route.tokushoho,
   route.privacy,
   route.terms,
+  route.forgotPassword,
+  route.resetPassword,
 ];
 
 // 認証が必要なルートのリスト

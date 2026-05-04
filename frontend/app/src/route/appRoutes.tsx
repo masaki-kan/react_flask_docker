@@ -20,6 +20,8 @@ import { setPreviousUrl } from "../store/navigationSlice";
 import ThreadPage from "../component/thread/threadPage";
 import TokushohoPage from "../component/tokushoho/tokushohoPage";
 import Login from "../component/login/loginForm";
+import ForgotPassword from "../component/login/forgotPassword";
+import ResetPassword from "../component/login/resetPassword";
 import SingUp from "../component/sinUp/singUpForm";
 import { useAuth } from "../provider/authContext";
 import CheckReactivationstatus from "../component/checkReactivationstatus/checkReactivationstatus";
@@ -95,6 +97,8 @@ const AppRoutes: FC = () => {
           <Route path={route.adminLogin} element={<AdminLogin />} />
           <Route path={route.top} element={<Top />} />
           <Route path={route.login} element={<Login />} />
+          <Route path={route.forgotPassword} element={<ForgotPassword />} />
+          <Route path={route.resetPassword} element={<ResetPassword />} />
           <Route path={route.signUp} element={<SingUp />} />
           <Route path={route.tokushoho} element={<TokushohoPage />} />
           <Route path={route.terms} element={<RiyouKiyakuPage />} />

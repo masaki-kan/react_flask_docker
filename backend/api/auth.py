@@ -2,9 +2,11 @@ from flask import Blueprint, jsonify, request
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity, get_jwt
 from werkzeug.security import generate_password_hash, check_password_hash
 from utils.db_utils import get_db_connection
-from utils.email_utils import send_welcome_email
+from utils.email_utils import send_welcome_email, send_password_reset_email
 import mysql.connector
 from datetime import datetime, timedelta
+import secrets
+import os
 
 auth_bp = Blueprint('auth', __name__, url_prefix='/api')
 
@@ -385,3 +387,107 @@ def verify_token():
             'valid': False,
             'message': 'トークン検証に失敗しました'
         }), 401
+
+# パスワードリセット申請
+@auth_bp.route('/forgot-password', methods=['POST'])
+def forgot_password():
+    email = request.json.get('email', None)
+
+    if not email:
+        return jsonify({"message": "メールアドレスを入力してください"}), 400
+
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+
+            # ユーザーを検索
+            cursor.execute("""
+                SELECT user_id, name, email
+                FROM users
+                WHERE email = %s
+                AND (is_deleted = FALSE OR is_deleted IS NULL)
+            """, (email,))
+            user_data = cursor.fetchone()
+
+            # ユーザーが存在する場合のみトークン生成・メール送信
+            if user_data:
+                token = secrets.token_urlsafe(32)
+                expires = datetime.utcnow() + timedelta(hours=1)
+
+                cursor.execute("""
+                    UPDATE users
+                    SET password_reset_token = %s, password_reset_expires = %s
+                    WHERE user_id = %s
+                """, (token, expires, user_data[0]))
+                conn.commit()
+
+                platform_url = os.environ.get('PLATFORM_URL', 'http://localhost:5173')
+                reset_url = f"{platform_url}/reset-password?token={token}"
+                send_password_reset_email(user_data[1], email, reset_url)
+
+            # メール存在の有無に関わらず同じレスポンスを返す
+            return jsonify({
+                "message": "パスワードリセット用のメールを送信しました。メールをご確認ください。",
+                "result": True
+            }), 200
+
+    except mysql.connector.Error as err:
+        return jsonify({
+            "error": "パスワードリセットの処理中にエラーが発生しました",
+            "result": False
+        }), 500
+
+# パスワードリセット実行
+@auth_bp.route('/reset-password', methods=['POST'])
+def reset_password():
+    token = request.json.get('token', None)
+    new_password = request.json.get('new_password', None)
+
+    if not token or not new_password:
+        return jsonify({"error": "必要な情報が不足しています", "result": False}), 400
+
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+
+            # トークンでユーザーを検索
+            cursor.execute("""
+                SELECT user_id, password_reset_expires
+                FROM users
+                WHERE password_reset_token = %s
+                AND (is_deleted = FALSE OR is_deleted IS NULL)
+            """, (token,))
+            user_data = cursor.fetchone()
+
+            if not user_data:
+                return jsonify({
+                    "error": "無効なリセットリンクです。再度パスワードリセットを申請してください。",
+                    "result": False
+                }), 400
+
+            # 有効期限チェック
+            if user_data[1] is None or datetime.utcnow() > user_data[1]:
+                return jsonify({
+                    "error": "リセットリンクの有効期限が切れています。再度パスワードリセットを申請してください。",
+                    "result": False
+                }), 400
+
+            # パスワード更新 & トークン無効化
+            hashed_password = generate_password_hash(new_password)
+            cursor.execute("""
+                UPDATE users
+                SET password = %s, password_reset_token = NULL, password_reset_expires = NULL
+                WHERE user_id = %s
+            """, (hashed_password, user_data[0]))
+            conn.commit()
+
+            return jsonify({
+                "message": "パスワードが正常に変更されました。新しいパスワードでログインしてください。",
+                "result": True
+            }), 200
+
+    except mysql.connector.Error as err:
+        return jsonify({
+            "error": "パスワードリセットの処理中にエラーが発生しました",
+            "result": False
+        }), 500
