@@ -19,7 +19,7 @@ export type ApiResponse<T = unknown> = ApiSuccess<T> | ApiError;
 export const createErrorResponse = (
   error: unknown,
   defaultMessage: string = "予期しないエラーが発生しました",
-  autoShowToast: boolean = true
+  autoShowToast: boolean = true,
 ): ApiError => {
   let statusCode: number | undefined;
   let errorMessage: string;
@@ -34,8 +34,8 @@ export const createErrorResponse = (
     errorMessage = defaultMessage;
   }
 
-  // トーストを自動表示（オプション）
-  if (autoShowToast) {
+  // トーストを自動表示（オプション、メッセージが空の場合はスキップ）
+  if (autoShowToast && errorMessage) {
     import("../toast/toastManager").then(({ showErrorToast }) => {
       showErrorToast(errorMessage, statusCode);
     });
@@ -52,7 +52,7 @@ export const createErrorResponse = (
 // トーストを表示しない版のエラーレスポンス生成
 export const createSilentErrorResponse = (
   error: unknown,
-  defaultMessage: string = "予期しないエラーが発生しました"
+  defaultMessage: string = "予期しないエラーが発生しました",
 ): ApiError => {
   return createErrorResponse(error, defaultMessage, false);
 };

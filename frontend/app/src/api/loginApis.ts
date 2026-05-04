@@ -20,7 +20,7 @@ export const loginCheckApi = async (formdata: {
   try {
     const response = await axios.post(
       `${import.meta.env.VITE_API_URL}/api/loginCheck`,
-      formdata
+      formdata,
     );
 
     return {
@@ -41,7 +41,7 @@ export const loginApi = async (formdata: {
   try {
     const response = await axios.post(
       `${import.meta.env.VITE_API_URL}/api/login`,
-      formdata
+      formdata,
     );
 
     // バックエンドのloginフィールドをチェック
@@ -64,7 +64,7 @@ export const loginApi = async (formdata: {
       };
     }
   } catch (error: unknown) {
-    return createErrorResponse(error, "ログインに失敗しました");
+    return createErrorResponse(error, "");
   }
 };
 
@@ -75,7 +75,7 @@ export const adminLoginApi = async (formdata: {
   try {
     const response = await axios.post(
       `${import.meta.env.VITE_API_URL}/api/admin/login`,
-      formdata
+      formdata,
     );
 
     // バックエンドのloginフィールドをチェック
@@ -121,12 +121,12 @@ export const getLoginErrorMessage = (error: unknown): string => {
 };
 
 export const singupApi = async (
-  formdata: sinupFormType
+  formdata: sinupFormType,
 ): Promise<ApiResponse<{ result: boolean; message: string }>> => {
   try {
     const response = await axios.post(
       `${import.meta.env.VITE_API_URL}/api/signUp`,
-      formdata
+      formdata,
     );
     return {
       success: true,
