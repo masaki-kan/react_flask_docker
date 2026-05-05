@@ -128,13 +128,20 @@ export const forgotPasswordApi = async (
       `${import.meta.env.VITE_API_URL}/api/forgot-password`,
       { email },
     );
-    return {
-      success: true,
-      data: {
-        result: response.data.result,
-        message: response.data.message,
-      },
-    };
+    if (response.data.result) {
+      return {
+        success: true,
+        data: {
+          result: response.data.result,
+          message: response.data.message,
+        },
+      };
+    } else {
+      return {
+        success: false,
+        error: response.data.error || "パスワードリセットの送信に失敗しました",
+      };
+    }
   } catch (error: unknown) {
     return createErrorResponse(error, "パスワードリセットの送信に失敗しました");
   }

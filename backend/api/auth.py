@@ -423,9 +423,15 @@ def forgot_password():
 
                 platform_url = os.environ.get('PLATFORM_URL', 'http://localhost:5173')
                 reset_url = f"{platform_url}/reset-password?token={token}"
-                send_password_reset_email(user_data[1], email, reset_url)
+                print(f"パスワードリセット: user_id={user_data[0]}, reset_url={reset_url}")
+                email_result = send_password_reset_email(user_data[1], email, reset_url)
+                print(f"パスワードリセットメール送信結果: {email_result}")
+            else:
+                return jsonify({
+                    "error": "このメールアドレスは登録されていません",
+                    "result": False
+                }), 200
 
-            # メール存在の有無に関わらず同じレスポンスを返す
             return jsonify({
                 "message": "パスワードリセット用のメールを送信しました。メールをご確認ください。",
                 "result": True
