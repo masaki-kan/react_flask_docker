@@ -393,23 +393,12 @@ const SellerRegistration: FC = () => {
               <Divider />
               <Box bg={sectionBg} p={4} borderRadius="md">
                 <VStack align="stretch" spacing={3}>
-                  <Text fontWeight="bold" fontSize="sm">
-                    売上残高
-                  </Text>
                   <HStack justify="space-between">
-                    <Text fontSize="sm" color="gray.600">
-                      振込可能残高
+                    <Text fontWeight="bold" fontSize="sm">
+                      売上残高
                     </Text>
                     <Text fontSize="lg" fontWeight="bold">
-                      ¥{balance.available.toLocaleString()}
-                    </Text>
-                  </HStack>
-                  <HStack justify="space-between">
-                    <Text fontSize="sm" color="gray.600">
-                      保留中残高
-                    </Text>
-                    <Text fontSize="sm" color="gray.500">
-                      ¥{balance.pending.toLocaleString()}
+                      ¥{(balance.available + balance.pending).toLocaleString()}
                     </Text>
                   </HStack>
                   <Text fontSize="xs" color="gray.500">
@@ -462,7 +451,7 @@ const SellerRegistration: FC = () => {
             <ModalBody>
               <VStack align="stretch" spacing={3}>
                 <HStack justify="space-between">
-                  <Text color="gray.600">振込可能残高</Text>
+                  <Text color="gray.600">振込可能額</Text>
                   <Text fontWeight="bold">
                     ¥{balance?.available.toLocaleString()}
                   </Text>
