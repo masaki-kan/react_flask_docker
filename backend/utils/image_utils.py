@@ -17,7 +17,6 @@ def init_s3_client():
                 aws_secret_access_key=os.getenv('AWS_SECRET_ACCESS_KEY'),
                 region_name=os.getenv('AWS_REGION', 'ap-northeast-1')
             )
-            print("✅ S3 client initialized successfully")
             return True
         except Exception as e:
             print(f"❌ Failed to initialize S3 client: {e}")
@@ -93,7 +92,6 @@ def delete_image_from_s3(image_url):
             Key=s3_key
         )
 
-        print(f"✅ Successfully deleted S3 object: {s3_key}")
         return True
 
     except Exception as e:
@@ -124,9 +122,6 @@ def delete_multiple_images_from_s3(image_urls):
                 'Quiet': False
             }
         )
-
-        deleted_count = len(response.get('Deleted', []))
-        print(f"✅ Successfully deleted {deleted_count} S3 objects")
 
         # エラーがあった場合はログ出力
         if response.get('Errors'):

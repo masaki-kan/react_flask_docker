@@ -113,8 +113,6 @@ def propose_purchase_price():
             conn.commit()
             cursor.close()
 
-        print(f"✅ 購入金額提案完了: trade_id={trade_id}, price={price}, status=price_proposed")
-
         return jsonify({
             'success': True,
             'message': '金額を提案しました',
@@ -354,8 +352,6 @@ def create_card_payment_intent():
                     """, (payment_intent.id, trade_id))
                     conn.commit()
 
-                    print(f"[INFO] Card PaymentIntent created: {payment_intent.id}", flush=True)
-
                     return jsonify({
                         'success': True,
                         'message': 'PaymentIntentを作成しました',
@@ -493,8 +489,6 @@ def confirm_card_payment():
                     purchase_price = float(trade['purchase_price'])
                     stripe_fee = math.floor(purchase_price * 0.036)
 
-                    print(f"[INFO] Card payment confirmed: trade_id={trade_id}", flush=True)
-
                     return jsonify({
                         'success': True,
                         'message': '決済が完了しました',
@@ -621,8 +615,6 @@ def pay_for_purchase():
 
                     payment_intent_id = payment_intent.id
 
-                    print(f"[INFO] PaymentIntent created: {payment_intent_id}", flush=True)
-
                 except stripe.error.StripeError as e:
                     print(f"[ERROR] Stripe payment failed: {str(e)}", flush=True)
                     return jsonify({
@@ -633,7 +625,6 @@ def pay_for_purchase():
             else:
                 # 開発環境: テストモード（ダミーのPaymentIntent ID）
                 payment_intent_id = f"pi_test_{trade_id}_{int(datetime.now().timestamp())}"
-                print(f"[INFO] Test mode: PaymentIntent ID = {payment_intent_id}", flush=True)
 
             # 決済完了を記録
             cursor.execute("""
@@ -893,7 +884,6 @@ def complete_purchase_trade():
                         )
 
                     stripe_transfer_id = transfer.id
-                    print(f"[INFO] Transfer created: {stripe_transfer_id} (amount: ¥{transfer_amount}, method: {'bank_transfer' if is_bank_transfer else 'card'})", flush=True)
 
                 except stripe.error.StripeError as e:
                     # Transfer失敗時はトランザクションをロールバックして取引を完了させない
@@ -913,7 +903,6 @@ def complete_purchase_trade():
             else:
                 # 開発環境: ダミーのTransfer ID
                 stripe_transfer_id = f"tr_test_{trade_id}_{int(datetime.now().timestamp())}"
-                print(f"[INFO] Test mode: Transfer ID = {stripe_transfer_id}", flush=True)
 
             # 取引を完了
             cursor.execute("""
@@ -929,7 +918,6 @@ def complete_purchase_trade():
             try:
                 archiver = TradeArchiver(conn)
                 archive_trade_id = archiver.archive_trade(trade_id)
-                print(f"✅ 購入取引をアーカイブしました: archive_trade_id={archive_trade_id}")
             except Exception as archive_error:
                 print(f"⚠️ アーカイブ処理でエラーが発生しましたが、取引は完了しました: {archive_error}")
                 # アーカイブに失敗しても取引完了は継続
@@ -970,8 +958,6 @@ def complete_purchase_trade():
             cursor.execute('''
                 DELETE FROM items WHERE item_id = %s
             ''', (item_id,))
-
-            print(f"✅ 購入取引完了: 商品(item_id={item_id})を削除しました")
 
             conn.commit()
             cursor.close()
@@ -1145,8 +1131,6 @@ def create_bank_transfer_payment():
                     if payment_intent.next_action and payment_intent.next_action.type == 'display_bank_transfer_instructions':
                         bank_transfer_info = payment_intent.next_action.display_bank_transfer_instructions
 
-                    print(f"[INFO] Bank transfer PaymentIntent created: {payment_intent.id}", flush=True)
-
                     return jsonify({
                         'success': True,
                         'message': '銀行振込情報を作成しました',
@@ -1187,8 +1171,6 @@ def create_bank_transfer_payment():
                 """, (payment_intent_id, trade_id))
 
                 conn.commit()
-
-                print(f"[INFO] Test mode: Bank transfer PaymentIntent ID = {payment_intent_id}", flush=True)
 
                 return jsonify({
                     'success': True,
@@ -1400,8 +1382,6 @@ def simulate_bank_transfer_received():
                 WHERE trade_id = %s
             """, (trade_id,))
             conn.commit()
-
-            print(f"[INFO] Test mode: Bank transfer simulated for trade_id={trade_id}", flush=True)
 
             return jsonify({
                 'success': True,
@@ -1630,12 +1610,11 @@ def refund_purchase():
                     stripe.Refund.create(
                         payment_intent=trade['payment_intent_id']
                     )
-                    print(f"[INFO] Refund created for trade {trade_id}, payment_intent={trade['payment_intent_id']}", flush=True)
                 except stripe.error.InvalidRequestError as e:
                     # すでに返金済みの場合はべき等として扱い、DBクリーンアップを続行
                     error_message = str(e).lower()
                     if 'already been refunded' in error_message or 'already_refunded' in error_message:
-                        print(f"[INFO] Charge already refunded on Stripe. Proceeding with DB cleanup for trade {trade_id}", flush=True)
+                        pass
                     else:
                         print(f"[ERROR] Stripe Refund failed: {str(e)}", flush=True)
                         return jsonify({
@@ -1649,7 +1628,7 @@ def refund_purchase():
                         'message': f'Stripe返金に失敗しました: {str(e)}'
                     }), 500
             else:
-                print(f"[INFO] Test mode: Refund simulated for trade {trade_id}", flush=True)
+                pass
 
             # アイテムをavailableに戻す（商品はそのまま残す）
             item_id = trade['item_id']
@@ -1664,8 +1643,6 @@ def refund_purchase():
             cursor.execute('DELETE FROM shipping_info WHERE trade_id = %s', (trade_id,))
             cursor.execute('DELETE FROM trade_confirmations WHERE trade_id = %s', (trade_id,))
             cursor.execute('DELETE FROM trades WHERE trade_id = %s', (trade_id,))
-
-            print(f"✅ 返金完了: trade_id={trade_id}, item_id={item_id}をavailableに戻し、取引データを削除しました")
 
             conn.commit()
             cursor.close()

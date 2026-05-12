@@ -583,7 +583,6 @@ def get_payment_methods():
             user = cursor.fetchone()
 
             if not user:
-                print(f"[DEBUG] User {user_id} not found in database", flush=True)
                 return jsonify({
                     "payment_methods": [],
                     "default_payment_method": None,
@@ -591,14 +590,11 @@ def get_payment_methods():
                 })
 
             if not user['stripe_customer_id']:
-                print(f"[DEBUG] User {user_id} has no stripe_customer_id", flush=True)
                 return jsonify({
                     "payment_methods": [],
                     "default_payment_method": None,
                     "debug_info": "no_stripe_customer_id"
                 })
-
-            print(f"[DEBUG] Fetching payment methods for customer: {user['stripe_customer_id']}", flush=True)
 
             try:
                 # Stripeから支払い方法を取得
@@ -611,10 +607,7 @@ def get_payment_methods():
                 customer = stripe.Customer.retrieve(user['stripe_customer_id'])
                 default_payment_method_id = customer.invoice_settings.default_payment_method
 
-                print(f"[DEBUG] Found {len(payment_methods.data)} payment methods", flush=True)
-
             except stripe.error.InvalidRequestError as e:
-                print(f"[DEBUG] Stripe InvalidRequestError: {str(e)}", flush=True)
                 if "No such customer" in str(e):
                     # Customerが削除されている場合、DBのstripe_customer_idをクリア
                     cursor.execute("""
@@ -631,7 +624,6 @@ def get_payment_methods():
                 })
 
             except stripe.error.StripeError as e:
-                print(f"[DEBUG] Stripe error: {str(e)}", flush=True)
                 return jsonify({
                     "error": f"Stripe error: {str(e)}",
                     "payment_methods": [],
@@ -667,9 +659,8 @@ def get_payment_methods():
                     )
                     latest_method['is_default'] = True
                     default_payment_method_id = latest_method['id']
-                    print(f"[DEBUG] Set default payment method to: {latest_method['id']}", flush=True)
                 except stripe.error.StripeError as e:
-                    print(f"[DEBUG] Failed to set default payment method: {str(e)}", flush=True)
+                    pass
 
             return jsonify({
                 "payment_methods": methods,

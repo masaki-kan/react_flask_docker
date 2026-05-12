@@ -302,7 +302,6 @@ def save_shipping_info():
                         SET status = 'shipped'
                         WHERE trade_id = %s
                     ''', (trade_id,))
-                    print(f"✅ 購入フロー: Sellerが発送完了 → status='shipped'")
             else:
                 # 交換フローの場合: 両者が発送情報を入力したかチェック
                 cursor.execute('''
@@ -320,7 +319,6 @@ def save_shipping_info():
                         SET status = 'shipped'
                         WHERE trade_id = %s
                     ''', (trade_id,))
-                    print(f"✅ 交換フロー: 両者が発送完了 → status='shipped'")
 
             conn.commit()
 
@@ -719,7 +717,6 @@ def save_shipping_info_with_item():
                         SET status = 'shipped'
                         WHERE trade_id = %s
                     ''', (trade_id,))
-                    print(f"✅ 購入フロー: Sellerが発送完了 → status='shipped'")
             else:
                 # 交換フローの場合: 両者が発送情報を入力したかチェック
                 cursor.execute('''
@@ -737,7 +734,6 @@ def save_shipping_info_with_item():
                         SET status = 'shipped'
                         WHERE trade_id = %s
                     ''', (trade_id,))
-                    print(f"✅ 交換フロー: 両者が発送完了 → status='shipped'")
 
             conn.commit()
    
@@ -1007,8 +1003,6 @@ def get_chat_item_detail():
                 "payment_method": trade_data.get("payment_method", "card"),
             }
 
-            print(f"📦 getChatItemDetail: trade_id={trade_id}, trade_type={item_data['trade_type']}, status={item_data['status']}, price={item_data['purchase_price']}")
-
             # 商品の画像をすべて取得
             cursor.execute('''
                 SELECT image_url
@@ -1090,13 +1084,12 @@ def register_socketio_handlers(socketio):
     
     @socketio.on('connect')
     def handle_connect():
-        print('クライアントがWebSocketで接続しました', request.sid, flush=True)
+        pass
 
     @socketio.on('join')
     def handle_join(data):
         room = data['room']
         join_room(room)
-        print(f'Client joined room: {room}', flush=True)
 
     @socketio.on('send_message')
     def handle_send_message(data):
@@ -1143,7 +1136,7 @@ def register_socketio_handlers(socketio):
 
     @socketio.on('disconnect')
     def handle_disconnect():
-        print('Client disconnected:', request.sid)
+        pass
 
     @socketio.on('join_thread')
     def handle_join_thread():

@@ -27,8 +27,6 @@ def get_credentials():
 
             # 認証URLを取得
             auth_url, _ = flow.authorization_url(prompt='consent')
-            print("\n🌐 以下のURLをブラウザで開いて、Googleログイン・許可を行ってください：")
-            print(auth_url)
             code = input("認証コードを入力: ")
             flow.fetch_token(code=code)
             creds = flow.credentials

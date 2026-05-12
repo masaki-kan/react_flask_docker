@@ -21,7 +21,6 @@ def cleanup_old_unpaid_intents():
         # 状態が requires_payment_method のもの（支払い未確定）を対象に削除
         if intent.status == "requires_payment_method":
             try:
-                print(f"Deleting intent: {intent.id}, created: {intent.created}")
                 stripe.PaymentIntent.cancel(intent.id)
             except stripe.error.StripeError as e:
                 print(f"Error cancelling intent {intent.id}: {str(e)}")
@@ -77,8 +76,6 @@ def cleanup_old_archives():
                     continue
             
             conn.commit()
-            print(f"✅ Deleted {deleted_count} old archives (older than 1 year)")
-            
             # ログテーブルに記録（オプション）
             cursor.execute('''
                 INSERT INTO cleanup_logs (cleanup_type, deleted_count, cleanup_date)
@@ -103,7 +100,6 @@ def start_scheduler():
     thread = threading.Thread(target=schedule_job)
     thread.daemon = True
     thread.start()
-    print("✅ Scheduler started")
 
 def notify_before_archive_deletion():
     """削除予定のアーカイブをユーザーに通知（削除30日前）"""

@@ -20,7 +20,6 @@ def init_db_pool():
             connection_timeout=30,
             buffered=True
         )
-        print(f"✅ Database pool initialized with 10 connections")
     except Exception as e:
         print(f"❌ Failed to initialize database pool: {e}")
         raise

@@ -235,7 +235,6 @@ def deleteUserItem():
                     if os.getenv('STORAGE_TYPE') == 's3':
                         # S3から画像削除
                         delete_multiple_images_from_s3(image_urls)
-                        print(f"✅ S3から{len(image_urls)}個の画像を削除しました")
                     else:
                         # ローカルファイルシステムから画像削除
                         for url in image_urls:
@@ -243,7 +242,6 @@ def deleteUserItem():
                                 file_path = os.path.join(os.getcwd(), url.lstrip('/'))
                                 if os.path.exists(file_path):
                                     os.remove(file_path)
-                                    print(f"✅ ローカルファイルを削除: {file_path}")
                 except Exception as e:
                     # 画像削除のエラーはログに記録するが、処理は継続
                     print(f"⚠️ 画像削除エラー: {e}")

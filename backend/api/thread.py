@@ -27,21 +27,9 @@ def get_thread_messages():
     
     offset = (page - 1) * limit
     
-    print(f"Debug - filter_type: {filter_type}, current_user_id: {current_user_id}, type: {type(current_user_id)}")
-    
     try:
         with get_db_connection() as conn:
             cursor = conn.cursor(dictionary=True)
-            
-            # デバッグ: フォロー関係を確認
-            if current_user_id and filter_type == 'following':
-                cursor.execute('''
-                    SELECT follower_id, followed_id 
-                    FROM follows 
-                    WHERE follower_id = %s
-                ''', (current_user_id,))
-                follow_relations = cursor.fetchall()
-                print(f"Debug - Follow relations for user {current_user_id}: {follow_relations}")
             
             # メインクエリの構築
             if filter_type == 'following' and current_user_id:

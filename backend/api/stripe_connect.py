@@ -20,8 +20,6 @@ PLATFORM_URL = os.environ.get('PLATFORM_URL', 'http://localhost:5173')
 stripe.api_key = STRIPE_SECRET_KEY
 
 # 起動時にモードを確認
-print(f"[STRIPE_CONNECT] Mode: {STRIPE_MODE}", flush=True)
-print(f"[STRIPE_CONNECT] Platform URL: {PLATFORM_URL}", flush=True)
 
 
 @stripe_connect_bp.route('/create_connect_account', methods=['POST'])
@@ -155,16 +153,12 @@ def create_connect_account():
 
             else:
                 # テスト環境: ダミーアカウントIDを作成
-                print(f"[STRIPE_CONNECT] Creating dummy account for user {user_id} in test mode", flush=True)
-
                 # すでにダミーIDがある場合はそれを使用
                 if user['stripe_account_id'] and user['stripe_account_id'].startswith('acct_dev_'):
                     dummy_account_id = user['stripe_account_id']
-                    print(f"[STRIPE_CONNECT] Using existing dummy account: {dummy_account_id}", flush=True)
                 else:
                     import random
                     dummy_account_id = f"acct_dev_{user_id}_{random.randint(1000, 9999)}"
-                    print(f"[STRIPE_CONNECT] Creating new dummy account: {dummy_account_id}", flush=True)
 
                     # DBに保存
                     cursor.execute("""
@@ -178,7 +172,6 @@ def create_connect_account():
                         WHERE user_id = %s
                     """, (dummy_account_id, user_id))
                     conn.commit()
-                    print(f"[STRIPE_CONNECT] Dummy account saved to database", flush=True)
 
                 return jsonify({
                     'success': True,
@@ -522,8 +515,6 @@ def request_payout():
                     stripe_account=account_id
                 )
 
-                print(f"[STRIPE_CONNECT] Payout created: {payout.id} for user {user_id}, amount: {payout_amount}", flush=True)
-
                 return jsonify({
                     'success': True,
                     'data': {
@@ -536,8 +527,6 @@ def request_payout():
                 })
             else:
                 # テスト環境: ダミーレスポンス
-                print(f"[STRIPE_CONNECT] Test payout for user {user_id}", flush=True)
-
                 return jsonify({
                     'success': True,
                     'data': {

@@ -33,13 +33,12 @@ def register_socketio_handlers(socketio):
     
     @socketio.on('connect')
     def handle_connect():
-        print('クライアントがWebSocketで接続しました', request.sid, flush=True)
+        pass
 
     @socketio.on('join')
     def handle_join(data):
         room = data['room']
         join_room(room)
-        print(f'Client joined room: {room}', flush=True)
 
     @socketio.on('send_message')
     def handle_send_message(data):
@@ -86,7 +85,7 @@ def register_socketio_handlers(socketio):
 
     @socketio.on('disconnect')
     def handle_disconnect():
-        print('Client disconnected:', request.sid)
+        pass
 
     @socketio.on('join_thread')
     def handle_join_thread():
