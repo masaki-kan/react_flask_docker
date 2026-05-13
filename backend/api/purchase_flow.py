@@ -1569,7 +1569,7 @@ def refund_purchase():
             cursor.execute("""
                 SELECT t.trade_id, t.status, t.trade_type, t.item_id,
                        t.purchase_price, t.payment_intent_id,
-                       i.user_id as seller_id
+                       t.buyer_id, i.user_id as seller_id
                 FROM trades t
                 JOIN items i ON t.item_id = i.item_id
                 WHERE t.trade_id = %s
@@ -1607,6 +1607,19 @@ def refund_purchase():
             # Stripe返金を実行
             if STRIPE_MODE == 'live':
                 try:
+                    # 購入者のメールをPaymentIntentのCustomerに設定（未設定の場合）
+                    try:
+                        pi = stripe.PaymentIntent.retrieve(trade['payment_intent_id'])
+                        if pi.customer:
+                            customer = stripe.Customer.retrieve(pi.customer)
+                            if not customer.email:
+                                cursor.execute("SELECT email FROM users WHERE user_id = %s", (trade['buyer_id'],))
+                                buyer = cursor.fetchone()
+                                if buyer and buyer['email']:
+                                    stripe.Customer.modify(pi.customer, email=buyer['email'])
+                    except Exception:
+                        pass
+
                     stripe.Refund.create(
                         payment_intent=trade['payment_intent_id']
                     )
