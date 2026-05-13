@@ -36,7 +36,7 @@ const RefundButton: FC<RefundButtonProps> = ({
   const [isLoading, setIsLoading] = useState(false);
 
   const handleRefund = async () => {
-    let confirmMessage = `購入者に¥${purchasePrice.toLocaleString()}を全額返金しますか？\n\nこの操作は取り消せません。`;
+    let confirmMessage = `購入者に¥${purchasePrice.toLocaleString()}を全額返金しますか？\n\n返金ボタンを押すと返金処置が始まり取引が終了しますがよろしいですか？\n\nこの操作は取り消せません。`;
 
     if (status === TRADE_STATUS.SHIPPED || status === TRADE_STATUS.BUYER_RECEIVED) {
       confirmMessage =
