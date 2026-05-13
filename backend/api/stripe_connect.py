@@ -515,6 +515,32 @@ def request_payout():
                     stripe_account=account_id
                 )
 
+                # 手数料¥250をプラットフォームに回収（Transfer Reversalで実現）
+                try:
+                    transfers = stripe.Transfer.list(
+                        destination=account_id,
+                        limit=10
+                    )
+                    fee_collected = False
+                    for transfer in transfers.data:
+                        reversible = transfer.amount - transfer.amount_reversed
+                        if reversible >= PAYOUT_FEE:
+                            stripe.Transfer.create_reversal(
+                                transfer.id,
+                                amount=PAYOUT_FEE,
+                                metadata={
+                                    'type': 'payout_fee',
+                                    'payout_id': payout.id,
+                                    'user_id': str(user_id)
+                                }
+                            )
+                            fee_collected = True
+                            break
+                    if not fee_collected:
+                        print(f"[WARNING] Could not collect payout fee for user {user_id}: no reversible transfer found", flush=True)
+                except stripe.error.StripeError as e:
+                    print(f"[ERROR] Payout fee collection failed for user {user_id}: {str(e)}", flush=True)
+
                 return jsonify({
                     'success': True,
                     'data': {
