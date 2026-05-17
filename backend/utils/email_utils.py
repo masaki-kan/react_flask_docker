@@ -524,3 +524,327 @@ https://bokurano-vintage.com
     except Exception as e:
         print(f"メール送信エラー: {e}")
         return False
+
+
+def send_trade_completed_email(user_name, partner_name, item_title, purchase_price, to_email, is_seller=False):
+    """取引完了通知メールを送信（販売者・購入者両方に使用）"""
+    if not all([user_name, partner_name, item_title, to_email]):
+        return False
+
+    current_date = datetime.now().strftime("%Y年%m月%d日")
+
+    if is_seller:
+        role_label = "購入者"
+        summary = f"商品「{item_title}」の取引が完了しました。\n売上は販売者ページから確認・振込申請が可能です。"
+    else:
+        role_label = "販売者"
+        summary = f"商品「{item_title}」の取引が完了しました。"
+
+    price_display = f"¥{int(purchase_price):,}" if purchase_price else "未設定"
+
+    body = f"""{user_name} 様
+
+取引が完了しました。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+■ 取引完了
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+完了日：{current_date}
+{role_label}：{partner_name} 様
+対象アイテム：{item_title}
+取引金額：{price_display}
+
+{summary}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+僕らのヴィンテージ 運営チーム
+
+※このメールは送信専用アドレスから配信されております。
+　ご返信いただいてもお答えできませんのでご了承ください。
+
+──────────────────────────────────────
+僕らのヴィンテージ - ヴィンテージをもっと楽しく、もっと自由に
+https://bokurano-vintage.com
+──────────────────────────────────────"""
+
+    try:
+        creds = get_credentials()
+        service = build('gmail', 'v1', credentials=creds)
+
+        message = EmailMessage()
+        message.set_content(body)
+        message['To'] = to_email
+        message['From'] = os.getenv("GMAIL_FROM")
+        message['Subject'] = '取引が完了しました【僕らのヴィンテージ】'
+
+        html_body = f"""
+        <html>
+            <body style="font-family: 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif; line-height: 1.8; color: #333;">
+                <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+                    <div style="text-align: center; margin-bottom: 30px;">
+                        <h1 style="color: #e68019; font-size: 24px; margin: 0;">僕らのヴィンテージ</h1>
+                        <p style="color: #A18249; font-size: 14px; margin: 5px 0;">取引完了のお知らせ</p>
+                    </div>
+
+                    <div style="background: #fdfcf8; border: 2px solid #E9DFCE; border-radius: 8px; padding: 30px; margin-bottom: 20px;">
+                        <p style="margin: 0 0 20px 0;"><strong>{user_name} 様</strong></p>
+
+                        <p style="margin: 0 0 20px 0;">取引が完了しました。</p>
+
+                        <div style="background: white; border: 1px solid #E9DFCE; border-radius: 5px; padding: 20px; margin: 20px 0;">
+                            <h3 style="color: #e68019; font-size: 16px; margin: 0 0 15px 0;">取引完了情報</h3>
+                            <table style="width: 100%; font-size: 14px;">
+                                <tr>
+                                    <td style="padding: 8px 0; color: #A18249;">完了日：</td>
+                                    <td style="padding: 8px 0;">{current_date}</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 8px 0; color: #A18249;">{role_label}：</td>
+                                    <td style="padding: 8px 0;"><strong>{partner_name}</strong> 様</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 8px 0; color: #A18249;">対象アイテム：</td>
+                                    <td style="padding: 8px 0;"><strong>{item_title}</strong></td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 8px 0; color: #A18249;">取引金額：</td>
+                                    <td style="padding: 8px 0;"><strong style="color: #e68019;">{price_display}</strong></td>
+                                </tr>
+                            </table>
+                        </div>
+
+                        <div style="text-align: center; margin: 30px 0;">
+                            <a href="https://bokurano-vintage.com" style="display: inline-block; background: #e68019; color: white; text-decoration: none; padding: 12px 30px; border-radius: 25px; font-weight: bold;">アプリで確認する</a>
+                        </div>
+                    </div>
+
+                    <div style="font-size: 12px; color: #888; text-align: center;">
+                        <p>&copy; 2026 僕らのヴィンテージ</p>
+                    </div>
+                </div>
+            </body>
+        </html>
+        """
+
+        message.add_alternative(html_body, subtype='html')
+        encoded_message = base64.urlsafe_b64encode(message.as_bytes()).decode()
+
+        service.users().messages().send(userId="me", body={
+            'raw': encoded_message
+        }).execute()
+        return True
+    except Exception as e:
+        print(f"メール送信エラー: {e}")
+        return False
+
+
+def send_refund_completed_email(buyer_name, item_title, purchase_price, to_email):
+    """返金完了通知メールを購入者に送信"""
+    if not all([buyer_name, item_title, to_email]):
+        return False
+
+    current_date = datetime.now().strftime("%Y年%m月%d日")
+    price_display = f"¥{int(purchase_price):,}" if purchase_price else "未設定"
+
+    body = f"""{buyer_name} 様
+
+返金処理が完了しました。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+■ 返金完了
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+返金日：{current_date}
+対象アイテム：{item_title}
+返金金額：{price_display}
+
+返金はお支払い方法に応じて処理されます。
+カード決済の場合は数日以内にカードに返金されます。
+銀行振込の場合はStripeからメールが届きますので、
+口座情報を入力してください。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+僕らのヴィンテージ 運営チーム
+
+※このメールは送信専用アドレスから配信されております。
+　ご返信いただいてもお答えできませんのでご了承ください。
+
+──────────────────────────────────────
+僕らのヴィンテージ - ヴィンテージをもっと楽しく、もっと自由に
+https://bokurano-vintage.com
+──────────────────────────────────────"""
+
+    try:
+        creds = get_credentials()
+        service = build('gmail', 'v1', credentials=creds)
+
+        message = EmailMessage()
+        message.set_content(body)
+        message['To'] = to_email
+        message['From'] = os.getenv("GMAIL_FROM")
+        message['Subject'] = '返金処理が完了しました【僕らのヴィンテージ】'
+
+        html_body = f"""
+        <html>
+            <body style="font-family: 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif; line-height: 1.8; color: #333;">
+                <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+                    <div style="text-align: center; margin-bottom: 30px;">
+                        <h1 style="color: #e68019; font-size: 24px; margin: 0;">僕らのヴィンテージ</h1>
+                        <p style="color: #A18249; font-size: 14px; margin: 5px 0;">返金完了のお知らせ</p>
+                    </div>
+
+                    <div style="background: #fdfcf8; border: 2px solid #E9DFCE; border-radius: 8px; padding: 30px; margin-bottom: 20px;">
+                        <p style="margin: 0 0 20px 0;"><strong>{buyer_name} 様</strong></p>
+
+                        <p style="margin: 0 0 20px 0;">返金処理が完了しました。</p>
+
+                        <div style="background: white; border: 1px solid #E9DFCE; border-radius: 5px; padding: 20px; margin: 20px 0;">
+                            <h3 style="color: #e68019; font-size: 16px; margin: 0 0 15px 0;">返金情報</h3>
+                            <table style="width: 100%; font-size: 14px;">
+                                <tr>
+                                    <td style="padding: 8px 0; color: #A18249;">返金日：</td>
+                                    <td style="padding: 8px 0;">{current_date}</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 8px 0; color: #A18249;">対象アイテム：</td>
+                                    <td style="padding: 8px 0;"><strong>{item_title}</strong></td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 8px 0; color: #A18249;">返金金額：</td>
+                                    <td style="padding: 8px 0;"><strong style="color: #e68019;">{price_display}</strong></td>
+                                </tr>
+                            </table>
+                        </div>
+
+                        <div style="background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 5px; padding: 15px; margin: 20px 0;">
+                            <p style="margin: 0; font-size: 13px; color: #0369a1;">
+                                カード決済の場合は数日以内にカードに返金されます。<br>
+                                銀行振込の場合はStripeからメールが届きますので、口座情報を入力してください。
+                            </p>
+                        </div>
+                    </div>
+
+                    <div style="font-size: 12px; color: #888; text-align: center;">
+                        <p>&copy; 2026 僕らのヴィンテージ</p>
+                    </div>
+                </div>
+            </body>
+        </html>
+        """
+
+        message.add_alternative(html_body, subtype='html')
+        encoded_message = base64.urlsafe_b64encode(message.as_bytes()).decode()
+
+        service.users().messages().send(userId="me", body={
+            'raw': encoded_message
+        }).execute()
+        return True
+    except Exception as e:
+        print(f"メール送信エラー: {e}")
+        return False
+
+
+def send_trade_request_email(seller_name, buyer_name, item_title, to_email):
+    """取引リクエスト通知メールを販売者に送信"""
+    if not all([seller_name, buyer_name, item_title, to_email]):
+        return False
+
+    current_date = datetime.now().strftime("%Y年%m月%d日")
+
+    body = f"""{seller_name} 様
+
+新しい取引リクエストが届きました。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+■ 取引リクエスト
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+リクエスト日：{current_date}
+リクエスト者：{buyer_name} 様
+対象アイテム：{item_title}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+アプリにログインして取引内容をご確認ください。
+https://bokurano-vintage.com
+
+僕らのヴィンテージ 運営チーム
+
+※このメールは送信専用アドレスから配信されております。
+　ご返信いただいてもお答えできませんのでご了承ください。
+
+──────────────────────────────────────
+僕らのヴィンテージ - ヴィンテージをもっと楽しく、もっと自由に
+https://bokurano-vintage.com
+──────────────────────────────────────"""
+
+    try:
+        creds = get_credentials()
+        service = build('gmail', 'v1', credentials=creds)
+
+        message = EmailMessage()
+        message.set_content(body)
+        message['To'] = to_email
+        message['From'] = os.getenv("GMAIL_FROM")
+        message['Subject'] = '新しい取引リクエストが届きました【僕らのヴィンテージ】'
+
+        html_body = f"""
+        <html>
+            <body style="font-family: 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif; line-height: 1.8; color: #333;">
+                <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+                    <div style="text-align: center; margin-bottom: 30px;">
+                        <h1 style="color: #e68019; font-size: 24px; margin: 0;">僕らのヴィンテージ</h1>
+                        <p style="color: #A18249; font-size: 14px; margin: 5px 0;">新しい取引リクエスト</p>
+                    </div>
+
+                    <div style="background: #fdfcf8; border: 2px solid #E9DFCE; border-radius: 8px; padding: 30px; margin-bottom: 20px;">
+                        <p style="margin: 0 0 20px 0;"><strong>{seller_name} 様</strong></p>
+
+                        <p style="margin: 0 0 20px 0;">
+                            新しい取引リクエストが届きました。
+                        </p>
+
+                        <div style="background: white; border: 1px solid #E9DFCE; border-radius: 5px; padding: 20px; margin: 20px 0;">
+                            <h3 style="color: #e68019; font-size: 16px; margin: 0 0 15px 0;">取引リクエスト内容</h3>
+                            <table style="width: 100%; font-size: 14px;">
+                                <tr>
+                                    <td style="padding: 8px 0; color: #A18249;">リクエスト日：</td>
+                                    <td style="padding: 8px 0;">{current_date}</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 8px 0; color: #A18249;">リクエスト者：</td>
+                                    <td style="padding: 8px 0;"><strong>{buyer_name}</strong> 様</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 8px 0; color: #A18249;">対象アイテム：</td>
+                                    <td style="padding: 8px 0;"><strong>{item_title}</strong></td>
+                                </tr>
+                            </table>
+                        </div>
+
+                        <div style="text-align: center; margin: 30px 0;">
+                            <a href="https://bokurano-vintage.com" style="display: inline-block; background: #e68019; color: white; text-decoration: none; padding: 12px 30px; border-radius: 25px; font-weight: bold;">アプリで確認する</a>
+                        </div>
+                    </div>
+
+                    <div style="font-size: 12px; color: #888; text-align: center;">
+                        <p>&copy; 2026 僕らのヴィンテージ</p>
+                    </div>
+                </div>
+            </body>
+        </html>
+        """
+
+        message.add_alternative(html_body, subtype='html')
+        encoded_message = base64.urlsafe_b64encode(message.as_bytes()).decode()
+
+        send_message = service.users().messages().send(userId="me", body={
+            'raw': encoded_message
+        }).execute()
+        return True
+    except Exception as e:
+        print(f"メール送信エラー: {e}")
+        return False

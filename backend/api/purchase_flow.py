@@ -4,6 +4,7 @@
 
 from flask import Blueprint, jsonify, request
 from utils.db_utils import get_db_connection
+from utils.email_utils import send_trade_completed_email, send_refund_completed_email
 import mysql.connector
 from datetime import datetime
 from tradeArchiver import TradeArchiver
@@ -922,6 +923,33 @@ def complete_purchase_trade():
                 print(f"⚠️ アーカイブ処理でエラーが発生しましたが、取引は完了しました: {archive_error}")
                 # アーカイブに失敗しても取引完了は継続
 
+            # ===== メール送信用の情報を削除前に取得 =====
+            email_data = None
+            try:
+                cursor.execute("""
+                    SELECT u.name, u.email FROM users u WHERE u.user_id = %s
+                """, (trade['seller_id'],))
+                seller_info = cursor.fetchone()
+
+                cursor.execute("""
+                    SELECT u.name, u.email FROM users u
+                    JOIN trades t ON t.buyer_id = u.user_id
+                    WHERE t.trade_id = %s
+                """, (trade_id,))
+                buyer_info = cursor.fetchone()
+
+                cursor.execute("SELECT title FROM items WHERE item_id = %s", (trade['item_id'],))
+                item_info = cursor.fetchone()
+
+                if seller_info and buyer_info and item_info:
+                    email_data = {
+                        'seller': seller_info, 'buyer': buyer_info,
+                        'item_title': item_info['title'],
+                        'price': trade.get('purchase_price')
+                    }
+            except Exception:
+                pass
+
             # ===== ここから削除処理 =====
             # 取引関連データの削除（アーカイブ後に実行）
 
@@ -961,6 +989,28 @@ def complete_purchase_trade():
 
             conn.commit()
             cursor.close()
+
+            # 取引完了メールを送信（コミット後）
+            if email_data:
+                try:
+                    send_trade_completed_email(
+                        user_name=email_data['seller']['name'],
+                        partner_name=email_data['buyer']['name'],
+                        item_title=email_data['item_title'],
+                        purchase_price=email_data['price'],
+                        to_email=email_data['seller']['email'],
+                        is_seller=True
+                    )
+                    send_trade_completed_email(
+                        user_name=email_data['buyer']['name'],
+                        partner_name=email_data['seller']['name'],
+                        item_title=email_data['item_title'],
+                        purchase_price=email_data['price'],
+                        to_email=email_data['buyer']['email'],
+                        is_seller=False
+                    )
+                except Exception:
+                    pass
 
         return jsonify({
             'success': True,
@@ -1643,6 +1693,27 @@ def refund_purchase():
             else:
                 pass
 
+            # 返金メール用の情報を削除前に取得
+            refund_email_data = None
+            try:
+                cursor.execute("""
+                    SELECT u.name, u.email FROM users u WHERE u.user_id = %s
+                """, (trade['buyer_id'],))
+                buyer_info = cursor.fetchone()
+
+                cursor.execute("SELECT title FROM items WHERE item_id = %s", (trade['item_id'],))
+                item_info = cursor.fetchone()
+
+                if buyer_info and item_info:
+                    refund_email_data = {
+                        'buyer_name': buyer_info['name'],
+                        'buyer_email': buyer_info['email'],
+                        'item_title': item_info['title'],
+                        'price': trade.get('purchase_price')
+                    }
+            except Exception:
+                pass
+
             # アイテムをavailableに戻す（商品はそのまま残す）
             item_id = trade['item_id']
             cursor.execute("""
@@ -1659,6 +1730,18 @@ def refund_purchase():
 
             conn.commit()
             cursor.close()
+
+            # 返金完了メールを購入者に送信（コミット後）
+            if refund_email_data:
+                try:
+                    send_refund_completed_email(
+                        buyer_name=refund_email_data['buyer_name'],
+                        item_title=refund_email_data['item_title'],
+                        purchase_price=refund_email_data['price'],
+                        to_email=refund_email_data['buyer_email']
+                    )
+                except Exception:
+                    pass
 
         return jsonify({
             'success': True,

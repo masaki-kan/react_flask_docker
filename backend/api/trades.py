@@ -4,6 +4,7 @@ from flask import Blueprint, jsonify, request
 from flask_jwt_extended import jwt_required
 from utils.db_utils import get_db_connection
 from utils.image_utils import upload_image_to_s3
+from utils.email_utils import send_trade_request_email
 import json
 import mysql.connector
 from flask_socketio import emit, join_room
@@ -158,6 +159,29 @@ def create_trade():
                 
                 # コミット
                 conn.commit()
+
+                # 販売者に取引リクエスト通知メールを送信
+                try:
+                    cursor.execute("""
+                        SELECT u.name, u.email, i.title
+                        FROM users u
+                        JOIN items i ON i.item_id = %s
+                        WHERE u.user_id = %s
+                    """, (item_id, seller_id))
+                    seller_info = cursor.fetchone()
+
+                    cursor.execute("SELECT name FROM users WHERE user_id = %s", (buyer_id,))
+                    buyer_info = cursor.fetchone()
+
+                    if seller_info and buyer_info:
+                        send_trade_request_email(
+                            seller_name=seller_info['name'],
+                            buyer_name=buyer_info['name'],
+                            item_title=seller_info['title'],
+                            to_email=seller_info['email']
+                        )
+                except Exception:
+                    pass  # メール送信失敗しても取引は成立させる
 
                 return jsonify({
                     'result': True,
