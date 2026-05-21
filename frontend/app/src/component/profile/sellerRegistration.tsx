@@ -28,6 +28,7 @@ import {
   ModalBody,
   ModalFooter,
   ModalCloseButton,
+  Tooltip,
 } from "@chakra-ui/react";
 import {
   FaStore,
@@ -35,6 +36,7 @@ import {
   FaExclamationCircle,
   FaExternalLinkAlt,
   FaMoneyBillWave,
+  FaQuestionCircle,
 } from "react-icons/fa";
 import {
   createConnectAccount,
@@ -394,16 +396,25 @@ const SellerRegistration: FC = () => {
               <Box bg={sectionBg} p={4} borderRadius="md">
                 <VStack align="stretch" spacing={3}>
                   <HStack justify="space-between">
-                    <Text fontWeight="bold" fontSize="sm">
-                      売上残高
-                    </Text>
+                    <HStack spacing={1}>
+                      <Text fontWeight="bold" fontSize="sm">
+                        売上残高
+                      </Text>
+                      <Tooltip
+                        label="取引が完了すると売上残高に即時反映されます。ただし、振込申請が可能になるまでには決済完了から約4営業日かかります。"
+                        fontSize="xs"
+                        placement="top"
+                        hasArrow
+                      >
+                        <span>
+                          <Icon as={FaQuestionCircle} color="gray.400" boxSize={3} cursor="pointer" />
+                        </span>
+                      </Tooltip>
+                    </HStack>
                     <Text fontSize="lg" fontWeight="bold">
                       ¥{(balance.available + balance.pending).toLocaleString()}
                     </Text>
                   </HStack>
-                  <Text fontSize="xs" color="gray.500">
-                    ※ 売上残高への反映には決済完了から約4営業日かかります。
-                  </Text>
                 </VStack>
               </Box>
 
