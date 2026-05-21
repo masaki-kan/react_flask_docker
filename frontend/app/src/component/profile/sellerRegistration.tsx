@@ -489,8 +489,9 @@ const SellerRegistration: FC = () => {
                 </HStack>
                 <Alert status="info" borderRadius="md" mt={2}>
                   <AlertIcon />
-                  <AlertDescription fontSize="sm">
-                    振込は通常1〜2営業日で銀行口座に入金されます
+                  <AlertDescription fontSize="xs">
+                    振込は通常1〜2営業日で銀行口座に入金されます。
+                    売上残高のうち、決済完了から4営業日未満の金額は振込可能額に含まれません。
                   </AlertDescription>
                 </Alert>
               </VStack>
