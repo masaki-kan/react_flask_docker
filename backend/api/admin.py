@@ -285,13 +285,13 @@ def get_subscription_data():
 
             # 料金設定
             if subscription_type == 'monthly':
-                # plan = 0: 月額990円（初月無料、翌月から課金）
+                # plan = 0: 月額770円（初月無料、翌月から課金）
                 plan_value = 0
-                price_per_user = 990
+                price_per_user = 770
             else:  # yearly
-                # plan = 1: 年払い9900円
+                # plan = 1: 年払い7700円
                 plan_value = 1
-                price_per_user = 9900
+                price_per_user = 7700
 
             if range_type == 'year':
                 # 過去12ヶ月のデータ

@@ -102,8 +102,8 @@ const ReactivationForm: FC<{
 
           await sweetSuccessTextOverAlert(
             planType === "monthly"
-              ? "アカウントを再開しました。月額990円が課金されます。"
-              : "アカウントを再開しました。年額9,900円のお支払いが完了しました。"
+              ? "アカウントを再開しました。月額770円が課金されます。"
+              : "アカウントを再開しました。年額7,700円のお支払いが完了しました。"
           );
           // 少し待ってからナビゲーション実行
           setTimeout(() => {
@@ -212,7 +212,7 @@ const ReactivationForm: FC<{
           </Box>
           <Box textAlign="right">
             <Text fontSize="2xl" fontWeight="bold" color="orange.600">
-              {planType === "monthly" ? "¥990" : "¥9,900"}
+              {planType === "monthly" ? "¥770" : "¥7,700"}
               <Text as="span" fontSize="sm" fontWeight="normal">
                 {planType === "monthly" ? "/月" : "/年"}
               </Text>
@@ -441,7 +441,7 @@ const CheckReactivationStatus: FC = () => {
                       <Text fontWeight="bold">月額プラン</Text>
                     </HStack>
                     <Text fontSize="sm" color="gray.600">
-                      ¥990/月
+                      ¥770/月
                     </Text>
                   </Box>
                 </Radio>
@@ -464,7 +464,7 @@ const CheckReactivationStatus: FC = () => {
                       <Badge colorScheme="orange">2ヶ月分無料</Badge>
                     </HStack>
                     <Text fontSize="sm" color="gray.600">
-                      ¥9,900/年
+                      ¥7,700/年
                     </Text>
                   </Box>
                 </Radio>

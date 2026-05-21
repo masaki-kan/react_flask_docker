@@ -42,9 +42,9 @@ def send_welcome_email(user_name, plan_type, to_email):
     
     plan = ""
     if plan_type == "0":
-        plan = "月額プラン ¥990/月"
+        plan = "月額プラン ¥770/月"
     elif plan_type == "1":
-        plan = "年額プラン ¥9,900/年"
+        plan = "年額プラン ¥7,700/年"
     else:
         plan = "未設定"
         
@@ -186,9 +186,9 @@ def reactivation_send_welcome_email(user_name, plan_type, to_email):
 
     plan = ""
     if plan_type == "0":
-        plan = "月額プラン ¥990/月"
+        plan = "月額プラン ¥770/月"
     elif plan_type == "1":
-        plan = "年額プラン ¥9,900/年"
+        plan = "年額プラン ¥7,700/年"
         
     # 現在の日時を取得
     current_date = datetime.now().strftime("%Y年%m月%d日")

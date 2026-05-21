@@ -96,7 +96,7 @@ const AdminUserDetail: FC = () => {
   }, [userId]);
 
   const getPlanLabel = (plan: string) => {
-    return plan === "1" ? "年払 9900円" : "月額 990円";
+    return plan === "1" ? "年払 7700円" : "月額 770円";
   };
 
   const getStatusColor = (status: string) => {
