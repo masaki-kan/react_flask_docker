@@ -28,7 +28,11 @@ import {
   ModalBody,
   ModalFooter,
   ModalCloseButton,
-  Tooltip,
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+  PopoverBody,
+  PopoverArrow,
 } from "@chakra-ui/react";
 import {
   FaStore,
@@ -400,16 +404,19 @@ const SellerRegistration: FC = () => {
                       <Text fontWeight="bold" fontSize="sm">
                         売上残高
                       </Text>
-                      <Tooltip
-                        label="取引が完了すると売上残高に即時反映されます。ただし、振込申請が可能になるまでには決済完了から約4営業日かかります。"
-                        fontSize="xs"
-                        placement="top"
-                        hasArrow
-                      >
-                        <span>
-                          <Icon as={FaQuestionCircle} color="gray.400" boxSize={3} cursor="pointer" />
-                        </span>
-                      </Tooltip>
+                      <Popover trigger="click" placement="top">
+                        <PopoverTrigger>
+                          <span>
+                            <Icon as={FaQuestionCircle} color="gray.400" boxSize={3} cursor="pointer" />
+                          </span>
+                        </PopoverTrigger>
+                        <PopoverContent w="auto" maxW="280px">
+                          <PopoverArrow />
+                          <PopoverBody fontSize="xs" color="gray.600">
+                            取引が完了すると売上残高に即時反映されます。ただし、振込申請が可能になるまでには決済完了から約4営業日かかります。
+                          </PopoverBody>
+                        </PopoverContent>
+                      </Popover>
                     </HStack>
                     <Text fontSize="lg" fontWeight="bold">
                       ¥{(balance.available + balance.pending).toLocaleString()}
