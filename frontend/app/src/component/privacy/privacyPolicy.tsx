@@ -22,7 +22,7 @@ const PrivacyPolicy: FC = () => {
   // プライバシーポリシーの構造化データ
   const privacyData = {
     serviceName: "僕らのヴィンテージ",
-    updateDate: "2024年9月16日",
+    updateDate: "2026年4月1日",
     sections: [
       {
         id: "intro",

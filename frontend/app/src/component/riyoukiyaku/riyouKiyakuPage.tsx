@@ -23,7 +23,7 @@ const RiyouKiyakuPage: FC = () => {
   // 利用規約の構造化データ
   const termsData = {
     serviceName: "僕らのヴィンテージ",
-    updateDate: "2025年9月16日",
+    updateDate: "2026年4月1日",
     sections: [
       {
         id: "intro",
